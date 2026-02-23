@@ -1,0 +1,11 @@
+{
+  "import": [
+    "trkbt10/mukuro/interfaces",
+    "moonbitlang/core/json"
+  ],
+  "targets": {
+    "fetch.mbt": ["js"],
+    "http_client.mbt": ["js"],
+    "storage.mbt": ["js"]
+  }
+}

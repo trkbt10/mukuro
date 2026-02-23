@@ -1,0 +1,11 @@
+{
+  "import": [
+    { "path": "trkbt10/mukuro/core/scheduler", "alias": "core_scheduler" },
+    "trkbt10/mukuro/interfaces",
+    "trkbt10/mukuro/adapters/js",
+    "moonbitlang/core/json"
+  ],
+  "targets": {
+    "timer.mbt": ["js"]
+  }
+}

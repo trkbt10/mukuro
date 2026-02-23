@@ -1,0 +1,14 @@
+{
+  "is-main": true,
+  "import": [
+    { "path": "trkbt10/mukuro/adapters/js", "alias": "js" },
+    { "path": "trkbt10/mukuro/core/types", "alias": "types" },
+    { "path": "trkbt10/mukuro/tools/builtin", "alias": "builtin" },
+    "moonbitlang/core/json"
+  ],
+  "targets": {
+    "main.mbt": ["js"],
+    "main_native.mbt": ["native"],
+    "main_wasm.mbt": ["wasm", "wasm-gc"]
+  }
+}

@@ -1,0 +1,136 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/tools/builtin"
+
+import {
+  "trkbt10/mukuro/core/types",
+}
+
+// Values
+pub fn boolean_param(String) -> Json
+
+pub fn build_outbound_message(String, String, String, String?) -> @types.OutboundMessage
+
+pub fn datetime_tool_definition() -> @types.ToolDefinition
+
+pub fn execute_async_tool(BuiltinToolContext, String, Json, (ToolExecutionResult) -> Unit) -> Bool
+
+pub fn execute_datetime_tool(Json) -> ToolExecutionResult
+
+pub fn execute_memory_tool(MemoryStore, Json) -> ToolExecutionResult
+
+pub fn execute_message_tool(Json, (@types.OutboundMessage) -> Unit) -> ToolExecutionResult
+
+pub fn execute_spawn_tool(SubAgentManager, Json) -> ToolExecutionResult
+
+pub fn execute_sync_tool(BuiltinToolContext, String, Json) -> ToolExecutionResult?
+
+pub fn get_all_tool_definitions() -> Array[@types.ToolDefinition]
+
+pub fn get_array_arg(Json, String) -> Array[Json]?
+
+pub fn get_bool_arg(Json, String) -> Bool?
+
+pub fn get_current_time_seconds() -> Int64
+
+pub fn get_int_arg(Json, String) -> Int?
+
+pub fn get_string_arg(Json, String) -> String?
+
+pub fn get_tool_definition(String) -> @types.ToolDefinition?
+
+pub fn has_tool(String) -> Bool
+
+pub fn integer_param(String) -> Json
+
+pub fn is_sync_tool(String) -> Bool
+
+pub fn make_tool_definition(name~ : String, description~ : String, parameters~ : Json) -> @types.ToolDefinition
+
+pub fn memory_tool_definition() -> @types.ToolDefinition
+
+pub fn message_tool_definition() -> @types.ToolDefinition
+
+pub fn object_schema(Json, Array[String]) -> Json
+
+pub fn require_string_arg(Json, String) -> String raise ToolExecutionError
+
+pub fn spawn_tool_definition() -> @types.ToolDefinition
+
+pub fn string_param(String, Bool) -> Json
+
+// Errors
+pub(all) suberror ToolExecutionError {
+  InvalidArguments(String)
+  ExecutionFailed(String)
+  PermissionDenied(String)
+  NotFound(String)
+  Timeout
+}
+
+// Types and methods
+pub struct BuiltinToolContext {
+  memory : MemoryStore
+  agent_manager : SubAgentManager
+  send_message : (@types.OutboundMessage) -> Unit
+}
+pub fn BuiltinToolContext::new((@types.OutboundMessage) -> Unit) -> Self
+
+pub struct MemoryStore {
+  data : Map[String, Json]
+  metadata : Map[String, Int64]
+}
+pub fn MemoryStore::clear(Self) -> Unit
+pub fn MemoryStore::delete(Self, String) -> Bool
+pub fn MemoryStore::get(Self, String) -> Json?
+pub fn MemoryStore::has(Self, String) -> Bool
+pub fn MemoryStore::keys(Self) -> Array[String]
+pub fn MemoryStore::new() -> Self
+pub fn MemoryStore::set(Self, String, Json) -> Unit
+
+pub(all) struct SpawnRequest {
+  config : SubAgentConfig
+  initial_message : String
+  callback_on_complete : Bool
+}
+
+pub(all) struct SpawnResult {
+  agent_id : String
+  status : String
+  response : String?
+}
+
+pub(all) struct SubAgentConfig {
+  name : String
+  system_prompt : String
+  model : String
+  max_turns : Int
+  tools : Array[String]
+}
+pub fn SubAgentConfig::default(name~ : String) -> Self
+
+pub struct SubAgentManager {
+  agents : Map[String, SpawnResult]
+  mut next_id : Int
+}
+pub fn SubAgentManager::generate_id(Self) -> String
+pub fn SubAgentManager::new() -> Self
+
+pub(all) struct ToolExecutionResult {
+  status : ToolResultStatus
+  data : Json
+  error_message : String?
+}
+pub fn ToolExecutionResult::error(String) -> Self
+pub fn ToolExecutionResult::requires_confirmation(Json) -> Self
+pub fn ToolExecutionResult::success(Json) -> Self
+
+pub(all) enum ToolResultStatus {
+  Success
+  Error
+  RequiresConfirmation
+}
+
+// Type aliases
+
+// Traits
+

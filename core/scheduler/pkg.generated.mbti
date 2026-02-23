@@ -1,0 +1,103 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/scheduler"
+
+// Values
+pub fn parse_cron(String) -> CronExpression raise CronParseError
+
+// Errors
+pub(all) suberror CronParseError {
+  InvalidFormat(String)
+  InvalidField(String, Int)
+  InvalidRange(Int, Int, Int)
+  InvalidValue(String, Int)
+}
+
+// Types and methods
+pub struct CronExpression {
+  minute : CronField
+  hour : CronField
+  day_of_month : CronField
+  month : CronField
+  day_of_week : CronField
+}
+pub fn CronExpression::matches(Self, Int, Int, Int, Int, Int) -> Bool
+pub fn CronExpression::matches_timestamp(Self, Int64) -> Bool
+
+pub struct CronField {
+  values : Array[Int]
+  min : Int
+  max : Int
+}
+pub fn CronField::contains(Self, Int) -> Bool
+pub fn CronField::new(min~ : Int, max~ : Int) -> Self
+pub fn CronField::wildcard(min~ : Int, max~ : Int) -> Self
+
+pub struct HealthCheckResponse {
+  status : String
+  version : String
+  details : Json
+  timestamp : Int64
+}
+pub fn HealthCheckResponse::to_json(Self) -> Json
+
+pub(all) struct HeartbeatConfig {
+  interval_ms : Int64
+  timeout_ms : Int64
+  warning_threshold_ms : Int64
+  max_retries : Int
+}
+pub fn HeartbeatConfig::default() -> Self
+
+pub struct HeartbeatManager {
+  config : HeartbeatConfig
+  records : Map[String, HeartbeatRecord]
+}
+pub fn HeartbeatManager::default() -> Self
+pub fn HeartbeatManager::get_status(Self, String) -> HeartbeatStatus
+pub fn HeartbeatManager::get_summary(Self) -> Json
+pub fn HeartbeatManager::get_unhealthy_agents(Self) -> Array[String]
+pub fn HeartbeatManager::health_check(Self, Int64) -> HealthCheckResponse
+pub fn HeartbeatManager::new(config~ : HeartbeatConfig) -> Self
+pub fn HeartbeatManager::receive_heartbeat(Self, String, Int64, Map[String, Json]) -> Unit
+pub fn HeartbeatManager::remove_agent(Self, String) -> Bool
+pub fn HeartbeatManager::update_all_statuses(Self, Int64) -> Unit
+
+pub struct HeartbeatRecord {
+  agent_id : String
+  mut last_heartbeat : Int64
+  mut status : HeartbeatStatus
+  mut failure_count : Int
+  metadata : Map[String, Json]
+}
+pub fn HeartbeatRecord::new(agent_id~ : String) -> Self
+
+pub(all) enum HeartbeatStatus {
+  Healthy
+  Warning
+  Unhealthy
+  Unknown
+}
+
+pub(all) struct ScheduledTask {
+  id : String
+  name : String
+  cron : CronExpression
+  mut next_run : Int64
+  mut enabled : Bool
+  payload : Json
+}
+pub fn ScheduledTask::new(id~ : String, name~ : String, cron_expr~ : String, payload~ : Json) -> Self raise CronParseError
+
+pub struct TaskScheduler {
+  tasks : Map[String, ScheduledTask]
+}
+pub fn TaskScheduler::due_tasks(Self, Int64) -> Array[ScheduledTask]
+pub fn TaskScheduler::get_all_tasks(Self) -> Array[ScheduledTask]
+pub fn TaskScheduler::new() -> Self
+pub fn TaskScheduler::register(Self, ScheduledTask) -> Unit
+pub fn TaskScheduler::unregister(Self, String) -> Bool
+
+// Type aliases
+
+// Traits
+

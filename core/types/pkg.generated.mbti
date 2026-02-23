@@ -1,0 +1,209 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/types"
+
+// Values
+pub fn build_json_schema(type_~ : String, properties~ : Map[String, Json], required~ : Array[String]) -> Json
+
+// Errors
+
+// Types and methods
+pub(all) struct AgentConfig {
+  max_iterations : Int
+  model_options : ModelOptions
+  timeout_ms : Int64
+  bootstrap : String
+}
+pub fn AgentConfig::default() -> Self
+
+pub(all) struct AttachmentInfo {
+  filename : String
+  content_type : String
+  url : String
+  size : Int64
+}
+
+pub(all) struct ChannelConfig {
+  name : String
+  enabled : Bool
+  token : String?
+  webhook_url : String?
+  options : Map[String, Json]
+}
+pub fn ChannelConfig::new(name~ : String, token~ : String?) -> Self
+
+pub(all) struct FallbackConfig {
+  enabled : Bool
+  providers : Array[String]
+  cooldown_ms : Int
+}
+
+pub(all) struct InboundEnvelope {
+  channel : String
+  chat_id : String
+  sender_id : String
+  sender_name : String
+  content : String
+  message_type : MessageType
+  metadata : Map[String, Json]
+  timestamp : Int64
+}
+pub fn InboundEnvelope::default() -> Self
+
+pub(all) enum MessageType {
+  Text
+  Command(String)
+  Reaction(String)
+  Attachment(Array[AttachmentInfo])
+  System(SystemEvent)
+}
+
+pub(all) enum ModelMessage {
+  System(String)
+  User(content~ : String, name~ : String?)
+  Assistant(content~ : String, tool_calls~ : Array[ToolCallRequest]?)
+  ToolResult(tool_call_id~ : String, content~ : String)
+}
+
+pub(all) struct ModelOptions {
+  model_name : String
+  temperature : Double?
+  max_tokens : Int?
+  stop_sequences : Array[String]?
+}
+pub fn ModelOptions::default() -> Self
+
+pub(all) enum ModelResponse {
+  Text(String)
+  ToolCalls(Array[ToolCallRequest])
+  ModelError(String)
+  RateLimited(retry_after~ : Int)
+}
+
+pub(all) struct MukuroConfig {
+  agent : AgentConfig
+  providers : Array[ProviderConfig]
+  fallback : FallbackConfig
+  channels : Array[ChannelConfig]
+}
+
+pub(all) struct OutboundAttachment {
+  filename : String
+  content_type : String
+  data : Bytes
+}
+
+pub(all) struct OutboundMessage {
+  channel : String
+  chat_id : String
+  content : String
+  reply_to : String?
+  attachments : Array[OutboundAttachment]?
+  options : Map[String, Json]?
+}
+pub fn OutboundMessage::default() -> Self
+
+pub(all) struct ProviderConfig {
+  name : String
+  api_key : String?
+  base_url : String?
+  default_model : String
+  timeout_ms : Int
+  max_retries : Int
+}
+pub fn ProviderConfig::new(name~ : String, api_key~ : String?, default_model~ : String) -> Self
+
+pub(all) struct Session {
+  key : SessionKey
+  history : Array[ModelMessage]
+  state : SessionState
+  created_at : Int64
+  last_active_at : Int64
+  metadata : Map[String, Json]
+}
+pub fn Session::add_message(Self, ModelMessage) -> Unit
+pub fn Session::new(SessionKey, Int64) -> Self
+pub fn Session::touch(Self, Int64) -> Self
+
+pub(all) struct SessionKey {
+  channel : String
+  chat_id : String
+  user_id : String?
+}
+pub fn SessionKey::new(channel~ : String, chat_id~ : String, user_id~ : String?) -> Self
+pub fn SessionKey::to_string(Self) -> String
+pub impl Eq for SessionKey
+pub impl Hash for SessionKey
+pub impl Show for SessionKey
+
+pub(all) enum SessionState {
+  Active
+  Paused
+  Ended
+}
+pub impl Show for SessionState
+
+pub(all) enum SystemEvent {
+  Join
+  Leave
+  ChannelCreated
+  ChannelDeleted
+}
+
+pub(all) struct ToolCallRequest {
+  id : String
+  name : String
+  arguments : Json
+}
+pub fn ToolCallRequest::default() -> Self
+pub fn ToolCallRequest::new(id~ : String, name~ : String, arguments~ : Json) -> Self
+
+pub(all) struct ToolContext {
+  session : Session
+  envelope : InboundEnvelope
+  config : Map[String, Json]
+}
+
+pub(all) struct ToolDefinition {
+  name : String
+  description : String
+  parameters : Json
+}
+pub fn ToolDefinition::new(name~ : String, description~ : String, parameters~ : Json) -> Self
+
+pub(all) struct ToolMetadata {
+  name : String
+  description : String
+  category : String
+  version : String
+  required_permissions : Array[String]
+  enabled : Bool
+}
+pub fn ToolMetadata::new(name~ : String, description~ : String, category~ : String) -> Self
+
+pub(all) struct ToolParam {
+  name : String
+  description : String
+  param_type : ToolParamType
+  required : Bool
+  default_value : Json?
+}
+
+pub(all) enum ToolParamType {
+  String_
+  Number
+  Integer
+  Boolean
+  Array_(ToolParamType)
+  Object(Map[String, ToolParamType])
+}
+
+pub(all) enum ToolResult {
+  Success(content~ : String)
+  Error(message~ : String)
+  RequiresAction(next_tool~ : String, arguments~ : Json)
+}
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,316 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/interfaces"
+
+import {
+  "trkbt10/mukuro/core/types",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum ChannelEvent {
+  MessageReceived(@types.InboundEnvelope)
+  Connected(channel~ : String)
+  Disconnected(channel~ : String)
+  Error(channel~ : String, message~ : String)
+}
+
+pub(all) struct ContextInput {
+  session_history : Array[@types.ModelMessage]
+  memory_context : Array[String]
+  skills : Array[SkillDefinition]
+  bootstrap : String
+  current_message : @types.InboundEnvelope
+}
+
+pub struct DefaultSessionResolver {
+  _placeholder : Unit
+}
+pub fn DefaultSessionResolver::new() -> Self
+pub impl SessionResolver for DefaultSessionResolver
+
+pub(all) enum HttpMethod {
+  Get
+  Post
+  Put
+  Delete
+  Patch
+  Head
+  Options
+}
+
+pub(all) struct HttpRequest {
+  url : String
+  http_method : HttpMethod
+  headers : Map[String, String]
+  body : Bytes?
+}
+
+pub(all) struct HttpResponse {
+  status : Int
+  headers : Map[String, String]
+  body : Bytes
+}
+
+pub(all) enum LogLevel {
+  Debug
+  Info
+  Warn
+  Error
+}
+
+pub(all) struct PlatformInfo {
+  platform_type : PlatformType
+  arch : String
+  version : String
+}
+
+pub(all) struct PlatformRuntime {
+  clock : &Clock
+  logger : &Logger
+  env : &Environment
+  http : &HttpClient
+  fs : &FileStore
+  process : &ProcessExecutor
+  timer : &Timer
+}
+
+pub(all) enum PlatformType {
+  Browser
+  NodeJS
+  Native(String)
+  Unknown
+}
+
+pub(all) struct ProcessOptions {
+  cwd : String?
+  env : Map[String, String]
+  timeout_ms : Int64?
+  stdin : Bytes?
+}
+pub fn ProcessOptions::default() -> Self
+
+pub(all) struct ProcessResult {
+  exit_code : Int
+  stdout : Bytes
+  stderr : Bytes
+}
+
+pub(all) enum ProviderError {
+  AuthenticationFailed(String)
+  RateLimited(retry_after~ : Int)
+  ModelNotFound(String)
+  NetworkError(String)
+  Timeout
+  InternalError(String)
+}
+pub fn ProviderError::is_retriable(Self) -> Bool
+
+pub(all) enum Schedule {
+  Cron(String)
+  Interval(Int64)
+  Once(Int64)
+}
+
+pub(all) struct ScheduledTask {
+  id : String
+  schedule : Schedule
+  envelope_template : @types.InboundEnvelope
+  enabled : Bool
+}
+
+pub(all) struct SkillDefinition {
+  name : String
+  description : String
+  instructions : String
+}
+
+pub(all) enum ToolError {
+  NotFound(String)
+  InvalidArguments(String)
+  ExecutionFailed(String)
+  PermissionDenied(String)
+  Timeout
+}
+
+pub(all) enum WsMessage {
+  Text(String)
+  Binary(Bytes)
+  Close(code~ : Int, reason~ : String)
+  Ping(Bytes)
+  Pong(Bytes)
+}
+
+// Type aliases
+
+// Traits
+pub(open) trait ChannelAdapter {
+  name(Self) -> String
+  connect(Self) -> Unit raise
+  disconnect(Self) -> Unit raise
+  is_connected(Self) -> Bool
+  send(Self, @types.OutboundMessage) -> Unit raise
+  receive(Self) -> @types.InboundEnvelope raise
+}
+
+pub(open) trait ChannelManager {
+  register(Self, &ChannelAdapter) -> Unit
+  get_channel(Self, String) -> &ChannelAdapter?
+  list_channels(Self) -> Array[String]
+  connect_all(Self) -> Unit raise
+  disconnect_all(Self) -> Unit raise
+}
+
+pub(open) trait Clock {
+  now_ms(Self) -> Int64
+  now_seconds(Self) -> Int64
+}
+
+pub(open) trait ContextBuilder {
+  build(Self, ContextInput) -> Array[@types.ModelMessage]
+}
+
+pub(open) trait Crypto {
+  sha256(Self, data~ : Bytes) -> Bytes
+  hmac_sha256(Self, key~ : Bytes, data~ : Bytes) -> Bytes
+  base64_encode(Self, data~ : Bytes) -> String
+  base64_decode(Self, data~ : String) -> Bytes raise
+}
+
+pub(open) trait Environment {
+  get_env(Self, name~ : String) -> String?
+  set_env(Self, name~ : String, value~ : String) -> Unit raise
+  unset_env(Self, name~ : String) -> Unit raise
+  get_all_env(Self) -> Map[String, String]
+}
+
+pub(open) trait FileStore {
+  read_file(Self, path~ : String) -> Bytes raise
+  write_file(Self, path~ : String, data~ : Bytes) -> Unit raise
+  exists(Self, path~ : String) -> Bool raise
+  remove_file(Self, path~ : String) -> Unit raise
+  create_dir(Self, path~ : String) -> Unit raise
+  list_dir(Self, path~ : String) -> Array[String] raise
+}
+
+pub(open) trait HttpClient {
+  request(Self, HttpRequest) -> HttpResponse raise
+  get(Self, url~ : String, headers~ : Map[String, String]) -> HttpResponse raise
+  post(Self, url~ : String, body~ : Bytes, headers~ : Map[String, String]) -> HttpResponse raise
+}
+
+pub(open) trait HttpServer {
+  start(Self, port~ : Int) -> Unit raise
+  stop(Self) -> Unit raise
+  route(Self, http_method~ : HttpMethod, path~ : String, handler~ : (HttpRequest) -> HttpResponse) -> Unit
+}
+
+pub(open) trait InboundReceiver {
+  receive(Self) -> @types.InboundEnvelope raise
+  receive_timeout(Self, timeout_ms~ : Int64) -> @types.InboundEnvelope? raise
+}
+
+pub(open) trait JsonStore {
+  get_json(Self, key~ : String) -> Json? raise
+  set_json(Self, key~ : String, value~ : Json) -> Unit raise
+  get_many(Self, keys~ : Array[String]) -> Array[(String, Json)] raise
+  set_many(Self, entries~ : Array[(String, Json)]) -> Unit raise
+}
+
+pub(open) trait KVStore {
+  get(Self, key~ : String) -> String? raise
+  set(Self, key~ : String, value~ : String) -> Unit raise
+  remove(Self, key~ : String) -> Unit raise
+  has(Self, key~ : String) -> Bool raise
+  keys(Self) -> Array[String] raise
+  clear(Self) -> Unit raise
+}
+
+pub(open) trait Logger {
+  debug(Self, message~ : String) -> Unit
+  info(Self, message~ : String) -> Unit
+  warn(Self, message~ : String) -> Unit
+  error(Self, message~ : String) -> Unit
+}
+
+pub(open) trait MemoryStore {
+  store(Self, key~ : String, value~ : String) -> Unit raise
+  retrieve(Self, key~ : String) -> String? raise
+  search(Self, query~ : String, limit~ : Int) -> Array[String] raise
+  remove(Self, key~ : String) -> Unit raise
+}
+
+pub(open) trait ModelOrchestrator {
+  call(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse raise
+}
+
+pub(open) trait ModelProvider {
+  name(Self) -> String
+  is_available(Self) -> Bool
+  invoke(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse raise
+}
+
+pub(open) trait OutboundDispatcher {
+  dispatch(Self, @types.OutboundMessage) -> Unit raise
+}
+
+pub(open) trait ProcessExecutor {
+  exec(Self, command~ : String, args~ : Array[String], options~ : ProcessOptions) -> ProcessResult raise
+  exec_async(Self, command~ : String, args~ : Array[String], options~ : ProcessOptions, on_complete~ : (ProcessResult) -> Unit, on_error~ : (String) -> Unit) -> Unit
+}
+
+pub(open) trait Random {
+  random(Self) -> Double
+  random_int(Self, min~ : Int, max~ : Int) -> Int
+  random_bytes(Self, length~ : Int) -> Bytes
+  uuid_v4(Self) -> String
+}
+
+pub(open) trait Scheduler {
+  register(Self, ScheduledTask) -> Unit raise
+  unregister(Self, task_id~ : String) -> Unit raise
+  get_task(Self, task_id~ : String) -> ScheduledTask? raise
+  list_tasks(Self) -> Array[ScheduledTask] raise
+  next_tick(Self) -> Int64?
+  due_tasks(Self, now~ : Int64) -> Array[ScheduledTask]
+}
+
+pub(open) trait SessionResolver {
+  resolve(Self, @types.InboundEnvelope) -> @types.SessionKey
+}
+
+pub(open) trait SessionStore {
+  get(Self, @types.SessionKey) -> @types.Session? raise
+  save(Self, @types.Session) -> Unit raise
+  delete(Self, @types.SessionKey) -> Unit raise
+  list_keys(Self) -> Array[@types.SessionKey] raise
+}
+
+pub(open) trait Timer {
+  now(Self) -> Int64
+  set_timeout(Self, delay_ms~ : Int64, callback~ : () -> Unit) -> String
+  set_interval(Self, interval_ms~ : Int64, callback~ : () -> Unit) -> String
+  cancel(Self, timer_id~ : String) -> Unit
+}
+
+pub(open) trait ToolExecutor {
+  execute(Self, tool_name~ : String, arguments~ : Json, context~ : @types.ToolContext) -> @types.ToolResult raise
+}
+
+pub(open) trait ToolRegistry {
+  register(Self, @types.ToolDefinition, &ToolExecutor) -> Unit
+  list_definitions(Self) -> Array[@types.ToolDefinition]
+  get_executor(Self, String) -> &ToolExecutor?
+  has_tool(Self, String) -> Bool
+}
+
+pub(open) trait WsClient {
+  connect(Self, url~ : String) -> Unit raise
+  disconnect(Self) -> Unit raise
+  is_connected(Self) -> Bool
+  send(Self, WsMessage) -> Unit raise
+  receive(Self) -> WsMessage raise
+}
+

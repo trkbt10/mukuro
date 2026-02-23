@@ -1,0 +1,14 @@
+{
+  "import": [
+    "trkbt10/mukuro/core/types",
+    "trkbt10/mukuro/interfaces",
+    "trkbt10/mukuro/adapters/js",
+    "moonbitlang/core/json"
+  ],
+  "targets": {
+    "base.mbt": ["js"],
+    "openai.mbt": ["js"],
+    "anthropic.mbt": ["js"],
+    "fallback.mbt": ["js"]
+  }
+}

@@ -1,0 +1,50 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/tool"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn is_error(@types.ToolResult) -> Bool
+
+pub fn is_success(@types.ToolResult) -> Bool
+
+pub fn requires_action(@types.ToolResult) -> Bool
+
+pub fn tool_result_to_message(String, @types.ToolResult) -> @types.ModelMessage
+
+// Errors
+pub(all) suberror ToolExecutionError {
+  ToolNotFound(String)
+  InvalidArguments(String)
+  ExecutionFailed(String)
+  PermissionDenied(String)
+  Timeout
+}
+
+// Types and methods
+pub struct InMemoryToolRegistry {
+  tools : Map[String, ToolEntry]
+}
+pub fn InMemoryToolRegistry::count(Self) -> Int
+pub fn InMemoryToolRegistry::get_definition(Self, String) -> @types.ToolDefinition?
+pub fn InMemoryToolRegistry::list_names(Self) -> Array[String]
+pub fn InMemoryToolRegistry::new() -> Self
+pub fn InMemoryToolRegistry::remove(Self, String) -> Bool
+pub impl @interfaces.ToolRegistry for InMemoryToolRegistry
+
+type ToolEntry
+
+pub struct ToolExecutionManager {
+  registry : &@interfaces.ToolRegistry
+}
+pub fn ToolExecutionManager::execute(Self, String, Json, @types.ToolContext) -> @types.ToolResult raise ToolExecutionError
+pub fn ToolExecutionManager::execute_calls(Self, Array[@types.ToolCallRequest], @types.ToolContext) -> Array[(@types.ToolCallRequest, @types.ToolResult)] raise ToolExecutionError
+pub fn ToolExecutionManager::new(&@interfaces.ToolRegistry) -> Self
+
+// Type aliases
+
+// Traits
+

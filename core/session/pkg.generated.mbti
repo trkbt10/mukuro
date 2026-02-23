@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/session"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn estimate_history_tokens(Array[@types.ModelMessage]) -> Int
+
+pub fn estimate_tokens(@types.ModelMessage) -> Int
+
+pub fn filter_non_system_messages(Array[@types.ModelMessage]) -> Array[@types.ModelMessage]
+
+pub fn get_recent_messages(@types.Session, Int) -> Array[@types.ModelMessage]
+
+pub fn parse_session_key(String) -> @types.SessionKey?
+
+pub fn session_key_to_storage_key(@types.SessionKey) -> String
+
+// Errors
+
+// Types and methods
+pub struct ConfigurableSessionResolver {
+  strategy : SessionStrategy
+}
+pub fn ConfigurableSessionResolver::default() -> Self
+pub fn ConfigurableSessionResolver::new(strategy~ : SessionStrategy) -> Self
+pub impl @interfaces.SessionResolver for ConfigurableSessionResolver
+
+pub struct HistoryManager {
+  options : HistoryOptions
+}
+pub fn HistoryManager::add_message(Self, @types.Session, @types.ModelMessage) -> @types.Session
+pub fn HistoryManager::default() -> Self
+pub fn HistoryManager::new(options~ : HistoryOptions) -> Self
+pub fn HistoryManager::truncate_history(Self, @types.Session) -> @types.Session
+
+pub(all) struct HistoryOptions {
+  max_messages : Int
+  max_tokens : Int
+  truncate_old : Bool
+}
+pub fn HistoryOptions::default() -> Self
+
+pub(all) enum SessionStrategy {
+  PerChat
+  PerUser
+  Custom((@types.InboundEnvelope) -> @types.SessionKey)
+}
+
+// Type aliases
+
+// Traits
+

@@ -1,0 +1,19 @@
+.DS_Store
+_build/
+target/
+target
+.mooncakes/
+.moonagent/
+reference
+
+# Sensitive local configuration
+.env
+.env.*
+!.env.example
+
+# Secrets and certificates
+*.pem
+*.key
+*.p12
+*.crt
+*.cer

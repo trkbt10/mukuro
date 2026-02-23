@@ -1,0 +1,75 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/agent"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn run_agent_loop(@types.InboundEnvelope, AgentLoopOptions, AgentDependencies) -> @types.OutboundMessage raise AgentLoopError
+
+pub fn single_model_call(Array[@types.ModelMessage], @types.ModelOptions, &@interfaces.ModelOrchestrator) -> @types.ModelResponse raise AgentLoopError
+
+// Errors
+pub(all) suberror AgentLoopError {
+  MaxIterationsReached(Int)
+  ModelCallFailed(String)
+  ToolExecutionFailed(String)
+  SessionError(String)
+  ConfigurationError(String)
+}
+
+// Types and methods
+pub(all) struct AgentDependencies {
+  session_resolver : &@interfaces.SessionResolver
+  session_store : &@interfaces.SessionStore
+  context_builder : &@interfaces.ContextBuilder
+  model_orchestrator : &@interfaces.ModelOrchestrator
+  tool_registry : &@interfaces.ToolRegistry
+  outbound_dispatcher : &@interfaces.OutboundDispatcher
+}
+
+pub(all) struct AgentLoopContext {
+  mut state : AgentState
+  mut iteration : Int
+  mut messages : Array[@types.ModelMessage]
+  tool_call_history : Array[@types.ToolCallRequest]
+}
+pub fn AgentLoopContext::add_message(Self, @types.ModelMessage) -> Unit
+pub fn AgentLoopContext::increment_iteration(Self) -> Unit
+pub fn AgentLoopContext::is_completed(Self) -> Bool
+pub fn AgentLoopContext::is_error(Self) -> Bool
+pub fn AgentLoopContext::is_max_iterations(Self, Int) -> Bool
+pub fn AgentLoopContext::new() -> Self
+pub fn AgentLoopContext::record_tool_call(Self, @types.ToolCallRequest) -> Unit
+pub fn AgentLoopContext::set_state(Self, AgentState) -> Unit
+
+pub(all) struct AgentLoopOptions {
+  max_iterations : Int
+  model_options : @types.ModelOptions
+  timeout_ms : Int64
+}
+pub fn AgentLoopOptions::default() -> Self
+
+pub(all) enum AgentState {
+  Idle
+  Processing(@types.InboundEnvelope)
+  WaitingForModel
+  ExecutingTool(tool_name~ : String, call_id~ : String)
+  SendingResponse
+  Error(String)
+  Completed
+}
+pub impl Show for AgentState
+
+pub(all) enum IterationResult {
+  Continue(Array[@types.ModelMessage])
+  Complete(@types.OutboundMessage)
+  Failed(String)
+}
+
+// Type aliases
+
+// Traits
+

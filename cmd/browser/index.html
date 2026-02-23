@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mukuro - MoonBit AI Agent Demo</title>
+  <style>
+    :root {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-tertiary: #0f3460;
+      --text-primary: #eee;
+      --text-secondary: #aaa;
+      --accent: #e94560;
+      --success: #4ecca3;
+      --error: #ff6b6b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--bg-secondary);
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--bg-tertiary);
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .config-panel {
+      background: var(--bg-secondary);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .config-panel h2 {
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .config-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .config-row input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--bg-tertiary);
+      border-radius: 4px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+
+    .config-row input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .config-row button {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .config-row button:hover {
+      opacity: 0.8;
+    }
+
+    #init-btn {
+      background: var(--success);
+      color: var(--bg-primary);
+    }
+
+    #clear-btn {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    #chat-log {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      min-height: 300px;
+      max-height: 500px;
+    }
+
+    .message {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .message.user {
+      background: var(--bg-tertiary);
+      margin-left: 2rem;
+    }
+
+    .message.assistant {
+      background: var(--bg-primary);
+      margin-right: 2rem;
+      border-left: 3px solid var(--accent);
+    }
+
+    .message.system {
+      background: transparent;
+      color: var(--text-secondary);
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    .message.error {
+      background: rgba(255, 107, 107, 0.1);
+      border-left: 3px solid var(--error);
+      color: var(--error);
+    }
+
+    .message strong {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem;
+      border-top: 1px solid var(--bg-tertiary);
+    }
+
+    #message-input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--bg-tertiary);
+      border-radius: 4px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 1rem;
+      resize: none;
+    }
+
+    #message-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    #send-btn {
+      padding: 0.75rem 1.5rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    #send-btn:hover {
+      opacity: 0.8;
+    }
+
+    #send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>mukuro</h1>
+    <p>MoonBit AI Agent Framework - Browser Demo</p>
+  </header>
+
+  <div class="container">
+    <div class="config-panel">
+      <h2>Configuration</h2>
+      <div class="config-row">
+        <input type="password" id="api-key" placeholder="Enter your Anthropic API Key">
+        <button id="init-btn">Initialize</button>
+        <button id="clear-btn">Clear Session</button>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div id="chat-log">
+        <div class="message system">
+          Enter your API key and click "Initialize" to start chatting.
+        </div>
+      </div>
+      <div class="input-area">
+        <input type="text" id="message-input" placeholder="Type your message..." disabled>
+        <button id="send-btn" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Powered by <a href="https://moonbitlang.com" target="_blank">MoonBit</a> |
+       <a href="https://github.com/anthropics/anthropic-sdk" target="_blank">Anthropic Claude</a></p>
+  </footer>
+
+  <!-- MoonBit WASM Bundle will be loaded here -->
+  <script type="module">
+    // Wait for mukuro to be loaded
+    async function loadMukuro() {
+      // Import the compiled WASM/JS bundle
+      // Note: Build with `moon build --target js` first
+      // Then serve this directory and the _build folder
+      try {
+        const mod = await import('../../_build/js/release/build/cmd/browser/browser.js');
+        globalThis._moonbit_module = mod;
+        console.log('mukuro module imported', mod);
+      } catch (e) {
+        console.warn('Could not load browser.js, ensure you have built the project:', e);
+      }
+    }
+
+    // Initialize UI handlers
+    function initUI() {
+      const apiKeyInput = document.getElementById('api-key');
+      const initBtn = document.getElementById('init-btn');
+      const clearBtn = document.getElementById('clear-btn');
+      const messageInput = document.getElementById('message-input');
+      const sendBtn = document.getElementById('send-btn');
+      const chatLog = document.getElementById('chat-log');
+
+      let isInitialized = false;
+
+      initBtn.addEventListener('click', () => {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+          alert('Please enter your API key');
+          return;
+        }
+
+        if (window.mukuro && window.mukuro.init) {
+          const success = window.mukuro.init(apiKey, 'You are a helpful AI assistant.');
+          if (success) {
+            isInitialized = true;
+            messageInput.disabled = false;
+            sendBtn.disabled = false;
+            chatLog.innerHTML = '<div class="message system">Agent initialized. Start chatting!</div>';
+          } else {
+            chatLog.innerHTML += '<div class="message error"><strong>Error:</strong> Failed to initialize agent</div>';
+          }
+        } else {
+          chatLog.innerHTML += '<div class="message error"><strong>Error:</strong> mukuro module not loaded. Make sure to build the WASM module first.</div>';
+        }
+      });
+
+      clearBtn.addEventListener('click', () => {
+        if (window.mukuro && window.mukuro.clear) {
+          window.mukuro.clear();
+        }
+      });
+
+      function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message || !isInitialized) return;
+
+        if (window.mukuro && window.mukuro.send) {
+          window.mukuro.send(message);
+        }
+      }
+
+      sendBtn.addEventListener('click', sendMessage);
+
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+    }
+
+    // Load and initialize
+    loadMukuro().then(() => {
+      initUI();
+    });
+  </script>
+</body>
+</html>

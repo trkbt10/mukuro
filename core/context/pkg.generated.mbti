@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/context"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn create_skill(name~ : String, description~ : String, instructions~ : String) -> @interfaces.SkillDefinition
+
+pub fn envelope_to_message(@types.InboundEnvelope) -> @types.ModelMessage
+
+pub fn parse_skill_from_json(Json) -> @interfaces.SkillDefinition?
+
+pub fn parse_skills_from_json(Json) -> Array[@interfaces.SkillDefinition]
+
+// Errors
+
+// Types and methods
+pub(all) struct ContextOptions {
+  include_skills : Bool
+  include_memory : Bool
+  max_context_tokens : Int
+}
+pub fn ContextOptions::default() -> Self
+
+pub struct DefaultContextBuilder {
+  options : ContextOptions
+}
+pub fn DefaultContextBuilder::default() -> Self
+pub fn DefaultContextBuilder::new(options~ : ContextOptions) -> Self
+pub impl @interfaces.ContextBuilder for DefaultContextBuilder
+
+pub struct SkillLoader {
+  skills : Map[String, @interfaces.SkillDefinition]
+}
+pub fn SkillLoader::get(Self, String) -> @interfaces.SkillDefinition?
+pub fn SkillLoader::has(Self, String) -> Bool
+pub fn SkillLoader::list(Self) -> Array[@interfaces.SkillDefinition]
+pub fn SkillLoader::new() -> Self
+pub fn SkillLoader::register(Self, @interfaces.SkillDefinition) -> Unit
+pub fn SkillLoader::remove(Self, String) -> Bool
+
+// Type aliases
+
+// Traits
+

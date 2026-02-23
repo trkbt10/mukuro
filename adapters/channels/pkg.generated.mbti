@@ -1,0 +1,87 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/adapters/channels"
+
+import {
+  "trkbt10/mukuro/core/session",
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+
+// Errors
+pub(all) suberror ChannelError {
+  ConnectionFailed(String)
+  AuthenticationFailed(String)
+  RateLimited(retry_after~ : Int)
+  MessageTooLong(max_length~ : Int)
+  InvalidPayload(String)
+  NetworkError(String)
+  ChannelNotFound(String)
+}
+
+// Types and methods
+pub(all) struct ChannelBaseConfig {
+  name : String
+  enabled : Bool
+  reconnect_interval_ms : Int
+  max_reconnect_attempts : Int
+}
+pub fn ChannelBaseConfig::default(name~ : String) -> Self
+
+pub struct ChannelManagerImpl {
+  channels : Map[String, &@interfaces.ChannelAdapter]
+  router : RouteResolver
+  mut message_handler : MessageHandler?
+  mut event_handler : EventHandler?
+}
+pub fn ChannelManagerImpl::broadcast(Self, @types.OutboundMessage) -> Unit
+pub fn ChannelManagerImpl::new(router~ : RouteResolver) -> Self
+pub fn ChannelManagerImpl::set_event_handler(Self, EventHandler) -> Unit
+pub fn ChannelManagerImpl::set_message_handler(Self, MessageHandler) -> Unit
+pub impl @interfaces.ChannelManager for ChannelManagerImpl
+
+pub(all) enum ChannelStatus {
+  Connected
+  Connecting
+  Disconnected
+  Reconnecting
+  Error(String)
+}
+
+pub(all) struct EventHandler {
+  handler : (@interfaces.ChannelEvent) -> Unit
+}
+
+pub(all) struct MessageHandler {
+  handler : (@types.InboundEnvelope) -> Unit
+}
+
+pub struct RouteResolver {
+  rules : Array[RoutingRule]
+  default_strategy : @session.SessionStrategy
+}
+pub fn RouteResolver::add_rule(Self, RoutingRule) -> Unit
+pub fn RouteResolver::new(default_strategy~ : @session.SessionStrategy) -> Self
+pub fn RouteResolver::resolve(Self, @types.InboundEnvelope) -> @session.SessionStrategy
+
+pub(all) struct RoutingRule {
+  name : String
+  channel_pattern : String
+  chat_pattern : String?
+  session_strategy : @session.SessionStrategy
+}
+pub fn RoutingRule::new(name~ : String, channel_pattern~ : String, chat_pattern~ : String?, session_strategy~ : @session.SessionStrategy) -> Self
+
+pub(all) struct SendResult {
+  success : Bool
+  message_id : String?
+  error : String?
+}
+pub fn SendResult::failure(error~ : String) -> Self
+pub fn SendResult::success(message_id~ : String) -> Self
+
+// Type aliases
+
+// Traits
+
