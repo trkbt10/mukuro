@@ -29,6 +29,7 @@ pub(all) suberror DaemonError {
 pub struct AgentHandler((@types.InboundEnvelope) -> @types.OutboundMessage raise)
 #deprecated
 pub fn AgentHandler::inner(Self) -> (@types.InboundEnvelope) -> @types.OutboundMessage raise
+pub fn AgentHandler::new(handler~ : (@types.InboundEnvelope) -> @types.OutboundMessage raise) -> Self
 
 pub struct DaemonManager {
   pid_manager : PidManager
@@ -64,9 +65,10 @@ pub struct Gateway {
 pub fn Gateway::add_listener(Self, &@interfaces.GatewayEventListener) -> Unit
 pub fn Gateway::minimal(version~ : String) -> Self
 pub fn Gateway::new(deps~ : GatewayDependencies, version~ : String) -> Self
+pub fn Gateway::with_components(channel_manager~ : &@interfaces.ChannelManager?, session_resolver~ : &@interfaces.SessionResolver?, session_store~ : &@interfaces.SessionStore?, health_aggregator~ : &@interfaces.HealthAggregator?, outbound_dispatcher~ : &@interfaces.OutboundDispatcher?, time_provider~ : TimeProvider?, agent_handler~ : AgentHandler?, version~ : String) -> Self
 pub impl @interfaces.GatewayService for Gateway
 
-pub(all) struct GatewayDependencies {
+pub struct GatewayDependencies {
   channel_manager : &@interfaces.ChannelManager?
   session_resolver : &@interfaces.SessionResolver?
   session_store : &@interfaces.SessionStore?
@@ -103,6 +105,7 @@ pub impl @interfaces.Authenticator for SimpleTokenAuthenticator
 pub struct TimeProvider(() -> Int64)
 #deprecated
 pub fn TimeProvider::inner(Self) -> () -> Int64
+pub fn TimeProvider::new(provider~ : () -> Int64) -> Self
 
 // Type aliases
 

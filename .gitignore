@@ -4,6 +4,7 @@ target/
 target
 .mooncakes/
 .moonagent/
+.mukuro/
 reference
 
 # Sensitive local configuration

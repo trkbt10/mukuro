@@ -395,3 +395,14 @@ test "request_daemon_stop returns auth error when ipc unauthorized" {
     },
   )
 }
+
+///|
+test "dispatch_inbound runs integrated agent loop" {
+  let result = dispatch_echo_for_test("hello")
+  assert_true(
+    match result {
+      CliResult::Ok(msg) => msg.contains("Echo: hello")
+      _ => false
+    },
+  )
+}

@@ -3,10 +3,16 @@ package "trkbt10/mukuro/cmd/main"
 
 import {
   "trkbt10/mukuro/core/control",
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
 }
 
 // Values
 pub fn clear_daemon_ipc_response_hook_for_test() -> Unit
+
+pub fn create_global_gateway(String) -> @control.Gateway
+
+pub fn dispatch_echo_for_test(String) -> CliResult
 
 pub fn execute_command(Command) -> CliResult
 
@@ -18,11 +24,15 @@ pub fn execute_gateway_command(GatewayCommand) -> CliResult
 
 pub fn execute_onboard(OnboardOptions) -> CliResult
 
+pub fn execute_onboard_impl(String, String, String, String, String) -> CliResult
+
 pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus
 
 pub fn get_help_message() -> String
 
 pub fn get_version_message() -> String
+
+pub fn load_gateway_config_impl(String) -> @interfaces.GatewayConfig raise @interfaces.ControlError
 
 pub fn parse_args(Array[String]) -> Command
 
@@ -32,7 +42,13 @@ pub fn request_daemon_stop(Int) -> CliResult
 
 pub fn run_cli(Array[String]) -> CliResult
 
+pub fn sent_message_at(Int) -> @types.OutboundMessage?
+
+pub fn sent_messages_count() -> Int
+
 pub fn set_daemon_ipc_response_hook_for_test((String) -> String?) -> Unit
+
+pub fn set_forced_response_for_test(String?) -> Unit
 
 pub fn stop_daemon(pid_path~ : String) -> CliResult
 
@@ -81,7 +97,13 @@ pub(all) struct GatewayStatusOptions {
   mut json : Bool
 }
 
+type InMemorySessionStore
+pub impl @interfaces.SessionStore for InMemorySessionStore
+
 type IpcResponseHookCell
+
+type LocalOutboundDispatcher
+pub impl @interfaces.OutboundDispatcher for LocalOutboundDispatcher
 
 pub(all) struct OnboardOptions {
   mut provider : String?
@@ -89,6 +111,14 @@ pub(all) struct OnboardOptions {
   mut default_model : String?
   mut output_path : String?
 }
+
+pub struct RuntimeModelOrchestrator {
+  _placeholder : Unit
+}
+pub fn RuntimeModelOrchestrator::default() -> Self
+pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator
+
+type TestToggle
 
 // Type aliases
 

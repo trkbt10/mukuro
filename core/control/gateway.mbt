@@ -7,11 +7,25 @@
 pub struct TimeProvider(() -> Int64)
 
 ///|
+/// TimeProviderを生成
+pub fn TimeProvider::new(provider~ : () -> Int64) -> TimeProvider {
+  TimeProvider(provider)
+}
+
+///|
 /// エージェント処理関数型
 /// InboundEnvelope を受け取り、OutboundMessage を返す（または失敗）
 pub struct AgentHandler(
   (@types.InboundEnvelope) -> @types.OutboundMessage raise
 )
+
+///|
+/// AgentHandlerを生成
+pub fn AgentHandler::new(
+  handler~ : (@types.InboundEnvelope) -> @types.OutboundMessage raise,
+) -> AgentHandler {
+  AgentHandler(handler)
+}
 
 ///|
 /// Gateway実装
@@ -44,7 +58,7 @@ pub struct Gateway {
 
 ///|
 /// Gateway依存関係
-pub(all) struct GatewayDependencies {
+pub struct GatewayDependencies {
   channel_manager : &@interfaces.ChannelManager?
   session_resolver : &@interfaces.SessionResolver?
   session_store : &@interfaces.SessionStore?
@@ -71,6 +85,32 @@ pub fn Gateway::new(deps~ : GatewayDependencies, version~ : String) -> Gateway {
     time_provider: deps.time_provider,
     agent_handler: deps.agent_handler,
   }
+}
+
+///|
+/// 外部パッケージ向けの依存注入コンストラクタ
+pub fn Gateway::with_components(
+  channel_manager~ : &@interfaces.ChannelManager?,
+  session_resolver~ : &@interfaces.SessionResolver?,
+  session_store~ : &@interfaces.SessionStore?,
+  health_aggregator~ : &@interfaces.HealthAggregator?,
+  outbound_dispatcher~ : &@interfaces.OutboundDispatcher?,
+  time_provider~ : TimeProvider?,
+  agent_handler~ : AgentHandler?,
+  version~ : String,
+) -> Gateway {
+  Gateway::new(
+    deps={
+      channel_manager,
+      session_resolver,
+      session_store,
+      health_aggregator,
+      outbound_dispatcher,
+      time_provider,
+      agent_handler,
+    },
+    version~,
+  )
 }
 
 ///|

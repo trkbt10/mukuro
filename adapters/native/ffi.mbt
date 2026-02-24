@@ -216,6 +216,22 @@ pub let sigint : Int = 2
 pub extern "C" fn c_write_pid_file(path : CString, pid : Int) -> Int = "moonbit_write_pid_file"
 
 ///|
+/// テキストファイルを書き込む（親ディレクトリも作成）
+/// returns: 0 on success, -1 on error
+#borrow(path, content)
+pub extern "C" fn c_write_text_file(path : CString, content : CString) -> Int = "moonbit_write_text_file"
+
+///|
+/// テキストファイルを読み込む
+/// returns: bytes read on success, -1 on error
+#borrow(path, buffer)
+pub extern "C" fn c_read_text_file(
+  path : CString,
+  buffer : Bytes,
+  buffer_len : Int,
+) -> Int = "moonbit_read_text_file"
+
+///|
 /// PIDファイルを読み取る
 /// returns: PID on success, -1 on error
 #borrow(path)

@@ -8,7 +8,7 @@ pub let version : String = "0.1.0"
 
 ///|
 /// グローバルGatewayインスタンス（シングルプロセス用）
-let global_gateway : @control.Gateway = @control.Gateway::minimal(version~)
+let global_gateway : @control.Gateway = create_global_gateway(version)
 
 ///|
 /// CLIコマンド
@@ -100,7 +100,7 @@ pub(all) enum CliResult {
 ///|
 /// ヘルプメッセージを取得
 pub fn get_help_message() -> String {
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: ~/.mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway stop\n  mukuro cron list"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: .mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway stop\n  mukuro cron list"
 }
 
 ///|
@@ -125,6 +125,62 @@ pub fn execute_command(cmd : Command) -> CliResult {
 }
 
 ///|
+/// 統合経路テスト用: dispatch_inbound -> agent loop -> outbound を実行
+pub fn dispatch_echo_for_test(content : String) -> CliResult {
+  set_forced_response_for_test(Some("Echo: \{content}"))
+  let start_result : Result[Unit, @interfaces.ControlError] = Ok(
+    global_gateway.start(config=@interfaces.GatewayConfig::default()),
+  ) catch {
+    e => Err(e)
+  }
+  match start_result {
+    Ok(_) => ()
+    Err(@interfaces.ControlError::AlreadyRunning) => ()
+    Err(_) => {
+      set_forced_response_for_test(None)
+      return CliResult::Error("Failed to start gateway for test")
+    }
+  }
+
+  let before = sent_messages_count()
+  let envelope : @types.InboundEnvelope = {
+    channel: "test",
+    chat_id: "chat-1",
+    sender_id: "user-1",
+    sender_name: "User",
+    content,
+    message_type: @types.MessageType::Text,
+    metadata: {},
+    timestamp: 1000L,
+  }
+  let auth = @interfaces.AuthContext::token_only("test-token")
+  let dispatch_result : Result[Unit, @interfaces.ControlError] = Ok(
+    global_gateway.dispatch_inbound(auth~, envelope~),
+  ) catch {
+    e => Err(e)
+  }
+  match dispatch_result {
+    Ok(_) => ()
+    Err(_) => {
+      set_forced_response_for_test(None)
+      return CliResult::Error("dispatch_inbound failed")
+    }
+  }
+
+  let after = sent_messages_count()
+  if after <= before {
+    set_forced_response_for_test(None)
+    return CliResult::Error("No outbound message dispatched")
+  }
+  let result = match sent_message_at(after - 1) {
+    Some(msg) => CliResult::Ok(msg.content)
+    None => CliResult::Error("Dispatched message not found")
+  }
+  set_forced_response_for_test(None)
+  result
+}
+
+///|
 /// オンボーディングを実行
 pub fn execute_onboard(opts : OnboardOptions) -> CliResult {
   // プロバイダの確認
@@ -140,13 +196,11 @@ pub fn execute_onboard(opts : OnboardOptions) -> CliResult {
   // デフォルトモデルはオプション
   let default_model = opts.default_model.unwrap_or("")
   // 出力パスのデフォルト
-  let output_path = opts.output_path.unwrap_or("~/.mukuro/config.json")
+  let output_path = opts.output_path.unwrap_or(".mukuro/config.json")
   // 設定JSONを構築（実際の値を補間）
   let config_json = "{\n  \"provider\": \"\{provider}\",\n  \"api_key\": \"\{api_key}\",\n  \"default_model\": \"\{default_model}\"\n}"
-  // NOTE: 実際のファイル書き込みはプラットフォーム固有のFFIが必要
-  // ここでは設定内容を返すのみ
-  CliResult::Ok(
-    "Configuration prepared:\n  Provider: \{provider}\n  Model: \{default_model}\n  Output: \{output_path}\n\nConfig JSON:\n\{config_json}",
+  execute_onboard_impl(
+    provider, api_key, default_model, output_path, config_json,
   )
 }
 
@@ -166,18 +220,26 @@ pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
 /// Gatewayを起動
 fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   // 設定パスの解決
-  let config_path = opts.config_path.unwrap_or("~/.mukuro/config.json")
-  // ホストとポートのデフォルト
-  let host = opts.host.unwrap_or("127.0.0.1")
-  let port = opts.port.unwrap_or(8080)
-  // Gateway設定を構築
-  let gateway_config : @interfaces.GatewayConfig = {
-    host,
-    port,
-    auth_token: "",
-    health_endpoint: @interfaces.HealthEndpointConfig::default(),
-    auto_connect_channels: true,
+  let config_path = opts.config_path.unwrap_or(".mukuro/config.json")
+  // 設定ファイルが指定されている場合のみ読み込み（未指定時はデフォルト）
+  let base_config = match opts.config_path {
+    Some(path) =>
+      load_gateway_config_impl(path) catch {
+        @interfaces.ControlError::ConfigError(msg) =>
+          return CliResult::Error(
+            "Failed to start gateway: config error - \{msg}",
+          )
+        _ =>
+          return CliResult::Error(
+            "Failed to start gateway: config error - unknown",
+          )
+      }
+    None => @interfaces.GatewayConfig::default()
   }
+  // CLI引数（--host/--port）があれば設定を上書き
+  let host = opts.host.unwrap_or(base_config.host)
+  let port = opts.port.unwrap_or(base_config.port)
+  let gateway_config : @interfaces.GatewayConfig = { ..base_config, host, port }
 
   // デーモンモードの場合
   if opts.daemon {

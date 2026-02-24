@@ -1,9 +1,16 @@
 import {
   "moonbitlang/core/env",
+  "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/json",
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/agent" @agent,
+  "trkbt10/mukuro/core/context" @context,
   "trkbt10/mukuro/core/control",
+  "trkbt10/mukuro/core/session" @session,
   "trkbt10/mukuro/core/scheduler",
+  "trkbt10/mukuro/core/tool" @tool,
+  "trkbt10/mukuro/core/types" @types,
+  "trkbt10/mukuro/adapters/channels" @channels,
   "trkbt10/mukuro/adapters/native" @native,
 }
 
@@ -13,5 +20,12 @@ options(
     "daemon.mbt": [ "native" ],
     "daemon_e2e_native_test.mbt": [ "native" ],
     "daemon_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "gateway_config_native.mbt": [ "native" ],
+    "gateway_config_native_test.mbt": [ "native" ],
+    "gateway_config_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "onboard_native.mbt": [ "native" ],
+    "onboard_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "runtime_model_native.mbt": [ "native" ],
+    "runtime_model_stub.mbt": [ "js", "wasm", "wasm-gc" ],
   },
 )

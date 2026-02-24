@@ -64,16 +64,16 @@ test "GatewayConfig::default" {
 
 ///|
 test "Gateway::new and status" {
-  let deps : GatewayDependencies = {
-    channel_manager: None,
-    session_resolver: None,
-    session_store: None,
-    health_aggregator: None,
-    outbound_dispatcher: None,
-    time_provider: None,
-    agent_handler: None,
-  }
-  let gw = Gateway::new(deps~, version="0.1.0")
+  let gw = Gateway::with_components(
+    channel_manager=None,
+    session_resolver=None,
+    session_store=None,
+    health_aggregator=None,
+    outbound_dispatcher=None,
+    time_provider=None,
+    agent_handler=None,
+    version="0.1.0",
+  )
   let status = gw.status()
   assert_false(status.state.is_running())
   assert_eq(status.version, "0.1.0")

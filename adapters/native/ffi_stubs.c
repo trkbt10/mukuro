@@ -260,6 +260,68 @@ int moonbit_write_pid_file(const char* path, int pid) {
 }
 
 /*
+ * 指定パスにテキストを書き込む（親ディレクトリも作成）
+ * path/content: MoonBit UTF-16LE文字列
+ * returns: 0 on success, -1 on error
+ */
+int moonbit_write_text_file(const char* path, const char* content) {
+    char ascii_path[512];
+    if (utf16le_to_ascii(path, ascii_path, sizeof(ascii_path)) != 0) {
+        return -1;
+    }
+
+    char ascii_content[8192];
+    if (utf16le_to_ascii(content, ascii_content, sizeof(ascii_content)) != 0) {
+        return -1;
+    }
+
+    char* path_copy = strdup(ascii_path);
+    if (!path_copy) return -1;
+
+    char* last_slash = strrchr(path_copy, '/');
+    if (last_slash && last_slash != path_copy) {
+        *last_slash = '\0';
+        mkdir(path_copy, 0755);
+    }
+    free(path_copy);
+
+    FILE* f = fopen(ascii_path, "w");
+    if (!f) return -1;
+    if (fputs(ascii_content, f) < 0) {
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+    return 0;
+}
+
+/*
+ * 指定パスからテキストを読み込む
+ * path: MoonBit UTF-16LE文字列
+ * buffer: 出力バッファ（UTF-8/ASCII bytes）
+ * returns: bytes read on success, -1 on error
+ */
+int moonbit_read_text_file(const char* path, unsigned char* buffer, int buffer_len) {
+    if (!buffer || buffer_len <= 0) return -1;
+
+    char ascii_path[512];
+    if (utf16le_to_ascii(path, ascii_path, sizeof(ascii_path)) != 0) {
+        return -1;
+    }
+
+    FILE* f = fopen(ascii_path, "r");
+    if (!f) return -1;
+
+    size_t n = fread(buffer, 1, (size_t)buffer_len, f);
+    if (ferror(f)) {
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+    return (int)n;
+}
+
+/*
  * 指定パスからPIDを読み取る
  * returns: PID on success, -1 on error
  */
