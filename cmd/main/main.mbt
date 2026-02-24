@@ -219,6 +219,10 @@ pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
 ///|
 /// Gatewayを起動
 fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
+  match runtime_model_unavailable_reason_impl() {
+    Some(reason) => return CliResult::Error(reason)
+    None => ()
+  }
   // 設定パスの解決
   let config_path = opts.config_path.unwrap_or(".mukuro/config.json")
   set_runtime_model_config_path_for_process(config_path)
