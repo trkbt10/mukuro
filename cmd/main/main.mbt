@@ -673,10 +673,7 @@ pub fn run_cli(args : Array[String]) -> CliResult {
 }
 
 ///|
-fn main {
-  // NOTE: MoonBitでは直接コマンドライン引数を取得できないため、
-  // 現時点ではヘルプを表示。実際の使用時は run_cli() を呼び出す。
-  // Native/JSターゲットでは別途FFI経由で引数を取得し run_cli() に渡す。
+pub fn run_cli_from_env() -> Unit {
   let args = get_command_line_args()
   if args.is_empty() {
     println(get_help_message())
@@ -684,6 +681,11 @@ fn main {
     let result = run_cli(args)
     print_result(result)
   }
+}
+
+///|
+fn main {
+  run_cli_from_env()
 }
 
 // get_command_line_args() は args.mbt で共通実装:

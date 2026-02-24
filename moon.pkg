@@ -1,1 +1,7 @@
+import {
+  "trkbt10/mukuro/cmd/main" @entry,
+}
 
+options(
+  "is-main": true,
+)

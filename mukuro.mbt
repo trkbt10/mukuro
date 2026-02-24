@@ -1,4 +1,10 @@
 ///|
+/// Root entrypoint for `moon run .`
+fn main {
+  @entry.run_cli_from_env()
+}
+
+///|
 pub fn fib(n : Int) -> Int64 {
   loop (n, 0L, 1L) {
     (0, _, b) => b
