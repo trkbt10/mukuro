@@ -1,0 +1,62 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/health"
+
+import {
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct AlwaysHealthyChecker {
+  checker_name : String
+}
+pub fn AlwaysHealthyChecker::new(name~ : String) -> Self
+pub impl @interfaces.HealthChecker for AlwaysHealthyChecker
+
+type CachedHealthCheck
+
+pub struct CallbackHealthChecker {
+  checker_name : String
+  check_fn : () -> @interfaces.HealthCheck
+}
+pub fn CallbackHealthChecker::new(name~ : String, check_fn~ : () -> @interfaces.HealthCheck) -> Self
+pub impl @interfaces.HealthChecker for CallbackHealthChecker
+
+pub struct HealthAggregatorImpl {
+  checkers : Map[String, &@interfaces.HealthChecker]
+  start_time : Int64
+  version : String
+  clock : &@interfaces.Clock
+  cached_results : Map[String, CachedHealthCheck]
+  cache_ttl_ms : Int64
+}
+pub fn HealthAggregatorImpl::new(version~ : String, clock~ : &@interfaces.Clock, cache_ttl_ms~ : Int64) -> Self
+pub fn HealthAggregatorImpl::with_defaults(clock~ : &@interfaces.Clock) -> Self
+pub impl @interfaces.HealthAggregator for HealthAggregatorImpl
+
+pub struct HttpHealthChecker {
+  checker_name : String
+  url : String
+  timeout_ms : Int64
+  http_client : &@interfaces.HttpClient
+  clock : &@interfaces.Clock
+}
+pub fn HttpHealthChecker::new(name~ : String, url~ : String, timeout_ms~ : Int64, http_client~ : &@interfaces.HttpClient, clock~ : &@interfaces.Clock) -> Self
+pub impl @interfaces.HealthChecker for HttpHealthChecker
+
+pub struct MemoryHealthChecker {
+  checker_name : String
+  warn_threshold_percent : Int
+  error_threshold_percent : Int
+}
+pub fn MemoryHealthChecker::default() -> Self
+pub fn MemoryHealthChecker::new(name~ : String, warn_threshold_percent~ : Int, error_threshold_percent~ : Int) -> Self
+pub impl @interfaces.HealthChecker for MemoryHealthChecker
+
+// Type aliases
+
+// Traits
+

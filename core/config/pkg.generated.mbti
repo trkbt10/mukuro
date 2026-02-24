@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/config"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct ConfigLoaderImpl {
+  env_mapping : @interfaces.EnvMapping
+  priority : @interfaces.ConfigPriority
+}
+pub fn ConfigLoaderImpl::default() -> Self
+pub fn ConfigLoaderImpl::load_from_string(Self, String) -> @types.MukuroConfig raise @interfaces.ConfigError
+pub fn ConfigLoaderImpl::load_from_string_with_env(Self, String, &@interfaces.Environment) -> @types.MukuroConfig raise @interfaces.ConfigError
+pub fn ConfigLoaderImpl::new(env_mapping~ : @interfaces.EnvMapping, priority~ : @interfaces.ConfigPriority) -> Self
+pub impl @interfaces.ConfigLoader for ConfigLoaderImpl
+
+pub struct ConfigValidatorImpl {
+  strict_mode : Bool
+}
+pub fn ConfigValidatorImpl::new() -> Self
+pub fn ConfigValidatorImpl::strict() -> Self
+pub impl @interfaces.ConfigValidator for ConfigValidatorImpl
+
+pub struct FileStoreConfigLoader {
+  file_store : &@interfaces.FileStore
+  env_mapping : @interfaces.EnvMapping
+  priority : @interfaces.ConfigPriority
+}
+pub fn FileStoreConfigLoader::config_exists(Self, String) -> Bool
+pub fn FileStoreConfigLoader::load_from_env_path(Self, &@interfaces.Environment) -> @types.MukuroConfig raise @interfaces.ConfigError
+pub fn FileStoreConfigLoader::load_from_string(Self, String) -> @types.MukuroConfig raise @interfaces.ConfigError
+pub fn FileStoreConfigLoader::load_from_string_with_env(Self, String, &@interfaces.Environment) -> @types.MukuroConfig raise @interfaces.ConfigError
+pub fn FileStoreConfigLoader::new(file_store~ : &@interfaces.FileStore, env_mapping~ : @interfaces.EnvMapping, priority~ : @interfaces.ConfigPriority) -> Self
+pub fn FileStoreConfigLoader::with_defaults(file_store~ : &@interfaces.FileStore) -> Self
+pub impl @interfaces.ConfigLoader for FileStoreConfigLoader
+
+// Type aliases
+
+// Traits
+

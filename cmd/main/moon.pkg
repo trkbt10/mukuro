@@ -1,5 +1,9 @@
 import {
-  "trkbt10/mukuro" @lib,
+  "moonbitlang/core/env",
+  "moonbitlang/core/json",
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/control",
+  "trkbt10/mukuro/core/scheduler",
 }
 
 options(

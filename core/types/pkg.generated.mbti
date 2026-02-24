@@ -36,6 +36,7 @@ pub(all) struct FallbackConfig {
   providers : Array[String]
   cooldown_ms : Int
 }
+pub fn FallbackConfig::new() -> Self
 
 pub(all) struct InboundEnvelope {
   channel : String

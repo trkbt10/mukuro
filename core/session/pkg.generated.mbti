@@ -22,6 +22,45 @@ pub fn session_key_to_storage_key(@types.SessionKey) -> String
 // Errors
 
 // Types and methods
+pub(all) struct ChildSession {
+  parent_id : String
+  child_id : String
+  messages : Array[@types.ModelMessage]
+  mut status : ChildSessionStatus
+  mut result : String?
+  created_at : Int64
+  mut updated_at : Int64
+}
+pub fn ChildSession::add_message(Self, @types.ModelMessage) -> Unit
+pub fn ChildSession::cancel(Self, Int64) -> Unit
+pub fn ChildSession::is_finished(Self) -> Bool
+pub fn ChildSession::new(parent_id~ : String, child_id~ : String, timestamp~ : Int64) -> Self
+pub fn ChildSession::set_failed(Self, String, Int64) -> Unit
+pub fn ChildSession::set_result(Self, String, Int64) -> Unit
+pub fn ChildSession::set_status(Self, ChildSessionStatus, Int64) -> Unit
+
+pub struct ChildSessionManager {
+  sessions : Map[String, ChildSession]
+  mut next_id : Int
+  parent_id : String
+}
+pub fn ChildSessionManager::create_session(Self, Int64) -> ChildSession
+pub fn ChildSessionManager::generate_id(Self) -> String
+pub fn ChildSessionManager::get_session(Self, String) -> ChildSession?
+pub fn ChildSessionManager::list_active_sessions(Self) -> Array[ChildSession]
+pub fn ChildSessionManager::list_sessions(Self) -> Array[ChildSession]
+pub fn ChildSessionManager::new(parent_id~ : String) -> Self
+pub fn ChildSessionManager::remove_session(Self, String) -> Bool
+
+pub(all) enum ChildSessionStatus {
+  Pending
+  Running
+  Completed
+  Failed(String)
+  Cancelled
+}
+pub impl Show for ChildSessionStatus
+
 pub struct ConfigurableSessionResolver {
   strategy : SessionStrategy
 }

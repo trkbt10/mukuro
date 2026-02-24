@@ -10,8 +10,8 @@ import {
 options(
   "is-main": true,
   targets: {
-    "main.mbt": [ "js" ],
     "health.mbt": [ "js" ],
+    "main.mbt": [ "js" ],
     "main_native.mbt": [ "native" ],
     "main_wasm.mbt": [ "wasm", "wasm-gc" ],
   },

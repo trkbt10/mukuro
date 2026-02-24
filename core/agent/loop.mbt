@@ -490,7 +490,9 @@ pub async fn run_agent_loop_async(
           )
           ctx.record_tool_call(call)
           // ツール実行
-          let tool_result = execute_tool_call_async(call, session, envelope, deps)
+          let tool_result = execute_tool_call_async(
+            call, session, envelope, deps,
+          )
           // 結果をメッセージに追加
           ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
         }

@@ -71,12 +71,10 @@ fn NativeLogger::log(
   match self.output {
     LogOutput::Stdout => {
       let _ = c_puts(string_to_cstring(formatted))
-
     }
     LogOutput::Stderr => {
       let stderr = c_get_stderr()
       let _ = c_fputs(string_to_cstring(formatted + "\n"), stderr)
-
     }
     LogOutput::File(path) =>
       match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
@@ -88,7 +86,6 @@ fn NativeLogger::log(
           )
           let _ = c_fwrite(bytes, 1, bytes.length(), file)
           let _ = c_fclose(file)
-
         }
         None => ()
       }
@@ -249,15 +246,18 @@ fn NativeStructuredLogger::output_json(
   buf.write_string("\"message\":\"\{escape_json_string(message)}\"")
   // コンテキスト情報を追加
   match context.request_id {
-    Some(rid) => buf.write_string(",\"request_id\":\"\{escape_json_string(rid)}\"")
+    Some(rid) =>
+      buf.write_string(",\"request_id\":\"\{escape_json_string(rid)}\"")
     None => ()
   }
   match context.agent_id {
-    Some(aid) => buf.write_string(",\"agent_id\":\"\{escape_json_string(aid)}\"")
+    Some(aid) =>
+      buf.write_string(",\"agent_id\":\"\{escape_json_string(aid)}\"")
     None => ()
   }
   match context.component {
-    Some(comp) => buf.write_string(",\"component\":\"\{escape_json_string(comp)}\"")
+    Some(comp) =>
+      buf.write_string(",\"component\":\"\{escape_json_string(comp)}\"")
     None => ()
   }
   // extraフィールドを追加
@@ -268,7 +268,9 @@ fn NativeStructuredLogger::output_json(
       if not(first) {
         buf.write_string(",")
       }
-      buf.write_string("\"\{escape_json_string(key)}\":\"\{escape_json_string(value)}\"")
+      buf.write_string(
+        "\"\{escape_json_string(key)}\":\"\{escape_json_string(value)}\"",
+      )
       first = false
     }
     buf.write_string("}")
@@ -279,12 +281,10 @@ fn NativeStructuredLogger::output_json(
   match self.output {
     LogOutput::Stdout => {
       let _ = c_puts(string_to_cstring(line))
-
     }
     LogOutput::Stderr => {
       let stderr = c_get_stderr()
       let _ = c_fputs(string_to_cstring(line + "\n"), stderr)
-
     }
     LogOutput::File(path) =>
       match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
@@ -295,7 +295,6 @@ fn NativeStructuredLogger::output_json(
           )
           let _ = c_fwrite(bytes, 1, bytes.length(), file)
           let _ = c_fclose(file)
-
         }
         None => ()
       }
@@ -331,12 +330,10 @@ fn NativeStructuredLogger::output_plain(
   match self.output {
     LogOutput::Stdout => {
       let _ = c_puts(string_to_cstring(formatted))
-
     }
     LogOutput::Stderr => {
       let stderr = c_get_stderr()
       let _ = c_fputs(string_to_cstring(formatted + "\n"), stderr)
-
     }
     LogOutput::File(path) =>
       match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
@@ -347,7 +344,6 @@ fn NativeStructuredLogger::output_plain(
           )
           let _ = c_fwrite(bytes, 1, bytes.length(), file)
           let _ = c_fclose(file)
-
         }
         None => ()
       }
@@ -431,7 +427,10 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_compo
 
 ///|
 /// Logger trait実装（StructuredLoggerをシンプルLoggerとして使用）
-pub impl @interfaces.Logger for NativeStructuredLogger with debug(self, message~) {
+pub impl @interfaces.Logger for NativeStructuredLogger with debug(
+  self,
+  message~,
+) {
   self.log_structured(
     level=@interfaces.LogLevel::Debug,
     message~,
@@ -458,7 +457,10 @@ pub impl @interfaces.Logger for NativeStructuredLogger with warn(self, message~)
 }
 
 ///|
-pub impl @interfaces.Logger for NativeStructuredLogger with error(self, message~) {
+pub impl @interfaces.Logger for NativeStructuredLogger with error(
+  self,
+  message~,
+) {
   self.log_structured(
     level=@interfaces.LogLevel::Error,
     message~,

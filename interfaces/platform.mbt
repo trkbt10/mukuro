@@ -58,13 +58,23 @@ pub fn LogContext::empty() -> LogContext {
 ///|
 /// リクエストID付きのLogContext
 pub fn LogContext::with_request_id(request_id~ : String) -> LogContext {
-  { request_id: Some(request_id), agent_id: None, component: None, extra: Map::new() }
+  {
+    request_id: Some(request_id),
+    agent_id: None,
+    component: None,
+    extra: Map::new(),
+  }
 }
 
 ///|
 /// コンポーネント名付きのLogContext
 pub fn LogContext::with_component(component~ : String) -> LogContext {
-  { request_id: None, agent_id: None, component: Some(component), extra: Map::new() }
+  {
+    request_id: None,
+    agent_id: None,
+    component: Some(component),
+    extra: Map::new(),
+  }
 }
 
 ///|

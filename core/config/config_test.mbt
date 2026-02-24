@@ -173,16 +173,23 @@ struct MockFileStore {
   files : Map[String, Bytes]
 }
 
+///|
 fn MockFileStore::new() -> MockFileStore {
   { files: Map::new() }
 }
 
-fn MockFileStore::add_file(self : MockFileStore, path : String, content : String) -> Unit {
+///|
+fn MockFileStore::add_file(
+  self : MockFileStore,
+  path : String,
+  content : String,
+) -> Unit {
   // UTF-8でエンコード
   let bytes = @utf8.encode(content.view())
   self.files[path] = bytes
 }
 
+///|
 pub impl @interfaces.FileStore for MockFileStore with read_file(self, path~) {
   match self.files.get(path) {
     Some(data) => data
@@ -190,22 +197,31 @@ pub impl @interfaces.FileStore for MockFileStore with read_file(self, path~) {
   }
 }
 
-pub impl @interfaces.FileStore for MockFileStore with write_file(self, path~, data~) {
+///|
+pub impl @interfaces.FileStore for MockFileStore with write_file(
+  self,
+  path~,
+  data~,
+) {
   self.files[path] = data
 }
 
+///|
 pub impl @interfaces.FileStore for MockFileStore with exists(self, path~) {
   self.files.contains(path)
 }
 
+///|
 pub impl @interfaces.FileStore for MockFileStore with remove_file(self, path~) {
   self.files.remove(path)
 }
 
+///|
 pub impl @interfaces.FileStore for MockFileStore with create_dir(self, path~) {
   ignore(path)
 }
 
+///|
 pub impl @interfaces.FileStore for MockFileStore with list_dir(self, path~) {
   ignore(path)
   []

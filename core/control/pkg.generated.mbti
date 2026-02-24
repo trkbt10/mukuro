@@ -1,0 +1,67 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/control"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct AgentHandler((@types.InboundEnvelope) -> @types.OutboundMessage raise)
+#deprecated
+pub fn AgentHandler::inner(Self) -> (@types.InboundEnvelope) -> @types.OutboundMessage raise
+
+pub struct Gateway {
+  mut state : @interfaces.GatewayState
+  mut started_at : Int64?
+  mut config : @interfaces.GatewayConfig?
+  channel_manager : &@interfaces.ChannelManager?
+  session_resolver : &@interfaces.SessionResolver?
+  session_store : &@interfaces.SessionStore?
+  health_aggregator : &@interfaces.HealthAggregator?
+  outbound_dispatcher : &@interfaces.OutboundDispatcher?
+  listeners : Array[&@interfaces.GatewayEventListener]
+  version : String
+  time_provider : TimeProvider?
+  agent_handler : AgentHandler?
+}
+pub fn Gateway::add_listener(Self, &@interfaces.GatewayEventListener) -> Unit
+pub fn Gateway::minimal(version~ : String) -> Self
+pub fn Gateway::new(deps~ : GatewayDependencies, version~ : String) -> Self
+pub impl @interfaces.GatewayService for Gateway
+
+pub(all) struct GatewayDependencies {
+  channel_manager : &@interfaces.ChannelManager?
+  session_resolver : &@interfaces.SessionResolver?
+  session_store : &@interfaces.SessionStore?
+  health_aggregator : &@interfaces.HealthAggregator?
+  outbound_dispatcher : &@interfaces.OutboundDispatcher?
+  time_provider : TimeProvider?
+  agent_handler : AgentHandler?
+}
+
+pub struct NoAuthAuthenticator {
+  _placeholder : Unit
+}
+pub fn NoAuthAuthenticator::new() -> Self
+pub impl @interfaces.Authenticator for NoAuthAuthenticator
+
+pub struct SimpleTokenAuthenticator {
+  valid_token : String
+  revoked_tokens : Array[String]
+}
+pub fn SimpleTokenAuthenticator::new(token~ : String) -> Self
+pub impl @interfaces.Authenticator for SimpleTokenAuthenticator
+
+pub struct TimeProvider(() -> Int64)
+#deprecated
+pub fn TimeProvider::inner(Self) -> () -> Int64
+
+// Type aliases
+
+// Traits
+

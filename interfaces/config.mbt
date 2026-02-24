@@ -21,11 +21,7 @@ pub(open) trait ConfigLoader {
   /// 設定ファイルから読み込み
   load(Self, path~ : String) -> @types.MukuroConfig raise ConfigError
   /// 設定ファイルと環境変数をマージして読み込み
-  load_with_env(
-    Self,
-    path~ : String,
-    env~ : &Environment,
-  ) -> @types.MukuroConfig raise ConfigError
+  load_with_env(Self, path~ : String, env~ : &Environment) -> @types.MukuroConfig raise ConfigError
   /// 環境変数のみから読み込み
   load_from_env(Self, env~ : &Environment) -> @types.MukuroConfig raise ConfigError
   /// デフォルト設定を取得

@@ -44,7 +44,7 @@ fn parse_config_json(
   }
   // agent設定をパース
   let agent : @types.AgentConfig = match obj.get("agent") {
-    Some(Object(a)) => parse_agent_config!(a)
+    Some(Object(a)) => parse_agent_config(a)
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("agent must be an object")
     None => @types.AgentConfig::default()
@@ -55,7 +55,7 @@ fn parse_config_json(
       let result : Array[@types.ProviderConfig] = []
       for item in arr {
         match item {
-          Object(o) => result.push(parse_provider_config!(o))
+          Object(o) => result.push(parse_provider_config(o))
           _ =>
             raise @interfaces.ConfigError::ParseError(
               "provider must be an object",
@@ -70,7 +70,7 @@ fn parse_config_json(
   }
   // fallback設定をパース
   let fallback : @types.FallbackConfig = match obj.get("fallback") {
-    Some(Object(f)) => parse_fallback_config!(f)
+    Some(Object(f)) => parse_fallback_config(f)
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("fallback must be an object")
     None => @types.FallbackConfig::new()
@@ -81,7 +81,7 @@ fn parse_config_json(
       let result : Array[@types.ChannelConfig] = []
       for item in arr {
         match item {
-          Object(o) => result.push(parse_channel_config!(o))
+          Object(o) => result.push(parse_channel_config(o))
           _ =>
             raise @interfaces.ConfigError::ParseError(
               "channel must be an object",
@@ -124,7 +124,7 @@ fn parse_agent_config(
   }
   // model_optionsをパース
   let model_options = match obj.get("model_options") {
-    Some(Object(o)) => parse_model_options!(o)
+    Some(Object(o)) => parse_model_options(o)
     Some(_) =>
       raise @interfaces.ConfigError::ParseError(
         "model_options must be an object",
@@ -408,9 +408,7 @@ pub impl @interfaces.ConfigLoader for ConfigLoaderImpl with load_from_env(
 }
 
 ///|
-pub impl @interfaces.ConfigLoader for ConfigLoaderImpl with default_config(
-  self,
-) {
+pub impl @interfaces.ConfigLoader for ConfigLoaderImpl with default_config(self) {
   ignore(self)
   let agent = @types.AgentConfig::default()
   let providers : Array[@types.ProviderConfig] = [
@@ -548,11 +546,12 @@ pub fn FileStoreConfigLoader::with_defaults(
 
 ///|
 /// バイト列を文字列に変換（UTF-8デコード）
-fn bytes_to_string(
-  data : Bytes,
-) -> String raise @interfaces.ConfigError {
+fn bytes_to_string(data : Bytes) -> String raise @interfaces.ConfigError {
   @utf8.decode(data[:]) catch {
-    _ => raise @interfaces.ConfigError::ParseError("UTF-8 decode error: invalid byte sequence")
+    _ =>
+      raise @interfaces.ConfigError::ParseError(
+        "UTF-8 decode error: invalid byte sequence",
+      )
   }
 }
 
@@ -567,7 +566,9 @@ pub impl @interfaces.ConfigLoader for FileStoreConfigLoader with load(
     e => raise @interfaces.ConfigError::FileNotFound(e.to_string())
   }
   if not(exists) {
-    raise @interfaces.ConfigError::FileNotFound("Config file not found: \{path}")
+    raise @interfaces.ConfigError::FileNotFound(
+      "Config file not found: \{path}",
+    )
   }
   // ファイル読み込み
   let data = self.file_store.read_file(path~) catch {
@@ -645,7 +646,9 @@ pub fn FileStoreConfigLoader::config_exists(
   self : FileStoreConfigLoader,
   path : String,
 ) -> Bool {
-  self.file_store.exists(path~) catch { _ => false }
+  self.file_store.exists(path~) catch {
+    _ => false
+  }
 }
 
 ///|

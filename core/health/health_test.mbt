@@ -7,14 +7,17 @@ struct MockClock {
   current_time : Int64
 }
 
+///|
 fn MockClock::new(time : Int64) -> MockClock {
   { current_time: time }
 }
 
+///|
 pub impl @interfaces.Clock for MockClock with now_ms(self) {
   self.current_time
 }
 
+///|
 pub impl @interfaces.Clock for MockClock with now_seconds(self) {
   self.current_time / 1000L
 }
@@ -125,7 +128,7 @@ test "AlwaysHealthyChecker returns healthy status" {
 ///|
 test "HealthAggregatorImpl registers and lists checkers" {
   let clock = MockClock::new(1000L)
-  let aggregator = HealthAggregatorImpl::with_defaults(clock=clock)
+  let aggregator = HealthAggregatorImpl::with_defaults(clock~)
   let checker1 = AlwaysHealthyChecker::new(name="check1")
   let checker2 = AlwaysHealthyChecker::new(name="check2")
   aggregator.register(checker=checker1)
@@ -137,9 +140,9 @@ test "HealthAggregatorImpl registers and lists checkers" {
 ///|
 test "HealthAggregatorImpl::check_all returns system health" {
   let clock = MockClock::new(1000L)
-  let aggregator = HealthAggregatorImpl::with_defaults(clock=clock)
+  let aggregator = HealthAggregatorImpl::with_defaults(clock~)
   let checker = AlwaysHealthyChecker::new(name="test")
-  aggregator.register(checker=checker)
+  aggregator.register(checker~)
   let health = aggregator.check_all()
   inspect(health.checks.length(), content="1")
   inspect(health.overall.is_healthy(), content="true")
@@ -149,9 +152,9 @@ test "HealthAggregatorImpl::check_all returns system health" {
 ///|
 test "HealthAggregatorImpl::unregister removes checker" {
   let clock = MockClock::new(1000L)
-  let aggregator = HealthAggregatorImpl::with_defaults(clock=clock)
+  let aggregator = HealthAggregatorImpl::with_defaults(clock~)
   let checker = AlwaysHealthyChecker::new(name="removable")
-  aggregator.register(checker=checker)
+  aggregator.register(checker~)
   inspect(aggregator.list_checkers().length(), content="1")
   aggregator.unregister(name="removable")
   inspect(aggregator.list_checkers().length(), content="0")
@@ -160,46 +163,43 @@ test "HealthAggregatorImpl::unregister removes checker" {
 ///|
 test "HealthAggregatorImpl::get_check returns check for registered checker" {
   let clock = MockClock::new(1000L)
-  let aggregator = HealthAggregatorImpl::with_defaults(clock=clock)
+  let aggregator = HealthAggregatorImpl::with_defaults(clock~)
   let checker = AlwaysHealthyChecker::new(name="mycheck")
-  aggregator.register(checker=checker)
+  aggregator.register(checker~)
   let result = aggregator.get_check(name="mycheck")
   match result {
     Some(check) => inspect(check.name, content="mycheck")
-    None => fail!("Expected check to be found")
+    None => fail("Expected check to be found")
   }
 }
 
 ///|
 test "HealthAggregatorImpl::get_check returns None for unknown checker" {
   let clock = MockClock::new(1000L)
-  let aggregator = HealthAggregatorImpl::with_defaults(clock=clock)
+  let aggregator = HealthAggregatorImpl::with_defaults(clock~)
   let result = aggregator.get_check(name="unknown")
   match result {
-    Some(_) => fail!("Expected None for unknown checker")
+    Some(_) => fail("Expected None for unknown checker")
     None => ()
   }
 }
 
 ///|
 test "CallbackHealthChecker uses provided function" {
-  let checker = CallbackHealthChecker::new(
-    name="custom",
-    check_fn=fn() {
-      @interfaces.HealthCheck::degraded(
-        name="custom",
-        message="high latency",
-        latency_ms=Some(500L),
-        last_check=0L,
-      )
-    },
-  )
+  let checker = CallbackHealthChecker::new(name="custom", check_fn=fn() {
+    @interfaces.HealthCheck::degraded(
+      name="custom",
+      message="high latency",
+      latency_ms=Some(500L),
+      last_check=0L,
+    )
+  })
   let check = checker.check()
   inspect(check.name, content="custom")
   match check.status {
     @interfaces.HealthStatus::Degraded(msg) =>
       inspect(msg, content="high latency")
-    _ => fail!("Expected Degraded status")
+    _ => fail("Expected Degraded status")
   }
 }
 

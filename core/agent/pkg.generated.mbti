@@ -9,7 +9,11 @@ import {
 // Values
 pub fn calculate_backoff_delay(Int, Int, Int, Double) -> Int
 
+pub async fn call_model_with_retry_async(async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse, Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions, RetryConfig) -> @types.ModelResponse raise AgentLoopError
+
 pub fn run_agent_loop(@types.InboundEnvelope, AgentLoopOptions, AgentDependencies) -> @types.OutboundMessage raise AgentLoopError
+
+pub async fn run_agent_loop_async(@types.InboundEnvelope, AgentLoopOptions, AsyncAgentDependencies) -> @types.OutboundMessage raise AgentLoopError
 
 pub fn single_model_call(Array[@types.ModelMessage], @types.ModelOptions, &@interfaces.ModelOrchestrator) -> @types.ModelResponse raise AgentLoopError
 
@@ -66,6 +70,15 @@ pub(all) enum AgentState {
   Completed
 }
 pub impl Show for AgentState
+
+pub(all) struct AsyncAgentDependencies {
+  session_resolver : &@interfaces.SessionResolver
+  session_store : &@interfaces.SessionStore
+  context_builder : &@interfaces.ContextBuilder
+  tool_registry : &@interfaces.ToolRegistry
+  outbound_dispatcher : &@interfaces.OutboundDispatcher
+  model_invoke : async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse
+}
 
 pub(all) enum IterationResult {
   Continue(Array[@types.ModelMessage])

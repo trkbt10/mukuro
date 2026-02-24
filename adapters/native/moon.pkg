@@ -6,6 +6,7 @@ import {
 
 options(
   link: { "native": { "cc-flags": "-lpthread" } },
+  "native-stub": [ "ffi_stubs.c" ],
   targets: {
     "clock.mbt": [ "native" ],
     "crypto.mbt": [ "native" ],

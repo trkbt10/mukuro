@@ -222,7 +222,9 @@ pub async fn invoke_anthropic_async(
     @types.ModelResponse::RateLimited(retry_after=60)
   } else {
     let body_str = response.body.to_unchecked_string()
-    @types.ModelResponse::ModelError("API error \{response.status}: \{body_str}")
+    @types.ModelResponse::ModelError(
+      "API error \{response.status}: \{body_str}",
+    )
   }
 }
 

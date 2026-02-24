@@ -8,13 +8,70 @@ import {
 // Values
 
 // Errors
+pub(all) suberror AuthError {
+  InvalidToken(String)
+  TokenExpired
+  Unauthorized(String)
+}
+
+pub(all) suberror ConfigError {
+  FileNotFound(String)
+  ParseError(String)
+  ValidationError(String)
+  EnvironmentError(String)
+}
+
+pub(all) suberror ControlError {
+  Auth(AuthError)
+  AlreadyRunning
+  AlreadyStopped
+  ConfigError(String)
+  ChannelError(String)
+  InternalError(String)
+}
 
 // Types and methods
+pub(all) struct AuthContext {
+  token : String
+  user_id : String?
+  expires_at : Int64?
+}
+pub fn AuthContext::new(token~ : String, user_id~ : String?, expires_at~ : Int64?) -> Self
+pub fn AuthContext::token_only(String) -> Self
+
+pub(all) enum AuthResult {
+  Authenticated(AuthContext)
+  Denied(String)
+  Expired
+}
+
 pub(all) enum ChannelEvent {
   MessageReceived(@types.InboundEnvelope)
   Connected(channel~ : String)
   Disconnected(channel~ : String)
   Error(channel~ : String, message~ : String)
+}
+
+pub(all) struct ComponentLogLevel {
+  component : String
+  min_level : LogLevel
+}
+
+pub(all) enum ConfigPriority {
+  EnvFirst
+  FileFirst
+  DefaultOnly
+}
+
+pub(all) struct ConfigSource {
+  source_type : ConfigSourceType
+  path : String
+}
+
+pub(all) enum ConfigSourceType {
+  File
+  Environment
+  Default
 }
 
 pub(all) struct ContextInput {
@@ -30,6 +87,74 @@ pub struct DefaultSessionResolver {
 }
 pub fn DefaultSessionResolver::new() -> Self
 pub impl SessionResolver for DefaultSessionResolver
+
+pub(all) struct EnvMapping {
+  anthropic_api_key : String
+  openai_api_key : String
+  config_path : String
+  log_level : String
+}
+pub fn EnvMapping::default() -> Self
+
+pub(all) struct GatewayConfig {
+  host : String
+  port : Int
+  auth_token : String
+  health_endpoint : HealthEndpointConfig
+  auto_connect_channels : Bool
+}
+pub fn GatewayConfig::default() -> Self
+
+pub(all) enum GatewayState {
+  Stopped
+  Starting
+  Running
+  Stopping
+  Error(String)
+}
+pub fn GatewayState::is_running(Self) -> Bool
+pub fn GatewayState::to_string(Self) -> String
+
+pub(all) struct GatewayStatus {
+  state : GatewayState
+  health : SystemHealth?
+  connected_channels : Array[String]
+  active_sessions : Int
+  started_at : Int64?
+  version : String
+}
+pub fn GatewayStatus::new(state~ : GatewayState, health~ : SystemHealth?, connected_channels~ : Array[String], active_sessions~ : Int, started_at~ : Int64?, version~ : String) -> Self
+pub fn GatewayStatus::stopped(version~ : String) -> Self
+
+pub(all) struct HealthCheck {
+  name : String
+  status : HealthStatus
+  latency_ms : Int64?
+  last_check : Int64
+  details : Map[String, String]
+}
+pub fn HealthCheck::degraded(name~ : String, message~ : String, latency_ms~ : Int64?, last_check~ : Int64) -> Self
+pub fn HealthCheck::healthy(name~ : String, latency_ms~ : Int64?, last_check~ : Int64) -> Self
+pub fn HealthCheck::unhealthy(name~ : String, message~ : String, latency_ms~ : Int64?, last_check~ : Int64) -> Self
+
+pub(all) struct HealthEndpointConfig {
+  path : String
+  require_auth : Bool
+  include_details : Bool
+  cache_seconds : Int
+}
+pub fn HealthEndpointConfig::default() -> Self
+pub fn HealthEndpointConfig::liveness() -> Self
+pub fn HealthEndpointConfig::readiness() -> Self
+
+pub(all) enum HealthStatus {
+  Healthy
+  Degraded(String)
+  Unhealthy(String)
+}
+pub fn HealthStatus::is_healthy(Self) -> Bool
+pub fn HealthStatus::is_unhealthy(Self) -> Bool
+pub fn HealthStatus::to_string(Self) -> String
 
 pub(all) enum HttpMethod {
   Get
@@ -52,6 +177,22 @@ pub(all) struct HttpResponse {
   status : Int
   headers : Map[String, String]
   body : Bytes
+}
+
+pub(all) struct LogContext {
+  request_id : String?
+  agent_id : String?
+  component : String?
+  extra : Map[String, String]
+}
+pub fn LogContext::empty() -> Self
+pub fn LogContext::with_component(component~ : String) -> Self
+pub fn LogContext::with_request_id(request_id~ : String) -> Self
+
+pub(all) enum LogFormat {
+  Plain
+  Json
+  JsonCompact
 }
 
 pub(all) enum LogLevel {
@@ -127,6 +268,15 @@ pub(all) struct SkillDefinition {
   instructions : String
 }
 
+pub(all) struct SystemHealth {
+  overall : HealthStatus
+  checks : Array[HealthCheck]
+  uptime_ms : Int64
+  version : String
+  checked_at : Int64
+}
+pub fn SystemHealth::new(checks~ : Array[HealthCheck], uptime_ms~ : Int64, version~ : String, checked_at~ : Int64) -> Self
+
 pub(all) enum ToolError {
   NotFound(String)
   InvalidArguments(String)
@@ -146,6 +296,12 @@ pub(all) enum WsMessage {
 // Type aliases
 
 // Traits
+pub(open) trait Authenticator {
+  validate(Self, token~ : String) -> AuthResult
+  issue_token(Self, user_id~ : String) -> String raise AuthError
+  revoke(Self, token~ : String) -> Unit raise AuthError
+}
+
 pub(open) trait ChannelAdapter {
   name(Self) -> String
   connect(Self) -> Unit raise
@@ -166,6 +322,17 @@ pub(open) trait ChannelManager {
 pub(open) trait Clock {
   now_ms(Self) -> Int64
   now_seconds(Self) -> Int64
+}
+
+pub(open) trait ConfigLoader {
+  load(Self, path~ : String) -> @types.MukuroConfig raise ConfigError
+  load_with_env(Self, path~ : String, env~ : &Environment) -> @types.MukuroConfig raise ConfigError
+  load_from_env(Self, env~ : &Environment) -> @types.MukuroConfig raise ConfigError
+  default_config(Self) -> @types.MukuroConfig
+}
+
+pub(open) trait ConfigValidator {
+  validate(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
 }
 
 pub(open) trait ContextBuilder {
@@ -193,6 +360,37 @@ pub(open) trait FileStore {
   remove_file(Self, path~ : String) -> Unit raise
   create_dir(Self, path~ : String) -> Unit raise
   list_dir(Self, path~ : String) -> Array[String] raise
+}
+
+pub(open) trait GatewayEventListener {
+  on_state_change(Self, old~ : GatewayState, new~ : GatewayState) -> Unit
+  on_message_received(Self, envelope~ : @types.InboundEnvelope) -> Unit
+  on_message_sent(Self, message~ : @types.OutboundMessage) -> Unit
+  on_error(Self, error~ : String) -> Unit
+}
+
+pub(open) trait GatewayService {
+  start(Self, config~ : GatewayConfig) -> Unit raise ControlError
+  stop(Self) -> Unit raise ControlError
+  status(Self) -> GatewayStatus
+  authenticate(Self, token~ : String) -> AuthResult
+  dispatch_inbound(Self, auth~ : AuthContext, envelope~ : @types.InboundEnvelope) -> Unit raise ControlError
+  dispatch_outbound(Self, auth~ : AuthContext, message~ : @types.OutboundMessage) -> Unit raise ControlError
+}
+
+pub(open) trait HealthAggregator {
+  register(Self, checker~ : &HealthChecker) -> Unit
+  unregister(Self, name~ : String) -> Unit
+  check_all(Self) -> SystemHealth
+  check_all_async(Self, on_complete~ : (SystemHealth) -> Unit) -> Unit
+  get_check(Self, name~ : String) -> HealthCheck?
+  list_checkers(Self) -> Array[String]
+}
+
+pub(open) trait HealthChecker {
+  name(Self) -> String
+  check(Self) -> HealthCheck
+  check_async(Self, on_complete~ : (HealthCheck) -> Unit) -> Unit
 }
 
 pub(open) trait HttpClient {
@@ -286,6 +484,13 @@ pub(open) trait SessionStore {
   save(Self, @types.Session) -> Unit raise
   delete(Self, @types.SessionKey) -> Unit raise
   list_keys(Self) -> Array[@types.SessionKey] raise
+}
+
+pub(open) trait StructuredLogger {
+  log_structured(Self, level~ : LogLevel, message~ : String, context~ : LogContext) -> Unit
+  with_context(Self, context~ : LogContext) -> Self
+  with_request_id(Self, request_id~ : String) -> Self
+  with_component(Self, component~ : String) -> Self
 }
 
 pub(open) trait Timer {

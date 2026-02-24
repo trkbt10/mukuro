@@ -246,15 +246,18 @@ fn JsStructuredLogger::output_json(
   buf.write_string("\"message\":\"\{js_escape_json_string(message)}\"")
   // コンテキスト情報を追加
   match context.request_id {
-    Some(rid) => buf.write_string(",\"request_id\":\"\{js_escape_json_string(rid)}\"")
+    Some(rid) =>
+      buf.write_string(",\"request_id\":\"\{js_escape_json_string(rid)}\"")
     None => ()
   }
   match context.agent_id {
-    Some(aid) => buf.write_string(",\"agent_id\":\"\{js_escape_json_string(aid)}\"")
+    Some(aid) =>
+      buf.write_string(",\"agent_id\":\"\{js_escape_json_string(aid)}\"")
     None => ()
   }
   match context.component {
-    Some(comp) => buf.write_string(",\"component\":\"\{js_escape_json_string(comp)}\"")
+    Some(comp) =>
+      buf.write_string(",\"component\":\"\{js_escape_json_string(comp)}\"")
     None => ()
   }
   // extraフィールドを追加
@@ -265,7 +268,9 @@ fn JsStructuredLogger::output_json(
       if not(first) {
         buf.write_string(",")
       }
-      buf.write_string("\"\{js_escape_json_string(key)}\":\"\{js_escape_json_string(value)}\"")
+      buf.write_string(
+        "\"\{js_escape_json_string(key)}\":\"\{js_escape_json_string(value)}\"",
+      )
       first = false
     }
     buf.write_string("}")

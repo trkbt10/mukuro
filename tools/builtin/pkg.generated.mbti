@@ -3,6 +3,7 @@ package "trkbt10/mukuro/tools/builtin"
 
 import {
   "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
 }
 
 // Values
@@ -23,6 +24,8 @@ pub fn execute_message_tool(Json, (@types.OutboundMessage) -> Unit) -> ToolExecu
 pub fn execute_spawn_tool(SubAgentManager, Json) -> ToolExecutionResult
 
 pub fn execute_sync_tool(BuiltinToolContext, String, Json) -> ToolExecutionResult?
+
+pub fn filter_tools_for_subagent(&@interfaces.ToolRegistry, Array[String]) -> Array[@types.ToolDefinition]
 
 pub fn get_all_tool_definitions() -> Array[@types.ToolDefinition]
 
@@ -54,6 +57,8 @@ pub fn object_schema(Json, Array[String]) -> Json
 
 pub fn require_string_arg(Json, String) -> String raise ToolExecutionError
 
+pub async fn spawn_agent_async(SubAgentManager, AsyncSubAgentConfig, String, async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse, &@interfaces.ToolRegistry, @types.ModelOptions) -> SpawnResult
+
 pub fn spawn_tool_definition() -> @types.ToolDefinition
 
 pub fn string_param(String, Bool) -> Json
@@ -68,6 +73,14 @@ pub(all) suberror ToolExecutionError {
 }
 
 // Types and methods
+pub(all) struct AsyncSubAgentConfig {
+  name : String
+  system_prompt : String
+  max_turns : Int
+  allowed_tools : Array[String]
+}
+pub fn AsyncSubAgentConfig::default(name~ : String) -> Self
+
 pub struct BuiltinToolContext {
   memory : MemoryStore
   agent_manager : SubAgentManager

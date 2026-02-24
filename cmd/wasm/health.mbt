@@ -27,7 +27,7 @@ fn HealthManager::init(self : HealthManager) -> @health.HealthAggregatorImpl {
     None => {
       let clock = JsClock::new()
       self.clock = Some(clock)
-      let agg = @health.HealthAggregatorImpl::with_defaults(clock=clock)
+      let agg = @health.HealthAggregatorImpl::with_defaults(clock~)
       // デフォルトのチェッカーを登録
       agg.register(checker=@health.AlwaysHealthyChecker::new(name="liveness"))
       // 初期化状態チェッカーを登録
@@ -174,23 +174,24 @@ pub fn register_health_checker(
   message_on_fail : String,
 ) -> Unit {
   let aggregator = health_aggregator.init()
-  let checker = @health.CallbackHealthChecker::new(
-    name~,
-    check_fn=fn() {
-      let now = @js.js_date_now()
-      if check_fn() {
-        @interfaces.HealthCheck::healthy(name~, latency_ms=Some(0L), last_check=now)
-      } else {
-        @interfaces.HealthCheck::unhealthy(
-          name~,
-          message=message_on_fail,
-          latency_ms=Some(0L),
-          last_check=now,
-        )
-      }
-    },
-  )
-  aggregator.register(checker=checker)
+  let checker = @health.CallbackHealthChecker::new(name~, check_fn=fn() {
+    let now = @js.js_date_now()
+    if check_fn() {
+      @interfaces.HealthCheck::healthy(
+        name~,
+        latency_ms=Some(0L),
+        last_check=now,
+      )
+    } else {
+      @interfaces.HealthCheck::unhealthy(
+        name~,
+        message=message_on_fail,
+        latency_ms=Some(0L),
+        last_check=now,
+      )
+    }
+  })
+  aggregator.register(checker~)
 }
 
 ///|

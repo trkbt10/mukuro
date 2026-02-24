@@ -2,10 +2,67 @@
 package "trkbt10/mukuro/cmd/main"
 
 // Values
+pub fn execute_command(Command) -> CliResult
+
+pub fn execute_cron_command(CronCommand) -> CliResult
+
+pub fn execute_gateway_command(GatewayCommand) -> CliResult
+
+pub fn execute_onboard(OnboardOptions) -> CliResult
+
+pub fn get_help_message() -> String
+
+pub fn get_version_message() -> String
+
+pub fn parse_args(Array[String]) -> Command
+
+pub fn run_cli(Array[String]) -> CliResult
+
+pub let version : String
 
 // Errors
 
 // Types and methods
+pub(all) enum CliResult {
+  Ok(String)
+  Error(String)
+  Exit(Int)
+}
+
+pub(all) enum Command {
+  Help
+  Version
+  Onboard(OnboardOptions)
+  Gateway(GatewayCommand)
+  Cron(CronCommand)
+  Unknown(String)
+}
+
+pub(all) enum CronCommand {
+  List
+  Unknown(String)
+}
+
+pub(all) enum GatewayCommand {
+  Start(GatewayStartOptions)
+  Status
+  Stop
+  Unknown(String)
+}
+
+pub(all) struct GatewayStartOptions {
+  mut config_path : String?
+  mut host : String?
+  mut port : Int?
+  mut debug : Bool
+}
+
+pub(all) struct OnboardOptions {
+  mut provider : String?
+  mut api_key : String?
+  mut default_model : String?
+  mut output_path : String?
+}
 
 // Type aliases
 

@@ -311,9 +311,7 @@ pub async fn spawn_agent_async(
       @types.ModelResponse::ToolCalls(calls) => {
         // ツール呼び出しを実行
         for call in calls {
-          let tool_result = execute_subagent_tool_call(
-            call, tool_registry,
-          )
+          let tool_result = execute_subagent_tool_call(call, tool_registry)
           // 結果をメッセージに追加
           let result_content = match tool_result {
             @types.ToolResult::Success(content~) => content
