@@ -156,6 +156,43 @@ pub fn parse_openai_response(response_json : Json) -> @types.ModelResponse {
 }
 
 ///|
+/// 非同期でOpenAIを呼び出す（async/await版）
+pub async fn invoke_openai_async(
+  provider : OpenAIProvider,
+  messages : Array[@types.ModelMessage],
+  tools : Array[@types.ToolDefinition],
+  options : @types.ModelOptions,
+) -> @types.ModelResponse {
+  let request_body = provider.build_request(messages, tools, options)
+  let url = "\{provider.config.base_url}/v1/chat/completions"
+  let headers : Map[String, String] = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer \{provider.config.api_key}",
+  }
+  // 組織IDを追加
+  match provider.config.organization {
+    Some(org) => headers["OpenAI-Organization"] = org
+    None => ()
+  }
+  let body = @js.js_text_encode(request_body.stringify())
+  let response = @js.fetch_async(url, "POST", headers, Some(body))
+  if response.status >= 200 && response.status < 300 {
+    let body_str = response.body.to_unchecked_string()
+    try {
+      let json = @json.parse(body_str)
+      parse_openai_response(json)
+    } catch {
+      e => @types.ModelResponse::ModelError("JSON parse error: \{e}")
+    }
+  } else if response.status == 429 {
+    @types.ModelResponse::RateLimited(retry_after=60)
+  } else {
+    let body_str = response.body.to_unchecked_string()
+    @types.ModelResponse::ModelError("API error \{response.status}: \{body_str}")
+  }
+}
+
+///|
 /// 非同期でOpenAIを呼び出す（コールバックベース）
 pub fn call_openai_async(
   provider : OpenAIProvider,

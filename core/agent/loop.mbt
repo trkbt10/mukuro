@@ -333,3 +333,198 @@ pub fn single_model_call(
     e => raise AgentLoopError::ModelCallFailed(e.to_string())
   }
 }
+
+// ============================================================================
+// Async Agent Loop Implementation
+// ============================================================================
+
+///|
+/// 非同期エージェントループの依存関係
+pub(all) struct AsyncAgentDependencies {
+  session_resolver : &@interfaces.SessionResolver
+  session_store : &@interfaces.SessionStore
+  context_builder : &@interfaces.ContextBuilder
+  tool_registry : &@interfaces.ToolRegistry
+  outbound_dispatcher : &@interfaces.OutboundDispatcher
+  /// モデル呼び出し関数（async関数を受け取る）
+  model_invoke : async (
+    Array[@types.ModelMessage],
+    Array[@types.ToolDefinition],
+    @types.ModelOptions,
+  ) -> @types.ModelResponse
+}
+
+///|
+/// リトライ付きモデル呼び出し（async版）
+/// 実際に @async.sleep() で遅延を適用する
+pub async fn call_model_with_retry_async(
+  model_invoke : async (
+    Array[@types.ModelMessage],
+    Array[@types.ToolDefinition],
+    @types.ModelOptions,
+  ) -> @types.ModelResponse,
+  messages : Array[@types.ModelMessage],
+  tools : Array[@types.ToolDefinition],
+  options : @types.ModelOptions,
+  retry_config : RetryConfig,
+) -> @types.ModelResponse raise AgentLoopError {
+  let retry_state = RetryState::new(retry_config)
+  // リトライループ
+  while true {
+    let response = model_invoke(messages, tools, options) catch {
+      e => raise AgentLoopError::ModelCallFailed(e.to_string())
+    }
+    match response {
+      @types.ModelResponse::RateLimited(retry_after~) =>
+        // レート制限 - リトライ可能か確認
+        if retry_config.retry_on_rate_limit &&
+          retry_state.can_retry(retry_config) {
+          retry_state.set_retry_after(retry_after)
+          let delay_ms = retry_state.next_delay_ms
+          retry_state.increment(retry_config)
+          // 実際に遅延を適用
+          @async.sleep(delay_ms) catch {
+            e => raise AgentLoopError::ModelCallFailed("Sleep cancelled: \{e}")
+          }
+          continue
+        } else {
+          // リトライ上限に達した
+          return response
+        }
+      @types.ModelResponse::ModelError(msg) =>
+        // 一部のエラーはリトライ可能
+        if is_retryable_error(msg) && retry_state.can_retry(retry_config) {
+          let delay_ms = retry_state.next_delay_ms
+          retry_state.increment(retry_config)
+          // 実際に遅延を適用
+          @async.sleep(delay_ms) catch {
+            e => raise AgentLoopError::ModelCallFailed("Sleep cancelled: \{e}")
+          }
+          continue
+        } else {
+          return response
+        }
+      _ => return response
+    }
+  }
+  // 到達不能
+  @types.ModelResponse::ModelError("Unexpected retry loop exit")
+}
+
+///|
+/// 非同期エージェントループを実行
+/// 入力メッセージを処理し、モデル呼び出しとツール実行を反復して応答を生成する
+pub async fn run_agent_loop_async(
+  envelope : @types.InboundEnvelope,
+  options : AgentLoopOptions,
+  deps : AsyncAgentDependencies,
+) -> @types.OutboundMessage raise AgentLoopError {
+  // 1. セッション解決
+  let session_key = deps.session_resolver.resolve(envelope)
+  // 2. セッション取得または作成
+  let session = try {
+    match deps.session_store.get(session_key) {
+      Some(s) => s
+      None => @types.Session::new(session_key, envelope.timestamp)
+    }
+  } catch {
+    e => raise AgentLoopError::SessionError(e.to_string())
+  }
+  // 3. ループコンテキスト初期化
+  let ctx = AgentLoopContext::new()
+  ctx.set_state(AgentState::Processing(envelope))
+  // 4. コンテキスト構築
+  let context_input : @interfaces.ContextInput = {
+    session_history: session.history,
+    memory_context: [],
+    skills: [],
+    bootstrap: "",
+    current_message: envelope,
+  }
+  ctx.messages = deps.context_builder.build(context_input)
+  // 5. ツール定義取得
+  let tool_definitions = deps.tool_registry.list_definitions()
+  // 6. 非同期エージェントループ
+  while not(ctx.is_max_iterations(options.max_iterations)) {
+    ctx.set_state(AgentState::WaitingForModel)
+    ctx.increment_iteration()
+    // モデル呼び出し（リトライロジック付き）
+    let response = call_model_with_retry_async(
+      deps.model_invoke,
+      ctx.messages,
+      tool_definitions,
+      options.model_options,
+      options.retry_config,
+    )
+    match response {
+      @types.ModelResponse::Text(content) => {
+        // テキスト応答 - ループ完了
+        ctx.set_state(AgentState::SendingResponse)
+        // セッション更新
+        session.add_message(
+          @types.ModelMessage::User(content=envelope.content, name=None),
+        )
+        session.add_message(
+          @types.ModelMessage::Assistant(content~, tool_calls=None),
+        )
+        deps.session_store.save(session) catch {
+          e => raise AgentLoopError::SessionError(e.to_string())
+        }
+        // 出力メッセージを構築して返す
+        ctx.set_state(AgentState::Completed)
+        let outbound : @types.OutboundMessage = {
+          channel: envelope.channel,
+          chat_id: envelope.chat_id,
+          content,
+          reply_to: None,
+          attachments: None,
+          options: None,
+        }
+        return outbound
+      }
+      @types.ModelResponse::ToolCalls(calls) => {
+        // ツール呼び出し - 実行して結果を追加
+        for call in calls {
+          ctx.set_state(
+            AgentState::ExecutingTool(tool_name=call.name, call_id=call.id),
+          )
+          ctx.record_tool_call(call)
+          // ツール実行
+          let tool_result = execute_tool_call_async(call, session, envelope, deps)
+          // 結果をメッセージに追加
+          ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
+        }
+        // ループ継続
+        continue
+      }
+      @types.ModelResponse::ModelError(msg) =>
+        raise AgentLoopError::ModelCallFailed(msg)
+      @types.ModelResponse::RateLimited(retry_after~) =>
+        // リトライが有効でリトライ上限に達した場合
+        raise AgentLoopError::RateLimitExceeded(
+          retry_count=options.retry_config.max_retries,
+          last_retry_after=retry_after,
+        )
+    }
+  }
+  // 最大反復回数に達した
+  raise AgentLoopError::MaxIterationsReached(options.max_iterations)
+}
+
+///|
+/// ツール呼び出しを実行（async版用）
+fn execute_tool_call_async(
+  call : @types.ToolCallRequest,
+  session : @types.Session,
+  envelope : @types.InboundEnvelope,
+  deps : AsyncAgentDependencies,
+) -> @types.ToolResult {
+  let context : @types.ToolContext = { session, envelope, config: {} }
+  match deps.tool_registry.get_executor(call.name) {
+    Some(executor) =>
+      executor.execute(tool_name=call.name, arguments=call.arguments, context~) catch {
+        e => @types.ToolResult::Error(message=e.to_string())
+      }
+    None => @types.ToolResult::Error(message="Tool not found: \{call.name}")
+  }
+}

@@ -1,7 +1,9 @@
 {
   "name": "trkbt10/mukuro",
   "version": "0.1.0",
-  "deps": {},
+  "deps": {
+    "moonbitlang/async": "0.16.6"
+  },
   "readme": "README.mbt.md",
   "repository": "",
   "license": "Apache-2.0",

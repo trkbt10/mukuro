@@ -2,7 +2,10 @@ import {
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/adapters/js",
+  "trkbt10/mukuro/core/session" @session,
+  "trkbt10/mukuro/core/agent" @agent,
   "moonbitlang/core/json",
+  "moonbitlang/async" @async,
 }
 
 options(

@@ -194,6 +194,39 @@ fn Json::set_field(self : Json, key : String, value : Json) -> Json {
 }
 
 ///|
+/// 非同期でAnthropicを呼び出す（async/await版）
+pub async fn invoke_anthropic_async(
+  provider : AnthropicProvider,
+  messages : Array[@types.ModelMessage],
+  tools : Array[@types.ToolDefinition],
+  options : @types.ModelOptions,
+) -> @types.ModelResponse {
+  let request_body = provider.build_request(messages, tools, options)
+  let url = "\{provider.config.base_url}/v1/messages"
+  let headers : Map[String, String] = {
+    "Content-Type": "application/json",
+    "x-api-key": provider.config.api_key,
+    "anthropic-version": provider.config.api_version,
+  }
+  let body = @js.js_text_encode(request_body.stringify())
+  let response = @js.fetch_async(url, "POST", headers, Some(body))
+  if response.status >= 200 && response.status < 300 {
+    let body_str = response.body.to_unchecked_string()
+    try {
+      let json = @json.parse(body_str)
+      parse_anthropic_response(json)
+    } catch {
+      e => @types.ModelResponse::ModelError("JSON parse error: \{e}")
+    }
+  } else if response.status == 429 {
+    @types.ModelResponse::RateLimited(retry_after=60)
+  } else {
+    let body_str = response.body.to_unchecked_string()
+    @types.ModelResponse::ModelError("API error \{response.status}: \{body_str}")
+  }
+}
+
+///|
 /// 非同期でAnthropicを呼び出す（コールバックベース）
 pub fn call_anthropic_async(
   provider : AnthropicProvider,

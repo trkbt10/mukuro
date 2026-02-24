@@ -134,6 +134,81 @@ pub fn fetch_with_callback(
 }
 
 ///|
+/// 非同期fetch関数（async/await対応）
+/// suspendを使用してコールバックベースのfetchをasyncに変換
+pub async fn fetch_async(
+  url : String,
+  http_method : String,
+  headers : Map[String, String],
+  body : Bytes?,
+) -> @interfaces.HttpResponse {
+  // JS Promise を作成してawait
+  let promise = create_fetch_promise(url, http_method, headers, body)
+  @js_async.Promise::wait(promise)
+}
+
+///|
+/// fetchをPromiseとして作成
+fn create_fetch_promise(
+  url : String,
+  http_method : String,
+  headers : Map[String, String],
+  body : Bytes?,
+) -> @js_async.Promise[@interfaces.HttpResponse] {
+  create_fetch_promise_ffi(url, http_method, headers, body)
+}
+
+///|
+extern "js" fn create_fetch_promise_ffi(
+  url : String,
+  http_method : String,
+  headers : Map[String, String],
+  body : Bytes?,
+) -> @js_async.Promise[@interfaces.HttpResponse] =
+  #| async (url, method, headers, body) => {
+  #|   const headersObj = {};
+  #|   headers.iter((k, v) => { headersObj[k] = v; });
+  #|   const options = { method, headers: headersObj };
+  #|   if (body) { options.body = body; }
+  #|   const response = await fetch(url, options);
+  #|   const arrayBuffer = await response.arrayBuffer();
+  #|   const bodyBytes = new Uint8Array(arrayBuffer);
+  #|   return { status: response.status, headers: {}, body: bodyBytes };
+  #| }
+
+///|
+/// 非同期GETリクエスト
+pub async fn get_async(
+  url : String,
+  headers : Map[String, String],
+) -> @interfaces.HttpResponse {
+  fetch_async(url, "GET", headers, None)
+}
+
+///|
+/// 非同期POSTリクエスト
+pub async fn post_async(
+  url : String,
+  body : Bytes,
+  headers : Map[String, String],
+) -> @interfaces.HttpResponse {
+  fetch_async(url, "POST", headers, Some(body))
+}
+
+///|
+/// 非同期JSON POSTリクエスト
+pub async fn post_json_async(
+  url : String,
+  json_body : Json,
+  headers : Map[String, String],
+) -> @interfaces.HttpResponse {
+  headers["Content-Type"] = "application/json"
+  let body_str = json_body.stringify()
+  let body = js_text_encode(body_str)
+  fetch_async(url, "POST", headers, Some(body))
+}
+
+///|
 /// JSON POSTリクエスト（コールバックベース）
 pub fn post_json(
   url : String,
