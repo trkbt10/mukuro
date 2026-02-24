@@ -50,25 +50,14 @@ fn is_node_binary(path : String) -> Bool {
 
 ///|
 /// Node.js環境かどうかを判定
-/// args[0]がnodeバイナリ、または args[1]がJS拡張子で終わる
+/// args[0]がnodeバイナリの場合のみtrue
+/// 注: args[1]のJS拡張子チェックはNative実行で誤判定するため削除
 fn is_nodejs_environment(args : Array[String]) -> Bool {
   if args.is_empty() {
     return false
   }
-  // args[0] がnodeバイナリ（/usr/bin/node, node.exe など）
-  if is_node_binary(args[0]) {
-    return true
-  }
-  // args[1] がJS系拡張子で終わる
-  if args.length() > 1 {
-    let script = args[1]
-    if ends_with(script, ".js") ||
-      ends_with(script, ".mjs") ||
-      ends_with(script, ".cjs") {
-      return true
-    }
-  }
-  false
+  // args[0] がnodeバイナリ（/usr/bin/node, /usr/bin/nodejs, node.exe など）
+  is_node_binary(args[0])
 }
 
 ///|

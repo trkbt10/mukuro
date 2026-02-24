@@ -461,7 +461,5 @@ fn main {
   }
 }
 
-// get_command_line_args() はプラットフォーム固有ファイルで実装:
-// - args_js.mbt: JS向け（process.argv）
-// - args_native.mbt: Native向け（argc/argv）
-// - args_wasm.mbt: WASM向け（スタブ）
+// get_command_line_args() は args.mbt で共通実装:
+// @env.args() を使用し、Node.js環境を自動検出してスキップ数を調整
