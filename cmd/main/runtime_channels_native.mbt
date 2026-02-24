@@ -151,11 +151,27 @@ fn register_websocket_channel(
   if ws_url.length() == 0 {
     return
   }
+  let default = @channels.WebSocketChannelConfig::default(name~, url=ws_url)
   let receive_timeout = option_int(options, "receive_timeout_ms").unwrap_or(50)
+  let heartbeat_interval = option_int(options, "heartbeat_interval_ms").unwrap_or(
+    default.heartbeat_interval_ms,
+  )
+  let reconnect_interval = option_int(options, "reconnect_interval_ms").unwrap_or(
+    default.base.reconnect_interval_ms,
+  )
+  let max_reconnect_attempts = option_int(options, "max_reconnect_attempts").unwrap_or(
+    default.base.max_reconnect_attempts,
+  )
   let config : @channels.WebSocketChannelConfig = {
-    ..@channels.WebSocketChannelConfig::default(name~, url=ws_url),
+    ..default,
     auth_token: token,
+    heartbeat_interval_ms: heartbeat_interval,
     receive_timeout_ms: receive_timeout,
+    base: {
+      ..default.base,
+      reconnect_interval_ms: reconnect_interval,
+      max_reconnect_attempts,
+    },
   }
   runtime_channels_cell.ws_adapters.push(
     @channels.WebSocketChannelAdapter::new(config),
@@ -226,4 +242,16 @@ pub fn bootstrap_runtime_channels_from_config(path : String) -> Unit {
 pub fn runtime_channel_holding_count_for_test() -> Int {
   runtime_channels_cell.ws_adapters.length() +
   runtime_channels_cell.http_adapters.length()
+}
+
+///|
+pub fn runtime_websocket_config_for_test(
+  name : String,
+) -> @channels.WebSocketChannelConfig? {
+  for adapter in runtime_channels_cell.ws_adapters {
+    if adapter.name() == name {
+      return Some(adapter.config)
+    }
+  }
+  None
 }

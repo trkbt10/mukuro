@@ -56,23 +56,38 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with connect(
   if self.config.url.length() == 0 {
     raise ChannelError::ConnectionFailed("WebSocket URL is empty")
   }
-  @async.with_event_loop(fn(_group) {
-    let headers : Map[String, String] = {}
-    match self.config.auth_token {
-      Some(token) => headers["Authorization"] = "Bearer \{token}"
-      None => ()
+  self.reset_connection()
+  let max_attempts = normalize_max_reconnect_attempts(
+    self.config.base.max_reconnect_attempts,
+  )
+  let mut attempt = 0
+  let mut last_error = "failed to connect"
+  while attempt < max_attempts {
+    attempt = attempt + 1
+    self.status = if attempt <= 1 {
+      ChannelStatus::Connecting
+    } else {
+      ChannelStatus::Reconnecting
     }
-    let conn = @xws.Conn::connect(self.config.url, headers~) catch {
-      e => raise map_ws_error(e)
+    let attempt_result : Result[Unit, ChannelError] = try {
+      self.connect_once()
+      Ok(())
+    } catch {
+      e => Err(ChannelError::NetworkError(e.to_string()))
     }
-    self.conn = Some(conn)
-  }) catch {
-    e => {
-      self.status = ChannelStatus::Error(e.to_string())
-      raise ChannelError::NetworkError(e.to_string())
+    match attempt_result {
+      Ok(_) => return
+      Err(err) => {
+        last_error = channel_error_message(err)
+        self.reset_connection()
+        if attempt < max_attempts {
+          @native.c_sleep_ms(reconnect_delay_ms(self.config.base, attempt))
+        }
+      }
     }
   }
-  self.status = ChannelStatus::Connected
+  self.status = ChannelStatus::Error(last_error)
+  raise ChannelError::ConnectionFailed(last_error)
 }
 
 ///|
@@ -102,6 +117,68 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with is_connecte
 ///|
 fn map_ws_error(err : @xws.WebSocketError) -> ChannelError {
   ChannelError::NetworkError(err.to_string())
+}
+
+///|
+fn channel_error_message(err : ChannelError) -> String {
+  match err {
+    ChannelError::ConnectionFailed(msg) => msg
+    ChannelError::AuthenticationFailed(msg) => msg
+    ChannelError::RateLimited(retry_after~) =>
+      "rate limited: retry after \{retry_after}s"
+    ChannelError::MessageTooLong(max_length~) =>
+      "message too long: max=\{max_length}"
+    ChannelError::InvalidPayload(msg) => msg
+    ChannelError::NetworkError(msg) => msg
+    ChannelError::ChannelNotFound(name) => "channel not found: \{name}"
+  }
+}
+
+///|
+fn normalize_retry_interval_ms(interval_ms : Int) -> Int {
+  if interval_ms <= 0 {
+    100
+  } else {
+    interval_ms
+  }
+}
+
+///|
+fn normalize_max_reconnect_attempts(max_attempts : Int) -> Int {
+  if max_attempts <= 0 {
+    1
+  } else {
+    max_attempts
+  }
+}
+
+///|
+fn reconnect_delay_ms(base : ChannelBaseConfig, attempt : Int) -> Int {
+  let safe_attempt = if attempt <= 0 { 1 } else { attempt }
+  normalize_retry_interval_ms(base.reconnect_interval_ms) * safe_attempt
+}
+
+///|
+fn WebSocketChannelAdapter::connect_once(
+  self : WebSocketChannelAdapter,
+) -> Unit raise {
+  @async.with_event_loop(fn(_group) {
+    let headers : Map[String, String] = {}
+    match self.config.auth_token {
+      Some(token) => headers["Authorization"] = "Bearer \{token}"
+      None => ()
+    }
+    let conn = @xws.Conn::connect(self.config.url, headers~) catch {
+      e => raise map_ws_error(e)
+    }
+    self.conn = Some(conn)
+  }) catch {
+    e => {
+      self.status = ChannelStatus::Error(e.to_string())
+      raise ChannelError::NetworkError(e.to_string())
+    }
+  }
+  self.status = ChannelStatus::Connected
 }
 
 ///|

@@ -31,6 +31,14 @@ fn contains_name(names : Array[String], target : String) -> Bool {
 }
 
 ///|
+fn expect_websocket_config(name : String) -> @channels.WebSocketChannelConfig {
+  match runtime_websocket_config_for_test(name) {
+    Some(config) => config
+    None => abort("missing websocket config")
+  }
+}
+
+///|
 test "bootstrap_runtime_channels_from_config registers multiple channels" {
   let path = "runtime_channels_native_test.json"
   let cleanup_path = "runtime_channels_native_cleanup.json"
@@ -41,7 +49,13 @@ test "bootstrap_runtime_channels_from_config registers multiple channels" {
     "      \"enabled\": true,\n" +
     "      \"token\": \"t1\",\n" +
     "      \"webhook_url\": \"wss://example.invalid/ws1\",\n" +
-    "      \"options\": { \"type\": \"websocket\", \"receive_timeout_ms\": 25 }\n" +
+    "      \"options\": {\n" +
+    "        \"type\": \"websocket\",\n" +
+    "        \"receive_timeout_ms\": 25,\n" +
+    "        \"reconnect_interval_ms\": 123,\n" +
+    "        \"max_reconnect_attempts\": 7,\n" +
+    "        \"heartbeat_interval_ms\": 4500\n" +
+    "      }\n" +
     "    },\n" +
     "    {\n" +
     "      \"name\": \"rt-ws-secondary\",\n" +
@@ -77,6 +91,11 @@ test "bootstrap_runtime_channels_from_config registers multiple channels" {
   assert_true(contains_name(names, "rt-ws-secondary"))
   assert_true(contains_name(names, "rt-http-primary"))
   assert_eq(runtime_channel_holding_count_for_test(), 3)
+  let ws_primary = expect_websocket_config("rt-ws-primary")
+  assert_eq(ws_primary.receive_timeout_ms, 25)
+  assert_eq(ws_primary.base.reconnect_interval_ms, 123)
+  assert_eq(ws_primary.base.max_reconnect_attempts, 7)
+  assert_eq(ws_primary.heartbeat_interval_ms, 4500)
 
   write_text_file(path, config2)
   bootstrap_runtime_channels_from_config(path)
