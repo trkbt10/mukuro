@@ -16,6 +16,10 @@ let daemon_ipc_response_hook : IpcResponseHookCell = { value: None }
 let daemon_token_rotation_interval_sec : Int64 = 300
 
 ///|
+/// ローテーション直後に直前tokenを許容するgrace期間（秒）
+let daemon_prev_token_grace_sec : Int64 = 30
+
+///|
 /// テスト用: IPCレスポンスフックを設定
 pub fn set_daemon_ipc_response_hook_for_test(
   hook : (String) -> String?,
@@ -99,11 +103,18 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
     // 予備経路（通常到達しない）
     (self_pid * 1103515245 + started_at.to_int()) & 2147483647
   }
+  let generated_session_id = @native.c_generate_gateway_token()
+  let session_id = if generated_session_id > 0 {
+    generated_session_id
+  } else {
+    self_pid
+  }
   let mut prev_token = -1
+  let mut prev_token_grace_until : Int64 = 0
   let mut last_token_rotated_at = started_at
   let mut last_snapshot_uptime = -1
 
-  if @native.c_write_gateway_token(token) != 0 {
+  if @native.c_write_gateway_token_record(token, session_id, started_at) != 0 {
     @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
     @native.c_exit(1)
     return CliResult::Exit(1)
@@ -127,15 +138,20 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
     if now - last_token_rotated_at >= daemon_token_rotation_interval_sec {
       let next_token = @native.c_generate_gateway_token()
       if next_token > 0 && next_token != token {
-        if @native.c_write_gateway_token(next_token) == 0 {
+        if @native.c_write_gateway_token_record(next_token, session_id, now) ==
+          0 {
           prev_token = token
+          prev_token_grace_until = now + daemon_prev_token_grace_sec
           token = next_token
           last_token_rotated_at = now
         }
       }
     }
+    if prev_token != -1 && now >= prev_token_grace_until {
+      prev_token = -1
+    }
     let ipc_result = @native.c_ipc_server_poll(
-      token, prev_token, self_pid, uptime_sec,
+      token, prev_token, session_id, self_pid, uptime_sec,
     )
     // stopコマンドを受信したらループを終了
     ipc_result != 2
@@ -178,7 +194,10 @@ fn daemon_ipc_request(command : String) -> String? {
   if token < 0 {
     return None
   }
-  let read_len = @native.c_ipc_client_request(token, command_code, buffer, 512)
+  let session_id = @native.c_read_gateway_session_id()
+  let read_len = @native.c_ipc_client_request(
+    token, session_id, command_code, buffer, 512,
+  )
   if read_len <= 0 {
     return None
   }

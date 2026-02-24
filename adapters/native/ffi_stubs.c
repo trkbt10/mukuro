@@ -513,14 +513,21 @@ static int get_default_gateway_token_path(char* out, int out_len) {
 
 /*
  * リクエスト1行をパースする
- * format: "<token> <command>\n"
+ * format: "<token> <session_id> <command>\n"
  */
-static int parse_request_line(const char* line, int* token_pid, char* command, int command_len) {
-    if (!line || !token_pid || !command) return -1;
+static int parse_request_line(
+    const char* line,
+    int* token_pid,
+    int* session_id,
+    char* command,
+    int command_len
+) {
+    if (!line || !token_pid || !session_id || !command) return -1;
     *token_pid = -1;
+    *session_id = -1;
     command[0] = '\0';
-    int matched = sscanf(line, "%d %31s", token_pid, command);
-    return matched == 2 ? 0 : -1;
+    int matched = sscanf(line, "%d %d %31s", token_pid, session_id, command);
+    return matched == 3 ? 0 : -1;
 }
 
 /*
@@ -577,7 +584,13 @@ int moonbit_ipc_server_start(void) {
 /*
  * IPCサーバーを1回ポーリングする
  */
-int moonbit_ipc_server_poll(int token_pid, int prev_token_pid, int pid, int uptime_sec) {
+int moonbit_ipc_server_poll(
+    int token_pid,
+    int prev_token_pid,
+    int session_id,
+    int pid,
+    int uptime_sec
+) {
     if (g_ipc_server_fd < 0) return -1;
 
     int client = accept(g_ipc_server_fd, NULL, NULL);
@@ -597,15 +610,21 @@ int moonbit_ipc_server_poll(int token_pid, int prev_token_pid, int pid, int upti
     req[read_len] = '\0';
 
     int request_token_pid = -1;
+    int request_session_id = -1;
     char command[32];
-    if (parse_request_line(req, &request_token_pid, command, sizeof(command)) != 0) {
+    if (parse_request_line(
+        req, &request_token_pid, &request_session_id, command, sizeof(command)
+    ) != 0) {
         const char* resp = "ERR malformed\n";
         write(client, resp, strlen(resp));
         close(client);
         return 4;
     }
 
-    if (request_token_pid != token_pid && request_token_pid != prev_token_pid) {
+    if (
+        request_session_id != session_id ||
+        (request_token_pid != token_pid && request_token_pid != prev_token_pid)
+    ) {
         const char* resp = "ERR unauthorized\n";
         write(client, resp, strlen(resp));
         close(client);
@@ -653,6 +672,7 @@ int moonbit_ipc_server_cleanup(void) {
  */
 int moonbit_ipc_client_request(
     int token_pid,
+    int session_id,
     int command,
     char* response_buf,
     int response_buf_len
@@ -680,7 +700,7 @@ int moonbit_ipc_client_request(
     if (command == 2) {
         command_text = "stop";
     }
-    snprintf(req, sizeof(req), "%d %s\n", token_pid, command_text);
+    snprintf(req, sizeof(req), "%d %d %s\n", token_pid, session_id, command_text);
     if (write(fd, req, strlen(req)) < 0) {
         close(fd);
         return -1;
@@ -762,6 +782,33 @@ int moonbit_write_gateway_token(int token) {
 }
 
 /*
+ * IPC認証トークン（メタ付き）を書き込む
+ * format: "<token> <session_id> <issued_at>\n"
+ */
+int moonbit_write_gateway_token_record(int token, int session_id, int64_t issued_at) {
+    char path[1024];
+    if (get_default_gateway_token_path(path, sizeof(path)) != 0) {
+        return -1;
+    }
+
+    char* copy = strdup(path);
+    if (!copy) return -1;
+    char* last_slash = strrchr(copy, '/');
+    if (last_slash && last_slash != copy) {
+        *last_slash = '\0';
+        mkdir(copy, 0755);
+    }
+    free(copy);
+
+    FILE* f = fopen(path, "w");
+    if (!f) return -1;
+    fprintf(f, "%d %d %lld\n", token, session_id, (long long)issued_at);
+    fclose(f);
+    chmod(path, 0600);
+    return 0;
+}
+
+/*
  * IPC認証トークンを読み取る
  */
 int moonbit_read_gateway_token(void) {
@@ -789,4 +836,36 @@ int moonbit_read_gateway_token(void) {
     }
     fclose(f);
     return token;
+}
+
+/*
+ * IPCセッションIDを読み取る
+ * tokenファイルが旧形式（tokenのみ）の場合は -1
+ */
+int moonbit_read_gateway_session_id(void) {
+    char path[1024];
+    if (get_default_gateway_token_path(path, sizeof(path)) != 0) {
+        return -1;
+    }
+
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return -1;
+    }
+    if (st.st_uid != getuid()) {
+        return -1;
+    }
+    if ((st.st_mode & (S_IRWXG | S_IRWXO)) != 0) {
+        return -1;
+    }
+
+    FILE* f = fopen(path, "r");
+    if (!f) return -1;
+    int token = -1;
+    int session_id = -1;
+    if (fscanf(f, "%d %d", &token, &session_id) < 2) {
+        session_id = -1;
+    }
+    fclose(f);
+    return session_id;
 }

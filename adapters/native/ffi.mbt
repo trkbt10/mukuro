@@ -275,10 +275,12 @@ pub extern "C" fn c_ipc_server_start() -> Int = "moonbit_ipc_server_start"
 /// IPCサーバーを1回ポーリングしてコマンド処理
 /// token_pid: 現行認証トークン（ランダム値）
 /// prev_token_pid: 直前認証トークン（ローテーション直後のgrace用、無効時は負値）
+/// session_id: デーモンセッション識別子
 /// returns: 0=処理なし, 1=status処理, 2=stop処理, 3=認証失敗, 4=不明コマンド, -1=エラー
 pub extern "C" fn c_ipc_server_poll(
   token_pid : Int,
   prev_token_pid : Int,
+  session_id : Int,
   pid : Int,
   uptime_sec : Int,
 ) -> Int = "moonbit_ipc_server_poll"
@@ -296,6 +298,7 @@ pub extern "C" fn c_ipc_server_cleanup() -> Int = "moonbit_ipc_server_cleanup"
 #borrow(response_buf)
 pub extern "C" fn c_ipc_client_request(
   token_pid : Int,
+  session_id : Int,
   command : Int,
   response_buf : Bytes,
   response_buf_len : Int,
@@ -317,6 +320,16 @@ pub extern "C" fn c_write_gateway_snapshot(
 pub extern "C" fn c_write_gateway_token(token : Int) -> Int = "moonbit_write_gateway_token"
 
 ///|
+/// IPC認証トークン（メタ付き）を書き込む
+/// format: "<token> <session_id> <issued_at>\n"
+/// returns: 0 on success, -1 on error
+pub extern "C" fn c_write_gateway_token_record(
+  token : Int,
+  session_id : Int,
+  issued_at : Int64,
+) -> Int = "moonbit_write_gateway_token_record"
+
+///|
 /// IPC認証トークンを生成する
 /// returns: token (>0) on success, fallback含め常に正値を返す
 pub extern "C" fn c_generate_gateway_token() -> Int = "moonbit_generate_gateway_token"
@@ -325,3 +338,8 @@ pub extern "C" fn c_generate_gateway_token() -> Int = "moonbit_generate_gateway_
 /// IPC認証トークンを読み取る
 /// returns: token on success, -1 on error
 pub extern "C" fn c_read_gateway_token() -> Int = "moonbit_read_gateway_token"
+
+///|
+/// IPCセッションIDを読み取る
+/// tokenファイルが旧形式の場合は -1
+pub extern "C" fn c_read_gateway_session_id() -> Int = "moonbit_read_gateway_session_id"
