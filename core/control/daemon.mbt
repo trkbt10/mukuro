@@ -24,6 +24,14 @@ pub(all) suberror DaemonError {
 pub let default_pid_path : String = ".mukuro/gateway.pid"
 
 ///|
+/// IPCソケットパス（デフォルト）
+pub let default_ipc_socket_path : String = ".mukuro/gateway.sock"
+
+///|
+/// 状態スナップショットパス（デフォルト）
+pub let default_gateway_state_path : String = ".mukuro/gateway-state.json"
+
+///|
 /// PIDファイル管理
 pub struct PidManager {
   /// PIDファイルのパス

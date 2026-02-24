@@ -31,6 +31,25 @@ pub fn stop_daemon(pid_path~ : String) -> CliResult {
 }
 
 ///|
+/// デーモンへstatus要求（非native用スタブ）
+pub fn query_daemon_status(pid : Int, as_json : Bool) -> CliResult {
+  ignore(pid)
+  ignore(as_json)
+  CliResult::Error(
+    "Daemon IPC is only supported on native target.\nPlease build with: moon build --target native",
+  )
+}
+
+///|
+/// デーモンへstop要求（非native用スタブ）
+pub fn request_daemon_stop(pid : Int) -> CliResult {
+  ignore(pid)
+  CliResult::Error(
+    "Daemon IPC is only supported on native target.\nPlease build with: moon build --target native",
+  )
+}
+
+///|
 /// デーモン子プロセス起動（非native用スタブ）
 pub fn execute_daemon_child(pid_path : String) -> CliResult {
   ignore(pid_path)

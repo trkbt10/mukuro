@@ -8,7 +8,7 @@
 
 ///|
 /// 現在時刻を取得（Unix epoch 秒）
-pub extern "C" fn c_time() -> Int64 = "time"
+pub extern "C" fn c_time() -> Int64 = "moonbit_time_now"
 
 // ============================================================
 // 標準入出力
@@ -254,3 +254,50 @@ pub extern "C" fn c_daemon_child_init(pid_path : CString) -> Int = "moonbit_daem
 ///|
 /// 実行ファイルの絶対パスを取得
 pub extern "C" fn c_get_exe_path() -> CString = "moonbit_get_exe_path"
+
+// ============================================================
+// ローカルIPC（Unix domain socket）
+// ============================================================
+
+///|
+/// IPCサーバーを起動（UNIX socket bind/listen）
+/// returns: 0 on success, -1 on error
+pub extern "C" fn c_ipc_server_start() -> Int = "moonbit_ipc_server_start"
+
+///|
+/// IPCサーバーを1回ポーリングしてコマンド処理
+/// token_pid: 認証トークン（簡易、PID値）
+/// returns: 0=処理なし, 1=status処理, 2=stop処理, 3=認証失敗, 4=不明コマンド, -1=エラー
+pub extern "C" fn c_ipc_server_poll(
+  token_pid : Int,
+  pid : Int,
+  uptime_sec : Int,
+) -> Int = "moonbit_ipc_server_poll"
+
+///|
+/// IPCサーバーを停止し、ソケットファイルを削除
+/// returns: 0 on success, -1 on error
+pub extern "C" fn c_ipc_server_cleanup() -> Int = "moonbit_ipc_server_cleanup"
+
+///|
+/// IPCクライアントリクエストを送信
+/// command: 1=status, 2=stop
+/// response_buf: レスポンス受信用バッファ
+/// returns: 受信バイト数（>=0）、エラー時-1
+#borrow(response_buf)
+pub extern "C" fn c_ipc_client_request(
+  token_pid : Int,
+  command : Int,
+  response_buf : Bytes,
+  response_buf_len : Int,
+) -> Int = "moonbit_ipc_client_request"
+
+///|
+/// Gateway状態スナップショットを書き込む
+/// state: 1=running, 0=stopped
+/// returns: 0 on success, -1 on error
+pub extern "C" fn c_write_gateway_snapshot(
+  pid : Int,
+  uptime_sec : Int,
+  state : Int,
+) -> Int = "moonbit_write_gateway_snapshot"

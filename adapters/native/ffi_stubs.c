@@ -13,6 +13,9 @@
 #include <fcntl.h>
 #include <spawn.h>
 #include <errno.h>
+#include <time.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -83,6 +86,14 @@ FILE* moonbit_get_stderr(void) {
  * 2: SIGINT受信
  */
 static volatile int g_signal_received = 0;
+static int g_ipc_server_fd = -1;
+
+/*
+ * 現在時刻（Unix epoch秒）
+ */
+int64_t moonbit_time_now(void) {
+    return (int64_t)time(NULL);
+}
 
 /*
  * シグナルハンドラ
@@ -427,5 +438,249 @@ int moonbit_daemon_child_init(const char* pid_path_utf16) {
     fprintf(f, "%d\n", my_pid);
     fclose(f);
 
+    return 0;
+}
+
+/*
+ * UTF-16LE文字列からASCIIに変換し、必要なら絶対パス化する
+ * returns: 0 on success, -1 on error
+ */
+static int get_default_ipc_socket_path(char* out, int out_len) {
+    char cwd[768];
+    if (!out || out_len <= 0) return -1;
+    if (!getcwd(cwd, sizeof(cwd))) return -1;
+    snprintf(out, out_len, "%s/.mukuro/gateway.sock", cwd);
+    return 0;
+}
+
+static int get_default_gateway_snapshot_path(char* out, int out_len) {
+    char cwd[768];
+    if (!out || out_len <= 0) return -1;
+    if (!getcwd(cwd, sizeof(cwd))) return -1;
+    snprintf(out, out_len, "%s/.mukuro/gateway-state.json", cwd);
+    return 0;
+}
+
+/*
+ * リクエスト1行をパースする
+ * format: "<token> <command>\n"
+ */
+static int parse_request_line(const char* line, int* token_pid, char* command, int command_len) {
+    if (!line || !token_pid || !command) return -1;
+    *token_pid = -1;
+    command[0] = '\0';
+    int matched = sscanf(line, "%d %31s", token_pid, command);
+    return matched == 2 ? 0 : -1;
+}
+
+/*
+ * IPCサーバーを起動する（UNIX domain socket）
+ */
+int moonbit_ipc_server_start(void) {
+    char socket_path[1024];
+    if (get_default_ipc_socket_path(socket_path, sizeof(socket_path)) != 0) {
+        return -1;
+    }
+
+    // 親ディレクトリ作成
+    char* copy = strdup(socket_path);
+    if (!copy) return -1;
+    char* last_slash = strrchr(copy, '/');
+    if (last_slash && last_slash != copy) {
+        *last_slash = '\0';
+        mkdir(copy, 0755);
+    }
+    free(copy);
+
+    if (g_ipc_server_fd >= 0) {
+        close(g_ipc_server_fd);
+        g_ipc_server_fd = -1;
+    }
+
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) return -1;
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
+
+    unlink(socket_path);
+
+    if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+        close(fd);
+        return -1;
+    }
+    if (listen(fd, 16) != 0) {
+        close(fd);
+        unlink(socket_path);
+        return -1;
+    }
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags >= 0) {
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+    }
+    g_ipc_server_fd = fd;
+    return 0;
+}
+
+/*
+ * IPCサーバーを1回ポーリングする
+ */
+int moonbit_ipc_server_poll(int token_pid, int pid, int uptime_sec) {
+    if (g_ipc_server_fd < 0) return -1;
+
+    int client = accept(g_ipc_server_fd, NULL, NULL);
+    if (client < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return 0;
+        }
+        return -1;
+    }
+
+    char req[256] = {0};
+    ssize_t read_len = read(client, req, sizeof(req) - 1);
+    if (read_len <= 0) {
+        close(client);
+        return 0;
+    }
+    req[read_len] = '\0';
+
+    int request_token_pid = -1;
+    char command[32];
+    if (parse_request_line(req, &request_token_pid, command, sizeof(command)) != 0) {
+        const char* resp = "ERR malformed\n";
+        write(client, resp, strlen(resp));
+        close(client);
+        return 4;
+    }
+
+    if (request_token_pid != token_pid) {
+        const char* resp = "ERR unauthorized\n";
+        write(client, resp, strlen(resp));
+        close(client);
+        return 3;
+    }
+
+    if (strcmp(command, "status") == 0) {
+        char resp[256];
+        snprintf(resp, sizeof(resp), "OK running %d %d\n", pid, uptime_sec);
+        write(client, resp, strlen(resp));
+        close(client);
+        return 1;
+    }
+    if (strcmp(command, "stop") == 0) {
+        const char* resp = "OK stopping\n";
+        write(client, resp, strlen(resp));
+        close(client);
+        return 2;
+    }
+
+    const char* resp = "ERR unknown\n";
+    write(client, resp, strlen(resp));
+    close(client);
+    return 4;
+}
+
+/*
+ * IPCサーバーを停止し、ソケットファイルを削除する
+ */
+int moonbit_ipc_server_cleanup(void) {
+    char socket_path[1024];
+    if (get_default_ipc_socket_path(socket_path, sizeof(socket_path)) != 0) {
+        return -1;
+    }
+    if (g_ipc_server_fd >= 0) {
+        close(g_ipc_server_fd);
+        g_ipc_server_fd = -1;
+    }
+    unlink(socket_path);
+    return 0;
+}
+
+/*
+ * IPCクライアントでリクエスト送信
+ */
+int moonbit_ipc_client_request(
+    int token_pid,
+    int command,
+    char* response_buf,
+    int response_buf_len
+) {
+    if (!response_buf || response_buf_len <= 0) return -1;
+
+    char socket_path[1024];
+    if (get_default_ipc_socket_path(socket_path, sizeof(socket_path)) != 0) return -1;
+
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) return -1;
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
+
+    if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+        close(fd);
+        return -1;
+    }
+
+    char req[256];
+    const char* command_text = "status";
+    if (command == 2) {
+        command_text = "stop";
+    }
+    snprintf(req, sizeof(req), "%d %s\n", token_pid, command_text);
+    if (write(fd, req, strlen(req)) < 0) {
+        close(fd);
+        return -1;
+    }
+
+    char ascii_resp[256];
+    ssize_t n = read(fd, ascii_resp, sizeof(ascii_resp) - 1);
+    if (n < 0) {
+        close(fd);
+        return -1;
+    }
+    ascii_resp[n] = '\0';
+
+    int out = 0;
+    for (ssize_t i = 0; i < n; i++) {
+        if (out + 2 >= response_buf_len) break;
+        response_buf[out++] = (unsigned char)ascii_resp[i];
+        response_buf[out++] = 0;
+    }
+    close(fd);
+    return out;
+}
+
+/*
+ * Gateway状態スナップショットを書き込む
+ */
+int moonbit_write_gateway_snapshot(int pid, int uptime_sec, int state) {
+    char path[1024];
+    if (get_default_gateway_snapshot_path(path, sizeof(path)) != 0) {
+        return -1;
+    }
+
+    char* copy = strdup(path);
+    if (!copy) return -1;
+    char* last_slash = strrchr(copy, '/');
+    if (last_slash && last_slash != copy) {
+        *last_slash = '\0';
+        mkdir(copy, 0755);
+    }
+    free(copy);
+
+    FILE* f = fopen(path, "w");
+    if (!f) return -1;
+    fprintf(
+        f,
+        "{\"state\":\"%s\",\"pid\":%d,\"uptime_sec\":%d}\n",
+        state == 1 ? "running" : "stopped",
+        pid,
+        uptime_sec
+    );
+    fclose(f);
     return 0;
 }

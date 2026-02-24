@@ -102,7 +102,18 @@ test "parse_args gateway status" {
   let cmd = parse_args(["gateway", "status"])
   assert_true(
     match cmd {
-      Command::Gateway(GatewayCommand::Status) => true
+      Command::Gateway(GatewayCommand::Status(opts)) => opts.json == false
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway status --json" {
+  let cmd = parse_args(["gateway", "status", "--json"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Status(opts)) => opts.json == true
       _ => false
     },
   )
@@ -234,6 +245,17 @@ test "run_cli gateway status" {
   assert_true(
     match result {
       CliResult::Ok(msg) => msg.contains("State:")
+      _ => false
+    },
+  )
+}
+
+///|
+test "run_cli gateway status --json" {
+  let result = run_cli(["gateway", "status", "--json"])
+  assert_true(
+    match result {
+      CliResult::Ok(msg) => msg.has_prefix("{\"mode\":")
       _ => false
     },
   )

@@ -18,6 +18,7 @@ fn execute_daemon_start(
   }
 
   let pid_path = @control.default_pid_path
+  let socket_path = @control.default_ipc_socket_path
 
   // 既存のデーモンをチェック
   let daemon_manager = NativeDaemonManager::new(pid_path~)
@@ -45,7 +46,7 @@ fn execute_daemon_start(
   }
 
   CliResult::Ok(
-    "Gateway daemon started in background (PID: \{daemon_pid})\n  Host: \{config.host}\n  Port: \{config.port}\n  PID file: \{pid_path}",
+    "Gateway daemon started in background (PID: \{daemon_pid})\n  Host: \{config.host}\n  Port: \{config.port}\n  PID file: \{pid_path}\n  IPC socket: \{socket_path}",
   )
 }
 
@@ -62,8 +63,29 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
     return CliResult::Exit(1)
   }
 
+  let self_pid = @native.c_getpid()
+  let started_at = @native.c_time()
+  let mut last_snapshot_uptime = -1
+
+  let ipc_start = @native.c_ipc_server_start()
+  if ipc_start != 0 {
+    @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+    @native.c_exit(1)
+    return CliResult::Exit(1)
+  }
+
   // デーモンループを実行（シグナルを待機）
-  let signal = @native.run_daemon_loop(interval_ms=1000, on_tick=fn() { true })
+  let signal = @native.run_daemon_loop(interval_ms=100, on_tick=fn() {
+    let now = @native.c_time()
+    let uptime_sec = (now - started_at).to_int()
+    if uptime_sec != last_snapshot_uptime {
+      @native.c_write_gateway_snapshot(self_pid, uptime_sec, 1) |> ignore
+      last_snapshot_uptime = uptime_sec
+    }
+    let ipc_result = @native.c_ipc_server_poll(self_pid, self_pid, uptime_sec)
+    // stopコマンドを受信したらループを終了
+    ipc_result != 2
+  })
 
   // シグナル受信後のクリーンアップ
   let signal_name = match signal {
@@ -76,11 +98,71 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   let _ = signal_name
 
   // PIDファイルを削除
+  @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
+  @native.c_ipc_server_cleanup() |> ignore
   @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
 
   // 正常終了
   @native.c_exit(0)
   CliResult::Exit(0)
+}
+
+///|
+/// デーモンへIPCリクエストを送信
+fn daemon_ipc_request(pid : Int, command : String) -> String? {
+  let buffer = Bytes::new(512)
+  let command_code = if command == "stop" { 2 } else { 1 }
+  let read_len = @native.c_ipc_client_request(pid, command_code, buffer, 512)
+  if read_len <= 0 {
+    return None
+  }
+  Some(
+    Bytes::from_iter(buffer.sub(end=read_len).iter())
+    .to_unchecked_string()
+    .trim(chars=" \t\n\r")
+    .to_string(),
+  )
+}
+
+///|
+/// デーモンへstatus要求（IPC）
+pub fn query_daemon_status(pid : Int, as_json : Bool) -> CliResult {
+  let response = daemon_ipc_request(pid, "status").unwrap_or("")
+  if response.has_prefix("OK running ") {
+    let parts = response.split(" ").collect()
+    let runtime_pid = if parts.length() > 2 { parts[2] } else { "\{pid}" }
+    let uptime_sec = if parts.length() > 3 { parts[3] } else { "0" }
+    if as_json {
+      CliResult::Ok(
+        "{\"mode\":\"daemon\",\"state\":\"running\",\"pid\":\{runtime_pid},\"uptime_sec\":\{uptime_sec},\"ipc\":\"connected\",\"pid_file\":\"\{@control.default_pid_path}\",\"socket\":\"\{@control.default_ipc_socket_path}\"}",
+      )
+    } else {
+      CliResult::Ok(
+        "Gateway Status (daemon mode):\n  State: running\n  PID: \{runtime_pid}\n  Uptime: \{uptime_sec}s\n  IPC: connected\n  PID file: \{@control.default_pid_path}\n  Socket: \{@control.default_ipc_socket_path}",
+      )
+    }
+  } else if response.has_prefix("ERR unauthorized") {
+    CliResult::Error("Daemon IPC authentication failed")
+  } else if response == "" {
+    CliResult::Error("Daemon IPC unavailable")
+  } else {
+    CliResult::Error("Daemon IPC error: \{response}")
+  }
+}
+
+///|
+/// デーモンへstop要求（IPC）
+pub fn request_daemon_stop(pid : Int) -> CliResult {
+  let response = daemon_ipc_request(pid, "stop").unwrap_or("")
+  if response.has_prefix("OK stopping") {
+    CliResult::Ok("Stop request sent to gateway daemon via IPC")
+  } else if response.has_prefix("ERR unauthorized") {
+    CliResult::Error("Daemon IPC authentication failed")
+  } else if response == "" {
+    CliResult::Error("Daemon IPC unavailable")
+  } else {
+    CliResult::Error("Daemon IPC error: \{response}")
+  }
 }
 
 ///|

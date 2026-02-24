@@ -24,6 +24,10 @@ pub fn get_version_message() -> String
 
 pub fn parse_args(Array[String]) -> Command
 
+pub fn query_daemon_status(Int, Bool) -> CliResult
+
+pub fn request_daemon_stop(Int) -> CliResult
+
 pub fn run_cli(Array[String]) -> CliResult
 
 pub fn stop_daemon(pid_path~ : String) -> CliResult
@@ -56,7 +60,7 @@ pub(all) enum CronCommand {
 
 pub(all) enum GatewayCommand {
   Start(GatewayStartOptions)
-  Status
+  Status(GatewayStatusOptions)
   Stop
   Unknown(String)
 }
@@ -67,6 +71,10 @@ pub(all) struct GatewayStartOptions {
   mut port : Int?
   mut debug : Bool
   mut daemon : Bool
+}
+
+pub(all) struct GatewayStatusOptions {
+  mut json : Bool
 }
 
 pub(all) struct OnboardOptions {

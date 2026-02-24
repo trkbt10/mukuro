@@ -35,11 +35,18 @@ pub(all) enum GatewayCommand {
   /// Gatewayを起動
   Start(GatewayStartOptions)
   /// Gatewayの状態を表示
-  Status
+  Status(GatewayStatusOptions)
   /// Gatewayを停止
   Stop
   /// 不明
   Unknown(String)
+}
+
+///|
+/// Gateway状態表示オプション
+pub(all) struct GatewayStatusOptions {
+  /// JSON形式で出力
+  mut json : Bool
 }
 
 ///|
@@ -93,7 +100,7 @@ pub(all) enum CliResult {
 ///|
 /// ヘルプメッセージを取得
 pub fn get_help_message() -> String {
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: ~/.mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --debug, -d          Enable debug mode\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway status\n  mukuro gateway stop\n  mukuro cron list"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: ~/.mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway stop\n  mukuro cron list"
 }
 
 ///|
@@ -148,7 +155,7 @@ pub fn execute_onboard(opts : OnboardOptions) -> CliResult {
 pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
   match cmd {
     GatewayCommand::Start(opts) => execute_gateway_start(opts)
-    GatewayCommand::Status => execute_gateway_status()
+    GatewayCommand::Status(opts) => execute_gateway_status(opts)
     GatewayCommand::Stop => execute_gateway_stop()
     GatewayCommand::Unknown(name) =>
       CliResult::Error("Unknown gateway command: \{name}")
@@ -195,20 +202,23 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
 
 ///|
 /// Gatewayの状態を表示
-fn execute_gateway_status() -> CliResult {
+fn execute_gateway_status(opts : GatewayStatusOptions) -> CliResult {
   // まずPIDファイル経由でデーモン状態を確認
   let daemon_status = get_daemon_status(pid_path=@control.default_pid_path)
 
   // デーモン状態に応じて表示
   match daemon_status {
-    @control.DaemonStatus::Running(pid) =>
-      CliResult::Ok(
-        "Gateway Status (daemon mode):\n  State: running\n  PID: \{pid}\n  PID file: \{@control.default_pid_path}",
-      )
+    @control.DaemonStatus::Running(pid) => query_daemon_status(pid, opts.json)
     @control.DaemonStatus::Stale(pid) =>
-      CliResult::Ok(
-        "Gateway Status (stale):\n  State: stale (PID file exists but process not running)\n  Stale PID: \{pid}\n  PID file: \{@control.default_pid_path}\n\nUse 'gateway stop' to clean up stale PID file.",
-      )
+      if opts.json {
+        CliResult::Ok(
+          "{\"mode\":\"daemon\",\"state\":\"stale\",\"stale_pid\":\{pid},\"pid_file\":\"\{@control.default_pid_path}\",\"socket\":\"\{@control.default_ipc_socket_path}\"}",
+        )
+      } else {
+        CliResult::Ok(
+          "Gateway Status (stale):\n  State: stale (PID file exists but process not running)\n  Stale PID: \{pid}\n  PID file: \{@control.default_pid_path}\n\nUse 'gateway stop' to clean up stale PID file.",
+        )
+      }
     @control.DaemonStatus::Stopped => {
       // インプロセスモードの状態を確認
       let status = global_gateway.status()
@@ -220,9 +230,19 @@ fn execute_gateway_status() -> CliResult {
         Some(ts) => "\{ts}"
         None => "not started"
       }
-      CliResult::Ok(
-        "Gateway Status (in-process mode):\n  State: \{status.state.to_string()}\n  Version: \{status.version}\n  Health: \{health_str}\n  Channels: \{status.connected_channels.length()}\n  Sessions: \{status.active_sessions}\n  Started: \{started_str}",
-      )
+      if opts.json {
+        let started_json = match status.started_at {
+          Some(ts) => "\{ts}"
+          None => "null"
+        }
+        CliResult::Ok(
+          "{\"mode\":\"in-process\",\"state\":\"\{status.state.to_string()}\",\"version\":\"\{status.version}\",\"health\":\"\{health_str}\",\"channels\":\{status.connected_channels.length()},\"sessions\":\{status.active_sessions},\"started\":\{started_json}}",
+        )
+      } else {
+        CliResult::Ok(
+          "Gateway Status (in-process mode):\n  State: \{status.state.to_string()}\n  Version: \{status.version}\n  Health: \{health_str}\n  Channels: \{status.connected_channels.length()}\n  Sessions: \{status.active_sessions}\n  Started: \{started_str}",
+        )
+      }
     }
   }
 }
@@ -234,9 +254,14 @@ fn execute_gateway_stop() -> CliResult {
   let daemon_status = get_daemon_status(pid_path=@control.default_pid_path)
 
   match daemon_status {
-    @control.DaemonStatus::Running(_) =>
-      // デーモンモードで実行中 → シグナル送信
-      stop_daemon(pid_path=@control.default_pid_path)
+    @control.DaemonStatus::Running(pid) => {
+      // まずIPCで停止要求し、失敗時はシグナル送信へフォールバック
+      let ipc_result = request_daemon_stop(pid)
+      match ipc_result {
+        CliResult::Ok(_) => ipc_result
+        _ => stop_daemon(pid_path=@control.default_pid_path)
+      }
+    }
     @control.DaemonStatus::Stale(pid) => {
       // stale状態 → PIDファイルをクリーンアップ
       let _ = stop_daemon(pid_path=@control.default_pid_path)
@@ -395,10 +420,26 @@ fn parse_gateway_args(args : ArrayView[String]) -> Command {
       let opts = parse_gateway_start_opts(slice_from_1(arr)[:])
       Command::Gateway(GatewayCommand::Start(opts))
     }
-    "status" => Command::Gateway(GatewayCommand::Status)
+    "status" => {
+      let opts = parse_gateway_status_opts(slice_from_1(arr)[:])
+      Command::Gateway(GatewayCommand::Status(opts))
+    }
     "stop" => Command::Gateway(GatewayCommand::Stop)
     _ => Command::Gateway(GatewayCommand::Unknown(subcmd))
   }
+}
+
+///|
+/// gateway statusオプションをパース
+fn parse_gateway_status_opts(args : ArrayView[String]) -> GatewayStatusOptions {
+  let opts : GatewayStatusOptions = { json: false }
+  let arr = array_view_to_array(args)
+  for arg in arr {
+    if arg == "--json" {
+      opts.json = true
+    }
+  }
+  opts
 }
 
 ///|

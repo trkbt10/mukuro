@@ -7,6 +7,10 @@ import {
 }
 
 // Values
+pub let default_gateway_state_path : String
+
+pub let default_ipc_socket_path : String
+
 pub let default_pid_path : String
 
 // Errors
