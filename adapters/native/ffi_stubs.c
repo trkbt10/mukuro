@@ -89,6 +89,36 @@ static volatile int g_signal_received = 0;
 static int g_ipc_server_fd = -1;
 
 /*
+ * IPC認証トークンを生成する
+ * /dev/urandom を優先し、失敗時は時刻とPIDベースでフォールバック
+ */
+int moonbit_generate_gateway_token(void) {
+    unsigned int token = 0;
+
+    int random_fd = open("/dev/urandom", O_RDONLY);
+    if (random_fd >= 0) {
+        ssize_t read_size = read(random_fd, &token, sizeof(token));
+        close(random_fd);
+        if (read_size == (ssize_t)sizeof(token)) {
+            token &= 0x7fffffffU;
+            if (token == 0) token = 1;
+            return (int)token;
+        }
+    }
+
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == 0) {
+        token = (unsigned int)ts.tv_nsec ^ (unsigned int)getpid() ^ (unsigned int)time(NULL);
+    } else {
+        token = (unsigned int)getpid() ^ (unsigned int)time(NULL);
+    }
+
+    token &= 0x7fffffffU;
+    if (token == 0) token = 1;
+    return (int)token;
+}
+
+/*
  * 現在時刻（Unix epoch秒）
  */
 int64_t moonbit_time_now(void) {
@@ -271,6 +301,18 @@ int moonbit_remove_file(const char* path) {
         return -1;
     }
     return remove(ascii_path);
+}
+
+/*
+ * 指定パスのファイル権限を変更
+ * returns: 0 on success, -1 on error
+ */
+int moonbit_chmod_file(const char* path, int mode) {
+    char ascii_path[256];
+    if (utf16le_to_ascii(path, ascii_path, sizeof(ascii_path)) != 0) {
+        return -1;
+    }
+    return chmod(ascii_path, (mode_t)mode);
 }
 
 /*
@@ -727,6 +769,18 @@ int moonbit_read_gateway_token(void) {
     if (get_default_gateway_token_path(path, sizeof(path)) != 0) {
         return -1;
     }
+
+    struct stat st;
+    if (stat(path, &st) != 0) {
+        return -1;
+    }
+    if (st.st_uid != getuid()) {
+        return -1;
+    }
+    if ((st.st_mode & (S_IRWXG | S_IRWXO)) != 0) {
+        return -1;
+    }
+
     FILE* f = fopen(path, "r");
     if (!f) return -1;
     int token = -1;

@@ -88,7 +88,13 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
 
   let self_pid = @native.c_getpid()
   let started_at = @native.c_time()
-  let token = (self_pid * 1103515245 + started_at.to_int()) & 2147483647
+  let generated_token = @native.c_generate_gateway_token()
+  let token = if generated_token > 0 {
+    generated_token
+  } else {
+    // 予備経路（通常到達しない）
+    (self_pid * 1103515245 + started_at.to_int()) & 2147483647
+  }
   let mut last_snapshot_uptime = -1
 
   if @native.c_write_gateway_token(token) != 0 {

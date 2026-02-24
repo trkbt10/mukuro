@@ -233,6 +233,13 @@ pub extern "C" fn c_file_exists(path : CString) -> Int = "moonbit_file_exists"
 #borrow(path)
 pub extern "C" fn c_remove_file(path : CString) -> Int = "moonbit_remove_file"
 
+///|
+/// ファイル権限を変更
+/// mode 例: 0o600 / 0o644
+/// returns: 0 on success, -1 on error
+#borrow(path)
+pub extern "C" fn c_chmod_file(path : CString, mode : Int) -> Int = "moonbit_chmod_file"
+
 // ============================================================
 // posix_spawn ベースのデーモン起動
 // ============================================================
@@ -266,7 +273,7 @@ pub extern "C" fn c_ipc_server_start() -> Int = "moonbit_ipc_server_start"
 
 ///|
 /// IPCサーバーを1回ポーリングしてコマンド処理
-/// token_pid: 認証トークン（簡易、PID値）
+/// token_pid: 認証トークン（ランダム値）
 /// returns: 0=処理なし, 1=status処理, 2=stop処理, 3=認証失敗, 4=不明コマンド, -1=エラー
 pub extern "C" fn c_ipc_server_poll(
   token_pid : Int,
@@ -306,6 +313,11 @@ pub extern "C" fn c_write_gateway_snapshot(
 /// IPC認証トークンを書き込む
 /// returns: 0 on success, -1 on error
 pub extern "C" fn c_write_gateway_token(token : Int) -> Int = "moonbit_write_gateway_token"
+
+///|
+/// IPC認証トークンを生成する
+/// returns: token (>0) on success, fallback含め常に正値を返す
+pub extern "C" fn c_generate_gateway_token() -> Int = "moonbit_generate_gateway_token"
 
 ///|
 /// IPC認証トークンを読み取る

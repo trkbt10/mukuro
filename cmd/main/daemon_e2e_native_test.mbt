@@ -118,3 +118,20 @@ test "native e2e gateway stop cleans stale pid file" {
 
   cleanup_daemon_artifacts()
 }
+
+///|
+test "native e2e token file with insecure permission is rejected" {
+  cleanup_daemon_artifacts()
+
+  @native.c_write_gateway_token(123456) |> ignore
+  @native.c_chmod_file(
+    @native.string_to_cstring(@control.default_gateway_token_path),
+    420,
+  )
+  |> ignore
+
+  let read_token = @native.c_read_gateway_token()
+  assert_eq(read_token, -1)
+
+  cleanup_daemon_artifacts()
+}
