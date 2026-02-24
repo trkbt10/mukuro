@@ -67,3 +67,27 @@ test "native e2e stale status triggers artifact cleanup" {
 
   cleanup_daemon_artifacts()
 }
+
+///|
+test "native e2e gateway status --json reports stale daemon" {
+  cleanup_daemon_artifacts()
+
+  @native.c_write_pid_file(
+    @native.string_to_cstring(@control.default_pid_path),
+    999998,
+  )
+  |> ignore
+
+  let result = run_cli(["gateway", "status", "--json"])
+  assert_true(
+    match result {
+      CliResult::Ok(msg) =>
+        msg.contains("\"mode\":\"daemon\"") &&
+        msg.contains("\"state\":\"stale\"") &&
+        msg.contains("\"stale_pid\":999998")
+      _ => false
+    },
+  )
+
+  cleanup_daemon_artifacts()
+}
