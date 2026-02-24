@@ -52,7 +52,7 @@ struct DaemonStartupConfig {
 fn daemon_startup_default() -> DaemonStartupConfig {
   {
     gateway_config: @interfaces.GatewayConfig::default(),
-    runtime_model_config_path: ".mukuro/config.json",
+    runtime_model_config_path: default_runtime_config_path,
     control_api: false,
   }
 }
@@ -64,7 +64,7 @@ fn write_daemon_startup_config(
 ) -> Bool {
   let payload : Json = {
     "runtime_model_config_path": opts.config_path.unwrap_or(
-      ".mukuro/config.json",
+      default_runtime_config_path,
     ),
     "control_api": opts.control_api,
     "gateway": {
@@ -99,7 +99,7 @@ fn parse_daemon_startup_config(content : String) -> DaemonStartupConfig {
   }
   let runtime_model_config_path = match root.get("runtime_model_config_path") {
     Some(String(path)) => path
-    _ => ".mukuro/config.json"
+    _ => default_runtime_config_path
   }
   let control_api = match root.get("control_api") {
     Some(True) => true

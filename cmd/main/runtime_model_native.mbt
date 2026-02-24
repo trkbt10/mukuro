@@ -20,7 +20,7 @@ fn validate_runtime_config_or_error(cfg : RuntimeModelConfig) -> String? {
   let model = cfg.model.trim(chars=" \t\n\r").to_string()
   let base_url = cfg.base_url.trim(chars=" \t\n\r").to_string()
   if provider.length() == 0 {
-    return Some("provider is required in .mukuro/config.json")
+    return Some("provider is required in \{default_runtime_config_path}")
   }
   if is_openai_compatible_provider(provider) {
     if base_url.length() == 0 {
@@ -59,7 +59,7 @@ struct RuntimeModelPathCell {
 
 ///|
 let runtime_model_path_cell : RuntimeModelPathCell = {
-  path: ".mukuro/config.json",
+  path: default_runtime_config_path,
 }
 
 ///|
@@ -70,69 +70,39 @@ pub fn set_runtime_model_config_path_for_process(path : String) -> Unit {
 ///|
 fn default_runtime_model_config() -> RuntimeModelConfig {
   {
-    provider: "anthropic",
+    provider: "",
     api_key: "",
-    model: default_model_for("anthropic"),
+    model: "",
     base_url: "",
     use_responses_api: false,
   }
 }
 
 ///|
-fn parse_runtime_model_config(content : String) -> RuntimeModelConfig {
-  let parsed : Json = @json.parse(content) catch {
-    _ => return default_runtime_model_config()
-  }
-  match parsed {
-    Object(obj) => {
-      let provider = match obj.get("provider") {
-        Some(String(s)) => s
-        _ => "anthropic"
-      }
-      let api_key = match obj.get("api_key") {
-        Some(String(s)) => s
-        _ => ""
-      }
-      let model = match obj.get("model") {
-        Some(String(s)) => s
-        _ =>
-          match obj.get("default_model") {
-            Some(String(s)) => s
-            _ => default_model_for(provider)
-          }
-      }
-      let base_url = match obj.get("base_url") {
-        Some(String(s)) => s
-        _ => ""
-      }
-      let use_responses_api = match obj.get("use_responses_api") {
-        Some(True) => true
-        _ => false
-      }
-      { provider, api_key, model, base_url, use_responses_api }
-    }
-    _ => default_runtime_model_config()
-  }
+fn parse_runtime_model_config(
+  root : Map[String, Json],
+) -> RuntimeModelConfig raise @interfaces.ControlError {
+  let provider = parse_string_field_impl(root, "provider", "")
+  let api_key = parse_string_field_impl(root, "api_key", "")
+  let model = parse_string_field_impl(
+    root,
+    "model",
+    parse_string_field_impl(root, "default_model", default_model_for(provider)),
+  )
+  let base_url = parse_string_field_impl(root, "base_url", "")
+  let use_responses_api = parse_bool_field_impl(
+    root, "use_responses_api", false,
+  )
+  { provider, api_key, model, base_url, use_responses_api }
 }
 
 ///|
 fn load_runtime_model_config() -> RuntimeModelConfig {
-  let path = runtime_model_path_cell.path
-  let buffer_len = 65536
-  let buffer = Bytes::new(buffer_len)
-  let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(path),
-    buffer,
-    buffer_len,
-  )
-  if read_len <= 0 {
-    return default_runtime_model_config()
-  }
-  let data = Bytes::from_iter(buffer[:read_len].iter())
-  let content = @utf8.decode(data[:]) catch {
+  parse_runtime_model_config(
+    load_config_root_impl(runtime_model_path_cell.path),
+  ) catch {
     _ => return default_runtime_model_config()
   }
-  parse_runtime_model_config(content)
 }
 
 ///|

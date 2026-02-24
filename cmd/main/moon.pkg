@@ -20,6 +20,7 @@ import {
 options(
   "is-main": true,
   targets: {
+    "config_file_native.mbt": [ "native" ],
     "control_api_native.mbt": [ "native" ],
     "control_api_native_test.mbt": [ "native" ],
     "control_api_stub.mbt": [ "js", "wasm", "wasm-gc" ],

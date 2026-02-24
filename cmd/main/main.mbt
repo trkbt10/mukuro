@@ -112,7 +112,7 @@ pub(all) enum CliResult {
 ///|
 /// ヘルプメッセージを取得
 pub fn get_help_message() -> String {
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: .mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nGateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway start --control-api --host 127.0.0.1 --port 8080\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway auth-log --since 3600 --json\n  mukuro gateway stop\n  mukuro cron list"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: \{default_runtime_config_path})\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nGateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway start --control-api --host 127.0.0.1 --port 8080\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway auth-log --since 3600 --json\n  mukuro gateway stop\n  mukuro cron list"
 }
 
 ///|
@@ -208,7 +208,7 @@ pub fn execute_onboard(opts : OnboardOptions) -> CliResult {
   // デフォルトモデルはオプション
   let default_model = opts.default_model.unwrap_or("")
   // 出力パスのデフォルト
-  let output_path = opts.output_path.unwrap_or(".mukuro/config.json")
+  let output_path = opts.output_path.unwrap_or(default_runtime_config_path)
   // 設定JSONを構築（実際の値を補間）
   let config_json = "{\n  \"provider\": \"\{provider}\",\n  \"api_key\": \"\{api_key}\",\n  \"default_model\": \"\{default_model}\"\n}"
   execute_onboard_impl(
@@ -238,7 +238,7 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
     None => ()
   }
   // 設定パスの解決
-  let config_path = opts.config_path.unwrap_or(".mukuro/config.json")
+  let config_path = opts.config_path.unwrap_or(default_runtime_config_path)
   set_runtime_model_config_path_for_process(config_path)
   bootstrap_runtime_channels_from_config(config_path)
   // 設定ファイルが指定されている場合のみ読み込み（未指定時はデフォルト）
