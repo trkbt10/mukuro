@@ -1,0 +1,20 @@
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/adapters/js",
+  "moonbitlang/core/json",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
+
+options(
+  targets: {
+    "anthropic.mbt": [ "js" ],
+    "base.mbt": [ "js" ],
+    "fallback.mbt": [ "js" ],
+    "models_test.mbt": [ "js" ],
+    "openai.mbt": [ "js" ],
+  },
+)

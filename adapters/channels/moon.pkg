@@ -1,0 +1,18 @@
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/core/session",
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/adapters/js",
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: {
+    "channels_test.mbt": [ "js" ],
+    "discord.mbt": [ "js" ],
+    "http.mbt": [ "js" ],
+    "slack.mbt": [ "js" ],
+    "telegram.mbt": [ "js" ],
+    "websocket.mbt": [ "js" ],
+  },
+)

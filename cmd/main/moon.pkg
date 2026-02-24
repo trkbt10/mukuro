@@ -1,0 +1,7 @@
+import {
+  "trkbt10/mukuro" @lib,
+}
+
+options(
+  "is-main": true,
+)

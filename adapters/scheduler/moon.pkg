@@ -1,0 +1,10 @@
+import {
+  "trkbt10/mukuro/core/scheduler" @core_scheduler,
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/adapters/js",
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: { "timer.mbt": [ "js" ] },
+)

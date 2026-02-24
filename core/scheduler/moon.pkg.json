@@ -1,6 +1,0 @@
-{
-  "import": [
-    "trkbt10/mukuro/core/types",
-    "moonbitlang/core/json"
-  ]
-}

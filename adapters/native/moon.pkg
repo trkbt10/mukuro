@@ -1,0 +1,20 @@
+import {
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/types",
+  "moonbitlang/core/json",
+}
+
+options(
+  link: { "native": { "cc-flags": "-lpthread" } },
+  targets: {
+    "clock.mbt": [ "native" ],
+    "crypto.mbt": [ "native" ],
+    "ffi.mbt": [ "native" ],
+    "filesystem.mbt": [ "native" ],
+    "http_client.mbt": [ "native" ],
+    "logger.mbt": [ "native" ],
+    "platform.mbt": [ "native" ],
+    "process.mbt": [ "native" ],
+    "timer.mbt": [ "native" ],
+  },
+)

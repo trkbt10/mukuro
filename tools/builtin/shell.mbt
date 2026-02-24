@@ -94,7 +94,7 @@ pub fn execute_shell_tool(
 
 ///|
 /// 危険なコマンドかどうかをチェック
-fn is_dangerous_command(command : String) -> Bool {
+pub fn is_dangerous_command(command : String) -> Bool {
   let dangerous_patterns = [
     "rm -rf", "rm -r /", "dd if=", "mkfs", "> /dev/", "chmod -R 777", ":(){ :|:& };:",
   ]

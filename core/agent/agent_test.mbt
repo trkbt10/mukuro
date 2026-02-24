@@ -120,3 +120,103 @@ test "AgentLoopContext::is_completed" {
   ctx.set_state(@agent.AgentState::Completed)
   inspect(ctx.is_completed(), content="true")
 }
+
+// =============================================================================
+// Retry Configuration Tests
+// =============================================================================
+
+///|
+test "RetryConfig::default has reasonable values" {
+  let config = @agent.RetryConfig::default()
+  inspect(config.max_retries, content="3")
+  inspect(config.initial_delay_ms, content="1000")
+  inspect(config.max_delay_ms, content="60000")
+  inspect(config.retry_on_rate_limit, content="true")
+  assert_true(config.backoff_multiplier > 1.0)
+}
+
+///|
+test "AgentLoopOptions::default includes retry config" {
+  let options = @agent.AgentLoopOptions::default()
+  inspect(options.retry_config.max_retries, content="3")
+  inspect(options.retry_config.retry_on_rate_limit, content="true")
+}
+
+///|
+test "calculate_backoff_delay computes correct values" {
+  // attempt=0: initial_delay
+  let delay0 = @agent.calculate_backoff_delay(0, 1000, 60000, 2.0)
+  inspect(delay0, content="1000")
+
+  // attempt=1: 1000 * 2 = 2000
+  let delay1 = @agent.calculate_backoff_delay(1, 1000, 60000, 2.0)
+  inspect(delay1, content="2000")
+
+  // attempt=2: 1000 * 2 * 2 = 4000
+  let delay2 = @agent.calculate_backoff_delay(2, 1000, 60000, 2.0)
+  inspect(delay2, content="4000")
+
+  // attempt=3: 1000 * 2 * 2 * 2 = 8000
+  let delay3 = @agent.calculate_backoff_delay(3, 1000, 60000, 2.0)
+  inspect(delay3, content="8000")
+}
+
+///|
+test "calculate_backoff_delay respects max_delay_ms" {
+  // With max_delay_ms=5000, should cap at 5000
+  let delay = @agent.calculate_backoff_delay(10, 1000, 5000, 2.0)
+  inspect(delay, content="5000")
+}
+
+///|
+test "calculate_backoff_delay handles multiplier 1.5" {
+  // attempt=1: 1000 * 1.5 = 1500
+  let delay1 = @agent.calculate_backoff_delay(1, 1000, 60000, 1.5)
+  inspect(delay1, content="1500")
+
+  // attempt=2: 1000 * 1.5 * 1.5 = 2250
+  let delay2 = @agent.calculate_backoff_delay(2, 1000, 60000, 1.5)
+  inspect(delay2, content="2250")
+}
+
+///|
+test "RateLimitExceeded error contains retry info" {
+  let err : @agent.AgentLoopError = @agent.AgentLoopError::RateLimitExceeded(
+    retry_count=3,
+    last_retry_after=60,
+  )
+  match err {
+    @agent.AgentLoopError::RateLimitExceeded(retry_count~, last_retry_after~) => {
+      inspect(retry_count, content="3")
+      inspect(last_retry_after, content="60")
+    }
+    _ => fail("Expected RateLimitExceeded")
+  }
+}
+
+///|
+test "RetryConfig with different settings" {
+  let config : @agent.RetryConfig = {
+    max_retries: 5,
+    initial_delay_ms: 500,
+    max_delay_ms: 30000,
+    backoff_multiplier: 1.5,
+    retry_on_rate_limit: false,
+    retryable_status_codes: [429, 503],
+  }
+  inspect(config.max_retries, content="5")
+  inspect(config.initial_delay_ms, content="500")
+  inspect(config.retry_on_rate_limit, content="false")
+  inspect(config.retryable_status_codes.length(), content="2")
+}
+
+// =============================================================================
+// Helper function for assertions
+// =============================================================================
+
+///|
+fn assert_true(condition : Bool) -> Unit raise {
+  if not(condition) {
+    fail("Assertion failed: expected true")
+  }
+}

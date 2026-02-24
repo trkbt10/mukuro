@@ -6,6 +6,104 @@ pub(all) suberror AgentLoopError {
   ToolExecutionFailed(String)
   SessionError(String)
   ConfigurationError(String)
+  RateLimitExceeded(retry_count~ : Int, last_retry_after~ : Int)
+}
+
+///|
+/// リトライ設定
+pub(all) struct RetryConfig {
+  /// 最大リトライ回数
+  max_retries : Int
+  /// 初期遅延（ミリ秒）
+  initial_delay_ms : Int
+  /// 最大遅延（ミリ秒）
+  max_delay_ms : Int
+  /// バックオフ乗数
+  backoff_multiplier : Double
+  /// リトライ可能なエラーかどうかを判定
+  retry_on_rate_limit : Bool
+  /// リトライ可能なエラーコード
+  retryable_status_codes : Array[Int]
+}
+
+///|
+/// デフォルトのリトライ設定
+pub fn RetryConfig::default() -> RetryConfig {
+  {
+    max_retries: 3,
+    initial_delay_ms: 1000,
+    max_delay_ms: 60000,
+    backoff_multiplier: 2.0,
+    retry_on_rate_limit: true,
+    retryable_status_codes: [429, 500, 502, 503, 504],
+  }
+}
+
+///|
+/// リトライ状態
+priv struct RetryState {
+  /// 現在のリトライ回数
+  mut attempt : Int
+  /// 次の遅延（ミリ秒）
+  mut next_delay_ms : Int
+  /// 最後のretry_after値（デバッグ用）
+  mut last_retry_after : Int
+}
+
+///|
+/// 新しいリトライ状態を作成
+fn RetryState::new(config : RetryConfig) -> RetryState {
+  { attempt: 0, next_delay_ms: config.initial_delay_ms, last_retry_after: 0 }
+}
+
+///|
+/// リトライ可能かどうかを判定
+fn RetryState::can_retry(self : RetryState, config : RetryConfig) -> Bool {
+  self.attempt < config.max_retries
+}
+
+///|
+/// 次のリトライのために状態を更新
+fn RetryState::increment(self : RetryState, config : RetryConfig) -> Unit {
+  self.attempt = self.attempt + 1
+  let next = (self.next_delay_ms.to_double() * config.backoff_multiplier).to_int()
+  self.next_delay_ms = if next > config.max_delay_ms {
+    config.max_delay_ms
+  } else {
+    next
+  }
+}
+
+///|
+/// retry_after値で遅延を上書き
+fn RetryState::set_retry_after(self : RetryState, retry_after : Int) -> Unit {
+  self.last_retry_after = retry_after
+  // retry_after（秒）をミリ秒に変換し、次の遅延として使用
+  let retry_ms = retry_after * 1000
+  if retry_ms > self.next_delay_ms {
+    self.next_delay_ms = retry_ms
+  }
+}
+
+///|
+/// 計算された遅延を取得（ミリ秒）
+pub fn calculate_backoff_delay(
+  attempt : Int,
+  initial_delay_ms : Int,
+  max_delay_ms : Int,
+  multiplier : Double,
+) -> Int {
+  // 乗算でバックオフを計算（pow使用を避ける）
+  let mut delay = initial_delay_ms.to_double()
+  for _ in 0..<attempt {
+    delay = delay * multiplier
+  }
+  let delay_int = delay.to_int()
+  if delay_int > max_delay_ms {
+    max_delay_ms
+  } else {
+    delay_int
+  }
 }
 
 ///|
@@ -17,6 +115,8 @@ pub(all) struct AgentLoopOptions {
   model_options : @types.ModelOptions
   /// タイムアウト（ミリ秒）
   timeout_ms : Int64
+  /// リトライ設定
+  retry_config : RetryConfig
 }
 
 ///|
@@ -26,6 +126,7 @@ pub fn AgentLoopOptions::default() -> AgentLoopOptions {
     max_iterations: 10,
     model_options: @types.ModelOptions::default(),
     timeout_ms: 120000L,
+    retry_config: RetryConfig::default(),
   }
 }
 
@@ -77,14 +178,17 @@ pub fn run_agent_loop(
   while not(ctx.is_max_iterations(options.max_iterations)) {
     ctx.set_state(AgentState::WaitingForModel)
     ctx.increment_iteration()
-    // モデル呼び出し
-    let response = deps.model_orchestrator.call(
-      messages=ctx.messages,
-      tools=tool_definitions,
-      options=options.model_options,
-    ) catch {
-      e => raise AgentLoopError::ModelCallFailed(e.to_string())
-    }
+    // リトライ状態を初期化
+    let retry_state = RetryState::new(options.retry_config)
+    // モデル呼び出し（リトライロジック付き）
+    let response = call_model_with_retry(
+      deps.model_orchestrator,
+      ctx.messages,
+      tool_definitions,
+      options.model_options,
+      options.retry_config,
+      retry_state,
+    )
     match response {
       @types.ModelResponse::Text(content) => {
         // テキスト応答 - ループ完了
@@ -129,13 +233,75 @@ pub fn run_agent_loop(
       @types.ModelResponse::ModelError(msg) =>
         raise AgentLoopError::ModelCallFailed(msg)
       @types.ModelResponse::RateLimited(retry_after~) =>
-        raise AgentLoopError::ModelCallFailed(
-          "Rate limited, retry after \{retry_after}s",
+        // リトライが有効でリトライ上限に達した場合
+        raise AgentLoopError::RateLimitExceeded(
+          retry_count=retry_state.attempt,
+          last_retry_after=retry_after,
         )
     }
   }
   // 最大反復回数に達した
   raise AgentLoopError::MaxIterationsReached(options.max_iterations)
+}
+
+///|
+/// リトライロジック付きでモデルを呼び出す
+fn call_model_with_retry(
+  orchestrator : &@interfaces.ModelOrchestrator,
+  messages : Array[@types.ModelMessage],
+  tools : Array[@types.ToolDefinition],
+  options : @types.ModelOptions,
+  retry_config : RetryConfig,
+  retry_state : RetryState,
+) -> @types.ModelResponse raise AgentLoopError {
+  // リトライループ
+  while true {
+    let response = orchestrator.call(messages~, tools~, options~) catch {
+      e => raise AgentLoopError::ModelCallFailed(e.to_string())
+    }
+    match response {
+      @types.ModelResponse::RateLimited(retry_after~) =>
+        // レート制限 - リトライ可能か確認
+        if retry_config.retry_on_rate_limit &&
+          retry_state.can_retry(retry_config) {
+          retry_state.set_retry_after(retry_after)
+          retry_state.increment(retry_config)
+          // 注: 実際の遅延は非同期APIが必要
+          // 現在は即座にリトライする（実運用では遅延が必要）
+          continue
+        } else {
+          // リトライ上限に達した
+          return response
+        }
+      @types.ModelResponse::ModelError(msg) =>
+        // 一部のエラーはリトライ可能
+        if is_retryable_error(msg) && retry_state.can_retry(retry_config) {
+          retry_state.increment(retry_config)
+          continue
+        } else {
+          return response
+        }
+      _ => return response
+    }
+  }
+  // 到達不能
+  @types.ModelResponse::ModelError("Unexpected retry loop exit")
+}
+
+///|
+/// エラーメッセージがリトライ可能かどうかを判定
+fn is_retryable_error(error_msg : String) -> Bool {
+  let retryable_patterns = [
+    "timeout", "connection reset", "connection refused", "temporary failure", "service unavailable",
+    "internal server error", "bad gateway", "gateway timeout",
+  ]
+  let lower_msg = error_msg.to_lower()
+  for pattern in retryable_patterns {
+    if lower_msg.contains(pattern) {
+      return true
+    }
+  }
+  false
 }
 
 ///|

@@ -1,0 +1,21 @@
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/adapters/js",
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: {
+    "builtin_test.mbt": [ "js" ],
+    "filesystem.mbt": [ "js" ],
+    "registry_js.mbt": [ "js" ],
+    "registry_native.mbt": [ "native" ],
+    "registry_wasm.mbt": [ "wasm", "wasm-gc" ],
+    "shell.mbt": [ "js" ],
+    "time_js.mbt": [ "js" ],
+    "time_native.mbt": [ "native" ],
+    "time_wasm.mbt": [ "wasm", "wasm-gc" ],
+    "web.mbt": [ "js" ],
+  },
+)

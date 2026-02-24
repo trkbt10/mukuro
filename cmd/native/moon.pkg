@@ -1,0 +1,16 @@
+import {
+  "trkbt10/mukuro/adapters/native" @adapter_native,
+  "trkbt10/mukuro/core/types" @types,
+  "trkbt10/mukuro/tools/builtin" @builtin,
+  "trkbt10/mukuro/interfaces" @interfaces,
+  "moonbitlang/core/json",
+}
+
+options(
+  "is-main": true,
+  targets: {
+    "main.mbt": [ "native" ],
+    "main_js.mbt": [ "js" ],
+    "main_wasm.mbt": [ "wasm", "wasm-gc" ],
+  },
+)

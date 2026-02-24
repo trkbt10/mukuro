@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn calculate_backoff_delay(Int, Int, Int, Double) -> Int
+
 pub fn run_agent_loop(@types.InboundEnvelope, AgentLoopOptions, AgentDependencies) -> @types.OutboundMessage raise AgentLoopError
 
 pub fn single_model_call(Array[@types.ModelMessage], @types.ModelOptions, &@interfaces.ModelOrchestrator) -> @types.ModelResponse raise AgentLoopError
@@ -18,6 +20,7 @@ pub(all) suberror AgentLoopError {
   ToolExecutionFailed(String)
   SessionError(String)
   ConfigurationError(String)
+  RateLimitExceeded(retry_count~ : Int, last_retry_after~ : Int)
 }
 
 // Types and methods
@@ -49,6 +52,7 @@ pub(all) struct AgentLoopOptions {
   max_iterations : Int
   model_options : @types.ModelOptions
   timeout_ms : Int64
+  retry_config : RetryConfig
 }
 pub fn AgentLoopOptions::default() -> Self
 
@@ -68,6 +72,16 @@ pub(all) enum IterationResult {
   Complete(@types.OutboundMessage)
   Failed(String)
 }
+
+pub(all) struct RetryConfig {
+  max_retries : Int
+  initial_delay_ms : Int
+  max_delay_ms : Int
+  backoff_multiplier : Double
+  retry_on_rate_limit : Bool
+  retryable_status_codes : Array[Int]
+}
+pub fn RetryConfig::default() -> Self
 
 // Type aliases
 

@@ -1,0 +1,14 @@
+import {
+  "trkbt10/mukuro/interfaces",
+  "moonbitlang/core/json",
+}
+
+options(
+  targets: {
+    "crypto.mbt": [ "js" ],
+    "crypto_test.mbt": [ "js" ],
+    "fetch.mbt": [ "js" ],
+    "http_client.mbt": [ "js" ],
+    "storage.mbt": [ "js" ],
+  },
+)
