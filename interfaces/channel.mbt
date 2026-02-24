@@ -22,6 +22,8 @@ pub(open) trait ChannelAdapter {
 pub(open) trait ChannelManager {
   /// チャネルを登録
   register(Self, &ChannelAdapter) -> Unit
+  /// チャネル登録を解除
+  unregister(Self, String) -> Unit
   /// チャネルを取得
   get_channel(Self, String) -> &ChannelAdapter?
   /// 全チャネル名のリスト

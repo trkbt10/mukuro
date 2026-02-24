@@ -261,6 +261,22 @@ test "ChannelManagerImpl registers and retrieves channels" {
   }
 }
 
+///|
+test "ChannelManagerImpl unregister removes channel" {
+  let resolver = RouteResolver::new(
+    default_strategy=@session.SessionStrategy::PerChat,
+  )
+  let manager = ChannelManagerImpl::new(router=resolver)
+  let config = HttpChannelConfig::default(name="http_test_remove")
+  let adapter = HttpChannelAdapter::new(config)
+  @interfaces.ChannelManager::register(manager, adapter)
+  @interfaces.ChannelManager::unregister(manager, "http_test_remove")
+  match @interfaces.ChannelManager::get_channel(manager, "http_test_remove") {
+    None => ()
+    Some(_) => fail("Expected channel to be removed")
+  }
+}
+
 // =============================================================================
 // HTTP Channel Tests
 // =============================================================================

@@ -313,6 +313,7 @@ pub(open) trait ChannelAdapter {
 
 pub(open) trait ChannelManager {
   register(Self, &ChannelAdapter) -> Unit
+  unregister(Self, String) -> Unit
   get_channel(Self, String) -> &ChannelAdapter?
   list_channels(Self) -> Array[String]
   connect_all(Self) -> Unit raise

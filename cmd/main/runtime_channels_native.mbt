@@ -6,6 +6,7 @@ struct RuntimeChannelsCell {
   mut loaded_path : String?
   ws_adapters : Array[@channels.WebSocketChannelAdapter]
   http_adapters : Array[@channels.HttpChannelAdapter]
+  registered_names : Array[String]
 }
 
 ///|
@@ -13,6 +14,7 @@ let runtime_channels_cell : RuntimeChannelsCell = {
   loaded_path: None,
   ws_adapters: [],
   http_adapters: [],
+  registered_names: [],
 }
 
 ///|
@@ -165,6 +167,7 @@ fn register_websocket_channel(
     global_channel_manager,
     runtime_channels_cell.ws_adapters[index],
   )
+  runtime_channels_cell.registered_names.push(name)
 }
 
 ///|
@@ -186,6 +189,7 @@ fn register_http_channel(
     global_channel_manager,
     runtime_channels_cell.http_adapters[index],
   )
+  runtime_channels_cell.registered_names.push(name)
 }
 
 ///|
@@ -194,8 +198,12 @@ pub fn bootstrap_runtime_channels_from_config(path : String) -> Unit {
     Some(loaded) => if loaded == path { return }
     None => ()
   }
+  for name in runtime_channels_cell.registered_names {
+    @interfaces.ChannelManager::unregister(global_channel_manager, name)
+  }
   runtime_channels_cell.ws_adapters.clear()
   runtime_channels_cell.http_adapters.clear()
+  runtime_channels_cell.registered_names.clear()
 
   let content = read_runtime_config_text(path).unwrap_or("")
   if content.length() == 0 {

@@ -215,6 +215,14 @@ pub impl @interfaces.ChannelManager for ChannelManagerImpl with register(
 }
 
 ///|
+pub impl @interfaces.ChannelManager for ChannelManagerImpl with unregister(
+  self,
+  name,
+) {
+  self.channels.remove(name)
+}
+
+///|
 pub impl @interfaces.ChannelManager for ChannelManagerImpl with get_channel(
   self,
   name,
