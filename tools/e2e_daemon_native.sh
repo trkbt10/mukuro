@@ -33,6 +33,12 @@ echo "$STATUS_JSON" | rg '"mode":"daemon"' >/dev/null
 echo "$STATUS_JSON" | rg '"state":"running"' >/dev/null
 echo "$STATUS_JSON" | rg '"ipc":"connected"' >/dev/null
 
+echo "[e2e] auth failure by token mismatch"
+echo "0" > .mukuro/gateway.token
+AUTH_FAIL_OUT="$("$BIN" gateway status 2>&1 || true)"
+echo "$AUTH_FAIL_OUT"
+echo "$AUTH_FAIL_OUT" | rg "Daemon IPC authentication failed" >/dev/null
+
 echo "[e2e] snapshot exists"
 test -f .mukuro/gateway-state.json
 cat .mukuro/gateway-state.json
@@ -40,7 +46,10 @@ cat .mukuro/gateway-state.json
 echo "[e2e] stop daemon"
 STOP_OUT="$("$BIN" gateway stop)"
 echo "$STOP_OUT"
-echo "$STOP_OUT" | rg "Stop request sent to gateway daemon via IPC" >/dev/null
+if ! echo "$STOP_OUT" | rg "(Stop request sent to gateway daemon via IPC|Stop signal sent to gateway daemon)" >/dev/null; then
+  echo "[e2e] unexpected stop output"
+  exit 1
+fi
 
 echo "[e2e] status after stop"
 STATUS_AFTER="$("$BIN" gateway status --json)"
