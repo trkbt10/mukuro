@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Install system tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
+
+      - name: Show tool versions
+        run: |
+          moon version --all
+          rg --version
+
+      - name: Moon check
+        run: |
+          moon check --target js
+          moon check --target native
+
+      - name: Moon tests
+        run: |
+          moon test --target js
+          moon test --target wasm
+          moon test --target native
+
+      - name: Native daemon e2e
+        run: |
+          bash tools/e2e_daemon_native.sh
