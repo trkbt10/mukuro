@@ -429,6 +429,46 @@ pub fn handle_control_api_request(
 }
 
 ///|
+async fn handle_control_api_dispatch_async(
+  gateway : @control.Gateway,
+  headers : Map[String, String],
+  body : String,
+) -> ControlApiResponse {
+  match validate_control_api_access(gateway, headers, ControlAction::Dispatch) {
+    Some(resp) => return resp
+    None => ()
+  }
+  let envelope = parse_dispatch_envelope(body)
+  let auth = @interfaces.AuthContext::token_only(parse_bearer_token(headers))
+  match envelope {
+    Some(env) => {
+      let outbound = handle_inbound_with_agent_loop_async(env) catch {
+        e =>
+          match e {
+            @agent.AgentLoopError::ModelCallFailed(msg) =>
+              return error_response(
+                500,
+                "model_call_failed",
+                "Agent handler failed: \{msg}",
+              )
+            _ =>
+              return error_response(
+                500,
+                "internal_error",
+                "Agent handler failed: \{e}",
+              )
+          }
+      }
+      gateway.dispatch_outbound(auth~, message=outbound) catch {
+        e => return control_error_to_response(e)
+      }
+      json_response(200, { "ok": true })
+    }
+    None => error_response(400, "bad_request", "Invalid dispatch payload")
+  }
+}
+
+///|
 pub fn control_api_healthcheck_message() -> String {
   "control-api-native-ready"
 }
@@ -467,13 +507,18 @@ pub fn run_control_api_server_with_tick_blocking(
           }
         }
         let body_text = body_data.text() catch { _ => "" }
-        let response = handle_control_api_request(
-          gateway,
-          req.meth,
-          req.path,
-          req.headers,
-          body_text,
-        )
+        let response = if req.meth == @xhttp.RequestMethod::Post &&
+          req.path == "/dispatch" {
+          handle_control_api_dispatch_async(gateway, req.headers, body_text)
+        } else {
+          handle_control_api_request(
+            gateway,
+            req.meth,
+            req.path,
+            req.headers,
+            body_text,
+          )
+        }
         conn.send_response(
           response.status,
           "OK",

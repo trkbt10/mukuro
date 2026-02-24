@@ -38,6 +38,8 @@ pub fn get_help_message() -> String
 
 pub fn get_version_message() -> String
 
+pub async fn handle_inbound_with_agent_loop_async(@types.InboundEnvelope) -> @types.OutboundMessage
+
 pub fn load_gateway_config_impl(String) -> @interfaces.GatewayConfig raise @interfaces.ControlError
 
 pub fn parse_args(Array[String]) -> Command
@@ -56,9 +58,13 @@ pub fn request_daemon_stop(Int) -> CliResult
 
 pub fn run_cli(Array[String]) -> CliResult
 
+pub fn run_cli_from_env() -> Unit
+
 pub fn run_control_api_server_blocking(@control.Gateway, String, Int) -> Unit raise
 
 pub fn run_control_api_server_with_tick_blocking(@control.Gateway, String, Int, () -> Bool) -> Unit raise
+
+pub async fn runtime_model_invoke_async(Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse
 
 pub fn runtime_model_unavailable_reason_impl() -> String?
 

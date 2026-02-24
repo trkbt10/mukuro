@@ -112,6 +112,23 @@ fn handle_inbound_with_agent_loop(
 }
 
 ///|
+pub async fn handle_inbound_with_agent_loop_async(
+  envelope : @types.InboundEnvelope,
+) -> @types.OutboundMessage {
+  let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
+  let options = @agent.AgentLoopOptions::default()
+  let deps : @agent.AsyncAgentDependencies = {
+    session_resolver: global_session_resolver,
+    session_store: global_session_store,
+    context_builder: global_context_builder,
+    tool_registry: global_tool_registry,
+    outbound_dispatcher: global_outbound_dispatcher,
+    model_invoke: runtime_model_invoke_async,
+  }
+  @agent.run_agent_loop_async(enriched_envelope, options, deps)
+}
+
+///|
 pub fn create_global_gateway(version : String) -> @control.Gateway {
   @control.Gateway::with_components(
     channel_manager=Some(global_channel_manager),
