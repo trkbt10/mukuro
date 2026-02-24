@@ -4,20 +4,43 @@
 ///|
 fn default_model_for(provider : String) -> String {
   match provider {
-    "openai" | "groq" => "gpt-4o-mini"
-    "ollama" => "llama3.2"
-    _ => "claude-3-5-sonnet-latest"
+    "anthropic" => "claude-3-5-sonnet-latest"
+    _ => ""
   }
 }
 
 ///|
 fn is_openai_compatible_provider(provider : String) -> Bool {
-  provider == "openai" || provider == "groq" || provider == "ollama"
+  provider != "anthropic"
 }
 
 ///|
-fn provider_requires_api_key(provider : String) -> Bool {
-  provider != "ollama"
+fn validate_runtime_config_or_error(cfg : RuntimeModelConfig) -> String? {
+  let provider = cfg.provider.trim(chars=" \t\n\r").to_string()
+  let model = cfg.model.trim(chars=" \t\n\r").to_string()
+  let base_url = cfg.base_url.trim(chars=" \t\n\r").to_string()
+  if provider.length() == 0 {
+    return Some("provider is required in .mukuro/config.json")
+  }
+  if is_openai_compatible_provider(provider) {
+    if base_url.length() == 0 {
+      return Some(
+        "base_url is required for openai-compatible providers (e.g. OpenAI/Groq/Ollama)",
+      )
+    }
+    if model.length() == 0 {
+      return Some("model is required for openai-compatible providers")
+    }
+    None
+  } else {
+    if cfg.api_key.is_empty() {
+      return Some("api_key is required for anthropic provider")
+    }
+    if model.length() == 0 {
+      return Some("model is required for anthropic provider")
+    }
+    None
+  }
 }
 
 ///|
@@ -362,11 +385,9 @@ fn parse_openai_responses_response(body : String) -> @types.ModelResponse {
 }
 
 ///|
-fn normalize_base_url(base_url : String, default_url : String) -> String {
+fn normalize_base_url(base_url : String) -> String {
   let trimmed = base_url.trim(chars=" \t\n\r").to_string()
-  if trimmed.length() == 0 {
-    default_url
-  } else if trimmed.has_suffix("/") {
+  if trimmed.has_suffix("/") {
     trimmed.unsafe_substring(start=0, end=trimmed.length() - 1)
   } else {
     trimmed
@@ -414,12 +435,7 @@ fn call_openai_impl(
   } else {
     build_openai_body_impl(orchestrator, messages, options)
   }).stringify()
-  let default_base = match orchestrator.provider {
-    "groq" => "https://api.groq.com/openai"
-    "ollama" => "http://127.0.0.1:11434"
-    _ => "https://api.openai.com"
-  }
-  let base = normalize_base_url(orchestrator.base_url, default_base)
+  let base = normalize_base_url(orchestrator.base_url)
   let path = if orchestrator.use_responses_api {
     "/v1/responses"
   } else {
@@ -497,12 +513,7 @@ async fn call_openai_async_impl(
   } else {
     build_openai_body_impl(orchestrator, messages, options)
   }).stringify()
-  let default_base = match orchestrator.provider {
-    "groq" => "https://api.groq.com/openai"
-    "ollama" => "http://127.0.0.1:11434"
-    _ => "https://api.openai.com"
-  }
-  let base = normalize_base_url(orchestrator.base_url, default_base)
+  let base = normalize_base_url(orchestrator.base_url)
   let path = if orchestrator.use_responses_api {
     "/v1/responses"
   } else {
@@ -574,10 +585,9 @@ pub async fn runtime_model_invoke_async(
     use_responses_api: cfg.use_responses_api,
     http_client: @native.NativeHttpClient::default(),
   }
-  if provider_requires_api_key(runtime.provider) && runtime.api_key.is_empty() {
-    return @types.ModelResponse::ModelError(
-      "API key is not configured for provider: \{runtime.provider}. Run `mukuro onboard` to create .mukuro/config.json",
-    )
+  match validate_runtime_config_or_error(cfg) {
+    Some(msg) => return @types.ModelResponse::ModelError(msg)
+    None => ()
   }
   if is_openai_compatible_provider(runtime.provider) {
     call_openai_async_impl(runtime, messages, options)
@@ -607,11 +617,9 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
     Some(content) => return @types.ModelResponse::Text(content)
     None => ()
   }
-  // APIキー未設定時は明示エラー
-  if provider_requires_api_key(runtime.provider) && runtime.api_key.is_empty() {
-    return @types.ModelResponse::ModelError(
-      "API key is not configured for provider: \{runtime.provider}. Run `mukuro onboard` to create .mukuro/config.json",
-    )
+  match validate_runtime_config_or_error(cfg) {
+    Some(msg) => return @types.ModelResponse::ModelError(msg)
+    None => ()
   }
   if is_openai_compatible_provider(runtime.provider) {
     call_openai_impl(runtime, messages, options)
