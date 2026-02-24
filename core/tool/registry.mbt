@@ -9,12 +9,13 @@ struct ToolEntry {
 /// インメモリツールレジストリ
 pub struct InMemoryToolRegistry {
   tools : Map[String, ToolEntry]
+  mut definitions_cache : Array[@types.ToolDefinition]?
 }
 
 ///|
 /// InMemoryToolRegistryを新規作成
 pub fn InMemoryToolRegistry::new() -> InMemoryToolRegistry {
-  { tools: {} }
+  { tools: {}, definitions_cache: None }
 }
 
 ///|
@@ -25,15 +26,27 @@ pub impl @interfaces.ToolRegistry for InMemoryToolRegistry with register(
   executor,
 ) {
   self.tools[definition.name] = { definition, executor }
+  self.definitions_cache = None
 }
 
 ///|
 pub impl @interfaces.ToolRegistry for InMemoryToolRegistry with list_definitions(
   self,
 ) {
+  let defs = match self.definitions_cache {
+    Some(cached) => cached
+    None => {
+      let built : Array[@types.ToolDefinition] = []
+      for entry in self.tools.values() {
+        built.push(entry.definition)
+      }
+      self.definitions_cache = Some(built)
+      built
+    }
+  }
   let result : Array[@types.ToolDefinition] = []
-  for entry in self.tools.values() {
-    result.push(entry.definition)
+  for def in defs {
+    result.push(def)
   }
   result
 }
@@ -78,6 +91,7 @@ pub fn InMemoryToolRegistry::remove(
   match self.tools.get(name) {
     Some(_) => {
       self.tools.remove(name)
+      self.definitions_cache = None
       true
     }
     None => false

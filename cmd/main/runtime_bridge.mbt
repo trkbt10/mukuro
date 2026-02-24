@@ -63,14 +63,16 @@ pub impl @interfaces.OutboundDispatcher for LocalOutboundDispatcher with dispatc
 }
 
 ///|
-let global_session_resolver : @session.ConfigurableSessionResolver = @session.ConfigurableSessionResolver::default()
+let global_session_resolver : @session.ConfigurableSessionResolver = @session.ConfigurableSessionResolver::new(
+  strategy=@session.SessionStrategy::PerRoutingScope,
+)
 
 ///|
 let global_session_store : InMemorySessionStore = InMemorySessionStore::new()
 
 ///|
 let global_route_resolver : @channels.RouteResolver = @channels.RouteResolver::new(
-  default_strategy=@session.SessionStrategy::PerChat,
+  default_strategy=@session.SessionStrategy::PerRoutingScope,
 )
 
 ///|

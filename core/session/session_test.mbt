@@ -39,6 +39,48 @@ test "ConfigurableSessionResolver resolves per-user key" {
 }
 
 ///|
+test "ConfigurableSessionResolver resolves PerRoutingScope with guild metadata" {
+  let resolver = ConfigurableSessionResolver::new(
+    strategy=SessionStrategy::PerRoutingScope,
+  )
+  let envelope = @types.InboundEnvelope::{
+    channel: "discord",
+    chat_id: "chat-default",
+    sender_id: "user3",
+    sender_name: "User Three",
+    content: "Hello",
+    message_type: @types.MessageType::Text,
+    metadata: { "guild_id": Json::string("g-123") },
+    timestamp: 3000L,
+  }
+  let key = @interfaces.SessionResolver::resolve(resolver, envelope)
+  inspect(key.channel, content="discord")
+  inspect(key.chat_id, content="guild:g-123")
+  inspect(key.user_id, content="None")
+}
+
+///|
+test "ConfigurableSessionResolver resolves PerRoutingScope fallback to chat_id" {
+  let resolver = ConfigurableSessionResolver::new(
+    strategy=SessionStrategy::PerRoutingScope,
+  )
+  let envelope = @types.InboundEnvelope::{
+    channel: "slack",
+    chat_id: "C12345",
+    sender_id: "user4",
+    sender_name: "User Four",
+    content: "Hello",
+    message_type: @types.MessageType::Text,
+    metadata: {},
+    timestamp: 4000L,
+  }
+  let key = @interfaces.SessionResolver::resolve(resolver, envelope)
+  inspect(key.channel, content="slack")
+  inspect(key.chat_id, content="C12345")
+  inspect(key.user_id, content="None")
+}
+
+///|
 test "session_key_to_storage_key formats correctly" {
   let key = @types.SessionKey::new(channel="http", chat_id="test", user_id=None)
   let storage_key = session_key_to_storage_key(key)

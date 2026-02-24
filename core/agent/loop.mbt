@@ -139,6 +139,12 @@ pub(all) struct AgentDependencies {
 }
 
 ///|
+let retryable_error_patterns : Array[String] = [
+  "timeout", "connection reset", "connection refused", "temporary failure", "service unavailable",
+  "internal server error", "bad gateway", "gateway timeout",
+]
+
+///|
 priv struct ContextOverrides {
   bootstrap : String
   memory_context : Array[String]
@@ -371,12 +377,8 @@ fn call_model_with_retry(
 ///|
 /// エラーメッセージがリトライ可能かどうかを判定
 fn is_retryable_error(error_msg : String) -> Bool {
-  let retryable_patterns = [
-    "timeout", "connection reset", "connection refused", "temporary failure", "service unavailable",
-    "internal server error", "bad gateway", "gateway timeout",
-  ]
   let lower_msg = error_msg.to_lower()
-  for pattern in retryable_patterns {
+  for pattern in retryable_error_patterns {
     if lower_msg.contains(pattern) {
       return true
     }

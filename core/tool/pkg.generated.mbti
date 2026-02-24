@@ -27,6 +27,7 @@ pub(all) suberror ToolExecutionError {
 // Types and methods
 pub struct InMemoryToolRegistry {
   tools : Map[String, ToolEntry]
+  mut definitions_cache : Array[@types.ToolDefinition]?
 }
 pub fn InMemoryToolRegistry::count(Self) -> Int
 pub fn InMemoryToolRegistry::get_definition(Self, String) -> @types.ToolDefinition?

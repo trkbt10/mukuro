@@ -44,6 +44,8 @@ pub fn request_daemon_stop(Int) -> CliResult
 
 pub fn run_cli(Array[String]) -> CliResult
 
+pub fn runtime_model_unavailable_reason_impl() -> String?
+
 pub fn sent_message_at(Int) -> @types.OutboundMessage?
 
 pub fn sent_messages_count() -> Int
