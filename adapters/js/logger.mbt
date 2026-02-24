@@ -1,40 +1,59 @@
 ///|
-/// Native Logger 実装
+/// JavaScript Logger 実装
+/// console.log等を使用したブラウザ/Node.js向けロガー
 
 ///|
-pub(all) enum LogOutput {
-  Stdout
-  Stderr
-  File(String)
-}
+/// JavaScript console ログ関数
+extern "js" fn js_console_log(message : String) -> Unit =
+  #|(message) => { console.log(message); }
 
 ///|
-pub struct NativeLogger {
+/// JavaScript console 警告関数
+extern "js" fn js_console_warn(message : String) -> Unit =
+  #|(message) => { console.warn(message); }
+
+///|
+/// JavaScript console エラー関数
+extern "js" fn js_console_error(message : String) -> Unit =
+  #|(message) => { console.error(message); }
+
+///|
+/// JavaScript console デバッグ関数
+extern "js" fn js_console_debug(message : String) -> Unit =
+  #|(message) => { console.debug(message); }
+
+///|
+/// JavaScript 現在時刻取得（ISO形式）
+extern "js" fn js_date_now_iso() -> String =
+  #|() => { return new Date().toISOString(); }
+
+///|
+/// JS Logger実装
+pub struct JsLogger {
+  /// 最小ログレベル
   min_level : @interfaces.LogLevel
-  output : LogOutput
+  /// タイムスタンプを含めるか
   include_timestamp : Bool
 }
 
 ///|
-pub fn NativeLogger::new(
+/// JsLoggerを新規作成
+pub fn JsLogger::new(
   min_level~ : @interfaces.LogLevel,
-  output~ : LogOutput,
   include_timestamp~ : Bool,
-) -> NativeLogger {
-  { min_level, output, include_timestamp }
+) -> JsLogger {
+  { min_level, include_timestamp }
 }
 
 ///|
-pub fn NativeLogger::default() -> NativeLogger {
-  {
-    min_level: @interfaces.LogLevel::Info,
-    output: LogOutput::Stderr,
-    include_timestamp: true,
-  }
+/// デフォルト設定で作成
+pub fn JsLogger::default() -> JsLogger {
+  { min_level: @interfaces.LogLevel::Info, include_timestamp: true }
 }
 
 ///|
-fn level_to_int(level : @interfaces.LogLevel) -> Int {
+/// ログレベルを数値に変換
+fn js_level_to_int(level : @interfaces.LogLevel) -> Int {
   match level {
     @interfaces.LogLevel::Debug => 0
     @interfaces.LogLevel::Info => 1
@@ -44,7 +63,8 @@ fn level_to_int(level : @interfaces.LogLevel) -> Int {
 }
 
 ///|
-fn level_to_string(level : @interfaces.LogLevel) -> String {
+/// ログレベルを文字列に変換
+fn js_level_to_string(level : @interfaces.LogLevel) -> String {
   match level {
     @interfaces.LogLevel::Debug => "DEBUG"
     @interfaces.LogLevel::Info => "INFO"
@@ -54,74 +74,55 @@ fn level_to_string(level : @interfaces.LogLevel) -> String {
 }
 
 ///|
-fn NativeLogger::log(
-  self : NativeLogger,
+/// ログを出力
+fn JsLogger::log(
+  self : JsLogger,
   level : @interfaces.LogLevel,
   message : String,
 ) -> Unit {
-  if level_to_int(level) < level_to_int(self.min_level) {
+  if js_level_to_int(level) < js_level_to_int(self.min_level) {
     return
   }
   let formatted = if self.include_timestamp {
-    let ts = c_time()
-    "[\{ts}] [\{level_to_string(level)}] \{message}"
+    let ts = js_date_now_iso()
+    "[\{ts}] [\{js_level_to_string(level)}] \{message}"
   } else {
-    "[\{level_to_string(level)}] \{message}"
+    "[\{js_level_to_string(level)}] \{message}"
   }
-  match self.output {
-    LogOutput::Stdout => {
-      let _ = c_puts(string_to_cstring(formatted))
-
-    }
-    LogOutput::Stderr => {
-      let stderr = c_get_stderr()
-      let _ = c_fputs(string_to_cstring(formatted + "\n"), stderr)
-
-    }
-    LogOutput::File(path) =>
-      match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
-        Some(file) => {
-          let line = formatted + "\n"
-          // 文字列をバイトに変換
-          let bytes = Bytes::from_iter(
-            line.iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-          )
-          let _ = c_fwrite(bytes, 1, bytes.length(), file)
-          let _ = c_fclose(file)
-
-        }
-        None => ()
-      }
+  match level {
+    @interfaces.LogLevel::Debug => js_console_debug(formatted)
+    @interfaces.LogLevel::Info => js_console_log(formatted)
+    @interfaces.LogLevel::Warn => js_console_warn(formatted)
+    @interfaces.LogLevel::Error => js_console_error(formatted)
   }
 }
 
 ///|
-pub impl @interfaces.Logger for NativeLogger with debug(self, message~) {
+/// Logger trait実装
+pub impl @interfaces.Logger for JsLogger with debug(self, message~) {
   self.log(@interfaces.LogLevel::Debug, message)
 }
 
 ///|
-pub impl @interfaces.Logger for NativeLogger with info(self, message~) {
+pub impl @interfaces.Logger for JsLogger with info(self, message~) {
   self.log(@interfaces.LogLevel::Info, message)
 }
 
 ///|
-pub impl @interfaces.Logger for NativeLogger with warn(self, message~) {
+pub impl @interfaces.Logger for JsLogger with warn(self, message~) {
   self.log(@interfaces.LogLevel::Warn, message)
 }
 
 ///|
-pub impl @interfaces.Logger for NativeLogger with error(self, message~) {
+pub impl @interfaces.Logger for JsLogger with error(self, message~) {
   self.log(@interfaces.LogLevel::Error, message)
 }
 
 ///|
-/// 構造化ロガー Native実装
-pub struct NativeStructuredLogger {
+/// 構造化ロガー JS実装
+pub struct JsStructuredLogger {
   /// 最小ログレベル
   min_level : @interfaces.LogLevel
-  /// 出力先
-  output : LogOutput
   /// 出力フォーマット
   format : @interfaces.LogFormat
   /// 現在のコンテキスト
@@ -131,15 +132,13 @@ pub struct NativeStructuredLogger {
 }
 
 ///|
-/// NativeStructuredLoggerを新規作成
-pub fn NativeStructuredLogger::new(
+/// JsStructuredLoggerを新規作成
+pub fn JsStructuredLogger::new(
   min_level~ : @interfaces.LogLevel,
-  output~ : LogOutput,
   format~ : @interfaces.LogFormat,
-) -> NativeStructuredLogger {
+) -> JsStructuredLogger {
   {
     min_level,
-    output,
     format,
     context: @interfaces.LogContext::empty(),
     component_levels: [],
@@ -148,10 +147,9 @@ pub fn NativeStructuredLogger::new(
 
 ///|
 /// デフォルト設定で作成
-pub fn NativeStructuredLogger::default() -> NativeStructuredLogger {
+pub fn JsStructuredLogger::default() -> JsStructuredLogger {
   {
     min_level: @interfaces.LogLevel::Info,
-    output: LogOutput::Stderr,
     format: @interfaces.LogFormat::Json,
     context: @interfaces.LogContext::empty(),
     component_levels: [],
@@ -160,16 +158,15 @@ pub fn NativeStructuredLogger::default() -> NativeStructuredLogger {
 
 ///|
 /// コンポーネント別ログレベルを追加
-pub fn NativeStructuredLogger::add_component_level(
-  self : NativeStructuredLogger,
+pub fn JsStructuredLogger::add_component_level(
+  self : JsStructuredLogger,
   component~ : String,
   level~ : @interfaces.LogLevel,
-) -> NativeStructuredLogger {
+) -> JsStructuredLogger {
   let new_levels = self.component_levels.copy()
   new_levels.push({ component, min_level: level })
   {
     min_level: self.min_level,
-    output: self.output,
     format: self.format,
     context: self.context,
     component_levels: new_levels,
@@ -178,8 +175,8 @@ pub fn NativeStructuredLogger::add_component_level(
 
 ///|
 /// コンポーネントの有効ログレベルを取得
-fn NativeStructuredLogger::get_effective_level(
-  self : NativeStructuredLogger,
+fn JsStructuredLogger::get_effective_level(
+  self : JsStructuredLogger,
   component : String?,
 ) -> @interfaces.LogLevel {
   match component {
@@ -197,7 +194,7 @@ fn NativeStructuredLogger::get_effective_level(
 
 ///|
 /// ログレベルをJSON用文字列に変換
-fn level_to_json_string(level : @interfaces.LogLevel) -> String {
+fn js_level_to_json_string(level : @interfaces.LogLevel) -> String {
   match level {
     @interfaces.LogLevel::Debug => "debug"
     @interfaces.LogLevel::Info => "info"
@@ -208,7 +205,7 @@ fn level_to_json_string(level : @interfaces.LogLevel) -> String {
 
 ///|
 /// 文字列をJSONエスケープ
-fn escape_json_string(s : String) -> String {
+fn js_escape_json_string(s : String) -> String {
   let buf = StringBuilder::new()
   for c in s {
     match c {
@@ -235,29 +232,29 @@ fn escape_json_string(s : String) -> String {
 
 ///|
 /// JSON形式でログを出力
-fn NativeStructuredLogger::output_json(
-  self : NativeStructuredLogger,
+fn JsStructuredLogger::output_json(
+  self : JsStructuredLogger,
   level : @interfaces.LogLevel,
   message : String,
   context : @interfaces.LogContext,
 ) -> Unit {
-  let ts = c_time()
+  let ts = js_date_now_iso()
   let buf = StringBuilder::new()
   buf.write_string("{")
-  buf.write_string("\"timestamp\":\{ts},")
-  buf.write_string("\"level\":\"\{level_to_json_string(level)}\",")
-  buf.write_string("\"message\":\"\{escape_json_string(message)}\"")
+  buf.write_string("\"timestamp\":\"\{js_escape_json_string(ts)}\",")
+  buf.write_string("\"level\":\"\{js_level_to_json_string(level)}\",")
+  buf.write_string("\"message\":\"\{js_escape_json_string(message)}\"")
   // コンテキスト情報を追加
   match context.request_id {
-    Some(rid) => buf.write_string(",\"request_id\":\"\{escape_json_string(rid)}\"")
+    Some(rid) => buf.write_string(",\"request_id\":\"\{js_escape_json_string(rid)}\"")
     None => ()
   }
   match context.agent_id {
-    Some(aid) => buf.write_string(",\"agent_id\":\"\{escape_json_string(aid)}\"")
+    Some(aid) => buf.write_string(",\"agent_id\":\"\{js_escape_json_string(aid)}\"")
     None => ()
   }
   match context.component {
-    Some(comp) => buf.write_string(",\"component\":\"\{escape_json_string(comp)}\"")
+    Some(comp) => buf.write_string(",\"component\":\"\{js_escape_json_string(comp)}\"")
     None => ()
   }
   // extraフィールドを追加
@@ -268,51 +265,34 @@ fn NativeStructuredLogger::output_json(
       if not(first) {
         buf.write_string(",")
       }
-      buf.write_string("\"\{escape_json_string(key)}\":\"\{escape_json_string(value)}\"")
+      buf.write_string("\"\{js_escape_json_string(key)}\":\"\{js_escape_json_string(value)}\"")
       first = false
     }
     buf.write_string("}")
   }
   buf.write_string("}")
-  // 出力先に書き込み
+  // console出力
   let line = buf.to_string()
-  match self.output {
-    LogOutput::Stdout => {
-      let _ = c_puts(string_to_cstring(line))
-
-    }
-    LogOutput::Stderr => {
-      let stderr = c_get_stderr()
-      let _ = c_fputs(string_to_cstring(line + "\n"), stderr)
-
-    }
-    LogOutput::File(path) =>
-      match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
-        Some(file) => {
-          let out = line + "\n"
-          let bytes = Bytes::from_iter(
-            out.iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-          )
-          let _ = c_fwrite(bytes, 1, bytes.length(), file)
-          let _ = c_fclose(file)
-
-        }
-        None => ()
-      }
+  match level {
+    @interfaces.LogLevel::Debug => js_console_debug(line)
+    @interfaces.LogLevel::Info => js_console_log(line)
+    @interfaces.LogLevel::Warn => js_console_warn(line)
+    @interfaces.LogLevel::Error => js_console_error(line)
   }
 }
 
 ///|
 /// プレーンテキスト形式でログを出力
-fn NativeStructuredLogger::output_plain(
-  self : NativeStructuredLogger,
+fn JsStructuredLogger::output_plain(
+  self : JsStructuredLogger,
   level : @interfaces.LogLevel,
   message : String,
   context : @interfaces.LogContext,
 ) -> Unit {
-  let ts = c_time()
+  ignore(self)
+  let ts = js_date_now_iso()
   let buf = StringBuilder::new()
-  buf.write_string("[\{ts}] [\{level_to_string(level)}]")
+  buf.write_string("[\{ts}] [\{js_level_to_string(level)}]")
   // コンテキスト情報を追加
   match context.request_id {
     Some(rid) => buf.write_string(" [req:\{rid}]")
@@ -328,35 +308,17 @@ fn NativeStructuredLogger::output_plain(
   }
   buf.write_string(" \{message}")
   let formatted = buf.to_string()
-  match self.output {
-    LogOutput::Stdout => {
-      let _ = c_puts(string_to_cstring(formatted))
-
-    }
-    LogOutput::Stderr => {
-      let stderr = c_get_stderr()
-      let _ = c_fputs(string_to_cstring(formatted + "\n"), stderr)
-
-    }
-    LogOutput::File(path) =>
-      match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
-        Some(file) => {
-          let line = formatted + "\n"
-          let bytes = Bytes::from_iter(
-            line.iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-          )
-          let _ = c_fwrite(bytes, 1, bytes.length(), file)
-          let _ = c_fclose(file)
-
-        }
-        None => ()
-      }
+  match level {
+    @interfaces.LogLevel::Debug => js_console_debug(formatted)
+    @interfaces.LogLevel::Info => js_console_log(formatted)
+    @interfaces.LogLevel::Warn => js_console_warn(formatted)
+    @interfaces.LogLevel::Error => js_console_error(formatted)
   }
 }
 
 ///|
 /// StructuredLogger実装
-pub impl @interfaces.StructuredLogger for NativeStructuredLogger with log_structured(
+pub impl @interfaces.StructuredLogger for JsStructuredLogger with log_structured(
   self,
   level~,
   message~,
@@ -364,7 +326,7 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with log_struct
 ) {
   // コンポーネントの有効ログレベルをチェック
   let effective_level = self.get_effective_level(context.component)
-  if level_to_int(level) < level_to_int(effective_level) {
+  if js_level_to_int(level) < js_level_to_int(effective_level) {
     return
   }
   // フォーマットに応じて出力
@@ -376,13 +338,12 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with log_struct
 }
 
 ///|
-pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_context(
+pub impl @interfaces.StructuredLogger for JsStructuredLogger with with_context(
   self,
   context~,
 ) {
   {
     min_level: self.min_level,
-    output: self.output,
     format: self.format,
     context,
     component_levels: self.component_levels,
@@ -390,7 +351,7 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_conte
 }
 
 ///|
-pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_request_id(
+pub impl @interfaces.StructuredLogger for JsStructuredLogger with with_request_id(
   self,
   request_id~,
 ) {
@@ -402,7 +363,6 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_reque
   }
   {
     min_level: self.min_level,
-    output: self.output,
     format: self.format,
     context: new_context,
     component_levels: self.component_levels,
@@ -410,7 +370,7 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_reque
 }
 
 ///|
-pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_component(
+pub impl @interfaces.StructuredLogger for JsStructuredLogger with with_component(
   self,
   component~,
 ) {
@@ -422,7 +382,6 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_compo
   }
   {
     min_level: self.min_level,
-    output: self.output,
     format: self.format,
     context: new_context,
     component_levels: self.component_levels,
@@ -431,7 +390,7 @@ pub impl @interfaces.StructuredLogger for NativeStructuredLogger with with_compo
 
 ///|
 /// Logger trait実装（StructuredLoggerをシンプルLoggerとして使用）
-pub impl @interfaces.Logger for NativeStructuredLogger with debug(self, message~) {
+pub impl @interfaces.Logger for JsStructuredLogger with debug(self, message~) {
   self.log_structured(
     level=@interfaces.LogLevel::Debug,
     message~,
@@ -440,7 +399,7 @@ pub impl @interfaces.Logger for NativeStructuredLogger with debug(self, message~
 }
 
 ///|
-pub impl @interfaces.Logger for NativeStructuredLogger with info(self, message~) {
+pub impl @interfaces.Logger for JsStructuredLogger with info(self, message~) {
   self.log_structured(
     level=@interfaces.LogLevel::Info,
     message~,
@@ -449,7 +408,7 @@ pub impl @interfaces.Logger for NativeStructuredLogger with info(self, message~)
 }
 
 ///|
-pub impl @interfaces.Logger for NativeStructuredLogger with warn(self, message~) {
+pub impl @interfaces.Logger for JsStructuredLogger with warn(self, message~) {
   self.log_structured(
     level=@interfaces.LogLevel::Warn,
     message~,
@@ -458,7 +417,7 @@ pub impl @interfaces.Logger for NativeStructuredLogger with warn(self, message~)
 }
 
 ///|
-pub impl @interfaces.Logger for NativeStructuredLogger with error(self, message~) {
+pub impl @interfaces.Logger for JsStructuredLogger with error(self, message~) {
   self.log_structured(
     level=@interfaces.LogLevel::Error,
     message~,

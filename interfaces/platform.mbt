@@ -36,6 +36,77 @@ pub(all) enum LogLevel {
 }
 
 ///|
+/// ログコンテキスト
+/// 構造化ログに付与するコンテキスト情報
+pub(all) struct LogContext {
+  /// リクエストID
+  request_id : String?
+  /// エージェントID
+  agent_id : String?
+  /// コンポーネント名
+  component : String?
+  /// 追加のメタデータ
+  extra : Map[String, String]
+}
+
+///|
+/// 空のLogContext
+pub fn LogContext::empty() -> LogContext {
+  { request_id: None, agent_id: None, component: None, extra: Map::new() }
+}
+
+///|
+/// リクエストID付きのLogContext
+pub fn LogContext::with_request_id(request_id~ : String) -> LogContext {
+  { request_id: Some(request_id), agent_id: None, component: None, extra: Map::new() }
+}
+
+///|
+/// コンポーネント名付きのLogContext
+pub fn LogContext::with_component(component~ : String) -> LogContext {
+  { request_id: None, agent_id: None, component: Some(component), extra: Map::new() }
+}
+
+///|
+/// 構造化ロガー トレイト
+/// JSON形式でログを出力し、コンテキスト情報を付与する
+pub(open) trait StructuredLogger {
+  /// 構造化ログを出力
+  log_structured(
+    Self,
+    level~ : LogLevel,
+    message~ : String,
+    context~ : LogContext,
+  ) -> Unit
+  /// コンテキストを設定した新しいロガーを取得
+  with_context(Self, context~ : LogContext) -> Self
+  /// リクエストIDを設定した新しいロガーを取得
+  with_request_id(Self, request_id~ : String) -> Self
+  /// コンポーネント名を設定した新しいロガーを取得
+  with_component(Self, component~ : String) -> Self
+}
+
+///|
+/// ログ出力フォーマット
+pub(all) enum LogFormat {
+  /// プレーンテキスト
+  Plain
+  /// JSON形式
+  Json
+  /// コンパクトJSON（改行なし）
+  JsonCompact
+}
+
+///|
+/// コンポーネント別ログレベル設定
+pub(all) struct ComponentLogLevel {
+  /// コンポーネント名
+  component : String
+  /// 最小ログレベル
+  min_level : LogLevel
+}
+
+///|
 /// 環境変数 トレイト
 /// 環境変数へのアクセスを抽象化
 pub(open) trait Environment {

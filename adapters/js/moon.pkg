@@ -9,6 +9,7 @@ options(
     "crypto_test.mbt": [ "js" ],
     "fetch.mbt": [ "js" ],
     "http_client.mbt": [ "js" ],
+    "logger.mbt": [ "js" ],
     "storage.mbt": [ "js" ],
   },
 )

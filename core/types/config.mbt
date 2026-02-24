@@ -120,6 +120,12 @@ pub fn ProviderConfig::new(
 }
 
 ///|
+/// FallbackConfigのデフォルト値
+pub fn FallbackConfig::new() -> FallbackConfig {
+  { enabled: false, providers: [], cooldown_ms: 30000 }
+}
+
+///|
 /// ChannelConfigを新規作成
 pub fn ChannelConfig::new(name~ : String, token~ : String?) -> ChannelConfig {
   { name, enabled: true, token, webhook_url: None, options: {} }
