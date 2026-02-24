@@ -140,3 +140,53 @@ pub fn sent_message_at(index : Int) -> @types.OutboundMessage? {
     Some(global_outbound_dispatcher.sent_messages[index])
   }
 }
+
+///|
+fn drain_channel_once(
+  channel : &@interfaces.ChannelAdapter,
+  on_message : (@types.InboundEnvelope) -> Unit,
+) -> Int {
+  let mut count = 0
+  let mut i = 0
+  while i < 16 {
+    let message = @interfaces.ChannelAdapter::receive(channel) catch {
+      _ => break
+    }
+    on_message(message)
+    count = count + 1
+    i = i + 1
+  }
+  count
+}
+
+///|
+pub fn pump_registered_channels_once(
+  on_message : (@types.InboundEnvelope) -> Unit,
+) -> Int {
+  let mut total = 0
+  for name in @interfaces.ChannelManager::list_channels(global_channel_manager) {
+    match
+      @interfaces.ChannelManager::get_channel(global_channel_manager, name) {
+      Some(channel) => total = total + drain_channel_once(channel, on_message)
+      None => ()
+    }
+  }
+  total
+}
+
+///|
+pub fn pump_registered_channels_to_gateway(
+  gateway : @control.Gateway,
+  auth : @interfaces.AuthContext,
+) -> Int {
+  pump_registered_channels_once(fn(envelope) {
+    gateway.dispatch_inbound(auth~, envelope~) catch {
+      _ => ()
+    }
+  })
+}
+
+///|
+pub fn registered_channel_names_for_test() -> Array[String] {
+  @interfaces.ChannelManager::list_channels(global_channel_manager)
+}

@@ -9,6 +9,7 @@ test "gateway start returns explicit unsupported error on js/wasm" {
     port: None,
     debug: false,
     daemon: false,
+    control_api: false,
   }
   let result = execute_gateway_command(GatewayCommand::Start(opts))
   assert_true(

@@ -1,6 +1,8 @@
 import {
+  "moonbitlang/async",
+  "moonbitlang/async/io",
+  "mizchi/x/http" @xhttp,
   "trkbt10/mukuro/interfaces",
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/core/control",
   "moonbitlang/core/json",
 }

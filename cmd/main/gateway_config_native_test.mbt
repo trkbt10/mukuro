@@ -28,6 +28,7 @@ test "gateway start loads config file on native" {
     port: None,
     debug: false,
     daemon: false,
+    control_api: false,
   }
   let result = execute_gateway_command(GatewayCommand::Start(opts))
   assert_true(
@@ -50,6 +51,7 @@ test "gateway start returns error for missing config file on native" {
     port: None,
     debug: false,
     daemon: false,
+    control_api: false,
   }
   let result = execute_gateway_command(GatewayCommand::Start(opts))
   assert_true(

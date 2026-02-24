@@ -45,3 +45,65 @@ jobs:
       - name: Native daemon e2e
         run: |
           bash tools/e2e_daemon_native.sh
+
+  benchmark-agent-loop:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Run benchmark (rich_metadata=0)
+        run: |
+          RUNS=5 ITERATIONS=5000 WARMUP=500 RICH_METADATA=0 \
+            tools/benchmark_agent_loop.sh | tee bench_rich0.log
+
+      - name: Run benchmark (rich_metadata=1)
+        run: |
+          RUNS=5 ITERATIONS=5000 WARMUP=500 RICH_METADATA=1 \
+            tools/benchmark_agent_loop.sh | tee bench_rich1.log
+
+      - name: Validate benchmark thresholds
+        run: |
+          python3 - <<'PY'
+          import re
+          import sys
+
+          def parse(path):
+            text = open(path, "r", encoding="utf-8").read()
+            iso = re.search(r"isolated-session\s+median=([0-9.]+)s", text)
+            sng = re.search(r"single-session\s+median=([0-9.]+)s", text)
+            if not iso or not sng:
+              raise RuntimeError(f"failed to parse benchmark output: {path}")
+            return float(iso.group(1)), float(sng.group(1))
+
+          iso0, sng0 = parse("bench_rich0.log")
+          iso1, sng1 = parse("bench_rich1.log")
+
+          checks = [
+            ("rich0 isolated median", iso0, 0.200),
+            ("rich0 single median", sng0, 1.500),
+            ("rich1 isolated median", iso1, 0.800),
+            ("rich1 single median", sng1, 2.000),
+            ("rich0 single/isolated ratio", sng0 / max(iso0, 1e-9), 20.0),
+            ("rich1 single/isolated ratio", sng1 / max(iso1, 1e-9), 20.0),
+          ]
+
+          failed = []
+          for name, value, limit in checks:
+            print(f"{name}: {value:.6f} (limit <= {limit:.6f})")
+            if value > limit:
+              failed.append((name, value, limit))
+
+          if failed:
+            print("\nBenchmark regression detected:")
+            for name, value, limit in failed:
+              print(f"  - {name}: {value:.6f} > {limit:.6f}")
+            sys.exit(1)
+          PY

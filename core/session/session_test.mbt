@@ -55,7 +55,7 @@ test "ConfigurableSessionResolver resolves PerRoutingScope with guild metadata" 
   }
   let key = @interfaces.SessionResolver::resolve(resolver, envelope)
   inspect(key.channel, content="discord")
-  inspect(key.chat_id, content="guild:g-123")
+  inspect(key.chat_id, content="guild-g-123")
   inspect(key.user_id, content="None")
 }
 

@@ -72,23 +72,23 @@ fn metadata_string(metadata : Map[String, Json], key : String) -> String? {
 fn resolve_routing_scope_chat_id(envelope : @types.InboundEnvelope) -> String {
   let metadata = envelope.metadata
   match metadata_string(metadata, "peer_id") {
-    Some(id) => return "peer:\{id}"
+    Some(id) => return "peer-\{id}"
     None => ()
   }
   match metadata_string(metadata, "guild_id") {
-    Some(id) => return "guild:\{id}"
+    Some(id) => return "guild-\{id}"
     None => ()
   }
   match metadata_string(metadata, "team_id") {
-    Some(id) => return "team:\{id}"
+    Some(id) => return "team-\{id}"
     None => ()
   }
   match metadata_string(metadata, "account_id") {
-    Some(id) => return "account:\{id}"
+    Some(id) => return "account-\{id}"
     None => ()
   }
   match metadata_string(metadata, "channel_id") {
-    Some(id) => return "channel:\{id}"
+    Some(id) => return "channel-\{id}"
     None => ()
   }
   envelope.chat_id

@@ -154,17 +154,7 @@ pub fn NativePlatform::http_request(
   self : NativePlatform,
   request : @interfaces.HttpRequest,
 ) -> @interfaces.HttpResponse raise HttpError {
-  // Call the NativeHttpClient.request implementation directly
-  let cmd = self.http_client.build_curl_command(request)
-  let result = self.process.shell(cmd) catch {
-    _ => raise HttpError::ConnectionFailed("Failed to execute curl")
-  }
-  if result.exit_code != 0 {
-    raise HttpError::ConnectionFailed(
-      "curl failed with exit code: \{result.exit_code}",
-    )
-  }
-  parse_curl_response(result.stdout)
+  self.http_client.do_request(request)
 }
 
 ///|

@@ -304,12 +304,58 @@ test "parse_args gateway start --daemon with options" {
 }
 
 ///|
+test "parse_args gateway start --daemon with --control-api" {
+  let cmd = parse_args(["gateway", "start", "--daemon", "--control-api"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(opts)) =>
+        opts.daemon == true && opts.control_api == true
+      _ => false
+    },
+  )
+}
+
+///|
 test "parse_args gateway start without daemon" {
   let cmd = parse_args(["gateway", "start", "--port", "9000"])
   assert_true(
     match cmd {
       Command::Gateway(GatewayCommand::Start(opts)) =>
         opts.daemon == false && opts.port == Some(9000)
+      _ => false
+    },
+  )
+}
+
+///|
+test "execute_gateway_start with daemon and control-api returns expected runtime-dependent result" {
+  let opts : GatewayStartOptions = {
+    config_path: None,
+    host: None,
+    port: None,
+    debug: false,
+    daemon: true,
+    control_api: true,
+  }
+  let result = execute_gateway_command(GatewayCommand::Start(opts))
+  assert_true(
+    match result {
+      CliResult::Error(msg) =>
+        msg.contains("not supported yet") ||
+        msg.contains("Failed to spawn daemon process") ||
+        msg.contains("native binary execution")
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway start --control-api" {
+  let cmd = parse_args(["gateway", "start", "--control-api"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(opts)) =>
+        opts.control_api == true && opts.daemon == false
       _ => false
     },
   )

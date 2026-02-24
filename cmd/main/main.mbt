@@ -84,6 +84,8 @@ pub(all) struct GatewayStartOptions {
   mut debug : Bool
   /// デーモンモード（バックグラウンド常駐）
   mut daemon : Bool
+  /// Control APIをHTTP公開する（フォアグラウンド常駐）
+  mut control_api : Bool
 }
 
 ///|
@@ -100,7 +102,7 @@ pub(all) enum CliResult {
 ///|
 /// ヘルプメッセージを取得
 pub fn get_help_message() -> String {
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: .mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway stop\n  mukuro cron list"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: .mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway start --control-api --host 127.0.0.1 --port 8080\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway stop\n  mukuro cron list"
 }
 
 ///|
@@ -226,6 +228,7 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   // 設定パスの解決
   let config_path = opts.config_path.unwrap_or(".mukuro/config.json")
   set_runtime_model_config_path_for_process(config_path)
+  bootstrap_runtime_channels_from_config(config_path)
   // 設定ファイルが指定されている場合のみ読み込み（未指定時はデフォルト）
   let base_config = match opts.config_path {
     Some(path) =>
@@ -262,6 +265,21 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
     _ => return CliResult::Error("Failed to start gateway: unknown error")
   }
   let status = global_gateway.status()
+  if opts.control_api {
+    let control_api_auth = @interfaces.AuthContext::token_only(
+      gateway_config.auth_token,
+    )
+    run_control_api_server_with_tick_blocking(global_gateway, host, port, fn() {
+      ignore(
+        pump_registered_channels_to_gateway(global_gateway, control_api_auth),
+      )
+      true
+    }) catch {
+      e =>
+        return CliResult::Error("Control API server failed: \{e.to_string()}")
+    }
+    return CliResult::Ok("Control API server stopped")
+  }
   CliResult::Ok(
     "Gateway started (in-process mode):\n  Host: \{host}\n  Port: \{port}\n  Config: \{config_path}\n  State: \{status.state.to_string()}\n  Debug: \{opts.debug}\n\nNote: Gateway runs in-process. Use --daemon for background execution.",
   )
@@ -518,6 +536,7 @@ fn parse_gateway_start_opts(args : ArrayView[String]) -> GatewayStartOptions {
     port: None,
     debug: false,
     daemon: false,
+    control_api: false,
   }
   let arr = array_view_to_array(args)
   let mut i = 0
@@ -559,6 +578,10 @@ fn parse_gateway_start_opts(args : ArrayView[String]) -> GatewayStartOptions {
       }
       "--daemon" | "-D" => {
         opts.daemon = true
+        i = i + 1
+      }
+      "--control-api" => {
+        opts.control_api = true
         i = i + 1
       }
       _ => i = i + 1

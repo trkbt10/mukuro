@@ -8,7 +8,11 @@ import {
 }
 
 // Values
+pub fn bootstrap_runtime_channels_from_config(String) -> Unit
+
 pub fn clear_daemon_ipc_response_hook_for_test() -> Unit
+
+pub fn control_api_healthcheck_message() -> String
 
 pub fn create_global_gateway(String) -> @control.Gateway
 
@@ -38,11 +42,21 @@ pub fn load_gateway_config_impl(String) -> @interfaces.GatewayConfig raise @inte
 
 pub fn parse_args(Array[String]) -> Command
 
+pub fn pump_registered_channels_once((@types.InboundEnvelope) -> Unit) -> Int
+
+pub fn pump_registered_channels_to_gateway(@control.Gateway, @interfaces.AuthContext) -> Int
+
 pub fn query_daemon_status(Int, Bool) -> CliResult
+
+pub fn registered_channel_names_for_test() -> Array[String]
 
 pub fn request_daemon_stop(Int) -> CliResult
 
 pub fn run_cli(Array[String]) -> CliResult
+
+pub fn run_control_api_server_blocking(@control.Gateway, String, Int) -> Unit raise
+
+pub fn run_control_api_server_with_tick_blocking(@control.Gateway, String, Int, () -> Bool) -> Unit raise
 
 pub fn runtime_model_unavailable_reason_impl() -> String?
 
@@ -99,6 +113,7 @@ pub(all) struct GatewayStartOptions {
   mut port : Int?
   mut debug : Bool
   mut daemon : Bool
+  mut control_api : Bool
 }
 
 pub(all) struct GatewayStatusOptions {

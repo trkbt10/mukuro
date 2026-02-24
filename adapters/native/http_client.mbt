@@ -1,6 +1,6 @@
 ///|
 /// Native HTTP Client 実装
-/// curl コマンドを使用
+/// mizchi/x の HTTP クライアントを利用する
 
 ///|
 pub(all) suberror HttpError {
@@ -14,7 +14,6 @@ pub(all) suberror HttpError {
 pub struct NativeHttpClient {
   timeout_seconds : Int
   user_agent : String
-  process : NativeProcessExecutor
 }
 
 ///|
@@ -22,20 +21,27 @@ pub fn NativeHttpClient::new(
   timeout_seconds~ : Int,
   user_agent~ : String,
 ) -> NativeHttpClient {
-  { timeout_seconds, user_agent, process: NativeProcessExecutor::default() }
+  { timeout_seconds, user_agent }
 }
 
 ///|
 pub fn NativeHttpClient::default() -> NativeHttpClient {
-  {
-    timeout_seconds: 30,
-    user_agent: "mukuro/0.1.0",
-    process: NativeProcessExecutor::default(),
+  { timeout_seconds: 30, user_agent: "mukuro/0.1.0" }
+}
+
+///|
+fn map_http_error(err : @xhttp.HttpError) -> HttpError {
+  match err {
+    @xhttp.HttpError::InvalidUrl(url) => HttpError::InvalidUrl(url)
+    @xhttp.HttpError::TimeoutError => HttpError::Timeout
+    @xhttp.HttpError::NetworkError(msg) => HttpError::ConnectionFailed(msg)
+    @xhttp.HttpError::NotSupported =>
+      HttpError::ConnectionFailed("HTTP operation is not supported")
   }
 }
 
 ///|
-fn method_to_string(http_method : @interfaces.HttpMethod) -> String {
+fn method_name(http_method : @interfaces.HttpMethod) -> String {
   match http_method {
     @interfaces.HttpMethod::Get => "GET"
     @interfaces.HttpMethod::Post => "POST"
@@ -48,80 +54,69 @@ fn method_to_string(http_method : @interfaces.HttpMethod) -> String {
 }
 
 ///|
-fn NativeHttpClient::build_curl_command(
+fn response_from_x(
+  response : @xhttp.Response,
+  body_data : &@io.Data,
+) -> @interfaces.HttpResponse {
+  let body = Bytes::from_iter(body_data.binary().iter())
+  { status: response.code, headers: response.headers, body }
+}
+
+///|
+fn NativeHttpClient::request_with_x(
   self : NativeHttpClient,
   request : @interfaces.HttpRequest,
-) -> String {
-  let mut cmd = "curl -s -S -w '\\n%{http_code}'"
-  cmd = cmd + " --max-time \{self.timeout_seconds}"
-  cmd = cmd + " -X \{method_to_string(request.http_method)}"
-  cmd = cmd + " -A '\{self.user_agent}'"
-  for name, value in request.headers {
-    let escaped_value = escape_shell(value)
-    cmd = cmd + " -H '\{name}: \{escaped_value}'"
-  }
-  match request.body {
-    Some(body) => {
-      let body_str = body.to_unchecked_string()
-      let escaped_body = escape_shell(body_str)
-      cmd = cmd + " -d '\{escaped_body}'"
-    }
-    None => ()
-  }
-  let escaped_url = escape_shell(request.url)
-  cmd = cmd + " '\{escaped_url}'"
-  cmd
-}
-
-///|
-fn escape_shell(s : String) -> String {
-  s.split("'").collect().join("'\\''")
-}
-
-///|
-fn parse_curl_response(
-  output : Bytes,
 ) -> @interfaces.HttpResponse raise HttpError {
-  let output_str = output.to_unchecked_string()
-  let lines = output_str.split("\n").collect()
-  if lines.length() < 1 {
-    raise HttpError::ConnectionFailed("Empty response")
+  let mut out : @interfaces.HttpResponse? = None
+  let headers : Map[String, String] = {}
+  for key, value in request.headers {
+    headers[key] = value
   }
-  let last_line = lines[lines.length() - 1].to_string()
-  let parsed : Json = @json.parse(last_line) catch {
-    _ => raise HttpError::ConnectionFailed("Invalid status code: \{last_line}")
+  headers["User-Agent"] = self.user_agent
+  // with_event_loop は native 同期コードから async HTTP を使うために利用
+  @async.with_event_loop(fn(_group) {
+    match request.http_method {
+      @interfaces.HttpMethod::Get => {
+        let (resp, body_data) = @xhttp.get(request.url, headers~) catch {
+          e => raise map_http_error(e)
+        }
+        out = Some(response_from_x(resp, body_data))
+      }
+      @interfaces.HttpMethod::Post => {
+        let body = request.body.unwrap_or(Bytes::new(0))
+        let body_text = body.to_unchecked_string()
+        let (resp, body_data) = @xhttp.post(request.url, body_text, headers~) catch {
+          e => raise map_http_error(e)
+        }
+        out = Some(response_from_x(resp, body_data))
+      }
+      @interfaces.HttpMethod::Put => {
+        let body = request.body.unwrap_or(Bytes::new(0))
+        let body_text = body.to_unchecked_string()
+        let (resp, body_data) = @xhttp.put(request.url, body_text, headers~) catch {
+          e => raise map_http_error(e)
+        }
+        out = Some(response_from_x(resp, body_data))
+      }
+      _ =>
+        raise HttpError::ConnectionFailed(
+          "Unsupported HTTP method for NativeHttpClient: \{method_name(request.http_method)}",
+        )
+    }
+  }) catch {
+    e => raise HttpError::ConnectionFailed(e.to_string())
   }
-  let status = match parsed {
-    Number(n, ..) => n.to_int()
-    _ => raise HttpError::ConnectionFailed("Invalid status code: \{last_line}")
-  }
-  let body_lines : Array[String] = []
-  for i in 0..<(lines.length() - 1) {
-    body_lines.push(lines[i].to_string())
-  }
-  let body_str = body_lines.join("\n")
-  let body = Bytes::from_iter(
-    body_str.iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-  )
-  { status, headers: {}, body }
+  out.unwrap_or({ status: 500, headers: {}, body: Bytes::new(0) })
 }
 
 ///|
-/// Internal request implementation (avoids trait dispatch for error types)
+/// Internal request implementation
 pub fn NativeHttpClient::do_request(
   self : NativeHttpClient,
   request : @interfaces.HttpRequest,
 ) -> @interfaces.HttpResponse raise HttpError {
-  let cmd = self.build_curl_command(request)
-  let result = self.process.shell(cmd) catch {
-    _ => raise HttpError::ConnectionFailed("Failed to execute curl")
-  }
-  if result.exit_code != 0 {
-    raise HttpError::ConnectionFailed(
-      "curl failed with exit code: \{result.exit_code}",
-    )
-  }
-  parse_curl_response(result.stdout)
+  ignore(self.timeout_seconds)
+  self.request_with_x(request)
 }
 
 ///|

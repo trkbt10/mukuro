@@ -64,17 +64,24 @@ fn DefaultContextBuilder::build_system_prompt(
   self : DefaultContextBuilder,
   input : @interfaces.ContextInput,
 ) -> String {
+  let has_bootstrap = input.bootstrap.length() > 0
+  let has_skills = self.options.include_skills && input.skills.length() > 0
+  let has_memory = self.options.include_memory &&
+    input.memory_context.length() > 0
+  if not(has_bootstrap) && not(has_skills) && not(has_memory) {
+    return ""
+  }
   let parts : Array[String] = []
   // ブートストラップ指示
-  if input.bootstrap.length() > 0 {
+  if has_bootstrap {
     parts.push(input.bootstrap)
   }
   // スキル情報
-  if self.options.include_skills && input.skills.length() > 0 {
+  if has_skills {
     parts.push(format_skills(input.skills))
   }
   // メモリ情報
-  if self.options.include_memory && input.memory_context.length() > 0 {
+  if has_memory {
     parts.push(format_memory(input.memory_context))
   }
   join_parts(parts, "\n\n")
@@ -86,15 +93,19 @@ fn format_skills(skills : Array[@interfaces.SkillDefinition]) -> String {
   if skills.length() == 0 {
     return ""
   }
-  let lines : Array[String] = ["## Available Skills"]
+  let buf = StringBuilder::new()
+  buf.write_string("## Available Skills")
   for skill in skills {
-    lines.push("### \{skill.name}")
-    lines.push(skill.description)
+    buf.write_string("\n### ")
+    buf.write_string(skill.name)
+    buf.write_string("\n")
+    buf.write_string(skill.description)
     if skill.instructions.length() > 0 {
-      lines.push(skill.instructions)
+      buf.write_string("\n")
+      buf.write_string(skill.instructions)
     }
   }
-  join_parts(lines, "\n")
+  buf.to_string()
 }
 
 ///|
@@ -103,11 +114,13 @@ fn format_memory(memory_context : Array[String]) -> String {
   if memory_context.length() == 0 {
     return ""
   }
-  let lines : Array[String] = ["## Relevant Memory"]
+  let buf = StringBuilder::new()
+  buf.write_string("## Relevant Memory")
   for mem in memory_context {
-    lines.push("- \{mem}")
+    buf.write_string("\n- ")
+    buf.write_string(mem)
   }
-  join_parts(lines, "\n")
+  buf.to_string()
 }
 
 ///|

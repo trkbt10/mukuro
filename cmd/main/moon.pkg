@@ -1,7 +1,10 @@
 import {
+  "moonbitlang/async",
+  "moonbitlang/async/io",
   "moonbitlang/core/env",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/json",
+  "mizchi/x/http" @xhttp,
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/agent" @agent,
   "trkbt10/mukuro/core/context" @context,
@@ -17,6 +20,9 @@ import {
 options(
   "is-main": true,
   targets: {
+    "control_api_native.mbt": [ "native" ],
+    "control_api_native_test.mbt": [ "native" ],
+    "control_api_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "daemon.mbt": [ "native" ],
     "daemon_e2e_native_test.mbt": [ "native" ],
     "daemon_stub.mbt": [ "js", "wasm", "wasm-gc" ],
@@ -28,6 +34,9 @@ options(
     "runtime_capability_native.mbt": [ "native" ],
     "runtime_capability_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "runtime_capability_stub_test.mbt": [ "js", "wasm", "wasm-gc" ],
+    "runtime_channels_native.mbt": [ "native" ],
+    "runtime_channels_native_test.mbt": [ "native" ],
+    "runtime_channels_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "runtime_context_native.mbt": [ "native" ],
     "runtime_context_native_test.mbt": [ "native" ],
     "runtime_context_stub.mbt": [ "js", "wasm", "wasm-gc" ],

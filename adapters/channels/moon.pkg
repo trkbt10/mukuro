@@ -1,9 +1,12 @@
 import {
+  "moonbitlang/async",
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/core/session",
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/adapters/js",
+  "trkbt10/mukuro/adapters/native" @native,
   "moonbitlang/core/json",
+  "mizchi/x/websocket" @xws,
 }
 
 options(
@@ -11,8 +14,11 @@ options(
     "channels_test.mbt": [ "js" ],
     "discord.mbt": [ "js" ],
     "http.mbt": [ "js" ],
+    "http_native.mbt": [ "native" ],
     "slack.mbt": [ "js" ],
     "telegram.mbt": [ "js" ],
     "websocket.mbt": [ "js" ],
+    "websocket_native.mbt": [ "native" ],
+    "websocket_native_test.mbt": [ "native" ],
   },
 )
