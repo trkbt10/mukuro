@@ -46,14 +46,12 @@ priv struct RetryState {
   mut attempt : Int
   /// 次の遅延（ミリ秒）
   mut next_delay_ms : Int
-  /// 最後のretry_after値（デバッグ用）
-  mut last_retry_after : Int
 }
 
 ///|
 /// 新しいリトライ状態を作成
 fn RetryState::new(config : RetryConfig) -> RetryState {
-  { attempt: 0, next_delay_ms: config.initial_delay_ms, last_retry_after: 0 }
+  { attempt: 0, next_delay_ms: config.initial_delay_ms }
 }
 
 ///|
@@ -77,7 +75,6 @@ fn RetryState::increment(self : RetryState, config : RetryConfig) -> Unit {
 ///|
 /// retry_after値で遅延を上書き
 fn RetryState::set_retry_after(self : RetryState, retry_after : Int) -> Unit {
-  self.last_retry_after = retry_after
   // retry_after（秒）をミリ秒に変換し、次の遅延として使用
   let retry_ms = retry_after * 1000
   if retry_ms > self.next_delay_ms {

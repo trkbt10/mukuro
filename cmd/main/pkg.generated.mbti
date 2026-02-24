@@ -14,6 +14,8 @@ pub fn create_global_gateway(String) -> @control.Gateway
 
 pub fn dispatch_echo_for_test(String) -> CliResult
 
+pub fn enrich_envelope_with_workspace_context_impl(@types.InboundEnvelope) -> @types.InboundEnvelope
+
 pub fn execute_command(Command) -> CliResult
 
 pub fn execute_cron_command(CronCommand) -> CliResult
@@ -51,6 +53,8 @@ pub fn set_daemon_ipc_response_hook_for_test((String) -> String?) -> Unit
 pub fn set_forced_response_for_test(String?) -> Unit
 
 pub fn set_runtime_model_config_path_for_process(String) -> Unit
+
+pub fn set_workspace_context_dir_for_process(String) -> Unit
 
 pub fn stop_daemon(pid_path~ : String) -> CliResult
 

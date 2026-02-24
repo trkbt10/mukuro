@@ -96,6 +96,7 @@ let global_model_orchestrator : RuntimeModelOrchestrator = RuntimeModelOrchestra
 fn handle_inbound_with_agent_loop(
   envelope : @types.InboundEnvelope,
 ) -> @types.OutboundMessage raise {
+  let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
   let options = @agent.AgentLoopOptions::default()
   let deps : @agent.AgentDependencies = {
     session_resolver: global_session_resolver,
@@ -105,7 +106,7 @@ fn handle_inbound_with_agent_loop(
     tool_registry: global_tool_registry,
     outbound_dispatcher: global_outbound_dispatcher,
   }
-  @agent.run_agent_loop(envelope, options, deps)
+  @agent.run_agent_loop(enriched_envelope, options, deps)
 }
 
 ///|
