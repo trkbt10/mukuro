@@ -91,6 +91,18 @@ pub fn request_daemon_stop(pid : Int) -> CliResult {
 }
 
 ///|
+pub fn query_gateway_auth_log(
+  since_seconds : Int64,
+  as_json : Bool,
+) -> CliResult {
+  ignore(since_seconds)
+  ignore(as_json)
+  CliResult::Error(
+    "Auth log query is only supported on native target.\nPlease build with: moon build --target native",
+  )
+}
+
+///|
 /// デーモン子プロセス起動（非native用スタブ）
 pub fn execute_daemon_child(pid_path : String) -> CliResult {
   ignore(pid_path)

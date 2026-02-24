@@ -39,6 +39,9 @@ let daemon_auth_rate_limit_sec : Int64 = 15
 let daemon_startup_config_path = ".mukuro/daemon-startup.json"
 
 ///|
+let daemon_auth_log_path = ".mukuro/gateway-auth.log"
+
+///|
 struct DaemonStartupConfig {
   gateway_config : @interfaces.GatewayConfig
   runtime_model_config_path : String
@@ -248,6 +251,51 @@ fn execute_daemon_start(
 }
 
 ///|
+fn current_cli_client_id() -> String {
+  "cli-\{@native.c_getpid()}"
+}
+
+///|
+fn read_last_ipc_client_id() -> String {
+  let buffer = Bytes::new(128)
+  let read_len = @native.c_ipc_get_last_client_id(buffer, 128)
+  if read_len <= 0 {
+    return "unknown"
+  }
+  Bytes::from_iter(buffer[:read_len].iter())
+  .to_unchecked_string()
+  .trim(chars=" \t\n\r")
+  .to_string()
+}
+
+///|
+fn append_auth_audit_detail(
+  now : Int64,
+  event : Int,
+  value : Int,
+  source : String,
+  client_id : String,
+  session_id : Int,
+  reason : String,
+  token_age_sec : Int,
+  blocked_until : Int64,
+) -> Unit {
+  ignore(
+    @native.c_append_gateway_auth_audit_detail(
+      now,
+      event,
+      value,
+      @native.string_to_cstring(source),
+      @native.string_to_cstring(client_id),
+      session_id,
+      @native.string_to_cstring(reason),
+      token_age_sec,
+      blocked_until,
+    ),
+  )
+}
+
+///|
 /// --daemon-child 引数で起動された場合のデーモン子プロセス処理
 pub fn execute_daemon_child(pid_path : String) -> CliResult {
   // デーモン子プロセスとして初期化（setsid, PIDファイル書き込み）
@@ -317,7 +365,17 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
     let uptime_sec = (now - started_at).to_int()
     if auth_rate_limited_until != 0 && now >= auth_rate_limited_until {
       auth_rate_limited_until = 0
-      @native.c_append_gateway_auth_audit(now, 3, 0) |> ignore
+      append_auth_audit_detail(
+        now,
+        3,
+        0,
+        "ipc",
+        "unknown",
+        session_id,
+        "rate_limit_end",
+        (now - token_issued_at).to_int(),
+        0,
+      )
     }
     if uptime_sec != last_snapshot_uptime {
       @native.c_write_gateway_snapshot(self_pid, uptime_sec, 1) |> ignore
@@ -369,18 +427,32 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
       } else {
         auth_failed_in_window += 1
       }
-      @native.c_append_gateway_auth_audit(now, 1, auth_failed_in_window)
-      |> ignore
+      append_auth_audit_detail(
+        now,
+        1,
+        auth_failed_in_window,
+        "ipc",
+        read_last_ipc_client_id(),
+        @native.c_ipc_get_last_session_id(),
+        "unauthorized",
+        (now - token_issued_at).to_int(),
+        auth_rate_limited_until,
+      )
       if auth_failed_in_window >= daemon_auth_fail_threshold {
         auth_rate_limited_until = now + daemon_auth_rate_limit_sec
         auth_failed_in_window = 0
         auth_fail_window_started_at = 0
-        @native.c_append_gateway_auth_audit(
+        append_auth_audit_detail(
           now,
           2,
           daemon_auth_rate_limit_sec.to_int(),
+          "ipc",
+          read_last_ipc_client_id(),
+          @native.c_ipc_get_last_session_id(),
+          "rate_limited",
+          (now - token_issued_at).to_int(),
+          auth_rate_limited_until,
         )
-        |> ignore
       }
     } else if ipc_result == 1 || ipc_result == 2 {
       auth_failed_in_window = 0
@@ -476,7 +548,12 @@ fn daemon_ipc_request(command : String) -> String? {
   }
   let session_id = @native.c_read_gateway_session_id()
   let read_len = @native.c_ipc_client_request(
-    token, session_id, command_code, buffer, 512,
+    token,
+    session_id,
+    command_code,
+    @native.string_to_cstring(current_cli_client_id()),
+    buffer,
+    512,
   )
   if read_len <= 0 {
     return None
@@ -529,6 +606,122 @@ pub fn request_daemon_stop(pid : Int) -> CliResult {
   } else {
     CliResult::Error("Daemon IPC error: \{response}")
   }
+}
+
+///|
+fn parse_auth_log_string_field(
+  obj : Map[String, Json],
+  key : String,
+) -> String? {
+  match obj.get(key) {
+    Some(String(v)) => Some(v)
+    _ => None
+  }
+}
+
+///|
+fn parse_auth_log_int64_field(obj : Map[String, Json], key : String) -> Int64? {
+  match obj.get(key) {
+    Some(Number(v, ..)) => Some(v.to_int64())
+    _ => None
+  }
+}
+
+///|
+fn read_auth_log_text() -> String? {
+  let buffer_len = 262144
+  let buffer = Bytes::new(buffer_len)
+  let read_len = @native.c_read_text_file(
+    @native.string_to_cstring(daemon_auth_log_path),
+    buffer,
+    buffer_len,
+  )
+  if read_len <= 0 {
+    return None
+  }
+  let data = Bytes::from_iter(buffer[:read_len].iter())
+  let decoded = @utf8.decode(data[:]) catch { _ => return None }
+  Some(decoded)
+}
+
+///|
+pub fn query_gateway_auth_log(
+  since_seconds : Int64,
+  as_json : Bool,
+) -> CliResult {
+  let content = read_auth_log_text().unwrap_or("")
+  if content.length() == 0 {
+    if as_json {
+      return CliResult::Ok(
+        "{\"path\":\"\{daemon_auth_log_path}\",\"total\":0,\"since_seconds\":\{since_seconds}}",
+      )
+    }
+    return CliResult::Ok(
+      "Gateway auth log is empty or not found: \{daemon_auth_log_path}",
+    )
+  }
+
+  let now = @native.c_time()
+  let cutoff = if since_seconds > 0 { now - since_seconds } else { 0 }
+  let mut total = 0
+  let event_counts : Map[String, Int] = {}
+  let client_counts : Map[String, Int] = {}
+  for line_sv in content.split("\n") {
+    let line = line_sv.to_string().trim(chars=" \t\n\r").to_string()
+    if line.length() == 0 {
+      continue
+    }
+    let row_json : Json = @json.parse(line) catch { _ => continue }
+    let row = match row_json {
+      Object(obj) => obj
+      _ => continue
+    }
+    let ts = parse_auth_log_int64_field(row, "ts").unwrap_or(0)
+    if cutoff > 0 && ts < cutoff {
+      continue
+    }
+    total = total + 1
+    let event = parse_auth_log_string_field(row, "event").unwrap_or("unknown")
+    event_counts[event] = event_counts.get(event).unwrap_or(0) + 1
+    let client_id = parse_auth_log_string_field(row, "client_id").unwrap_or(
+      "unknown",
+    )
+    client_counts[client_id] = client_counts.get(client_id).unwrap_or(0) + 1
+  }
+
+  if as_json {
+    let events_obj : Map[String, Json] = {}
+    for name, count in event_counts {
+      events_obj[name] = Json::number(count.to_double())
+    }
+    let clients_obj : Map[String, Json] = {}
+    for name, count in client_counts {
+      clients_obj[name] = Json::number(count.to_double())
+    }
+    let payload : Json = {
+      "path": daemon_auth_log_path,
+      "total": total,
+      "since_seconds": Json::number(since_seconds.to_double()),
+      "cutoff_ts": Json::number(cutoff.to_double()),
+      "events": Json::object(events_obj),
+      "clients": Json::object(clients_obj),
+    }
+    return CliResult::Ok(payload.stringify())
+  }
+
+  let mut output = "Gateway Auth Log Summary\n"
+  output = output + "  Path: \{daemon_auth_log_path}\n"
+  output = output + "  Total: \{total}\n"
+  output = output + "  Since: last \{since_seconds}s\n"
+  output = output + "  Events:\n"
+  for name, count in event_counts {
+    output = output + "    - \{name}: \{count}\n"
+  }
+  output = output + "  Clients:\n"
+  for name, count in client_counts {
+    output = output + "    - \{name}: \{count}\n"
+  }
+  CliResult::Ok(output)
 }
 
 ///|

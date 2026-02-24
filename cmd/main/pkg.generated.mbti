@@ -48,6 +48,8 @@ pub fn pump_registered_channels_to_gateway(@control.Gateway, @interfaces.AuthCon
 
 pub fn query_daemon_status(Int, Bool) -> CliResult
 
+pub fn query_gateway_auth_log(Int64, Bool) -> CliResult
+
 pub fn registered_channel_names_for_test() -> Array[String]
 
 pub fn request_daemon_stop(Int) -> CliResult
@@ -100,10 +102,16 @@ pub(all) enum CronCommand {
   Unknown(String)
 }
 
+pub(all) struct GatewayAuthLogOptions {
+  mut since_seconds : Int64
+  mut json : Bool
+}
+
 pub(all) enum GatewayCommand {
   Start(GatewayStartOptions)
   Status(GatewayStatusOptions)
   Stop
+  AuthLog(GatewayAuthLogOptions)
   Unknown(String)
 }
 

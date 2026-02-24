@@ -131,6 +131,30 @@ test "parse_args gateway stop" {
 }
 
 ///|
+test "parse_args gateway auth-log defaults" {
+  let cmd = parse_args(["gateway", "auth-log"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::AuthLog(opts)) =>
+        opts.since_seconds == 3600 && opts.json == false
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway auth-log with options" {
+  let cmd = parse_args(["gateway", "auth-log", "--since", "120", "--json"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::AuthLog(opts)) =>
+        opts.since_seconds == 120 && opts.json == true
+      _ => false
+    },
+  )
+}
+
+///|
 test "parse_args cron list" {
   let cmd = parse_args(["cron", "list"])
   assert_true(
@@ -448,6 +472,20 @@ test "dispatch_inbound runs integrated agent loop" {
   assert_true(
     match result {
       CliResult::Ok(msg) => msg.contains("Echo: hello")
+      _ => false
+    },
+  )
+}
+
+///|
+test "execute_gateway auth-log returns runtime-dependent result" {
+  let result = execute_gateway_command(
+    GatewayCommand::AuthLog({ since_seconds: 60, json: true }),
+  )
+  assert_true(
+    match result {
+      CliResult::Ok(msg) => msg.contains("since_seconds")
+      CliResult::Error(msg) => msg.contains("only supported on native target")
       _ => false
     },
   )

@@ -45,6 +45,46 @@ fn parse_role(headers : Map[String, String]) -> String? {
 }
 
 ///|
+fn parse_client_id(headers : Map[String, String]) -> String {
+  let candidate = match headers.get("x-mukuro-client-id") {
+    Some(v) => v
+    None =>
+      match headers.get("X-Mukuro-Client-Id") {
+        Some(v) => v
+        None => "unknown"
+      }
+  }
+  let trimmed = candidate.trim(chars=" \t\n\r").to_string()
+  if trimmed.length() == 0 {
+    "unknown"
+  } else {
+    trimmed
+  }
+}
+
+///|
+fn append_control_api_auth_audit(
+  event : Int,
+  value : Int,
+  client_id : String,
+  reason : String,
+) -> Unit {
+  ignore(
+    @native.c_append_gateway_auth_audit_detail(
+      @native.c_time(),
+      event,
+      value,
+      @native.string_to_cstring("control_api"),
+      @native.string_to_cstring(client_id),
+      -1,
+      @native.string_to_cstring(reason),
+      -1,
+      -1,
+    ),
+  )
+}
+
+///|
 fn is_action_allowed(role : String, action : ControlAction) -> Bool {
   match role {
     "admin" => true
@@ -69,12 +109,14 @@ fn validate_control_api_authorization(
   headers : Map[String, String],
   action : ControlAction,
 ) -> ControlApiResponse? {
+  let client_id = parse_client_id(headers)
   match parse_role(headers) {
     None => None
     Some(role) =>
       if is_action_allowed(role, action) {
         None
       } else {
+        append_control_api_auth_audit(4, 1, client_id, "forbidden")
         Some(error_response(403, "forbidden", "Role is not allowed"))
       }
   }
@@ -263,12 +305,17 @@ fn validate_control_api_auth(
   headers : Map[String, String],
 ) -> ControlApiResponse? {
   let token = parse_bearer_token(headers)
+  let client_id = parse_client_id(headers)
   match gateway.authenticate(token~) {
     @interfaces.AuthResult::Authenticated(_) => None
-    @interfaces.AuthResult::Denied(msg) =>
+    @interfaces.AuthResult::Denied(msg) => {
+      append_control_api_auth_audit(1, 1, client_id, "unauthorized")
       Some(error_response(401, "unauthorized", msg))
-    @interfaces.AuthResult::Expired =>
+    }
+    @interfaces.AuthResult::Expired => {
+      append_control_api_auth_audit(1, 1, client_id, "token_expired")
       Some(error_response(401, "token_expired", "Token expired"))
+    }
   }
 }
 

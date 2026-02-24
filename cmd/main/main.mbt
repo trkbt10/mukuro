@@ -38,6 +38,8 @@ pub(all) enum GatewayCommand {
   Status(GatewayStatusOptions)
   /// Gatewayを停止
   Stop
+  /// 認証監査ログの集計
+  AuthLog(GatewayAuthLogOptions)
   /// 不明
   Unknown(String)
 }
@@ -45,6 +47,14 @@ pub(all) enum GatewayCommand {
 ///|
 /// Gateway状態表示オプション
 pub(all) struct GatewayStatusOptions {
+  /// JSON形式で出力
+  mut json : Bool
+}
+
+///|
+pub(all) struct GatewayAuthLogOptions {
+  /// 何秒前まで遡るか（0以下で全件）
+  mut since_seconds : Int64
   /// JSON形式で出力
   mut json : Bool
 }
@@ -102,7 +112,7 @@ pub(all) enum CliResult {
 ///|
 /// ヘルプメッセージを取得
 pub fn get_help_message() -> String {
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: .mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway start --control-api --host 127.0.0.1 --port 8080\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway stop\n  mukuro cron list"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: .mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nGateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway start --control-api --host 127.0.0.1 --port 8080\n  mukuro gateway status\n  mukuro gateway status --json\n  mukuro gateway auth-log --since 3600 --json\n  mukuro gateway stop\n  mukuro cron list"
 }
 
 ///|
@@ -213,6 +223,8 @@ pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
     GatewayCommand::Start(opts) => execute_gateway_start(opts)
     GatewayCommand::Status(opts) => execute_gateway_status(opts)
     GatewayCommand::Stop => execute_gateway_stop()
+    GatewayCommand::AuthLog(opts) =>
+      query_gateway_auth_log(opts.since_seconds, opts.json)
     GatewayCommand::Unknown(name) =>
       CliResult::Error("Unknown gateway command: \{name}")
   }
@@ -510,6 +522,10 @@ fn parse_gateway_args(args : ArrayView[String]) -> Command {
       Command::Gateway(GatewayCommand::Status(opts))
     }
     "stop" => Command::Gateway(GatewayCommand::Stop)
+    "auth-log" => {
+      let opts = parse_gateway_auth_log_opts(slice_from_1(arr)[:])
+      Command::Gateway(GatewayCommand::AuthLog(opts))
+    }
     _ => Command::Gateway(GatewayCommand::Unknown(subcmd))
   }
 }
@@ -584,6 +600,41 @@ fn parse_gateway_start_opts(args : ArrayView[String]) -> GatewayStartOptions {
         opts.control_api = true
         i = i + 1
       }
+      _ => i = i + 1
+    }
+  }
+  opts
+}
+
+///|
+fn parse_gateway_auth_log_opts(
+  args : ArrayView[String],
+) -> GatewayAuthLogOptions {
+  let opts : GatewayAuthLogOptions = { since_seconds: 3600, json: false }
+  let arr = array_view_to_array(args)
+  let mut i = 0
+  while i < arr.length() {
+    let arg = arr[i]
+    match arg {
+      "--json" => {
+        opts.json = true
+        i = i + 1
+      }
+      "--since" =>
+        if i + 1 < arr.length() {
+          try {
+            let parsed : Json = @json.parse(arr[i + 1])
+            match parsed {
+              Number(n, ..) => opts.since_seconds = n.to_int64()
+              _ => ()
+            }
+          } catch {
+            _ => ()
+          }
+          i = i + 2
+        } else {
+          i = i + 1
+        }
       _ => i = i + 1
     }
   }

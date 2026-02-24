@@ -88,6 +88,21 @@ FILE* moonbit_get_stderr(void) {
 static volatile int g_signal_received = 0;
 static int g_ipc_server_fd = -1;
 static int64_t g_last_auth_failure_audit_at = 0;
+static int g_last_ipc_request_session_id = -1;
+static int g_last_ipc_request_token = -1;
+static char g_last_ipc_client_id[64] = "unknown";
+
+int moonbit_append_gateway_auth_audit_detail(
+    int64_t now,
+    int event,
+    int value,
+    const char* source_utf16,
+    const char* client_id_utf16,
+    int session_id,
+    const char* reason_utf16,
+    int token_age_sec,
+    int64_t blocked_until
+);
 
 /*
  * IPC認証トークンを生成する
@@ -226,6 +241,36 @@ static int utf16le_to_ascii(const char* utf16, char* out, int max_len) {
     out[i] = '\0';
 
     return i > 0 ? 0 : -1;
+}
+
+/*
+ * ASCII文字列をUTF-16LEバイト列へ変換する
+ */
+static int ascii_to_utf16le_bytes(const char* ascii, char* out, int out_len) {
+    if (!ascii || !out || out_len <= 0) return -1;
+    int written = 0;
+    for (int i = 0; ascii[i] != '\0'; i++) {
+        if (written + 2 >= out_len) break;
+        out[written++] = (unsigned char)ascii[i];
+        out[written++] = 0;
+    }
+    return written;
+}
+
+/*
+ * client_idとして許可する文字のみ通す
+ */
+static void sanitize_client_id(char* s) {
+    if (!s) return;
+    for (int i = 0; s[i] != '\0'; i++) {
+        char c = s[i];
+        int ok =
+            (c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') ||
+            c == '-' || c == '_' || c == '.' || c == ':';
+        if (!ok) s[i] = '_';
+    }
 }
 
 /*
@@ -591,14 +636,21 @@ static int parse_request_line(
     int* token_pid,
     int* session_id,
     char* command,
-    int command_len
+    int command_len,
+    char* client_id,
+    int client_id_len
 ) {
-    if (!line || !token_pid || !session_id || !command) return -1;
+    if (!line || !token_pid || !session_id || !command || !client_id) return -1;
     *token_pid = -1;
     *session_id = -1;
     command[0] = '\0';
-    int matched = sscanf(line, "%d %d %31s", token_pid, session_id, command);
-    return matched == 3 ? 0 : -1;
+    strncpy(client_id, "unknown", client_id_len - 1);
+    client_id[client_id_len - 1] = '\0';
+
+    int matched = sscanf(line, "%d %d %31s %63s", token_pid, session_id, command, client_id);
+    if (matched < 3) return -1;
+    sanitize_client_id(client_id);
+    return 0;
 }
 
 /*
@@ -683,14 +735,24 @@ int moonbit_ipc_server_poll(
     int request_token_pid = -1;
     int request_session_id = -1;
     char command[32];
+    char client_id[64];
     if (parse_request_line(
-        req, &request_token_pid, &request_session_id, command, sizeof(command)
+        req, &request_token_pid, &request_session_id, command, sizeof(command), client_id, sizeof(client_id)
     ) != 0) {
+        g_last_ipc_request_token = -1;
+        g_last_ipc_request_session_id = -1;
+        strncpy(g_last_ipc_client_id, "unknown", sizeof(g_last_ipc_client_id) - 1);
+        g_last_ipc_client_id[sizeof(g_last_ipc_client_id) - 1] = '\0';
         const char* resp = "ERR malformed\n";
         write(client, resp, strlen(resp));
         close(client);
         return 4;
     }
+
+    g_last_ipc_request_token = request_token_pid;
+    g_last_ipc_request_session_id = request_session_id;
+    strncpy(g_last_ipc_client_id, client_id, sizeof(g_last_ipc_client_id) - 1);
+    g_last_ipc_client_id[sizeof(g_last_ipc_client_id) - 1] = '\0';
 
     if (
         request_session_id != session_id ||
@@ -745,6 +807,7 @@ int moonbit_ipc_client_request(
     int token_pid,
     int session_id,
     int command,
+    const char* client_id_utf16,
     char* response_buf,
     int response_buf_len
 ) {
@@ -768,10 +831,19 @@ int moonbit_ipc_client_request(
 
     char req[256];
     const char* command_text = "status";
+    char client_id[64] = "cli-unknown";
+    if (client_id_utf16) {
+        char parsed[64];
+        if (utf16le_to_ascii(client_id_utf16, parsed, sizeof(parsed)) == 0) {
+            strncpy(client_id, parsed, sizeof(client_id) - 1);
+            client_id[sizeof(client_id) - 1] = '\0';
+            sanitize_client_id(client_id);
+        }
+    }
     if (command == 2) {
         command_text = "stop";
     }
-    snprintf(req, sizeof(req), "%d %d %s\n", token_pid, session_id, command_text);
+    snprintf(req, sizeof(req), "%d %d %s %s\n", token_pid, session_id, command_text, client_id);
     if (write(fd, req, strlen(req)) < 0) {
         close(fd);
         return -1;
@@ -786,13 +858,24 @@ int moonbit_ipc_client_request(
     ascii_resp[n] = '\0';
 
     int out = 0;
-    for (ssize_t i = 0; i < n; i++) {
-        if (out + 2 >= response_buf_len) break;
-        response_buf[out++] = (unsigned char)ascii_resp[i];
-        response_buf[out++] = 0;
-    }
+    out = ascii_to_utf16le_bytes(ascii_resp, response_buf, response_buf_len);
     close(fd);
     return out;
+}
+
+/*
+ * 直近IPCリクエストのclient_idを取得する
+ */
+int moonbit_ipc_get_last_client_id(char* response_buf, int response_buf_len) {
+    if (!response_buf || response_buf_len <= 0) return -1;
+    return ascii_to_utf16le_bytes(g_last_ipc_client_id, response_buf, response_buf_len);
+}
+
+/*
+ * 直近IPCリクエストのsession_idを取得する
+ */
+int moonbit_ipc_get_last_session_id(void) {
+    return g_last_ipc_request_session_id;
 }
 
 /*
@@ -947,10 +1030,63 @@ int moonbit_read_gateway_session_id(void) {
  * value: 補助値（失敗回数やblock秒）
  */
 int moonbit_append_gateway_auth_audit(int64_t now, int event, int value) {
-    if (event == 1 && now - g_last_auth_failure_audit_at < 2) {
-        return 0;
+    return moonbit_append_gateway_auth_audit_detail(
+        now,
+        event,
+        value,
+        "ipc",
+        "unknown",
+        -1,
+        event == 2 ? "rate_limited" : (event == 3 ? "rate_limit_end" : "unauthorized"),
+        -1,
+        -1
+    );
+}
+
+/*
+ * IPC/Control API認証監査ログ（詳細）を追記する
+ */
+int moonbit_append_gateway_auth_audit_detail(
+    int64_t now,
+    int event,
+    int value,
+    const char* source_utf16,
+    const char* client_id_utf16,
+    int session_id,
+    const char* reason_utf16,
+    int token_age_sec,
+    int64_t blocked_until
+) {
+    char source[32] = "unknown";
+    char client_id[96] = "unknown";
+    char reason[64] = "unknown";
+    if (source_utf16) {
+        char parsed[32];
+        if (utf16le_to_ascii(source_utf16, parsed, sizeof(parsed)) == 0) {
+            strncpy(source, parsed, sizeof(source) - 1);
+            source[sizeof(source) - 1] = '\0';
+        }
     }
-    if (event == 1) {
+    if (client_id_utf16) {
+        char parsed[96];
+        if (utf16le_to_ascii(client_id_utf16, parsed, sizeof(parsed)) == 0) {
+            strncpy(client_id, parsed, sizeof(client_id) - 1);
+            client_id[sizeof(client_id) - 1] = '\0';
+        }
+    }
+    if (reason_utf16) {
+        char parsed[64];
+        if (utf16le_to_ascii(reason_utf16, parsed, sizeof(parsed)) == 0) {
+            strncpy(reason, parsed, sizeof(reason) - 1);
+            reason[sizeof(reason) - 1] = '\0';
+        }
+    }
+    sanitize_client_id(client_id);
+
+    if (event == 1 && strcmp(source, "ipc") == 0 && strcmp(reason, "unauthorized") == 0) {
+        if (now - g_last_auth_failure_audit_at < 2) {
+            return 0;
+        }
         g_last_auth_failure_audit_at = now;
     }
 
@@ -978,14 +1114,22 @@ int moonbit_append_gateway_auth_audit(int64_t now, int event, int value) {
         event_text = "rate_limited_start";
     } else if (event == 3) {
         event_text = "rate_limited_end";
+    } else if (event == 4) {
+        event_text = "forbidden";
     }
 
     fprintf(
         f,
-        "{\"ts\":%lld,\"event\":\"%s\",\"value\":%d}\n",
+        "{\"ts\":%lld,\"event\":\"%s\",\"source\":\"%s\",\"client_id\":\"%s\",\"session_id\":%d,\"reason\":\"%s\",\"value\":%d,\"token_age_sec\":%d,\"blocked_until\":%lld}\n",
         (long long)now,
         event_text,
-        value
+        source,
+        client_id,
+        session_id,
+        reason,
+        value,
+        token_age_sec,
+        (long long)blocked_until
     );
     fclose(f);
     chmod(path, 0600);
