@@ -28,18 +28,21 @@ fn ends_with(s : String, suffix : String) -> Bool {
 
 ///|
 /// args[0]がNode.jsバイナリかどうかを判定
-/// "node", "/node", "\\node", "node.exe" で終わる場合のみtrue
+/// "node", "nodejs", "/node", "/nodejs", "node.exe" 等で終わる場合true
 fn is_node_binary(path : String) -> Bool {
-  // 完全一致: "node"
-  if path == "node" {
+  // 完全一致: "node" または "nodejs"
+  if path == "node" || path == "nodejs" {
     return true
   }
-  // パス末尾: "/node" (Unix) または "\\node" (Windows)
-  if ends_with(path, "/node") || ends_with(path, "\\node") {
+  // パス末尾: "/node" "/nodejs" (Unix) または "\\node" "\\nodejs" (Windows)
+  if ends_with(path, "/node") ||
+    ends_with(path, "/nodejs") ||
+    ends_with(path, "\\node") ||
+    ends_with(path, "\\nodejs") {
     return true
   }
-  // Windows実行ファイル: "node.exe"
-  if ends_with(path, "node.exe") {
+  // Windows実行ファイル: "node.exe" または "nodejs.exe"
+  if ends_with(path, "node.exe") || ends_with(path, "nodejs.exe") {
     return true
   }
   false
