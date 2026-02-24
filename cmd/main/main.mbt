@@ -23,6 +23,8 @@ pub(all) enum Command {
   Gateway(GatewayCommand)
   /// Cron操作
   Cron(CronCommand)
+  /// デーモン子プロセス（内部使用）
+  DaemonChild(String)
   /// 不明なコマンド
   Unknown(String)
 }
@@ -73,6 +75,8 @@ pub(all) struct GatewayStartOptions {
   mut port : Int?
   /// デバッグモード
   mut debug : Bool
+  /// デーモンモード（バックグラウンド常駐）
+  mut daemon : Bool
 }
 
 ///|
@@ -89,7 +93,7 @@ pub(all) enum CliResult {
 ///|
 /// ヘルプメッセージを取得
 pub fn get_help_message() -> String {
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nOptions:\n  --config <path>      Path to configuration file\n                       (default: ~/.mukuro/config.json)\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway status\n  mukuro cron list"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway start        Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Start Options:\n  --config <path>      Path to configuration file\n                       (default: ~/.mukuro/config.json)\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --debug, -d          Enable debug mode\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway start --config ./config.json\n  mukuro gateway start --daemon\n  mukuro gateway status\n  mukuro gateway stop\n  mukuro cron list"
 }
 
 ///|
@@ -107,6 +111,7 @@ pub fn execute_command(cmd : Command) -> CliResult {
     Command::Onboard(opts) => execute_onboard(opts)
     Command::Gateway(gateway_cmd) => execute_gateway_command(gateway_cmd)
     Command::Cron(cron_cmd) => execute_cron_command(cron_cmd)
+    Command::DaemonChild(pid_path) => execute_daemon_child(pid_path)
     Command::Unknown(name) =>
       CliResult::Error("Unknown command: \{name}\n\n\{get_help_message()}")
   }
@@ -152,15 +157,6 @@ pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
 
 ///|
 /// Gatewayを起動
-///
-/// NOTE: 現在の実装では、gateway startは即座に終了します。
-/// プロセス間での状態共有には以下のアプローチが必要です:
-/// - PIDファイルによるプロセス管理
-/// - ソケット/ファイル経由のIPC
-/// - デーモンモードでの常駐実行
-///
-/// 現時点では、run_cli() を直接呼び出すアプリケーションから
-/// グローバルGatewayインスタンスを操作することを想定しています。
 fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   // 設定パスの解決
   let config_path = opts.config_path.unwrap_or("~/.mukuro/config.json")
@@ -175,7 +171,13 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
     health_endpoint: @interfaces.HealthEndpointConfig::default(),
     auto_connect_channels: true,
   }
-  // グローバルGatewayを起動
+
+  // デーモンモードの場合
+  if opts.daemon {
+    return execute_daemon_start(opts, gateway_config)
+  }
+
+  // 通常モード（インプロセス）
   global_gateway.start(config=gateway_config) catch {
     @interfaces.ControlError::AlreadyRunning =>
       return CliResult::Error("Failed to start gateway: already running")
@@ -186,41 +188,70 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
     _ => return CliResult::Error("Failed to start gateway: unknown error")
   }
   let status = global_gateway.status()
-  // NOTE: 現在はGateway起動後に即終了します。
-  // 常駐モードが必要な場合は、イベントループの実装が必要です。
   CliResult::Ok(
-    "Gateway started (in-process mode):\n  Host: \{host}\n  Port: \{port}\n  Config: \{config_path}\n  State: \{status.state.to_string()}\n  Debug: \{opts.debug}\n\nNote: Gateway runs in-process. For daemon mode, use an event loop.",
+    "Gateway started (in-process mode):\n  Host: \{host}\n  Port: \{port}\n  Config: \{config_path}\n  State: \{status.state.to_string()}\n  Debug: \{opts.debug}\n\nNote: Gateway runs in-process. Use --daemon for background execution.",
   )
 }
 
 ///|
 /// Gatewayの状態を表示
 fn execute_gateway_status() -> CliResult {
-  // グローバルGatewayの状態を取得
-  let status = global_gateway.status()
-  let health_str = match status.health {
-    Some(h) => h.overall.to_string()
-    None => "unknown"
+  // まずPIDファイル経由でデーモン状態を確認
+  let daemon_status = get_daemon_status(pid_path=@control.default_pid_path)
+
+  // デーモン状態に応じて表示
+  match daemon_status {
+    @control.DaemonStatus::Running(pid) =>
+      CliResult::Ok(
+        "Gateway Status (daemon mode):\n  State: running\n  PID: \{pid}\n  PID file: \{@control.default_pid_path}",
+      )
+    @control.DaemonStatus::Stale(pid) =>
+      CliResult::Ok(
+        "Gateway Status (stale):\n  State: stale (PID file exists but process not running)\n  Stale PID: \{pid}\n  PID file: \{@control.default_pid_path}\n\nUse 'gateway stop' to clean up stale PID file.",
+      )
+    @control.DaemonStatus::Stopped => {
+      // インプロセスモードの状態を確認
+      let status = global_gateway.status()
+      let health_str = match status.health {
+        Some(h) => h.overall.to_string()
+        None => "unknown"
+      }
+      let started_str = match status.started_at {
+        Some(ts) => "\{ts}"
+        None => "not started"
+      }
+      CliResult::Ok(
+        "Gateway Status (in-process mode):\n  State: \{status.state.to_string()}\n  Version: \{status.version}\n  Health: \{health_str}\n  Channels: \{status.connected_channels.length()}\n  Sessions: \{status.active_sessions}\n  Started: \{started_str}",
+      )
+    }
   }
-  let started_str = match status.started_at {
-    Some(ts) => "\{ts}"
-    None => "not started"
-  }
-  CliResult::Ok(
-    "Gateway Status:\n  State: \{status.state.to_string()}\n  Version: \{status.version}\n  Health: \{health_str}\n  Channels: \{status.connected_channels.length()}\n  Sessions: \{status.active_sessions}\n  Started: \{started_str}",
-  )
 }
 
 ///|
 /// Gatewayを停止
 fn execute_gateway_stop() -> CliResult {
-  // グローバルGatewayを停止
-  global_gateway.stop() catch {
-    @interfaces.ControlError::AlreadyStopped =>
-      return CliResult::Error("Gateway is not running")
-    _ => return CliResult::Error("Failed to stop gateway")
+  // まずPIDファイル経由でデーモン状態を確認
+  let daemon_status = get_daemon_status(pid_path=@control.default_pid_path)
+
+  match daemon_status {
+    @control.DaemonStatus::Running(_) =>
+      // デーモンモードで実行中 → シグナル送信
+      stop_daemon(pid_path=@control.default_pid_path)
+    @control.DaemonStatus::Stale(pid) => {
+      // stale状態 → PIDファイルをクリーンアップ
+      let _ = stop_daemon(pid_path=@control.default_pid_path)
+      CliResult::Ok("Cleaned up stale PID file (PID: \{pid} was not running)")
+    }
+    @control.DaemonStatus::Stopped => {
+      // デーモンなし → インプロセスモードを停止
+      global_gateway.stop() catch {
+        @interfaces.ControlError::AlreadyStopped =>
+          return CliResult::Error("Gateway is not running")
+        _ => return CliResult::Error("Failed to stop gateway")
+      }
+      CliResult::Ok("Gateway stopped successfully (in-process mode)")
+    }
   }
-  CliResult::Ok("Gateway stopped successfully")
 }
 
 ///|
@@ -269,6 +300,13 @@ pub fn parse_args(args : Array[String]) -> Command {
   match cmd_name {
     "help" | "--help" | "-h" => Command::Help
     "version" | "--version" | "-v" => Command::Version
+    "--daemon-child" =>
+      // 内部使用：posix_spawn で起動されたデーモン子プロセス
+      if args.length() > 1 {
+        Command::DaemonChild(args[1])
+      } else {
+        Command::Unknown("--daemon-child requires pid_path argument")
+      }
     "onboard" => parse_onboard_args(slice_from_1(args)[:])
     "gateway" =>
       if args.length() > 1 {
@@ -371,6 +409,7 @@ fn parse_gateway_start_opts(args : ArrayView[String]) -> GatewayStartOptions {
     host: None,
     port: None,
     debug: false,
+    daemon: false,
   }
   let arr = array_view_to_array(args)
   let mut i = 0
@@ -408,6 +447,10 @@ fn parse_gateway_start_opts(args : ArrayView[String]) -> GatewayStartOptions {
         }
       "--debug" | "-d" => {
         opts.debug = true
+        i = i + 1
+      }
+      "--daemon" | "-D" => {
+        opts.daemon = true
         i = i + 1
       }
       _ => i = i + 1

@@ -238,3 +238,112 @@ test "run_cli gateway status" {
     },
   )
 }
+
+// ============================================================
+// Daemon mode tests
+// ============================================================
+
+///|
+test "parse_args gateway start --daemon" {
+  let cmd = parse_args(["gateway", "start", "--daemon"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(opts)) => opts.daemon == true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway start -D" {
+  let cmd = parse_args(["gateway", "start", "-D"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(opts)) => opts.daemon == true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway start --daemon with options" {
+  let cmd = parse_args([
+    "gateway", "start", "--daemon", "--host", "127.0.0.1", "--port", "8080",
+  ])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(opts)) =>
+        opts.daemon == true &&
+        opts.host == Some("127.0.0.1") &&
+        opts.port == Some(8080)
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway start without daemon" {
+  let cmd = parse_args(["gateway", "start", "--port", "9000"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(opts)) =>
+        opts.daemon == false && opts.port == Some(9000)
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args daemon-child internal command" {
+  let cmd = parse_args(["--daemon-child", ".mukuro/gateway.pid"])
+  assert_true(
+    match cmd {
+      Command::DaemonChild(path) => path == ".mukuro/gateway.pid"
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args daemon-child without pid_path returns Unknown" {
+  let cmd = parse_args(["--daemon-child"])
+  assert_true(
+    match cmd {
+      Command::Unknown(msg) => msg.contains("requires pid_path")
+      _ => false
+    },
+  )
+}
+
+///|
+test "DaemonStatus::Running pattern" {
+  let status = @control.DaemonStatus::Running(12345)
+  assert_true(
+    match status {
+      @control.DaemonStatus::Running(pid) => pid == 12345
+      _ => false
+    },
+  )
+}
+
+///|
+test "DaemonStatus::Stopped pattern" {
+  let status = @control.DaemonStatus::Stopped
+  assert_true(
+    match status {
+      @control.DaemonStatus::Stopped => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "DaemonStatus::Stale pattern" {
+  let status = @control.DaemonStatus::Stale(99999)
+  assert_true(
+    match status {
+      @control.DaemonStatus::Stale(pid) => pid == 99999
+      _ => false
+    },
+  )
+}

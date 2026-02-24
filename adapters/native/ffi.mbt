@@ -156,3 +156,101 @@ pub let w_ok : Int = 2
 ///|
 /// X_OK (実行権限確認用)
 pub let x_ok : Int = 1
+
+// ============================================================
+// シグナル・プロセス管理
+// ============================================================
+
+///|
+/// シグナルハンドラを設定（SIGTERM/SIGINT）
+/// returns: 0 on success, -1 on error
+pub extern "C" fn c_setup_signal_handlers() -> Int = "moonbit_setup_signal_handlers"
+
+///|
+/// シグナル受信状態を取得
+/// returns: 0=未受信, 1=SIGTERM, 2=SIGINT
+pub extern "C" fn c_get_signal_received() -> Int = "moonbit_get_signal_received"
+
+///|
+/// シグナル受信フラグをリセット
+pub extern "C" fn c_reset_signal_received() -> Unit = "moonbit_reset_signal_received"
+
+///|
+/// 現在のプロセスIDを取得
+pub extern "C" fn c_getpid() -> Int = "moonbit_getpid"
+
+///|
+/// プロセスにシグナルを送信
+/// sig=0でプロセス存在確認
+/// returns: 0 on success, -1 on error
+pub extern "C" fn c_kill(pid : Int, sig : Int) -> Int = "moonbit_kill"
+
+///|
+/// 指定ミリ秒スリープ
+pub extern "C" fn c_sleep_ms(ms : Int) -> Unit = "moonbit_sleep_ms"
+
+///|
+/// プロセスを終了
+pub extern "C" fn c_exit(status : Int) -> Unit = "exit"
+
+// ============================================================
+// シグナル定数
+// ============================================================
+
+///|
+/// SIGTERM（終了要求）
+pub let sigterm : Int = 15
+
+///|
+/// SIGINT（割り込み）
+pub let sigint : Int = 2
+
+// ============================================================
+// PIDファイル操作（シンプルなFFI）
+// ============================================================
+
+///|
+/// PIDファイルを書き込む（親ディレクトリも作成）
+/// returns: 0 on success, -1 on error
+#borrow(path)
+pub extern "C" fn c_write_pid_file(path : CString, pid : Int) -> Int = "moonbit_write_pid_file"
+
+///|
+/// PIDファイルを読み取る
+/// returns: PID on success, -1 on error
+#borrow(path)
+pub extern "C" fn c_read_pid_file(path : CString) -> Int = "moonbit_read_pid_file"
+
+///|
+/// ファイルが存在するか確認
+/// returns: 1 if exists, 0 otherwise
+#borrow(path)
+pub extern "C" fn c_file_exists(path : CString) -> Int = "moonbit_file_exists"
+
+///|
+/// ファイルを削除
+/// returns: 0 on success, -1 on error
+#borrow(path)
+pub extern "C" fn c_remove_file(path : CString) -> Int = "moonbit_remove_file"
+
+// ============================================================
+// posix_spawn ベースのデーモン起動
+// ============================================================
+
+///|
+/// posix_spawn でデーモンプロセスを起動
+/// fork() の代わりに新しいプロセスを起動することで、MoonBitランタイムの
+/// fork安全性問題を回避する
+/// returns: 成功時は子プロセスのPID、エラー時は-1
+#borrow(pid_path)
+pub extern "C" fn c_spawn_daemon(pid_path : CString) -> Int = "moonbit_spawn_daemon"
+
+///|
+/// デーモン子プロセスとして初期化（--daemon-child 引数で起動時）
+/// returns: 0 on success, -1 on error
+#borrow(pid_path)
+pub extern "C" fn c_daemon_child_init(pid_path : CString) -> Int = "moonbit_daemon_child_init"
+
+///|
+/// 実行ファイルの絶対パスを取得
+pub extern "C" fn c_get_exe_path() -> CString = "moonbit_get_exe_path"

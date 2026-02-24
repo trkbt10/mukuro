@@ -4,8 +4,13 @@ import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/control",
   "trkbt10/mukuro/core/scheduler",
+  "trkbt10/mukuro/adapters/native" @native,
 }
 
 options(
   "is-main": true,
+  targets: {
+    "daemon.mbt": [ "native" ],
+    "daemon_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+  },
 )

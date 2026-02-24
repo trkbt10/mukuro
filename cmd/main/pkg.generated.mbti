@@ -1,14 +1,22 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "trkbt10/mukuro/cmd/main"
 
+import {
+  "trkbt10/mukuro/core/control",
+}
+
 // Values
 pub fn execute_command(Command) -> CliResult
 
 pub fn execute_cron_command(CronCommand) -> CliResult
 
+pub fn execute_daemon_child(String) -> CliResult
+
 pub fn execute_gateway_command(GatewayCommand) -> CliResult
 
 pub fn execute_onboard(OnboardOptions) -> CliResult
+
+pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus
 
 pub fn get_help_message() -> String
 
@@ -17,6 +25,8 @@ pub fn get_version_message() -> String
 pub fn parse_args(Array[String]) -> Command
 
 pub fn run_cli(Array[String]) -> CliResult
+
+pub fn stop_daemon(pid_path~ : String) -> CliResult
 
 pub let version : String
 
@@ -35,6 +45,7 @@ pub(all) enum Command {
   Onboard(OnboardOptions)
   Gateway(GatewayCommand)
   Cron(CronCommand)
+  DaemonChild(String)
   Unknown(String)
 }
 
@@ -55,6 +66,7 @@ pub(all) struct GatewayStartOptions {
   mut host : String?
   mut port : Int?
   mut debug : Bool
+  mut daemon : Bool
 }
 
 pub(all) struct OnboardOptions {

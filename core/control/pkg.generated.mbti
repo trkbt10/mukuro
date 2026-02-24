@@ -7,13 +7,39 @@ import {
 }
 
 // Values
+pub let default_pid_path : String
 
 // Errors
+pub(all) suberror DaemonError {
+  AlreadyRunning(Int)
+  PidFileReadError(String)
+  PidFileWriteError(String)
+  ProcessNotFound(Int)
+  SignalError(String)
+  InitError(String)
+}
 
 // Types and methods
 pub struct AgentHandler((@types.InboundEnvelope) -> @types.OutboundMessage raise)
 #deprecated
 pub fn AgentHandler::inner(Self) -> (@types.InboundEnvelope) -> @types.OutboundMessage raise
+
+pub struct DaemonManager {
+  pid_manager : PidManager
+  process_checker : &ProcessChecker
+}
+pub fn DaemonManager::acquire(Self) -> Unit raise DaemonError
+pub fn DaemonManager::new(pid_manager~ : PidManager, process_checker~ : &ProcessChecker) -> Self
+pub fn DaemonManager::recover_stale(Self) -> Bool
+pub fn DaemonManager::release(Self) -> Unit raise DaemonError
+pub fn DaemonManager::status(Self) -> DaemonStatus
+pub fn DaemonManager::stop_remote(Self) -> Unit raise DaemonError
+
+pub(all) enum DaemonStatus {
+  Running(Int)
+  Stopped
+  Stale(Int)
+}
 
 pub struct Gateway {
   mut state : @interfaces.GatewayState
@@ -50,6 +76,17 @@ pub struct NoAuthAuthenticator {
 pub fn NoAuthAuthenticator::new() -> Self
 pub impl @interfaces.Authenticator for NoAuthAuthenticator
 
+pub struct PidManager {
+  pid_path : String
+  fs : &@interfaces.FileStore
+}
+pub fn PidManager::exists(Self) -> Bool
+pub fn PidManager::new(pid_path~ : String, fs~ : &@interfaces.FileStore) -> Self
+pub fn PidManager::read_pid(Self) -> Int raise DaemonError
+pub fn PidManager::remove_pid(Self) -> Unit raise DaemonError
+pub fn PidManager::with_default_path(fs~ : &@interfaces.FileStore) -> Self
+pub fn PidManager::write_pid(Self, Int) -> Unit raise DaemonError
+
 pub struct SimpleTokenAuthenticator {
   valid_token : String
   revoked_tokens : Array[String]
@@ -64,4 +101,9 @@ pub fn TimeProvider::inner(Self) -> () -> Int64
 // Type aliases
 
 // Traits
+pub(open) trait ProcessChecker {
+  is_running(Self, Int) -> Bool
+  current_pid(Self) -> Int
+  send_signal(Self, Int, Int) -> Bool
+}
 

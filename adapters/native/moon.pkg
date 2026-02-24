@@ -1,6 +1,7 @@
 import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/core/control",
   "moonbitlang/core/json",
 }
 
@@ -10,6 +11,7 @@ options(
   targets: {
     "clock.mbt": [ "native" ],
     "crypto.mbt": [ "native" ],
+    "daemon.mbt": [ "native" ],
     "ffi.mbt": [ "native" ],
     "filesystem.mbt": [ "native" ],
     "http_client.mbt": [ "native" ],
