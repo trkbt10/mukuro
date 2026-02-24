@@ -81,6 +81,51 @@ test "ConfigurableSessionResolver resolves PerRoutingScope fallback to chat_id" 
 }
 
 ///|
+test "ConfigurableSessionResolver resolves PerAgentBinding with agent_id metadata" {
+  let resolver = ConfigurableSessionResolver::new(
+    strategy=SessionStrategy::PerAgentBinding,
+  )
+  let envelope = @types.InboundEnvelope::{
+    channel: "discord",
+    chat_id: "chat-default",
+    sender_id: "user-ab",
+    sender_name: "User AB",
+    content: "hello",
+    message_type: @types.MessageType::Text,
+    metadata: {
+      "agent_id": Json::string("support"),
+      "guild_id": Json::string("g-999"),
+    },
+    timestamp: 5000L,
+  }
+  let key = @interfaces.SessionResolver::resolve(resolver, envelope)
+  inspect(key.channel, content="discord")
+  inspect(key.chat_id, content="agent-support")
+  inspect(key.user_id, content="None")
+}
+
+///|
+test "ConfigurableSessionResolver PerAgentBinding fallback to routing scope" {
+  let resolver = ConfigurableSessionResolver::new(
+    strategy=SessionStrategy::PerAgentBinding,
+  )
+  let envelope = @types.InboundEnvelope::{
+    channel: "slack",
+    chat_id: "chat-default",
+    sender_id: "user-cd",
+    sender_name: "User CD",
+    content: "hello",
+    message_type: @types.MessageType::Text,
+    metadata: { "team_id": Json::string("team-1") },
+    timestamp: 6000L,
+  }
+  let key = @interfaces.SessionResolver::resolve(resolver, envelope)
+  inspect(key.channel, content="slack")
+  inspect(key.chat_id, content="team-team-1")
+  inspect(key.user_id, content="None")
+}
+
+///|
 test "session_key_to_storage_key formats correctly" {
   let key = @types.SessionKey::new(channel="http", chat_id="test", user_id=None)
   let storage_key = session_key_to_storage_key(key)

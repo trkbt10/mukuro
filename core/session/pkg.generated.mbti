@@ -86,6 +86,7 @@ pub fn HistoryOptions::default() -> Self
 pub(all) enum SessionStrategy {
   PerChat
   PerUser
+  PerAgentBinding
   PerRoutingScope
   Custom((@types.InboundEnvelope) -> @types.SessionKey)
 }

@@ -64,7 +64,7 @@ pub impl @interfaces.OutboundDispatcher for LocalOutboundDispatcher with dispatc
 
 ///|
 let global_session_resolver : @session.ConfigurableSessionResolver = @session.ConfigurableSessionResolver::new(
-  strategy=@session.SessionStrategy::PerRoutingScope,
+  strategy=@session.SessionStrategy::PerAgentBinding,
 )
 
 ///|
@@ -72,7 +72,7 @@ let global_session_store : InMemorySessionStore = InMemorySessionStore::new()
 
 ///|
 let global_route_resolver : @channels.RouteResolver = @channels.RouteResolver::new(
-  default_strategy=@session.SessionStrategy::PerRoutingScope,
+  default_strategy=@session.SessionStrategy::PerAgentBinding,
 )
 
 ///|

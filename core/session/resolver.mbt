@@ -5,6 +5,8 @@ pub(all) enum SessionStrategy {
   PerChat
   /// チャネル＋チャットID＋ユーザーIDでセッションを識別
   PerUser
+  /// agent binding（agent_id）優先で、未指定時は routing scope で識別
+  PerAgentBinding
   /// 優先スコープ（peer/guild/team/account/channel/chat）でセッションを識別
   PerRoutingScope
   /// カスタムキー生成関数
@@ -50,6 +52,14 @@ pub impl @interfaces.SessionResolver for ConfigurableSessionResolver with resolv
         chat_id=envelope.chat_id,
         user_id=Some(envelope.sender_id),
       )
+    SessionStrategy::PerAgentBinding =>
+      @types.SessionKey::new(
+        channel=envelope.channel,
+        chat_id=resolve_agent_binding_chat_id(envelope.metadata).unwrap_or(
+          resolve_routing_scope_chat_id(envelope),
+        ),
+        user_id=None,
+      )
     SessionStrategy::PerRoutingScope =>
       @types.SessionKey::new(
         channel=envelope.channel,
@@ -66,6 +76,20 @@ fn metadata_string(metadata : Map[String, Json], key : String) -> String? {
     Some(String(v)) => if v.length() > 0 { Some(v) } else { None }
     _ => None
   }
+}
+
+///|
+fn resolve_agent_binding_chat_id(metadata : Map[String, Json]) -> String? {
+  let keys = [
+    "agent_id", "agentId", "binding_agent_id", "bindingAgentId", "binding.agent_id",
+  ]
+  for key in keys {
+    match metadata_string(metadata, key) {
+      Some(id) => return Some("agent-\{id}")
+      None => ()
+    }
+  }
+  None
 }
 
 ///|
