@@ -46,6 +46,10 @@ jobs:
         run: |
           bash tools/e2e_daemon_native.sh
 
+      - name: Native control-api e2e
+        run: |
+          bash tools/e2e_control_api_native.sh
+
   benchmark-agent-loop:
     runs-on: ubuntu-latest
     permissions:
