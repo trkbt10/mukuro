@@ -3,7 +3,6 @@
 
 ///|
 struct RuntimeChannelsCell {
-  mut loaded_path : String?
   ws_adapters : Array[@channels.WebSocketChannelAdapter]
   http_adapters : Array[@channels.HttpChannelAdapter]
   registered_names : Array[String]
@@ -11,7 +10,6 @@ struct RuntimeChannelsCell {
 
 ///|
 let runtime_channels_cell : RuntimeChannelsCell = {
-  loaded_path: None,
   ws_adapters: [],
   http_adapters: [],
   registered_names: [],
@@ -194,10 +192,6 @@ fn register_http_channel(
 
 ///|
 pub fn bootstrap_runtime_channels_from_config(path : String) -> Unit {
-  match runtime_channels_cell.loaded_path {
-    Some(loaded) => if loaded == path { return }
-    None => ()
-  }
   for name in runtime_channels_cell.registered_names {
     @interfaces.ChannelManager::unregister(global_channel_manager, name)
   }
@@ -207,15 +201,9 @@ pub fn bootstrap_runtime_channels_from_config(path : String) -> Unit {
 
   let content = read_runtime_config_text(path).unwrap_or("")
   if content.length() == 0 {
-    runtime_channels_cell.loaded_path = Some(path)
     return
   }
-  let root = @json.parse(content) catch {
-    _ => {
-      runtime_channels_cell.loaded_path = Some(path)
-      return
-    }
-  }
+  let root = @json.parse(content) catch { _ => return }
   let channels = parse_channels_array(root)
   for item in channels {
     let name = parse_channel_name(item).unwrap_or("")
@@ -232,7 +220,6 @@ pub fn bootstrap_runtime_channels_from_config(path : String) -> Unit {
       register_http_channel(name, token, webhook_url)
     }
   }
-  runtime_channels_cell.loaded_path = Some(path)
 }
 
 ///|

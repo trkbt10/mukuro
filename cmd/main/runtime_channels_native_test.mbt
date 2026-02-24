@@ -33,7 +33,6 @@ fn contains_name(names : Array[String], target : String) -> Bool {
 ///|
 test "bootstrap_runtime_channels_from_config registers multiple channels" {
   let path = "runtime_channels_native_test.json"
-  let path2 = "runtime_channels_native_test_reload.json"
   let cleanup_path = "runtime_channels_native_cleanup.json"
   let config = "{\n" +
     "  \"channels\": [\n" +
@@ -67,9 +66,7 @@ test "bootstrap_runtime_channels_from_config registers multiple channels" {
     "  ]\n" +
     "}\n"
   write_text_file(path, config)
-  write_text_file(path2, config2)
   defer remove_file(path)
-  defer remove_file(path2)
   write_cleanup_config(cleanup_path)
   defer remove_file(cleanup_path)
   defer bootstrap_runtime_channels_from_config(cleanup_path)
@@ -81,7 +78,8 @@ test "bootstrap_runtime_channels_from_config registers multiple channels" {
   assert_true(contains_name(names, "rt-http-primary"))
   assert_eq(runtime_channel_holding_count_for_test(), 3)
 
-  bootstrap_runtime_channels_from_config(path2)
+  write_text_file(path, config2)
+  bootstrap_runtime_channels_from_config(path)
   let names2 = registered_channel_names_for_test()
   assert_true(contains_name(names2, "rt-http-only"))
   assert_true(!contains_name(names2, "rt-ws-primary"))
