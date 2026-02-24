@@ -3,6 +3,29 @@
 /// PIDファイル管理とバックグラウンド常駐
 
 ///|
+/// テスト用IPCレスポンスフック
+struct IpcResponseHookCell {
+  mut value : ((String) -> String?)?
+}
+
+///|
+let daemon_ipc_response_hook : IpcResponseHookCell = { value: None }
+
+///|
+/// テスト用: IPCレスポンスフックを設定
+pub fn set_daemon_ipc_response_hook_for_test(
+  hook : (String) -> String?,
+) -> Unit {
+  daemon_ipc_response_hook.value = Some(hook)
+}
+
+///|
+/// テスト用: IPCレスポンスフックを解除
+pub fn clear_daemon_ipc_response_hook_for_test() -> Unit {
+  daemon_ipc_response_hook.value = None
+}
+
+///|
 /// デーモンモードで起動（nativeターゲット実装）
 /// posix_spawn を使用して新しいプロセスを起動し、MoonBitランタイムの
 /// fork安全性問題を回避する
@@ -121,6 +144,10 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
 ///|
 /// デーモンへIPCリクエストを送信
 fn daemon_ipc_request(command : String) -> String? {
+  match daemon_ipc_response_hook.value {
+    Some(hook) => return hook(command)
+    None => ()
+  }
   let buffer = Bytes::new(512)
   let command_code = if command == "stop" { 2 } else { 1 }
   let token = @native.c_read_gateway_token()

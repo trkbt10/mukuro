@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn clear_daemon_ipc_response_hook_for_test() -> Unit
+
 pub fn execute_command(Command) -> CliResult
 
 pub fn execute_cron_command(CronCommand) -> CliResult
@@ -29,6 +31,8 @@ pub fn query_daemon_status(Int, Bool) -> CliResult
 pub fn request_daemon_stop(Int) -> CliResult
 
 pub fn run_cli(Array[String]) -> CliResult
+
+pub fn set_daemon_ipc_response_hook_for_test((String) -> String?) -> Unit
 
 pub fn stop_daemon(pid_path~ : String) -> CliResult
 
@@ -76,6 +80,8 @@ pub(all) struct GatewayStartOptions {
 pub(all) struct GatewayStatusOptions {
   mut json : Bool
 }
+
+type IpcResponseHookCell
 
 pub(all) struct OnboardOptions {
   mut provider : String?

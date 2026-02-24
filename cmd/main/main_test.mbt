@@ -369,3 +369,29 @@ test "DaemonStatus::Stale pattern" {
     },
   )
 }
+
+///|
+test "query_daemon_status returns auth error when ipc unauthorized" {
+  set_daemon_ipc_response_hook_for_test(fn(_cmd) { Some("ERR unauthorized") })
+  let result = query_daemon_status(12345, false)
+  clear_daemon_ipc_response_hook_for_test()
+  assert_true(
+    match result {
+      CliResult::Error(msg) => msg.contains("authentication failed")
+      _ => false
+    },
+  )
+}
+
+///|
+test "request_daemon_stop returns auth error when ipc unauthorized" {
+  set_daemon_ipc_response_hook_for_test(fn(_cmd) { Some("ERR unauthorized") })
+  let result = request_daemon_stop(12345)
+  clear_daemon_ipc_response_hook_for_test()
+  assert_true(
+    match result {
+      CliResult::Error(msg) => msg.contains("authentication failed")
+      _ => false
+    },
+  )
+}
