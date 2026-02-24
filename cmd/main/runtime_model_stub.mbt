@@ -20,6 +20,11 @@ pub fn RuntimeModelOrchestrator::default() -> RuntimeModelOrchestrator {
 }
 
 ///|
+pub fn set_runtime_model_config_path_for_process(path : String) -> Unit {
+  ignore(path)
+}
+
+///|
 pub fn set_forced_response_for_test(response : String?) -> Unit {
   test_toggle.forced_response = response
 }

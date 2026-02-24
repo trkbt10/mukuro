@@ -18,6 +18,21 @@ struct RuntimeModelConfig {
 }
 
 ///|
+struct RuntimeModelPathCell {
+  mut path : String
+}
+
+///|
+let runtime_model_path_cell : RuntimeModelPathCell = {
+  path: ".mukuro/config.json",
+}
+
+///|
+pub fn set_runtime_model_config_path_for_process(path : String) -> Unit {
+  runtime_model_path_cell.path = path
+}
+
+///|
 fn default_runtime_model_config() -> RuntimeModelConfig {
   { provider: "anthropic", api_key: "", model: default_model_for("anthropic") }
 }
@@ -49,7 +64,7 @@ fn parse_runtime_model_config(content : String) -> RuntimeModelConfig {
 
 ///|
 fn load_runtime_model_config() -> RuntimeModelConfig {
-  let path = ".mukuro/config.json"
+  let path = runtime_model_path_cell.path
   let buffer_len = 65536
   let buffer = Bytes::new(buffer_len)
   let read_len = @native.c_read_text_file(
@@ -308,19 +323,26 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
   options~,
 ) {
   ignore(tools)
+  let cfg = load_runtime_model_config()
+  let runtime : RuntimeModelOrchestrator = {
+    provider: cfg.provider,
+    api_key: cfg.api_key,
+    model: cfg.model,
+    http_client: self.http_client,
+  }
   match test_toggle.forced_response {
     Some(content) => return @types.ModelResponse::Text(content)
     None => ()
   }
   // APIキー未設定時は明示エラー
-  if self.api_key.is_empty() {
+  if runtime.api_key.is_empty() {
     return @types.ModelResponse::ModelError(
-      "API key is not configured for provider: \{self.provider}. Run `mukuro onboard` to create .mukuro/config.json",
+      "API key is not configured for provider: \{runtime.provider}. Run `mukuro onboard` to create .mukuro/config.json",
     )
   }
-  if self.provider == "openai" {
-    call_openai_impl(self, messages, options)
+  if runtime.provider == "openai" {
+    call_openai_impl(runtime, messages, options)
   } else {
-    call_anthropic_impl(self, messages, options)
+    call_anthropic_impl(runtime, messages, options)
   }
 }

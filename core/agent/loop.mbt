@@ -142,6 +142,88 @@ pub(all) struct AgentDependencies {
 }
 
 ///|
+priv struct ContextOverrides {
+  bootstrap : String
+  memory_context : Array[String]
+  skills : Array[@interfaces.SkillDefinition]
+}
+
+///|
+fn parse_memory_context(value : Json?) -> Array[String] {
+  match value {
+    Some(Array(items)) => {
+      let memory : Array[String] = []
+      for item in items {
+        match item {
+          String(s) => memory.push(s)
+          _ => ()
+        }
+      }
+      memory
+    }
+    _ => []
+  }
+}
+
+///|
+fn parse_skill(item : Json) -> @interfaces.SkillDefinition? {
+  match item {
+    Object(obj) => {
+      let name = match obj.get("name") {
+        Some(String(s)) => s
+        _ => ""
+      }
+      let description = match obj.get("description") {
+        Some(String(s)) => s
+        _ => ""
+      }
+      let instructions = match obj.get("instructions") {
+        Some(String(s)) => s
+        _ => ""
+      }
+      if name.length() == 0 || description.length() == 0 {
+        None
+      } else {
+        Some({ name, description, instructions })
+      }
+    }
+    _ => None
+  }
+}
+
+///|
+fn parse_skills(value : Json?) -> Array[@interfaces.SkillDefinition] {
+  match value {
+    Some(Array(items)) => {
+      let skills : Array[@interfaces.SkillDefinition] = []
+      for item in items {
+        match parse_skill(item) {
+          Some(skill) => skills.push(skill)
+          None => ()
+        }
+      }
+      skills
+    }
+    _ => []
+  }
+}
+
+///|
+fn extract_context_overrides(
+  envelope : @types.InboundEnvelope,
+) -> ContextOverrides {
+  let bootstrap = match envelope.metadata.get("bootstrap") {
+    Some(String(s)) => s
+    _ => ""
+  }
+  let memory_context = parse_memory_context(
+    envelope.metadata.get("memory_context"),
+  )
+  let skills = parse_skills(envelope.metadata.get("skills"))
+  { bootstrap, memory_context, skills }
+}
+
+///|
 /// エージェントループを実行
 /// 入力メッセージを処理し、モデル呼び出しとツール実行を反復して応答を生成する
 pub fn run_agent_loop(
@@ -164,11 +246,12 @@ pub fn run_agent_loop(
   let ctx = AgentLoopContext::new()
   ctx.set_state(AgentState::Processing(envelope))
   // 4. コンテキスト構築
+  let overrides = extract_context_overrides(envelope)
   let context_input : @interfaces.ContextInput = {
     session_history: session.history,
-    memory_context: [],
-    skills: [],
-    bootstrap: "",
+    memory_context: overrides.memory_context,
+    skills: overrides.skills,
+    bootstrap: overrides.bootstrap,
     current_message: envelope,
   }
   ctx.messages = deps.context_builder.build(context_input)
@@ -434,11 +517,12 @@ pub async fn run_agent_loop_async(
   let ctx = AgentLoopContext::new()
   ctx.set_state(AgentState::Processing(envelope))
   // 4. コンテキスト構築
+  let overrides = extract_context_overrides(envelope)
   let context_input : @interfaces.ContextInput = {
     session_history: session.history,
-    memory_context: [],
-    skills: [],
-    bootstrap: "",
+    memory_context: overrides.memory_context,
+    skills: overrides.skills,
+    bootstrap: overrides.bootstrap,
     current_message: envelope,
   }
   ctx.messages = deps.context_builder.build(context_input)

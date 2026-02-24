@@ -221,6 +221,7 @@ pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
 fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   // 設定パスの解決
   let config_path = opts.config_path.unwrap_or(".mukuro/config.json")
+  set_runtime_model_config_path_for_process(config_path)
   // 設定ファイルが指定されている場合のみ読み込み（未指定時はデフォルト）
   let base_config = match opts.config_path {
     Some(path) =>

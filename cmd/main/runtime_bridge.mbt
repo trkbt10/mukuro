@@ -63,7 +63,6 @@ pub impl @interfaces.OutboundDispatcher for LocalOutboundDispatcher with dispatc
 }
 
 ///|
-
 let global_session_resolver : @session.ConfigurableSessionResolver = @session.ConfigurableSessionResolver::default()
 
 ///|

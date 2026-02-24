@@ -50,6 +50,8 @@ pub fn set_daemon_ipc_response_hook_for_test((String) -> String?) -> Unit
 
 pub fn set_forced_response_for_test(String?) -> Unit
 
+pub fn set_runtime_model_config_path_for_process(String) -> Unit
+
 pub fn stop_daemon(pid_path~ : String) -> CliResult
 
 pub let version : String
