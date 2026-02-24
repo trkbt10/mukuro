@@ -343,3 +343,13 @@ pub extern "C" fn c_read_gateway_token() -> Int = "moonbit_read_gateway_token"
 /// IPCセッションIDを読み取る
 /// tokenファイルが旧形式の場合は -1
 pub extern "C" fn c_read_gateway_session_id() -> Int = "moonbit_read_gateway_session_id"
+
+///|
+/// IPC認証監査ログを追記する
+/// event: 1=auth_failed, 2=rate_limited_start, 3=rate_limited_end
+/// value: 補助値（失敗回数やblock秒）
+pub extern "C" fn c_append_gateway_auth_audit(
+  now : Int64,
+  event : Int,
+  value : Int,
+) -> Int = "moonbit_append_gateway_auth_audit"

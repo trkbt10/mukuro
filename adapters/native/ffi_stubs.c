@@ -87,6 +87,7 @@ FILE* moonbit_get_stderr(void) {
  */
 static volatile int g_signal_received = 0;
 static int g_ipc_server_fd = -1;
+static int64_t g_last_auth_failure_audit_at = 0;
 
 /*
  * IPC認証トークンを生成する
@@ -511,6 +512,14 @@ static int get_default_gateway_token_path(char* out, int out_len) {
     return 0;
 }
 
+static int get_default_gateway_auth_log_path(char* out, int out_len) {
+    char cwd[768];
+    if (!out || out_len <= 0) return -1;
+    if (!getcwd(cwd, sizeof(cwd))) return -1;
+    snprintf(out, out_len, "%s/.mukuro/gateway-auth.log", cwd);
+    return 0;
+}
+
 /*
  * リクエスト1行をパースする
  * format: "<token> <session_id> <command>\n"
@@ -868,4 +877,55 @@ int moonbit_read_gateway_session_id(void) {
     }
     fclose(f);
     return session_id;
+}
+
+/*
+ * IPC認証監査ログを追記する
+ * event: 1=auth_failed, 2=rate_limited_start, 3=rate_limited_end
+ * value: 補助値（失敗回数やblock秒）
+ */
+int moonbit_append_gateway_auth_audit(int64_t now, int event, int value) {
+    if (event == 1 && now - g_last_auth_failure_audit_at < 2) {
+        return 0;
+    }
+    if (event == 1) {
+        g_last_auth_failure_audit_at = now;
+    }
+
+    char path[1024];
+    if (get_default_gateway_auth_log_path(path, sizeof(path)) != 0) {
+        return -1;
+    }
+
+    char* copy = strdup(path);
+    if (!copy) return -1;
+    char* last_slash = strrchr(copy, '/');
+    if (last_slash && last_slash != copy) {
+        *last_slash = '\0';
+        mkdir(copy, 0755);
+    }
+    free(copy);
+
+    FILE* f = fopen(path, "a");
+    if (!f) return -1;
+
+    const char* event_text = "unknown";
+    if (event == 1) {
+        event_text = "auth_failed";
+    } else if (event == 2) {
+        event_text = "rate_limited_start";
+    } else if (event == 3) {
+        event_text = "rate_limited_end";
+    }
+
+    fprintf(
+        f,
+        "{\"ts\":%lld,\"event\":\"%s\",\"value\":%d}\n",
+        (long long)now,
+        event_text,
+        value
+    );
+    fclose(f);
+    chmod(path, 0600);
+    return 0;
 }

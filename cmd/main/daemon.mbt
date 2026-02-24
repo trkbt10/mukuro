@@ -20,6 +20,22 @@ let daemon_token_rotation_interval_sec : Int64 = 300
 let daemon_prev_token_grace_sec : Int64 = 30
 
 ///|
+/// token最大寿命（秒）
+let daemon_token_max_age_sec : Int64 = 900
+
+///|
+/// 認証失敗レート制御の窓（秒）
+let daemon_auth_fail_window_sec : Int64 = 10
+
+///|
+/// 窓内失敗閾値
+let daemon_auth_fail_threshold : Int = 5
+
+///|
+/// レート制限（全IPC拒否）継続秒数
+let daemon_auth_rate_limit_sec : Int64 = 15
+
+///|
 /// テスト用: IPCレスポンスフックを設定
 pub fn set_daemon_ipc_response_hook_for_test(
   hook : (String) -> String?,
@@ -112,6 +128,11 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   let mut prev_token = -1
   let mut prev_token_grace_until : Int64 = 0
   let mut last_token_rotated_at = started_at
+  let mut token_issued_at = started_at
+  let mut prev_token_issued_at : Int64 = 0
+  let mut auth_failed_in_window = 0
+  let mut auth_fail_window_started_at : Int64 = 0
+  let mut auth_rate_limited_until : Int64 = 0
   let mut last_snapshot_uptime = -1
 
   if @native.c_write_gateway_token_record(token, session_id, started_at) != 0 {
@@ -131,18 +152,25 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   let signal = @native.run_daemon_loop(interval_ms=100, on_tick=fn() {
     let now = @native.c_time()
     let uptime_sec = (now - started_at).to_int()
+    if auth_rate_limited_until != 0 && now >= auth_rate_limited_until {
+      auth_rate_limited_until = 0
+      @native.c_append_gateway_auth_audit(now, 3, 0) |> ignore
+    }
     if uptime_sec != last_snapshot_uptime {
       @native.c_write_gateway_snapshot(self_pid, uptime_sec, 1) |> ignore
       last_snapshot_uptime = uptime_sec
     }
-    if now - last_token_rotated_at >= daemon_token_rotation_interval_sec {
+    if now - last_token_rotated_at >= daemon_token_rotation_interval_sec ||
+      now - token_issued_at >= daemon_token_max_age_sec {
       let next_token = @native.c_generate_gateway_token()
       if next_token > 0 && next_token != token {
         if @native.c_write_gateway_token_record(next_token, session_id, now) ==
           0 {
           prev_token = token
+          prev_token_issued_at = token_issued_at
           prev_token_grace_until = now + daemon_prev_token_grace_sec
           token = next_token
+          token_issued_at = now
           last_token_rotated_at = now
         }
       }
@@ -150,9 +178,50 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
     if prev_token != -1 && now >= prev_token_grace_until {
       prev_token = -1
     }
+    let is_rate_limited = auth_rate_limited_until != 0 &&
+      now < auth_rate_limited_until
+    let current_token_for_auth = if is_rate_limited ||
+      now - token_issued_at >= daemon_token_max_age_sec {
+      -1
+    } else {
+      token
+    }
+    let prev_token_for_auth = if is_rate_limited ||
+      prev_token == -1 ||
+      now >= prev_token_grace_until ||
+      now - prev_token_issued_at >= daemon_token_max_age_sec {
+      -1
+    } else {
+      prev_token
+    }
     let ipc_result = @native.c_ipc_server_poll(
-      token, prev_token, session_id, self_pid, uptime_sec,
+      current_token_for_auth, prev_token_for_auth, session_id, self_pid, uptime_sec,
     )
+    if !is_rate_limited && ipc_result == 3 {
+      if auth_fail_window_started_at == 0 ||
+        now - auth_fail_window_started_at > daemon_auth_fail_window_sec {
+        auth_fail_window_started_at = now
+        auth_failed_in_window = 1
+      } else {
+        auth_failed_in_window += 1
+      }
+      @native.c_append_gateway_auth_audit(now, 1, auth_failed_in_window)
+      |> ignore
+      if auth_failed_in_window >= daemon_auth_fail_threshold {
+        auth_rate_limited_until = now + daemon_auth_rate_limit_sec
+        auth_failed_in_window = 0
+        auth_fail_window_started_at = 0
+        @native.c_append_gateway_auth_audit(
+          now,
+          2,
+          daemon_auth_rate_limit_sec.to_int(),
+        )
+        |> ignore
+      }
+    } else if ipc_result == 1 || ipc_result == 2 {
+      auth_failed_in_window = 0
+      auth_fail_window_started_at = 0
+    }
     // stopコマンドを受信したらループを終了
     ipc_result != 2
   })
