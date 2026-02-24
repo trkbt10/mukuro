@@ -12,6 +12,10 @@ struct IpcResponseHookCell {
 let daemon_ipc_response_hook : IpcResponseHookCell = { value: None }
 
 ///|
+/// IPCトークンのローテーション間隔（秒）
+let daemon_token_rotation_interval_sec : Int64 = 300
+
+///|
 /// テスト用: IPCレスポンスフックを設定
 pub fn set_daemon_ipc_response_hook_for_test(
   hook : (String) -> String?,
@@ -89,12 +93,14 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   let self_pid = @native.c_getpid()
   let started_at = @native.c_time()
   let generated_token = @native.c_generate_gateway_token()
-  let token = if generated_token > 0 {
+  let mut token = if generated_token > 0 {
     generated_token
   } else {
     // 予備経路（通常到達しない）
     (self_pid * 1103515245 + started_at.to_int()) & 2147483647
   }
+  let mut prev_token = -1
+  let mut last_token_rotated_at = started_at
   let mut last_snapshot_uptime = -1
 
   if @native.c_write_gateway_token(token) != 0 {
@@ -118,7 +124,19 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
       @native.c_write_gateway_snapshot(self_pid, uptime_sec, 1) |> ignore
       last_snapshot_uptime = uptime_sec
     }
-    let ipc_result = @native.c_ipc_server_poll(token, self_pid, uptime_sec)
+    if now - last_token_rotated_at >= daemon_token_rotation_interval_sec {
+      let next_token = @native.c_generate_gateway_token()
+      if next_token > 0 && next_token != token {
+        if @native.c_write_gateway_token(next_token) == 0 {
+          prev_token = token
+          token = next_token
+          last_token_rotated_at = now
+        }
+      }
+    }
+    let ipc_result = @native.c_ipc_server_poll(
+      token, prev_token, self_pid, uptime_sec,
+    )
     // stopコマンドを受信したらループを終了
     ipc_result != 2
   })

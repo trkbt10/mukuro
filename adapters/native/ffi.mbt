@@ -273,10 +273,12 @@ pub extern "C" fn c_ipc_server_start() -> Int = "moonbit_ipc_server_start"
 
 ///|
 /// IPCサーバーを1回ポーリングしてコマンド処理
-/// token_pid: 認証トークン（ランダム値）
+/// token_pid: 現行認証トークン（ランダム値）
+/// prev_token_pid: 直前認証トークン（ローテーション直後のgrace用、無効時は負値）
 /// returns: 0=処理なし, 1=status処理, 2=stop処理, 3=認証失敗, 4=不明コマンド, -1=エラー
 pub extern "C" fn c_ipc_server_poll(
   token_pid : Int,
+  prev_token_pid : Int,
   pid : Int,
   uptime_sec : Int,
 ) -> Int = "moonbit_ipc_server_poll"

@@ -577,7 +577,7 @@ int moonbit_ipc_server_start(void) {
 /*
  * IPCサーバーを1回ポーリングする
  */
-int moonbit_ipc_server_poll(int token_pid, int pid, int uptime_sec) {
+int moonbit_ipc_server_poll(int token_pid, int prev_token_pid, int pid, int uptime_sec) {
     if (g_ipc_server_fd < 0) return -1;
 
     int client = accept(g_ipc_server_fd, NULL, NULL);
@@ -605,7 +605,7 @@ int moonbit_ipc_server_poll(int token_pid, int pid, int uptime_sec) {
         return 4;
     }
 
-    if (request_token_pid != token_pid) {
+    if (request_token_pid != token_pid && request_token_pid != prev_token_pid) {
         const char* resp = "ERR unauthorized\n";
         write(client, resp, strlen(resp));
         close(client);
