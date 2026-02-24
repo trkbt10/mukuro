@@ -432,7 +432,7 @@ pub fn ConfigLoaderImpl::load_from_string(
   content : String,
 ) -> @types.MukuroConfig raise @interfaces.ConfigError {
   ignore(self)
-  parse_config_json!(content)
+  parse_config_json(content)
 }
 
 ///|
@@ -442,7 +442,7 @@ pub fn ConfigLoaderImpl::load_from_string_with_env(
   content : String,
   env : &@interfaces.Environment,
 ) -> @types.MukuroConfig raise @interfaces.ConfigError {
-  let config = parse_config_json!(content)
+  let config = parse_config_json(content)
   merge_config_with_env(config, env, self.env_mapping)
 }
 
@@ -510,4 +510,158 @@ pub impl @interfaces.ConfigValidator for ConfigValidatorImpl with validate(
       )
     }
   }
+}
+
+///|
+/// FileStore統合設定ローダー
+/// FileStoreを使用して実際にファイルを読み込む
+pub struct FileStoreConfigLoader {
+  /// ファイルストア
+  file_store : &@interfaces.FileStore
+  /// 環境変数マッピング
+  env_mapping : @interfaces.EnvMapping
+  /// 設定マージ優先度
+  priority : @interfaces.ConfigPriority
+}
+
+///|
+/// FileStoreConfigLoaderを新規作成
+pub fn FileStoreConfigLoader::new(
+  file_store~ : &@interfaces.FileStore,
+  env_mapping~ : @interfaces.EnvMapping,
+  priority~ : @interfaces.ConfigPriority,
+) -> FileStoreConfigLoader {
+  { file_store, env_mapping, priority }
+}
+
+///|
+/// デフォルト設定で作成
+pub fn FileStoreConfigLoader::with_defaults(
+  file_store~ : &@interfaces.FileStore,
+) -> FileStoreConfigLoader {
+  {
+    file_store,
+    env_mapping: @interfaces.EnvMapping::default(),
+    priority: @interfaces.ConfigPriority::EnvFirst,
+  }
+}
+
+///|
+/// バイト列を文字列に変換（UTF-8デコード）
+fn bytes_to_string(
+  data : Bytes,
+) -> String raise @interfaces.ConfigError {
+  @utf8.decode(data[:]) catch {
+    _ => raise @interfaces.ConfigError::ParseError("UTF-8 decode error: invalid byte sequence")
+  }
+}
+
+///|
+/// ConfigLoader実装（FileStore版）
+pub impl @interfaces.ConfigLoader for FileStoreConfigLoader with load(
+  self,
+  path~,
+) {
+  // ファイル存在確認
+  let exists = self.file_store.exists(path~) catch {
+    e => raise @interfaces.ConfigError::FileNotFound(e.to_string())
+  }
+  if not(exists) {
+    raise @interfaces.ConfigError::FileNotFound("Config file not found: \{path}")
+  }
+  // ファイル読み込み
+  let data = self.file_store.read_file(path~) catch {
+    e => raise @interfaces.ConfigError::FileNotFound(e.to_string())
+  }
+  // 文字列に変換してパース
+  let content = bytes_to_string(data)
+  parse_config_json(content)
+}
+
+///|
+pub impl @interfaces.ConfigLoader for FileStoreConfigLoader with load_with_env(
+  self,
+  path~,
+  env~,
+) {
+  // ファイルから読み込み
+  let config = @interfaces.ConfigLoader::load(self, path~)
+  // 環境変数をマージ
+  merge_config_with_env(config, env, self.env_mapping)
+}
+
+///|
+pub impl @interfaces.ConfigLoader for FileStoreConfigLoader with load_from_env(
+  self,
+  env~,
+) {
+  // 環境変数のみからデフォルト設定を構築
+  let default_config = self.default_config()
+  merge_config_with_env(default_config, env, self.env_mapping)
+}
+
+///|
+pub impl @interfaces.ConfigLoader for FileStoreConfigLoader with default_config(
+  self,
+) {
+  ignore(self)
+  let agent = @types.AgentConfig::default()
+  let providers : Array[@types.ProviderConfig] = [
+    @types.ProviderConfig::new(
+      name="anthropic",
+      api_key=None,
+      default_model="claude-sonnet-4-20250514",
+    ),
+  ]
+  let fallback : @types.FallbackConfig = @types.FallbackConfig::new()
+  let channels : Array[@types.ChannelConfig] = []
+  { agent, providers, fallback, channels }
+}
+
+///|
+/// 文字列から設定を読み込む（ユーティリティ関数）
+pub fn FileStoreConfigLoader::load_from_string(
+  self : FileStoreConfigLoader,
+  content : String,
+) -> @types.MukuroConfig raise @interfaces.ConfigError {
+  ignore(self)
+  parse_config_json(content)
+}
+
+///|
+/// 文字列から設定を読み込み、環境変数をマージ
+pub fn FileStoreConfigLoader::load_from_string_with_env(
+  self : FileStoreConfigLoader,
+  content : String,
+  env : &@interfaces.Environment,
+) -> @types.MukuroConfig raise @interfaces.ConfigError {
+  let config = parse_config_json(content)
+  merge_config_with_env(config, env, self.env_mapping)
+}
+
+///|
+/// 設定ファイルが存在するか確認
+pub fn FileStoreConfigLoader::config_exists(
+  self : FileStoreConfigLoader,
+  path : String,
+) -> Bool {
+  self.file_store.exists(path~) catch { _ => false }
+}
+
+///|
+/// 環境変数から設定ファイルパスを取得して読み込み
+pub fn FileStoreConfigLoader::load_from_env_path(
+  self : FileStoreConfigLoader,
+  env : &@interfaces.Environment,
+) -> @types.MukuroConfig raise @interfaces.ConfigError {
+  // 環境変数から設定ファイルパスを取得
+  let config_path = match env.get_env(name=self.env_mapping.config_path) {
+    Some(path) => path
+    None =>
+      raise @interfaces.ConfigError::EnvironmentError(
+        "Config path not set in environment variable: \{self.env_mapping.config_path}",
+      )
+  }
+  // ファイルから読み込み、環境変数をマージ
+  self.load_with_env(path=config_path, env~)
 }

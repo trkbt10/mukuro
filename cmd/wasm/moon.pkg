@@ -1,6 +1,8 @@
 import {
   "trkbt10/mukuro/adapters/js" @js,
   "trkbt10/mukuro/core/types" @types,
+  "trkbt10/mukuro/core/health" @health,
+  "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/tools/builtin" @builtin,
   "moonbitlang/core/json",
 }
@@ -9,6 +11,7 @@ options(
   "is-main": true,
   targets: {
     "main.mbt": [ "js" ],
+    "health.mbt": [ "js" ],
     "main_native.mbt": [ "native" ],
     "main_wasm.mbt": [ "wasm", "wasm-gc" ],
   },

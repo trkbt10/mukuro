@@ -6,7 +6,7 @@ test "ConfigLoaderImpl::default creates loader with EnvFirst priority" {
   let loader = ConfigLoaderImpl::default()
   match loader.priority {
     @interfaces.ConfigPriority::EnvFirst => ()
-    _ => fail!("Expected EnvFirst priority")
+    _ => fail("Expected EnvFirst priority")
   }
 }
 
@@ -27,7 +27,7 @@ test "ConfigLoaderImpl::load_from_string parses valid JSON" {
     #|    }
     #|  ]
     #|}
-  let config = loader.load_from_string!(json)
+  let config = loader.load_from_string(json)
   inspect(config.agent.max_iterations, content="5")
   inspect(config.agent.timeout_ms, content="60000")
   inspect(config.agent.bootstrap, content="You are a helpful assistant")
@@ -39,7 +39,7 @@ test "ConfigLoaderImpl::load_from_string parses valid JSON" {
 test "ConfigLoaderImpl::load_from_string parses empty config" {
   let loader = ConfigLoaderImpl::default()
   let json = "{}"
-  let config = loader.load_from_string!(json)
+  let config = loader.load_from_string(json)
   // デフォルト値が使用される
   inspect(config.agent.max_iterations, content="10")
   inspect(config.providers.length(), content="0")
@@ -60,7 +60,7 @@ test "ConfigLoaderImpl::load_from_string parses provider config" {
     #|    }
     #|  ]
     #|}
-  let config = loader.load_from_string!(json)
+  let config = loader.load_from_string(json)
   inspect(config.providers.length(), content="1")
   let provider = config.providers[0]
   inspect(provider.name, content="openai")
@@ -83,7 +83,7 @@ test "ConfigLoaderImpl::load_from_string parses channel config" {
     #|    }
     #|  ]
     #|}
-  let config = loader.load_from_string!(json)
+  let config = loader.load_from_string(json)
   inspect(config.channels.length(), content="1")
   let channel = config.channels[0]
   inspect(channel.name, content="discord")
@@ -102,7 +102,7 @@ test "ConfigLoaderImpl::load_from_string parses fallback config" {
     #|    "cooldown_ms": 10000
     #|  }
     #|}
-  let config = loader.load_from_string!(json)
+  let config = loader.load_from_string(json)
   inspect(config.fallback.enabled, content="true")
   inspect(config.fallback.providers.length(), content="2")
   inspect(config.fallback.cooldown_ms, content="10000")
@@ -133,7 +133,7 @@ test "ConfigValidatorImpl::validate passes valid config" {
     fallback: @types.FallbackConfig::new(),
     channels: [],
   }
-  validator.validate!(config~)
+  validator.validate(config~)
 }
 
 ///|
@@ -152,7 +152,7 @@ test "ConfigValidatorImpl::validate rejects negative max_iterations" {
   }
   try {
     @interfaces.ConfigValidator::validate(validator, config~)
-    fail!("Expected validation error for negative max_iterations")
+    fail("Expected validation error for negative max_iterations")
   } catch {
     _ => () // Expected error
   }
@@ -165,4 +165,98 @@ test "EnvMapping::default has correct keys" {
   inspect(mapping.openai_api_key, content="OPENAI_API_KEY")
   inspect(mapping.config_path, content="MUKURO_CONFIG")
   inspect(mapping.log_level, content="MUKURO_LOG_LEVEL")
+}
+
+///|
+/// テスト用モックFileStore
+struct MockFileStore {
+  files : Map[String, Bytes]
+}
+
+fn MockFileStore::new() -> MockFileStore {
+  { files: Map::new() }
+}
+
+fn MockFileStore::add_file(self : MockFileStore, path : String, content : String) -> Unit {
+  // UTF-8でエンコード
+  let bytes = @utf8.encode(content.view())
+  self.files[path] = bytes
+}
+
+pub impl @interfaces.FileStore for MockFileStore with read_file(self, path~) {
+  match self.files.get(path) {
+    Some(data) => data
+    None => raise Failure("File not found: \{path}")
+  }
+}
+
+pub impl @interfaces.FileStore for MockFileStore with write_file(self, path~, data~) {
+  self.files[path] = data
+}
+
+pub impl @interfaces.FileStore for MockFileStore with exists(self, path~) {
+  self.files.contains(path)
+}
+
+pub impl @interfaces.FileStore for MockFileStore with remove_file(self, path~) {
+  self.files.remove(path)
+}
+
+pub impl @interfaces.FileStore for MockFileStore with create_dir(self, path~) {
+  ignore(path)
+}
+
+pub impl @interfaces.FileStore for MockFileStore with list_dir(self, path~) {
+  ignore(path)
+  []
+}
+
+///|
+test "UTF-8 encoding round-trip works" {
+  let original = "{}"
+  let bytes = @utf8.encode(original.view())
+  let decoded = @utf8.decode(bytes[:]) catch { _ => "" }
+  inspect(decoded, content="{}")
+}
+
+///|
+test "FileStoreConfigLoader::load reads config from file" {
+  let fs = MockFileStore::new()
+  // シンプルなJSON文字列を直接使用
+  fs.add_file("/config.json", "{}")
+  let loader = FileStoreConfigLoader::with_defaults(file_store=fs)
+  let config = loader.load(path="/config.json")
+  // デフォルト値が使用される
+  inspect(config.agent.max_iterations, content="10")
+}
+
+///|
+test "FileStoreConfigLoader::load raises error for missing file" {
+  let fs = MockFileStore::new()
+  let loader = FileStoreConfigLoader::with_defaults(file_store=fs)
+  try {
+    let _ = loader.load(path="/nonexistent.json")
+    fail("Expected FileNotFound error")
+  } catch {
+    @interfaces.ConfigError::FileNotFound(_) => () // Expected
+    _ => fail("Expected FileNotFound error")
+  }
+}
+
+///|
+test "FileStoreConfigLoader::config_exists returns true for existing file" {
+  let fs = MockFileStore::new()
+  fs.add_file("/config.json", "{}")
+  let loader = FileStoreConfigLoader::with_defaults(file_store=fs)
+  inspect(loader.config_exists("/config.json"), content="true")
+  inspect(loader.config_exists("/missing.json"), content="false")
+}
+
+///|
+test "FileStoreConfigLoader::load_from_string works like ConfigLoaderImpl" {
+  let fs = MockFileStore::new()
+  let loader = FileStoreConfigLoader::with_defaults(file_store=fs)
+  let json = "{\"agent\": {\"max_iterations\": 15}}"
+  let config = loader.load_from_string(json)
+  inspect(config.agent.max_iterations, content="15")
 }
