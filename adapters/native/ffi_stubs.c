@@ -461,6 +461,14 @@ static int get_default_gateway_snapshot_path(char* out, int out_len) {
     return 0;
 }
 
+static int get_default_gateway_token_path(char* out, int out_len) {
+    char cwd[768];
+    if (!out || out_len <= 0) return -1;
+    if (!getcwd(cwd, sizeof(cwd))) return -1;
+    snprintf(out, out_len, "%s/.mukuro/gateway.token", cwd);
+    return 0;
+}
+
 /*
  * リクエスト1行をパースする
  * format: "<token> <command>\n"
@@ -683,4 +691,48 @@ int moonbit_write_gateway_snapshot(int pid, int uptime_sec, int state) {
     );
     fclose(f);
     return 0;
+}
+
+/*
+ * IPC認証トークンを書き込む
+ */
+int moonbit_write_gateway_token(int token) {
+    char path[1024];
+    if (get_default_gateway_token_path(path, sizeof(path)) != 0) {
+        return -1;
+    }
+
+    char* copy = strdup(path);
+    if (!copy) return -1;
+    char* last_slash = strrchr(copy, '/');
+    if (last_slash && last_slash != copy) {
+        *last_slash = '\0';
+        mkdir(copy, 0755);
+    }
+    free(copy);
+
+    FILE* f = fopen(path, "w");
+    if (!f) return -1;
+    fprintf(f, "%d\n", token);
+    fclose(f);
+    chmod(path, 0600);
+    return 0;
+}
+
+/*
+ * IPC認証トークンを読み取る
+ */
+int moonbit_read_gateway_token(void) {
+    char path[1024];
+    if (get_default_gateway_token_path(path, sizeof(path)) != 0) {
+        return -1;
+    }
+    FILE* f = fopen(path, "r");
+    if (!f) return -1;
+    int token = -1;
+    if (fscanf(f, "%d", &token) != 1) {
+        token = -1;
+    }
+    fclose(f);
+    return token;
 }

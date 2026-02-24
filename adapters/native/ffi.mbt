@@ -301,3 +301,13 @@ pub extern "C" fn c_write_gateway_snapshot(
   uptime_sec : Int,
   state : Int,
 ) -> Int = "moonbit_write_gateway_snapshot"
+
+///|
+/// IPC認証トークンを書き込む
+/// returns: 0 on success, -1 on error
+pub extern "C" fn c_write_gateway_token(token : Int) -> Int = "moonbit_write_gateway_token"
+
+///|
+/// IPC認証トークンを読み取る
+/// returns: token on success, -1 on error
+pub extern "C" fn c_read_gateway_token() -> Int = "moonbit_read_gateway_token"

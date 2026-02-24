@@ -32,6 +32,10 @@ pub let default_ipc_socket_path : String = ".mukuro/gateway.sock"
 pub let default_gateway_state_path : String = ".mukuro/gateway-state.json"
 
 ///|
+/// IPC認証トークンファイルパス（デフォルト）
+pub let default_gateway_token_path : String = ".mukuro/gateway.token"
+
+///|
 /// PIDファイル管理
 pub struct PidManager {
   /// PIDファイルのパス

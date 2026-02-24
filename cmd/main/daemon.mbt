@@ -65,7 +65,14 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
 
   let self_pid = @native.c_getpid()
   let started_at = @native.c_time()
+  let token = (self_pid * 1103515245 + started_at.to_int()) & 2147483647
   let mut last_snapshot_uptime = -1
+
+  if @native.c_write_gateway_token(token) != 0 {
+    @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+    @native.c_exit(1)
+    return CliResult::Exit(1)
+  }
 
   let ipc_start = @native.c_ipc_server_start()
   if ipc_start != 0 {
@@ -82,7 +89,7 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
       @native.c_write_gateway_snapshot(self_pid, uptime_sec, 1) |> ignore
       last_snapshot_uptime = uptime_sec
     }
-    let ipc_result = @native.c_ipc_server_poll(self_pid, self_pid, uptime_sec)
+    let ipc_result = @native.c_ipc_server_poll(token, self_pid, uptime_sec)
     // stopコマンドを受信したらループを終了
     ipc_result != 2
   })
@@ -99,6 +106,10 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
 
   // PIDファイルを削除
   @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
+  @native.c_remove_file(
+    @native.string_to_cstring(@control.default_gateway_token_path),
+  )
+  |> ignore
   @native.c_ipc_server_cleanup() |> ignore
   @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
 
@@ -109,10 +120,14 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
 
 ///|
 /// デーモンへIPCリクエストを送信
-fn daemon_ipc_request(pid : Int, command : String) -> String? {
+fn daemon_ipc_request(command : String) -> String? {
   let buffer = Bytes::new(512)
   let command_code = if command == "stop" { 2 } else { 1 }
-  let read_len = @native.c_ipc_client_request(pid, command_code, buffer, 512)
+  let token = @native.c_read_gateway_token()
+  if token < 0 {
+    return None
+  }
+  let read_len = @native.c_ipc_client_request(token, command_code, buffer, 512)
   if read_len <= 0 {
     return None
   }
@@ -127,7 +142,7 @@ fn daemon_ipc_request(pid : Int, command : String) -> String? {
 ///|
 /// デーモンへstatus要求（IPC）
 pub fn query_daemon_status(pid : Int, as_json : Bool) -> CliResult {
-  let response = daemon_ipc_request(pid, "status").unwrap_or("")
+  let response = daemon_ipc_request("status").unwrap_or("")
   if response.has_prefix("OK running ") {
     let parts = response.split(" ").collect()
     let runtime_pid = if parts.length() > 2 { parts[2] } else { "\{pid}" }
@@ -153,7 +168,8 @@ pub fn query_daemon_status(pid : Int, as_json : Bool) -> CliResult {
 ///|
 /// デーモンへstop要求（IPC）
 pub fn request_daemon_stop(pid : Int) -> CliResult {
-  let response = daemon_ipc_request(pid, "stop").unwrap_or("")
+  ignore(pid)
+  let response = daemon_ipc_request("stop").unwrap_or("")
   if response.has_prefix("OK stopping") {
     CliResult::Ok("Stop request sent to gateway daemon via IPC")
   } else if response.has_prefix("ERR unauthorized") {
@@ -264,7 +280,26 @@ fn NativeDaemonManager::stop_remote(
 /// デーモン状態を取得（PIDファイル経由）
 pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus {
   let daemon_manager = NativeDaemonManager::new(pid_path~)
-  daemon_manager.status()
+  let status = daemon_manager.status()
+  match status {
+    @control.DaemonStatus::Stale(_) => {
+      // stale検知時は運用アーティファクトをクリーンアップ
+      @native.c_remove_file(
+        @native.string_to_cstring(@control.default_ipc_socket_path),
+      )
+      |> ignore
+      @native.c_remove_file(
+        @native.string_to_cstring(@control.default_gateway_state_path),
+      )
+      |> ignore
+      @native.c_remove_file(
+        @native.string_to_cstring(@control.default_gateway_token_path),
+      )
+      |> ignore
+      status
+    }
+    _ => status
+  }
 }
 
 ///|
