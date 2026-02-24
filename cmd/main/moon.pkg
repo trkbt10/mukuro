@@ -11,6 +11,7 @@ options(
   "is-main": true,
   targets: {
     "daemon.mbt": [ "native" ],
+    "daemon_e2e_native_test.mbt": [ "native" ],
     "daemon_stub.mbt": [ "js", "wasm", "wasm-gc" ],
   },
 )
