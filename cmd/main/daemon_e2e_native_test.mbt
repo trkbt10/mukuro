@@ -91,3 +91,30 @@ test "native e2e gateway status --json reports stale daemon" {
 
   cleanup_daemon_artifacts()
 }
+
+///|
+test "native e2e gateway stop cleans stale pid file" {
+  cleanup_daemon_artifacts()
+
+  @native.c_write_pid_file(
+    @native.string_to_cstring(@control.default_pid_path),
+    999997,
+  )
+  |> ignore
+
+  let result = run_cli(["gateway", "stop"])
+  assert_true(
+    match result {
+      CliResult::Ok(msg) =>
+        msg.contains("Cleaned up stale PID file") && msg.contains("999997")
+      _ => false
+    },
+  )
+
+  assert_eq(
+    @native.c_file_exists(@native.string_to_cstring(@control.default_pid_path)),
+    0,
+  )
+
+  cleanup_daemon_artifacts()
+}
