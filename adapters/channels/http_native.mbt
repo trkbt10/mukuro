@@ -100,7 +100,8 @@ fn http_error_message(err : @interfaces.HttpError) -> String {
     @interfaces.HttpError::ConnectionError(msg) => msg
     @interfaces.HttpError::Timeout => "timeout"
     @interfaces.HttpError::InvalidUrl(url) => "invalid url: \{url}"
-    @interfaces.HttpError::StatusError(status, msg) => "status \{status}: \{msg}"
+    @interfaces.HttpError::StatusError(status, msg) =>
+      "status \{status}: \{msg}"
     @interfaces.HttpError::ParseError(msg) => "parse error: \{msg}"
   }
 }

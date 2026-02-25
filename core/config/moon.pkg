@@ -4,4 +4,5 @@ import {
   "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/builtin",
 }

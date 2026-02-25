@@ -8,6 +8,10 @@ import {
   "moonbitlang/async" @async,
 }
 
+import {
+  "moonbitlang/core/test",
+} for "test"
+
 options(
   targets: {
     "builtin_test.mbt": [ "js" ],

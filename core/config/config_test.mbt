@@ -193,7 +193,7 @@ fn MockFileStore::add_file(
 pub impl @interfaces.FileStore for MockFileStore with read_file(self, path~) {
   match self.files.get(path) {
     Some(data) => data
-    None => raise Failure("File not found: \{path}")
+    None => raise @builtin.Failure("File not found: \{path}")
   }
 }
 
@@ -218,11 +218,13 @@ pub impl @interfaces.FileStore for MockFileStore with remove_file(self, path~) {
 
 ///|
 pub impl @interfaces.FileStore for MockFileStore with create_dir(self, path~) {
+  ignore(self)
   ignore(path)
 }
 
 ///|
 pub impl @interfaces.FileStore for MockFileStore with list_dir(self, path~) {
+  ignore(self)
   ignore(path)
   []
 }

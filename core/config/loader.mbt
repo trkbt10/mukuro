@@ -100,7 +100,7 @@ fn parse_agent_config(
   obj : Map[String, Json],
 ) -> @types.AgentConfig raise @interfaces.ConfigError {
   let max_iterations = match obj.get("max_iterations") {
-    Some(Number(n)) => n.to_int()
+    Some(Number(n, ..)) => n.to_int()
     Some(_) =>
       raise @interfaces.ConfigError::ParseError(
         "max_iterations must be a number",
@@ -108,7 +108,7 @@ fn parse_agent_config(
     None => 10
   }
   let timeout_ms : Int64 = match obj.get("timeout_ms") {
-    Some(Number(n)) => n.to_int64()
+    Some(Number(n, ..)) => n.to_int64()
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("timeout_ms must be a number")
     None => 120000L
@@ -141,14 +141,14 @@ fn parse_model_options(
     None => "claude-sonnet-4-20250514"
   }
   let temperature : Double? = match obj.get("temperature") {
-    Some(Number(n)) => Some(n)
+    Some(Number(n, ..)) => Some(n)
     Some(Null) => None
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("temperature must be a number")
     None => Some(0.7)
   }
   let max_tokens : Int? = match obj.get("max_tokens") {
-    Some(Number(n)) => Some(n.to_int())
+    Some(Number(n, ..)) => Some(n.to_int())
     Some(Null) => None
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("max_tokens must be a number")
@@ -217,13 +217,13 @@ fn parse_provider_config(
     None => "default"
   }
   let timeout_ms = match obj.get("timeout_ms") {
-    Some(Number(n)) => n.to_int()
+    Some(Number(n, ..)) => n.to_int()
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("timeout_ms must be a number")
     None => 30000
   }
   let max_retries = match obj.get("max_retries") {
-    Some(Number(n)) => n.to_int()
+    Some(Number(n, ..)) => n.to_int()
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("max_retries must be a number")
     None => 3
@@ -264,7 +264,7 @@ fn parse_fallback_config(
     None => []
   }
   let cooldown_ms = match obj.get("cooldown_ms") {
-    Some(Number(n)) => n.to_int()
+    Some(Number(n, ..)) => n.to_int()
     Some(_) =>
       raise @interfaces.ConfigError::ParseError("cooldown_ms must be a number")
     None => 30000

@@ -345,7 +345,9 @@ pub fn bytes_to_hex(data : Bytes) -> String {
   let sb = StringBuilder::new()
   for b in data {
     let n = b.to_int()
-    sb.write_char(hex_char((n.reinterpret_as_uint() >> 4).reinterpret_as_int() & 0xF))
+    sb.write_char(
+      hex_char((n.reinterpret_as_uint() >> 4).reinterpret_as_int() & 0xF),
+    )
     sb.write_char(hex_char(n & 0xF))
   }
   sb.to_string()

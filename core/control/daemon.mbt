@@ -92,7 +92,7 @@ pub fn PidManager::write_pid(
   pid : Int,
 ) -> Unit raise DaemonError {
   let content = "\{pid}"
-  self.fs.write_file(path=self.pid_path, data=content.to_bytes()) catch {
+  self.fs.write_file(path=self.pid_path, data=@utf8.encode(content)) catch {
     e => raise DaemonError::PidFileWriteError(e.to_string())
   }
 }

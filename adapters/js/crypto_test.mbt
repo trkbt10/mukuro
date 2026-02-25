@@ -296,7 +296,10 @@ test "hmac_sha256 long key" {
   inspect(result.length(), content="32")
   // Result should be deterministic
   let result2 = @interfaces.Crypto::hmac_sha256(crypto, key~, data~)
-  inspect(@crypto.bytes_to_hex(result) == @crypto.bytes_to_hex(result2), content="true")
+  inspect(
+    @crypto.bytes_to_hex(result) == @crypto.bytes_to_hex(result2),
+    content="true",
+  )
 }
 
 // =============================================================================

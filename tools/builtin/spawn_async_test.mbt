@@ -76,7 +76,7 @@ test "SpawnResult without response" {
     response: None,
   }
   inspect(result.status, content="running")
-  assert_true(result.response.is_empty())
+  assert_true(result.response is None)
 }
 
 ///|

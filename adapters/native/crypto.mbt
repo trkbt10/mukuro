@@ -33,7 +33,7 @@ pub impl @interfaces.Crypto for NativeCrypto with base64_encode(self, data~) {
 ///|
 pub impl @interfaces.Crypto for NativeCrypto with base64_decode(self, data~) {
   ignore(self)
-  @crypto.base64_decode!(data)
+  @crypto.base64_decode(data)
 }
 
 ///|

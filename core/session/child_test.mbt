@@ -31,7 +31,7 @@ test "ChildSession new creates with correct values" {
   inspect(session.messages.length(), content="0")
   inspect(session.created_at, content="1000")
   inspect(session.updated_at, content="1000")
-  assert_true(session.result.is_empty())
+  assert_true(session.result is None)
 }
 
 ///|
@@ -168,7 +168,7 @@ test "ChildSessionManager new" {
   let manager = @session.ChildSessionManager::new(parent_id="main")
   inspect(manager.parent_id, content="main")
   inspect(manager.next_id, content="1")
-  inspect(manager.sessions.size(), content="0")
+  inspect(manager.sessions.length(), content="0")
 }
 
 ///|
@@ -186,7 +186,7 @@ test "ChildSessionManager create_session" {
   let session = manager.create_session(1000L)
   inspect(session.parent_id, content="main")
   inspect(session.child_id, content="child_main_1")
-  inspect(manager.sessions.size(), content="1")
+  inspect(manager.sessions.length(), content="1")
 }
 
 ///|
@@ -238,9 +238,9 @@ test "ChildSessionManager remove_session" {
   let manager = @session.ChildSessionManager::new(parent_id="main")
   let session = manager.create_session(100L)
   let child_id = session.child_id
-  inspect(manager.sessions.size(), content="1")
+  inspect(manager.sessions.length(), content="1")
   assert_true(manager.remove_session(child_id))
-  inspect(manager.sessions.size(), content="0")
+  inspect(manager.sessions.length(), content="0")
   // Removing again should return false
   assert_false(manager.remove_session(child_id))
 }

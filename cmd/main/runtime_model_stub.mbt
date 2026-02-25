@@ -38,6 +38,8 @@ pub async fn runtime_model_invoke_async(
   ignore(messages)
   ignore(tools)
   ignore(options)
+  // Satisfy async annotation requirement
+  @async.pause()
   match test_toggle.forced_response {
     Some(content) => @types.ModelResponse::Text(content)
     None =>

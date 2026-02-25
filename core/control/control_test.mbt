@@ -26,10 +26,10 @@ test "GatewayState::is_running" {
 test "GatewayStatus::stopped" {
   let status = @interfaces.GatewayStatus::stopped(version="1.0.0")
   assert_false(status.state.is_running())
-  assert_true(status.health.is_empty())
+  assert_true(status.health is None)
   assert_eq(status.connected_channels.length(), 0)
   assert_eq(status.active_sessions, 0)
-  assert_true(status.started_at.is_empty())
+  assert_true(status.started_at is None)
   assert_eq(status.version, "1.0.0")
 }
 
@@ -37,8 +37,8 @@ test "GatewayStatus::stopped" {
 test "AuthContext::token_only" {
   let ctx = @interfaces.AuthContext::token_only("test-token")
   assert_eq(ctx.token, "test-token")
-  assert_true(ctx.user_id.is_empty())
-  assert_true(ctx.expires_at.is_empty())
+  assert_true(ctx.user_id is None)
+  assert_true(ctx.expires_at is None)
 }
 
 ///|

@@ -2,3 +2,7 @@ import {
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
+
+import {
+  "moonbitlang/core/test",
+} for "test"
