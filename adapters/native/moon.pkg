@@ -6,6 +6,7 @@ import {
   "trkbt10/mukuro/core/control",
   "trkbt10/mukuro/core/crypto" @crypto,
   "trkbt10/mukuro/core/logging" @logging,
+  "trkbt10/mukuro/core/plugin/transport" @plugin_transport,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
 }
@@ -24,6 +25,7 @@ options(
     "http_client.mbt": [ "native" ],
     "logger.mbt": [ "native" ],
     "platform.mbt": [ "native" ],
+    "plugin_e2e_test.mbt": [ "native" ],
     "plugin_watcher.mbt": [ "native" ],
     "process.mbt": [ "native" ],
     "sqlite.mbt": [ "native" ],

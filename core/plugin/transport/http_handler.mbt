@@ -27,6 +27,8 @@ pub struct HttpTransportHandler {
   mut on_message_callback : ((@interfaces.JsonRpcRequest) -> Unit)?
   /// Incoming message queue
   incoming_queue : Array[@interfaces.JsonRpcRequest]
+  /// HTTP client for making requests (optional, for actual HTTP calls)
+  mut http_client : &@interfaces.HttpClient?
 }
 
 ///|
@@ -43,6 +45,26 @@ pub fn HttpTransportHandler::new(
     auth_token~,
     token_header~,
     tls_config=None,
+    http_client=None,
+  )
+}
+
+///|
+/// Create a new HTTP transport handler with an HTTP client
+pub fn HttpTransportHandler::with_client(
+  plugin_id~ : String,
+  config~ : @interfaces.PluginHttpConfig,
+  auth_token~ : String?,
+  token_header~ : String,
+  http_client~ : &@interfaces.HttpClient,
+) -> HttpTransportHandler {
+  HttpTransportHandler::with_tls(
+    plugin_id~,
+    config~,
+    auth_token~,
+    token_header~,
+    tls_config=None,
+    http_client=Some(http_client),
   )
 }
 
@@ -54,6 +76,7 @@ pub fn HttpTransportHandler::with_tls(
   auth_token~ : String?,
   token_header~ : String,
   tls_config~ : @interfaces.PluginTlsConfig?,
+  http_client~ : &@interfaces.HttpClient?,
 ) -> HttpTransportHandler {
   let base_url = match config.base_url {
     Some(url) => url
@@ -78,6 +101,7 @@ pub fn HttpTransportHandler::with_tls(
     token_header,
     on_message_callback: None,
     incoming_queue: [],
+    http_client,
   }
 }
 
@@ -141,6 +165,29 @@ pub fn HttpTransportHandler::is_https(self : HttpTransportHandler) -> Bool {
 }
 
 ///|
+/// Set HTTP client for making requests
+pub fn HttpTransportHandler::set_http_client(
+  self : HttpTransportHandler,
+  client : &@interfaces.HttpClient,
+) -> Unit {
+  self.http_client = Some(client)
+}
+
+///|
+/// Check if HTTP client is available
+pub fn HttpTransportHandler::has_http_client(
+  self : HttpTransportHandler,
+) -> Bool {
+  self.http_client is Some(_)
+}
+
+///|
+/// Get the base URL
+pub fn HttpTransportHandler::get_base_url(self : HttpTransportHandler) -> String {
+  self.base_url
+}
+
+///|
 /// Start the transport (for HTTP this just marks as connected)
 pub fn HttpTransportHandler::start(self : HttpTransportHandler) -> Unit raise {
   match self.state {
@@ -191,20 +238,13 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with is_act
 
 ///|
 /// Send a JSON-RPC request (synchronous HTTP POST)
-/// Note: This requires an HTTP client implementation
 pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_request(
   self,
   request,
 ) {
   guard self.is_active() else { raise @interfaces.TransportError::NotStarted }
-  // Get URL for the method
-  let url = match self.build_url(request.rpc_method) {
-    Some(u) => u
-    None =>
-      raise @interfaces.TransportError::SendFailed(
-        "No URL for method: \{request.rpc_method}",
-      )
-  }
+  // Get URL for the method - always use base_url for JSON-RPC
+  let url = self.base_url
   // Build request with ID if not present
   let actual_request = match request.id {
     Some(_) => request
@@ -215,13 +255,43 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_r
         id=Some(self.next_request_id()),
       )
   }
-  // For now, return a placeholder response since we need to integrate with
-  // actual HTTP client (either sync or async)
-  // In Phase 7, this will be properly wired up with the HTTP client
-  @interfaces.JsonRpcResponse::success(
-    result=Json::object({ "pending": true, "url": url }),
-    id=actual_request.id,
-  )
+  // If we have an HTTP client, make the actual request
+  match self.http_client {
+    Some(client) => {
+      let headers = self.build_headers()
+      let body_json = actual_request.to_json()
+      let body_str = body_json.stringify()
+      let body_bytes = Bytes::from_iter(
+        body_str.iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
+      )
+      let response = client.post(url~, body=body_bytes, headers~) catch {
+        e =>
+          raise @interfaces.TransportError::SendFailed(
+            "HTTP request failed: \{e}",
+          )
+      }
+      // Parse the response body using UTF-8 decoding
+      let response_body = @utf8.decode(response.body) catch {
+        _ =>
+          raise @interfaces.TransportError::SendFailed(
+            "Invalid UTF-8 in response body",
+          )
+      }
+      match parse_jsonrpc_response(response_body) {
+        Some(jsonrpc_response) => jsonrpc_response
+        None =>
+          raise @interfaces.TransportError::SendFailed(
+            "Invalid JSON-RPC response: \{response_body}",
+          )
+      }
+    }
+    None =>
+      // No HTTP client available - return placeholder
+      @interfaces.JsonRpcResponse::success(
+        result=Json::object({ "pending": true, "url": url }),
+        id=actual_request.id,
+      )
+  }
 }
 
 ///|

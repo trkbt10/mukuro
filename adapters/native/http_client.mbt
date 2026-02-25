@@ -77,7 +77,8 @@ fn NativeHttpClient::request_with_x(
       }
       @interfaces.HttpMethod::Post => {
         let body = request.body.unwrap_or(Bytes::new(0))
-        let body_text = body.to_unchecked_string()
+        // Use UTF-8 decoding instead of to_unchecked_string (which may use UTF-16)
+        let body_text = @utf8.decode(body) catch { _ => "" }
         let (resp, body_data) = @xhttp.post(request.url, body_text, headers~) catch {
           e => raise map_http_error(e)
         }
@@ -85,7 +86,8 @@ fn NativeHttpClient::request_with_x(
       }
       @interfaces.HttpMethod::Put => {
         let body = request.body.unwrap_or(Bytes::new(0))
-        let body_text = body.to_unchecked_string()
+        // Use UTF-8 decoding instead of to_unchecked_string (which may use UTF-16)
+        let body_text = @utf8.decode(body) catch { _ => "" }
         let (resp, body_data) = @xhttp.put(request.url, body_text, headers~) catch {
           e => raise map_http_error(e)
         }

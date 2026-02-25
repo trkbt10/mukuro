@@ -48,6 +48,7 @@ fn create_http_handler_with_tls(
     auth_token~,
     token_header~,
     tls_config~,
+    http_client=None,
   )
 }
 

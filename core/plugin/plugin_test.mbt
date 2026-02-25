@@ -414,6 +414,7 @@ test "HttpTransportHandler: TLS configuration" {
     auth_token=None,
     token_header="X-Plugin-Token",
     tls_config=Some(tls_config),
+    http_client=None,
   )
   assert_true(handler.is_tls_enabled())
   assert_true(handler.is_https())
