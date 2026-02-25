@@ -33,25 +33,23 @@ pub fn ConfigLoaderImpl::default() -> ConfigLoaderImpl {
 fn parse_config_json(
   content : String,
 ) -> @types.MukuroConfig raise @interfaces.ConfigError {
-  let json : Json = @json.parse(content) catch {
-    e => raise @interfaces.ConfigError::ParseError(e.to_string())
-  }
   // JSONオブジェクトを解析
-  let obj : Map[String, Json] = match json {
-    Object(o) => o
-    _ =>
-      raise @interfaces.ConfigError::ParseError("Config must be a JSON object")
+  let obj : Map[String, Json] = match
+    @config_json_accessors.parse_root_object(content) {
+    Ok(root) => root
+    Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   // agent設定をパース
-  let agent : @types.AgentConfig = match obj.get("agent") {
-    Some(Object(a)) => parse_agent_config(a)
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("agent must be an object")
-    None => @types.AgentConfig::default()
+  let agent : @types.AgentConfig = match
+    @config_json_accessors.optional_object_field(obj, "agent") {
+    Ok(Some(agent_obj)) => parse_agent_config(agent_obj)
+    Ok(None) => @types.AgentConfig::default()
+    Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   // providers設定をパース
-  let providers : Array[@types.ProviderConfig] = match obj.get("providers") {
-    Some(Array(arr)) => {
+  let providers : Array[@types.ProviderConfig] = match
+    @config_json_accessors.optional_array_field(obj, "providers") {
+    Ok(Some(arr)) => {
       let result : Array[@types.ProviderConfig] = []
       for item in arr {
         match item {
@@ -64,20 +62,20 @@ fn parse_config_json(
       }
       result
     }
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("providers must be an array")
-    None => []
+    Ok(None) => []
+    Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   // fallback設定をパース
-  let fallback : @types.FallbackConfig = match obj.get("fallback") {
-    Some(Object(f)) => parse_fallback_config(f)
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("fallback must be an object")
-    None => @types.FallbackConfig::new()
+  let fallback : @types.FallbackConfig = match
+    @config_json_accessors.optional_object_field(obj, "fallback") {
+    Ok(Some(fallback_obj)) => parse_fallback_config(fallback_obj)
+    Ok(None) => @types.FallbackConfig::new()
+    Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   // channels設定をパース
-  let channels : Array[@types.ChannelConfig] = match obj.get("channels") {
-    Some(Array(arr)) => {
+  let channels : Array[@types.ChannelConfig] = match
+    @config_json_accessors.optional_array_field(obj, "channels") {
+    Ok(Some(arr)) => {
       let result : Array[@types.ChannelConfig] = []
       for item in arr {
         match item {
@@ -90,9 +88,8 @@ fn parse_config_json(
       }
       result
     }
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("channels must be an array")
-    None => []
+    Ok(None) => []
+    Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   { agent, providers, fallback, channels }
 }
@@ -123,13 +120,11 @@ fn parse_agent_config(
     None => ""
   }
   // model_optionsをパース
-  let model_options = match obj.get("model_options") {
-    Some(Object(o)) => parse_model_options(o)
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError(
-        "model_options must be an object",
-      )
-    None => @types.ModelOptions::default()
+  let model_options = match
+    @config_json_accessors.optional_object_field(obj, "model_options") {
+    Ok(Some(model_options_obj)) => parse_model_options(model_options_obj)
+    Ok(None) => @types.ModelOptions::default()
+    Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   { max_iterations, timeout_ms, bootstrap, model_options }
 }
@@ -310,12 +305,11 @@ fn parse_channel_config(
       raise @interfaces.ConfigError::ParseError("webhook_url must be a string")
     None => None
   }
-  let options : Map[String, Json] = match obj.get("options") {
-    Some(Object(o)) => o
-    Some(Null) => Map::new()
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("options must be an object")
-    None => Map::new()
+  let options : Map[String, Json] = match
+    @config_json_accessors.optional_object_field(obj, "options") {
+    Ok(Some(option_obj)) => option_obj
+    Ok(None) => Map::new()
+    Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   { name, enabled, token, webhook_url, options }
 }

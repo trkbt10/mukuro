@@ -16,6 +16,8 @@ pub fn control_api_healthcheck_message() -> String
 
 pub fn create_global_gateway(String) -> @control.Gateway
 
+pub let default_runtime_config_path : String
+
 pub fn dispatch_echo_for_test(String) -> CliResult
 
 pub fn enrich_envelope_with_workspace_context_impl(@types.InboundEnvelope) -> @types.InboundEnvelope

@@ -6,6 +6,7 @@ import {
   "moonbitlang/core/json",
   "mizchi/x/http" @xhttp,
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
   "trkbt10/mukuro/core/agent" @agent,
   "trkbt10/mukuro/core/context" @context,
   "trkbt10/mukuro/core/control",

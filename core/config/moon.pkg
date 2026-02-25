@@ -1,6 +1,7 @@
 import {
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
 }

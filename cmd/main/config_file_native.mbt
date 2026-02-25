@@ -1,6 +1,5 @@
 ///|
 /// Native config file helpers (Source of Truth)
-
 fn read_config_text_impl(
   path : String,
 ) -> String raise @interfaces.ControlError {
@@ -33,18 +32,9 @@ fn read_config_text_impl(
 fn parse_config_root_impl(
   raw : String,
 ) -> Map[String, Json] raise @interfaces.ControlError {
-  let json : Json = @json.parse(raw) catch {
-    e =>
-      raise @interfaces.ControlError::ConfigError(
-        "Invalid config JSON: \{e.to_string()}",
-      )
-  }
-  match json {
-    Object(o) => o
-    _ =>
-      raise @interfaces.ControlError::ConfigError(
-        "Config must be a JSON object",
-      )
+  match @config_json_accessors.parse_root_object(raw) {
+    Ok(root) => root
+    Err(message) => raise @interfaces.ControlError::ConfigError(message)
   }
 }
 
@@ -61,14 +51,9 @@ fn parse_bool_field_impl(
   key : String,
   default_value : Bool,
 ) -> Bool raise @interfaces.ControlError {
-  match obj.get(key) {
-    Some(True) => true
-    Some(False) => false
-    Some(_) =>
-      raise @interfaces.ControlError::ConfigError(
-        "Field '\{key}' must be a boolean",
-      )
-    None => default_value
+  match @config_json_accessors.bool_field_or_default(obj, key, default_value) {
+    Ok(value) => value
+    Err(message) => raise @interfaces.ControlError::ConfigError(message)
   }
 }
 
@@ -78,13 +63,10 @@ fn parse_string_field_impl(
   key : String,
   default_value : String,
 ) -> String raise @interfaces.ControlError {
-  match obj.get(key) {
-    Some(String(s)) => s
-    Some(_) =>
-      raise @interfaces.ControlError::ConfigError(
-        "Field '\{key}' must be a string",
-      )
-    None => default_value
+  match
+    @config_json_accessors.string_field_or_default(obj, key, default_value) {
+    Ok(value) => value
+    Err(message) => raise @interfaces.ControlError::ConfigError(message)
   }
 }
 
@@ -94,13 +76,9 @@ fn parse_int_field_impl(
   key : String,
   default_value : Int,
 ) -> Int raise @interfaces.ControlError {
-  match obj.get(key) {
-    Some(Number(n, ..)) => n.to_int()
-    Some(_) =>
-      raise @interfaces.ControlError::ConfigError(
-        "Field '\{key}' must be a number",
-      )
-    None => default_value
+  match @config_json_accessors.int_field_or_default(obj, key, default_value) {
+    Ok(value) => value
+    Err(message) => raise @interfaces.ControlError::ConfigError(message)
   }
 }
 
