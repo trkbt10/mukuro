@@ -21,19 +21,27 @@ pub(all) suberror DaemonError {
 
 ///|
 /// PIDファイルパス（デフォルト）
-pub let default_pid_path : String = ".mukuro/gateway.pid"
+pub fn default_pid_path() -> String {
+  @paths.pid_file()
+}
 
 ///|
 /// IPCソケットパス（デフォルト）
-pub let default_ipc_socket_path : String = ".mukuro/gateway.sock"
+pub fn default_ipc_socket_path() -> String {
+  @paths.socket_file()
+}
 
 ///|
 /// 状態スナップショットパス（デフォルト）
-pub let default_gateway_state_path : String = ".mukuro/gateway-state.json"
+pub fn default_gateway_state_path() -> String {
+  @paths.state_file()
+}
 
 ///|
 /// IPC認証トークンファイルパス（デフォルト）
-pub let default_gateway_token_path : String = ".mukuro/gateway.token"
+pub fn default_gateway_token_path() -> String {
+  @paths.token_file()
+}
 
 ///|
 /// PIDファイル管理
@@ -58,7 +66,7 @@ pub fn PidManager::new(
 pub fn PidManager::with_default_path(
   fs~ : &@interfaces.FileStore,
 ) -> PidManager {
-  { pid_path: default_pid_path, fs }
+  { pid_path: default_pid_path(), fs }
 }
 
 ///|

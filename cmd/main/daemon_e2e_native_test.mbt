@@ -3,18 +3,18 @@
 
 ///|
 fn cleanup_daemon_artifacts() -> Unit {
-  @native.c_remove_file(@native.string_to_cstring(@control.default_pid_path))
+  @native.c_remove_file(@native.string_to_cstring(@control.default_pid_path()))
   |> ignore
   @native.c_remove_file(
-    @native.string_to_cstring(@control.default_ipc_socket_path),
+    @native.string_to_cstring(@control.default_ipc_socket_path()),
   )
   |> ignore
   @native.c_remove_file(
-    @native.string_to_cstring(@control.default_gateway_state_path),
+    @native.string_to_cstring(@control.default_gateway_state_path()),
   )
   |> ignore
   @native.c_remove_file(
-    @native.string_to_cstring(@control.default_gateway_token_path),
+    @native.string_to_cstring(@control.default_gateway_token_path()),
   )
   |> ignore
 }
@@ -25,19 +25,19 @@ test "native e2e stale status triggers artifact cleanup" {
 
   // stale状態を作る（存在しないPID + 関連アーティファクト）
   @native.c_write_pid_file(
-    @native.string_to_cstring(@control.default_pid_path),
+    @native.string_to_cstring(@control.default_pid_path()),
     999999,
   )
   |> ignore
   @native.c_write_pid_file(
-    @native.string_to_cstring(@control.default_ipc_socket_path),
+    @native.string_to_cstring(@control.default_ipc_socket_path()),
     1,
   )
   |> ignore
   @native.c_write_gateway_snapshot(999999, 1, 1) |> ignore
   @native.c_write_gateway_token(123456) |> ignore
 
-  let status = get_daemon_status(pid_path=@control.default_pid_path)
+  let status = get_daemon_status(pid_path=@control.default_pid_path())
   assert_true(
     match status {
       @control.DaemonStatus::Stale(pid) => pid == 999999
@@ -48,19 +48,19 @@ test "native e2e stale status triggers artifact cleanup" {
   // stale検知時に socket/token/snapshot が除去される
   assert_eq(
     @native.c_file_exists(
-      @native.string_to_cstring(@control.default_ipc_socket_path),
+      @native.string_to_cstring(@control.default_ipc_socket_path()),
     ),
     0,
   )
   assert_eq(
     @native.c_file_exists(
-      @native.string_to_cstring(@control.default_gateway_state_path),
+      @native.string_to_cstring(@control.default_gateway_state_path()),
     ),
     0,
   )
   assert_eq(
     @native.c_file_exists(
-      @native.string_to_cstring(@control.default_gateway_token_path),
+      @native.string_to_cstring(@control.default_gateway_token_path()),
     ),
     0,
   )
@@ -73,7 +73,7 @@ test "native e2e gateway status --json reports stale daemon" {
   cleanup_daemon_artifacts()
 
   @native.c_write_pid_file(
-    @native.string_to_cstring(@control.default_pid_path),
+    @native.string_to_cstring(@control.default_pid_path()),
     999998,
   )
   |> ignore
@@ -97,7 +97,7 @@ test "native e2e gateway stop cleans stale pid file" {
   cleanup_daemon_artifacts()
 
   @native.c_write_pid_file(
-    @native.string_to_cstring(@control.default_pid_path),
+    @native.string_to_cstring(@control.default_pid_path()),
     999997,
   )
   |> ignore
@@ -112,7 +112,9 @@ test "native e2e gateway stop cleans stale pid file" {
   )
 
   assert_eq(
-    @native.c_file_exists(@native.string_to_cstring(@control.default_pid_path)),
+    @native.c_file_exists(
+      @native.string_to_cstring(@control.default_pid_path()),
+    ),
     0,
   )
 
@@ -125,7 +127,7 @@ test "native e2e token file with insecure permission is rejected" {
 
   @native.c_write_gateway_token(123456) |> ignore
   @native.c_chmod_file(
-    @native.string_to_cstring(@control.default_gateway_token_path),
+    @native.string_to_cstring(@control.default_gateway_token_path()),
     420,
   )
   |> ignore

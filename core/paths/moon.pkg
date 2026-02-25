@@ -1,0 +1,12 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+}
+
+warnings = "-29"
+
+options(
+  targets: {
+    "paths_native.mbt": [ "native" ],
+    "paths_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+  },
+)
