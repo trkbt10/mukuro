@@ -153,7 +153,7 @@ pub fn NativePlatform::write_file(
 pub fn NativePlatform::http_request(
   self : NativePlatform,
   request : @interfaces.HttpRequest,
-) -> @interfaces.HttpResponse raise HttpError {
+) -> @interfaces.HttpResponse raise @interfaces.HttpError {
   self.http_client.do_request(request)
 }
 

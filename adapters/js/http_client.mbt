@@ -1,12 +1,4 @@
 ///|
-/// HTTPリクエストエラー
-pub(all) suberror HttpRequestError {
-  NetworkError(String)
-  TimeoutError
-  ParseError(String)
-}
-
-///|
 /// JavaScript fetch ベースのHTTPクライアント
 pub struct JsFetchClient {
   /// タイムアウト（ミリ秒）

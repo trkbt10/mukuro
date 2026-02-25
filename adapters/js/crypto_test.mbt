@@ -171,7 +171,7 @@ test "base64_decode invalid length" {
   let crypto = JsCrypto::new()
   let mut got_error = false
   let _ = @interfaces.Crypto::base64_decode(crypto, data="ABC") catch {
-    CryptoError::DecodeError(_) => {
+    @crypto.CryptoError::DecodeError(_) => {
       got_error = true
       Bytes::new(0)
     }
@@ -193,7 +193,7 @@ test "sha256 empty input" {
   inspect(result.length(), content="32")
   // SHA-256("") = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   inspect(
-    bytes_to_hex(result),
+    @crypto.bytes_to_hex(result),
     content="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   )
 }
@@ -205,7 +205,7 @@ test "sha256 'abc'" {
   let result = @interfaces.Crypto::sha256(crypto, data~)
   // SHA-256("abc") = ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
   inspect(
-    bytes_to_hex(result),
+    @crypto.bytes_to_hex(result),
     content="ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
   )
 }
@@ -217,7 +217,7 @@ test "sha256 'hello'" {
   let result = @interfaces.Crypto::sha256(crypto, data~)
   // SHA-256("hello") = 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
   inspect(
-    bytes_to_hex(result),
+    @crypto.bytes_to_hex(result),
     content="2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
   )
 }
@@ -229,7 +229,7 @@ test "sha256 long message" {
   let result = @interfaces.Crypto::sha256(crypto, data~)
   // SHA-256("The quick brown fox jumps over the lazy dog") = d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592
   inspect(
-    bytes_to_hex(result),
+    @crypto.bytes_to_hex(result),
     content="d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592",
   )
 }
@@ -244,9 +244,9 @@ test "sha256 multiple blocks" {
   let result = @interfaces.Crypto::sha256(crypto, data~)
   inspect(result.length(), content="32")
   // The hash should be deterministic
-  let hash1 = bytes_to_hex(result)
+  let hash1 = @crypto.bytes_to_hex(result)
   let result2 = @interfaces.Crypto::sha256(crypto, data~)
-  let hash2 = bytes_to_hex(result2)
+  let hash2 = @crypto.bytes_to_hex(result2)
   inspect(hash1 == hash2, content="true")
 }
 
@@ -263,7 +263,7 @@ test "hmac_sha256 basic" {
   inspect(result.length(), content="32")
   // HMAC-SHA256(key, "The quick brown fox jumps over the lazy dog") = f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8
   inspect(
-    bytes_to_hex(result),
+    @crypto.bytes_to_hex(result),
     content="f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8",
   )
 }
@@ -279,7 +279,7 @@ test "hmac_sha256 empty key and data" {
   inspect(result.length(), content="32")
   // HMAC-SHA256("", "") = b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad
   inspect(
-    bytes_to_hex(result),
+    @crypto.bytes_to_hex(result),
     content="b613679a0814d9ec772f95d778c35fc5ff1697c493715653c6c712144292c5ad",
   )
 }
@@ -296,7 +296,7 @@ test "hmac_sha256 long key" {
   inspect(result.length(), content="32")
   // Result should be deterministic
   let result2 = @interfaces.Crypto::hmac_sha256(crypto, key~, data~)
-  inspect(bytes_to_hex(result) == bytes_to_hex(result2), content="true")
+  inspect(@crypto.bytes_to_hex(result) == @crypto.bytes_to_hex(result2), content="true")
 }
 
 // =============================================================================
@@ -304,21 +304,21 @@ test "hmac_sha256 long key" {
 // =============================================================================
 
 ///|
-test "bytes_to_hex empty" {
-  let result = bytes_to_hex(Bytes::new(0))
+test "@crypto.bytes_to_hex empty" {
+  let result = @crypto.bytes_to_hex(Bytes::new(0))
   inspect(result, content="")
 }
 
 ///|
-test "bytes_to_hex single byte" {
+test "@crypto.bytes_to_hex single byte" {
   let data = make_bytes_1(b'\xff')
-  let result = bytes_to_hex(data)
+  let result = @crypto.bytes_to_hex(data)
   inspect(result, content="ff")
 }
 
 ///|
-test "bytes_to_hex multiple bytes" {
+test "@crypto.bytes_to_hex multiple bytes" {
   let data = make_bytes_4(b'\xde', b'\xad', b'\xbe', b'\xef')
-  let result = bytes_to_hex(data)
+  let result = @crypto.bytes_to_hex(data)
   inspect(result, content="deadbeef")
 }

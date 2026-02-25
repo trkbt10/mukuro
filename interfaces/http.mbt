@@ -1,4 +1,19 @@
 ///|
+/// HTTPエラー
+pub(all) suberror HttpError {
+  /// ネットワーク接続エラー
+  ConnectionError(String)
+  /// タイムアウト
+  Timeout
+  /// 無効なURL
+  InvalidUrl(String)
+  /// パースエラー
+  ParseError(String)
+  /// HTTPステータスエラー (ステータスコード, メッセージ)
+  StatusError(Int, String)
+}
+
+///|
 /// HTTPメソッド
 pub(all) enum HttpMethod {
   Get

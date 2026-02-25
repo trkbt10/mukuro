@@ -3,14 +3,6 @@
 /// mizchi/x の HTTP クライアントを利用する
 
 ///|
-pub(all) suberror HttpError {
-  ConnectionFailed(String)
-  Timeout
-  InvalidUrl(String)
-  StatusError(Int, String)
-}
-
-///|
 pub struct NativeHttpClient {
   timeout_seconds : Int
   user_agent : String
@@ -30,13 +22,14 @@ pub fn NativeHttpClient::default() -> NativeHttpClient {
 }
 
 ///|
-fn map_http_error(err : @xhttp.HttpError) -> HttpError {
+fn map_http_error(err : @xhttp.HttpError) -> @interfaces.HttpError {
   match err {
-    @xhttp.HttpError::InvalidUrl(url) => HttpError::InvalidUrl(url)
-    @xhttp.HttpError::TimeoutError => HttpError::Timeout
-    @xhttp.HttpError::NetworkError(msg) => HttpError::ConnectionFailed(msg)
+    @xhttp.HttpError::InvalidUrl(url) => @interfaces.HttpError::InvalidUrl(url)
+    @xhttp.HttpError::TimeoutError => @interfaces.HttpError::Timeout
+    @xhttp.HttpError::NetworkError(msg) =>
+      @interfaces.HttpError::ConnectionError(msg)
     @xhttp.HttpError::NotSupported =>
-      HttpError::ConnectionFailed("HTTP operation is not supported")
+      @interfaces.HttpError::ConnectionError("HTTP operation is not supported")
   }
 }
 
@@ -66,7 +59,7 @@ fn response_from_x(
 fn NativeHttpClient::request_with_x(
   self : NativeHttpClient,
   request : @interfaces.HttpRequest,
-) -> @interfaces.HttpResponse raise HttpError {
+) -> @interfaces.HttpResponse raise @interfaces.HttpError {
   let mut out : @interfaces.HttpResponse? = None
   let headers : Map[String, String] = {}
   for key, value in request.headers {
@@ -99,12 +92,12 @@ fn NativeHttpClient::request_with_x(
         out = Some(response_from_x(resp, body_data))
       }
       _ =>
-        raise HttpError::ConnectionFailed(
+        raise @interfaces.HttpError::ConnectionError(
           "Unsupported HTTP method for NativeHttpClient: \{method_name(request.http_method)}",
         )
     }
   }) catch {
-    e => raise HttpError::ConnectionFailed(e.to_string())
+    e => raise @interfaces.HttpError::ConnectionError(e.to_string())
   }
   out.unwrap_or({ status: 500, headers: {}, body: Bytes::new(0) })
 }
@@ -114,7 +107,7 @@ fn NativeHttpClient::request_with_x(
 pub fn NativeHttpClient::do_request(
   self : NativeHttpClient,
   request : @interfaces.HttpRequest,
-) -> @interfaces.HttpResponse raise HttpError {
+) -> @interfaces.HttpResponse raise @interfaces.HttpError {
   ignore(self.timeout_seconds)
   self.request_with_x(request)
 }
@@ -158,7 +151,7 @@ pub fn NativeHttpClient::post_json(
   self : NativeHttpClient,
   url : String,
   json : Json,
-) -> @interfaces.HttpResponse raise HttpError {
+) -> @interfaces.HttpResponse raise @interfaces.HttpError {
   let headers : Map[String, String] = {}
   headers["Content-Type"] = "application/json"
   let body = Bytes::from_iter(
@@ -176,7 +169,7 @@ pub fn NativeHttpClient::post_json(
 pub fn NativeHttpClient::get_json(
   self : NativeHttpClient,
   url : String,
-) -> Json raise HttpError {
+) -> Json raise @interfaces.HttpError {
   let headers : Map[String, String] = {}
   headers["Accept"] = "application/json"
   let response = self.do_request({
@@ -187,6 +180,10 @@ pub fn NativeHttpClient::get_json(
   })
   let body_str = response.body.to_unchecked_string()
   @json.parse(body_str) catch {
-    _ => raise HttpError::StatusError(response.status, "Invalid JSON response")
+    _ =>
+      raise @interfaces.HttpError::StatusError(
+        response.status,
+        "Invalid JSON response",
+      )
   }
 }

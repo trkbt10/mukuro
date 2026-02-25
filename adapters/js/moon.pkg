@@ -1,5 +1,7 @@
 import {
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/crypto" @crypto,
+  "trkbt10/mukuro/core/logging" @logging,
   "moonbitlang/core/json",
   "moonbitlang/async/js_async" @js_async,
 }

@@ -95,12 +95,13 @@ pub impl @interfaces.ChannelAdapter for HttpChannelAdapter with send(
 }
 
 ///|
-fn http_error_message(err : @native.HttpError) -> String {
+fn http_error_message(err : @interfaces.HttpError) -> String {
   match err {
-    @native.HttpError::ConnectionFailed(msg) => msg
-    @native.HttpError::Timeout => "timeout"
-    @native.HttpError::InvalidUrl(url) => "invalid url: \{url}"
-    @native.HttpError::StatusError(status, msg) => "status \{status}: \{msg}"
+    @interfaces.HttpError::ConnectionError(msg) => msg
+    @interfaces.HttpError::Timeout => "timeout"
+    @interfaces.HttpError::InvalidUrl(url) => "invalid url: \{url}"
+    @interfaces.HttpError::StatusError(status, msg) => "status \{status}: \{msg}"
+    @interfaces.HttpError::ParseError(msg) => "parse error: \{msg}"
   }
 }
 
