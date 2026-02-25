@@ -10,6 +10,8 @@ import {
   "trkbt10/mukuro/core/agent" @agent,
   "trkbt10/mukuro/core/context" @context,
   "trkbt10/mukuro/core/control",
+  "trkbt10/mukuro/core/paths" @paths,
+  "trkbt10/mukuro/core/plugin" @plugin,
   "trkbt10/mukuro/core/session" @session,
   "trkbt10/mukuro/core/scheduler",
   "trkbt10/mukuro/core/tool" @tool,

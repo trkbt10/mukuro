@@ -27,7 +27,7 @@ pub(open) trait ToolRegistry {
 
 ///|
 /// ツールエラー種別
-pub(all) enum ToolError {
+pub(all) suberror ToolError {
   /// ツールが見つからない
   NotFound(String)
   /// 引数が不正

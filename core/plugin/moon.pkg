@@ -1,5 +1,6 @@
 import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/types" @types,
+  "trkbt10/mukuro/core/plugin/transport" @transport,
   "moonbitlang/core/json",
 }

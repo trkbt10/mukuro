@@ -10,12 +10,41 @@ pub struct WebhookServer {
   routes : Map[String, String]
   /// Is server running
   mut is_running : Bool
+  /// Authenticator (optional)
+  authenticator : @interfaces.SimpleTokenAuthenticator?
+  /// Token header name
+  token_header : String
 }
 
 ///|
 /// Create a new webhook server
 pub fn WebhookServer::new(host : PluginHostImpl, port~ : Int) -> WebhookServer {
-  { host, port, routes: {}, is_running: false }
+  {
+    host,
+    port,
+    routes: {},
+    is_running: false,
+    authenticator: None,
+    token_header: "X-Plugin-Token",
+  }
+}
+
+///|
+/// Create a new webhook server with authentication
+pub fn WebhookServer::with_auth(
+  host : PluginHostImpl,
+  port~ : Int,
+  authenticator~ : @interfaces.SimpleTokenAuthenticator,
+  token_header~ : String,
+) -> WebhookServer {
+  {
+    host,
+    port,
+    routes: {},
+    is_running: false,
+    authenticator: Some(authenticator),
+    token_header,
+  }
 }
 
 ///|
@@ -45,6 +74,18 @@ pub fn WebhookServer::handle_request(
   path : String,
   body : String,
 ) -> String {
+  self.handle_request_with_headers(path, body, {})
+}
+
+///|
+/// Handle an incoming webhook request with headers
+/// Returns JSON-RPC response as JSON string
+pub fn WebhookServer::handle_request_with_headers(
+  self : WebhookServer,
+  path : String,
+  body : String,
+  headers : Map[String, String],
+) -> String {
   // Find plugin for this path
   let plugin_id = match self.get_plugin_for_path(path) {
     Some(id) => id
@@ -63,6 +104,18 @@ pub fn WebhookServer::handle_request(
         )
         return response.to_json().stringify()
       }
+  }
+  // Validate authentication if required
+  match self.validate_auth(plugin_id, headers) {
+    @interfaces.PluginAuthResult::Failed(reason) => {
+      let response = @interfaces.JsonRpcResponse::error(
+        code=401,
+        message="Authentication failed: \{reason}",
+        id=None,
+      )
+      return response.to_json().stringify()
+    }
+    _ => ()
   }
   // Parse JSON-RPC request
   let json = @json.parse(body) catch {
@@ -89,6 +142,42 @@ pub fn WebhookServer::handle_request(
   // Handle the request
   let response = self.host.handle_webhook(plugin_id, request)
   response.to_json().stringify()
+}
+
+///|
+/// Validate authentication for a plugin request
+fn WebhookServer::validate_auth(
+  self : WebhookServer,
+  plugin_id : String,
+  headers : Map[String, String],
+) -> @interfaces.PluginAuthResult {
+  match self.authenticator {
+    Some(auth) =>
+      if @interfaces.PluginAuthenticator::requires_auth(auth, plugin_id~) {
+        match headers.get(self.token_header) {
+          Some(token_header) =>
+            match @interfaces.extract_bearer_token(token_header) {
+              Some(token) =>
+                if @interfaces.PluginAuthenticator::validate_plugin_token(
+                    auth,
+                    plugin_id~,
+                    token~,
+                  ) {
+                  @interfaces.PluginAuthResult::Authenticated
+                } else {
+                  @interfaces.PluginAuthResult::Failed("Invalid token")
+                }
+              None =>
+                @interfaces.PluginAuthResult::Failed("Invalid token format")
+            }
+          None =>
+            @interfaces.PluginAuthResult::Failed("Missing authentication token")
+        }
+      } else {
+        @interfaces.PluginAuthResult::NotRequired
+      }
+    None => @interfaces.PluginAuthResult::NotRequired
+  }
 }
 
 ///|

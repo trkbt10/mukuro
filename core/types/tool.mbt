@@ -33,6 +33,33 @@ pub(all) struct ToolDefinition {
   description : String
   /// パラメータ定義（JSON Schema形式）
   parameters : Json
+  /// JSON Schema for validation (optional)
+  schema : Json?
+  /// Plugin metadata
+  metadata : Map[String, String]
+}
+
+///|
+/// Parameter type enum
+pub(all) enum ParameterType {
+  String
+  Number
+  Boolean
+  Object
+  Array
+}
+
+///|
+/// Tool parameter definition
+pub(all) struct ToolParameter {
+  /// Parameter name
+  name : String
+  /// Parameter type
+  param_type : ParameterType
+  /// Parameter description
+  description : String
+  /// Whether required
+  required : Bool
 }
 
 ///|
@@ -70,7 +97,7 @@ pub fn ToolDefinition::new(
   description~ : String,
   parameters~ : Json,
 ) -> ToolDefinition {
-  { name, description, parameters }
+  { name, description, parameters, schema: None, metadata: {} }
 }
 
 ///|

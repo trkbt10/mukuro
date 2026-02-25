@@ -1,0 +1,4 @@
+import {
+  "trkbt10/mukuro/interfaces",
+  "moonbitlang/core/json",
+}

@@ -207,3 +207,58 @@ pub fn pump_registered_channels_to_gateway(
 pub fn registered_channel_names_for_test() -> Array[String] {
   @interfaces.ChannelManager::list_channels(global_channel_manager)
 }
+
+///|
+/// Global plugin system initializer (wrapped in Ref for mutability)
+let global_plugin_initializer : Ref[@plugin.PluginSystemInitializer?] = {
+  val: None,
+}
+
+///|
+/// Initialize the plugin system from the default plugin directory
+pub fn initialize_plugin_system() -> Unit raise {
+  initialize_plugin_system_from_dir(plugin_dir=".mukuro/plugins")
+}
+
+///|
+/// Initialize the plugin system from a custom directory
+pub fn initialize_plugin_system_from_dir(plugin_dir~ : String) -> Unit raise {
+  let initializer = @plugin.PluginSystemInitializer::new(plugin_dir~)
+  initializer.initialize()
+  // Register plugin tools with the global tool registry
+  initializer.register_with_registry(global_tool_registry)
+  global_plugin_initializer.val = Some(initializer)
+}
+
+///|
+/// Get the global plugin host (if initialized)
+pub fn get_plugin_host() -> @plugin.PluginHostImpl? {
+  match global_plugin_initializer.val {
+    Some(init) => Some(init.get_host())
+    None => None
+  }
+}
+
+///|
+/// Get the plugin tool registry (if initialized)
+pub fn get_plugin_tool_registry() -> @plugin.PluginToolRegistry? {
+  match global_plugin_initializer.val {
+    Some(init) => Some(init.get_tool_registry())
+    None => None
+  }
+}
+
+///|
+/// List available plugin tools
+pub fn list_plugin_tools() -> Array[@types.ToolDefinition] {
+  match global_plugin_initializer.val {
+    Some(init) => init.get_tool_registry().get_all_tools()
+    None => []
+  }
+}
+
+///|
+/// Check if a tool is a plugin tool
+pub fn is_plugin_tool(tool_name : String) -> Bool {
+  @plugin.parse_plugin_tool_name(tool_name) is Some(_)
+}

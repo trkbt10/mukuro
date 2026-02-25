@@ -4,12 +4,20 @@
 pub struct PluginHostImpl {
   /// Plugin registry
   registry : PluginRegistry
-  /// HTTP transport handlers (plugin_id -> handler)
+  /// Transport handlers (plugin_id -> handler)
+  transport_handlers : Map[String, &@interfaces.PluginTransportHandler]
+  /// HTTP transport handlers (plugin_id -> handler) - legacy, kept for compatibility
   http_handlers : Map[String, HttpPluginHandler]
+  /// Transport factory
+  transport_factory : @transport.TransportFactory
   /// Incoming message queue from plugins
   incoming_messages : Array[@types.InboundEnvelope]
   /// Request ID counter
   mut request_id : Int
+  /// Plugin loader configuration
+  mut loader_config : PluginLoaderConfig?
+  /// Extended manifests
+  extended_manifests : Map[String, ExtendedManifest]
 }
 
 ///|
@@ -28,10 +36,38 @@ pub struct HttpPluginHandler {
 pub fn PluginHostImpl::new(plugin_dir~ : String) -> PluginHostImpl {
   {
     registry: PluginRegistry::new(plugin_dir~),
+    transport_handlers: {},
     http_handlers: {},
+    transport_factory: @transport.TransportFactory::new(),
     incoming_messages: [],
     request_id: 0,
+    loader_config: Some(PluginLoaderConfig::default(plugin_dir~)),
+    extended_manifests: {},
   }
+}
+
+///|
+/// Create plugin host with custom configuration
+pub fn PluginHostImpl::with_config(
+  plugin_dir~ : String,
+  loader_config~ : PluginLoaderConfig,
+) -> PluginHostImpl {
+  {
+    registry: PluginRegistry::new(plugin_dir~),
+    transport_handlers: {},
+    http_handlers: {},
+    transport_factory: @transport.TransportFactory::new(),
+    incoming_messages: [],
+    request_id: 0,
+    loader_config: Some(loader_config),
+    extended_manifests: {},
+  }
+}
+
+///|
+/// Get the plugin directory
+pub fn PluginHostImpl::get_plugin_dir(self : PluginHostImpl) -> String {
+  self.registry.plugin_dir
 }
 
 ///|
@@ -242,4 +278,187 @@ pub fn PluginHostImpl::get_http_handler(
   plugin_id : String,
 ) -> HttpPluginHandler? {
   self.http_handlers.get(plugin_id)
+}
+
+///|
+/// Get transport handler for a plugin
+pub fn PluginHostImpl::get_transport_handler(
+  self : PluginHostImpl,
+  plugin_id : String,
+) -> &@interfaces.PluginTransportHandler? {
+  self.transport_handlers.get(plugin_id)
+}
+
+///|
+/// Register a plugin with transport handler
+pub fn PluginHostImpl::register_plugin_with_transport(
+  self : PluginHostImpl,
+  manifest : @interfaces.PluginManifest,
+) -> Unit raise {
+  // Register in registry first
+  self.registry.register(manifest)
+  // Create and store transport handler
+  let handler = self.transport_factory.create_handler(manifest)
+  self.transport_handlers[manifest.id] = handler
+  // Also set up legacy HTTP handler for compatibility
+  match manifest.transport {
+    @interfaces.PluginTransport::Http =>
+      match manifest.http {
+        Some(http_config) => {
+          let base_url = match http_config.base_url {
+            Some(url) => url
+            None => "http://localhost:\{http_config.port}"
+          }
+          self.http_handlers[manifest.id] = {
+            plugin_id: manifest.id,
+            base_url,
+            config: http_config,
+          }
+        }
+        None => ()
+      }
+    _ => ()
+  }
+}
+
+///|
+/// Implementation of PluginHost trait
+pub impl @interfaces.PluginHost for PluginHostImpl with load_plugins(
+  self,
+  path~,
+) {
+  // This will be fully implemented when filesystem adapter is integrated
+  // For now, set the loader config
+  self.loader_config = Some(PluginLoaderConfig::default(plugin_dir=path))
+}
+
+///|
+pub impl @interfaces.PluginHost for PluginHostImpl with start_plugin(self, id~) {
+  // Get the plugin instance
+  match self.registry.get(id) {
+    Some(instance) =>
+      match instance.status {
+        @interfaces.PluginStatus::Running => () // Already running
+        _ => {
+          // Set status to starting
+          self.registry.set_status(id, @interfaces.PluginStatus::Starting)
+          // Get or create transport handler
+          match self.transport_handlers.get(id) {
+            Some(handler) => {
+              @interfaces.PluginTransportHandler::start(handler)
+              self.registry.set_status(id, @interfaces.PluginStatus::Running)
+            }
+            None =>
+              // Try to create handler from manifest
+              match self.transport_factory.create_handler(instance.manifest) {
+                handler => {
+                  self.transport_handlers[id] = handler
+                  @interfaces.PluginTransportHandler::start(handler)
+                  self.registry.set_status(
+                    id,
+                    @interfaces.PluginStatus::Running,
+                  )
+                }
+              }
+          }
+        }
+      }
+    None => raise @interfaces.PluginError::NotFound(id)
+  }
+}
+
+///|
+pub impl @interfaces.PluginHost for PluginHostImpl with stop_plugin(self, id~) {
+  match self.registry.get(id) {
+    Some(_) => {
+      match self.transport_handlers.get(id) {
+        Some(handler) => @interfaces.PluginTransportHandler::stop(handler)
+        None => ()
+      }
+      self.registry.set_status(id, @interfaces.PluginStatus::Stopped)
+    }
+    None => raise @interfaces.PluginError::NotFound(id)
+  }
+}
+
+///|
+pub impl @interfaces.PluginHost for PluginHostImpl with get_status(self, id~) {
+  self.registry.get_status(id)
+}
+
+///|
+pub impl @interfaces.PluginHost for PluginHostImpl with list_plugins(self) {
+  self.registry.list()
+}
+
+///|
+pub impl @interfaces.PluginHost for PluginHostImpl with send_request(
+  self,
+  plugin_id~,
+  request~,
+) {
+  match self.transport_handlers.get(plugin_id) {
+    Some(handler) =>
+      @interfaces.PluginTransportHandler::send_request(handler, request)
+    None => raise @interfaces.PluginError::NotFound(plugin_id)
+  }
+}
+
+///|
+/// Load plugins from filesystem
+/// This method uses callbacks for filesystem operations for testability
+pub fn PluginHostImpl::load_plugins_with_fs(
+  self : PluginHostImpl,
+  list_dir : (String) -> Array[String] raise,
+  read_file : (String) -> String raise,
+) -> Unit raise {
+  match self.loader_config {
+    Some(config) => {
+      let loaded = load_all_plugins(config, list_dir, read_file)
+      for plugin in loaded {
+        self.register_plugin(plugin.manifest)
+        // Also try to parse extended manifest
+        match parse_extended_manifest(plugin.raw_manifest) {
+          Some(ext) => self.extended_manifests[plugin.manifest.id] = ext
+          None => ()
+        }
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+/// Get extended manifest for a plugin
+pub fn PluginHostImpl::get_extended_manifest(
+  self : PluginHostImpl,
+  plugin_id : String,
+) -> ExtendedManifest? {
+  self.extended_manifests.get(plugin_id)
+}
+
+///|
+/// Auto-start plugins that have autoStart enabled
+pub fn PluginHostImpl::auto_start_plugins(self : PluginHostImpl) -> Unit raise {
+  for id, ext in self.extended_manifests {
+    if ext.auto_start && ext.enabled {
+      @interfaces.PluginHost::start_plugin(self, id~) catch {
+        _ => ()
+      }
+    }
+  }
+}
+
+///|
+/// Send notification to a plugin
+pub fn PluginHostImpl::send_notification(
+  self : PluginHostImpl,
+  plugin_id : String,
+  request : @interfaces.JsonRpcRequest,
+) -> Unit raise {
+  match self.transport_handlers.get(plugin_id) {
+    Some(handler) =>
+      @interfaces.PluginTransportHandler::send_notification(handler, request)
+    None => raise @interfaces.PluginError::NotFound(plugin_id)
+  }
 }
