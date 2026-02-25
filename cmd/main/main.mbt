@@ -241,6 +241,19 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   let config_path = opts.config_path.unwrap_or(default_runtime_config_path())
   set_runtime_model_config_path_for_process(config_path)
   bootstrap_runtime_channels_from_config(config_path)
+  // プラグインシステムの初期化（native transport使用）
+  initialize_plugin_system_with_native_transport() catch {
+    e => {
+      if opts.debug {
+        println("Warning: Plugin system initialization failed: \{e}")
+      }
+      // プラグイン初期化失敗は警告のみ（Gateway自体は起動継続）
+    }
+  }
+  // プラグイン監視のセットアップ（オプション）
+  setup_plugin_watcher(".mukuro/plugins") catch {
+    _ => ()
+  }
   // 設定ファイルが指定されている場合のみ読み込み（未指定時はデフォルト）
   let base_config = match opts.config_path {
     Some(path) =>

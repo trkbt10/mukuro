@@ -233,7 +233,6 @@ pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with is_ac
 
 ///|
 /// Send a JSON-RPC request
-/// Note: Actual stdin writing will be implemented in Phase 7
 pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with send_request(
   self,
   request,

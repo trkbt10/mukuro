@@ -20,7 +20,7 @@ fn validate_runtime_config_or_error(cfg : RuntimeModelConfig) -> String? {
   let model = cfg.model.trim(chars=" \t\n\r").to_string()
   let base_url = cfg.base_url.trim(chars=" \t\n\r").to_string()
   if provider.length() == 0 {
-    return Some("provider is required in \{default_runtime_config_path}")
+    return Some("provider is required in \{default_runtime_config_path()}")
   }
   if is_openai_compatible_provider(provider) {
     if base_url.length() == 0 {
@@ -58,8 +58,16 @@ struct RuntimeModelPathCell {
 }
 
 ///|
-let runtime_model_path_cell : RuntimeModelPathCell = {
-  path: default_runtime_config_path,
+let runtime_model_path_cell : RuntimeModelPathCell = { path: "" }
+
+///|
+fn get_runtime_model_config_path() -> String {
+  let path = runtime_model_path_cell.path
+  if path.is_empty() {
+    default_runtime_config_path()
+  } else {
+    path
+  }
 }
 
 ///|
@@ -99,7 +107,7 @@ fn parse_runtime_model_config(
 ///|
 fn load_runtime_model_config() -> RuntimeModelConfig {
   parse_runtime_model_config(
-    load_config_root_impl(runtime_model_path_cell.path),
+    load_config_root_impl(get_runtime_model_config_path()),
   ) catch {
     _ => return default_runtime_model_config()
   }

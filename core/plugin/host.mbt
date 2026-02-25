@@ -290,6 +290,16 @@ pub fn PluginHostImpl::get_transport_handler(
 }
 
 ///|
+/// Set transport handler for a plugin (for external injection)
+pub fn PluginHostImpl::set_transport_handler(
+  self : PluginHostImpl,
+  plugin_id : String,
+  handler : &@interfaces.PluginTransportHandler,
+) -> Unit {
+  self.transport_handlers[plugin_id] = handler
+}
+
+///|
 /// Register a plugin with transport handler
 pub fn PluginHostImpl::register_plugin_with_transport(
   self : PluginHostImpl,

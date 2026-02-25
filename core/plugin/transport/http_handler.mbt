@@ -234,7 +234,7 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with is_act
 }
 
 ///|
-/// Send a JSON-RPC request (synchronous HTTP POST)
+/// Send a JSON-RPC request
 pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_request(
   self,
   request,

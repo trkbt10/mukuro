@@ -52,7 +52,7 @@ struct DaemonStartupConfig {
 fn daemon_startup_default() -> DaemonStartupConfig {
   {
     gateway_config: @interfaces.GatewayConfig::default(),
-    runtime_model_config_path: default_runtime_config_path,
+    runtime_model_config_path: default_runtime_config_path(),
     control_api: false,
   }
 }
@@ -64,7 +64,7 @@ fn write_daemon_startup_config(
 ) -> Bool {
   let payload : Json = {
     "runtime_model_config_path": opts.config_path.unwrap_or(
-      default_runtime_config_path,
+      default_runtime_config_path(),
     ),
     "control_api": opts.control_api,
     "gateway": {
@@ -99,7 +99,7 @@ fn parse_daemon_startup_config(content : String) -> DaemonStartupConfig {
   }
   let runtime_model_config_path = match root.get("runtime_model_config_path") {
     Some(String(path)) => path
-    _ => default_runtime_config_path
+    _ => default_runtime_config_path()
   }
   let control_api = match root.get("control_api") {
     Some(True) => true
@@ -213,8 +213,8 @@ fn execute_daemon_start(
     )
   }
 
-  let pid_path = @control.default_pid_path
-  let socket_path = @control.default_ipc_socket_path
+  let pid_path = @control.default_pid_path()
+  let socket_path = @control.default_ipc_socket_path()
 
   // 既存のデーモンをチェック
   let daemon_manager = NativeDaemonManager::new(pid_path~)
@@ -467,7 +467,7 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
     if !@native.setup_signal_handlers() {
       @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
       @native.c_remove_file(
-        @native.string_to_cstring(@control.default_gateway_token_path),
+        @native.string_to_cstring(@control.default_gateway_token_path()),
       )
       |> ignore
       @native.c_ipc_server_cleanup() |> ignore
@@ -495,7 +495,7 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
       _ => {
         @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
         @native.c_remove_file(
-          @native.string_to_cstring(@control.default_gateway_token_path),
+          @native.string_to_cstring(@control.default_gateway_token_path()),
         )
         |> ignore
         @native.c_ipc_server_cleanup() |> ignore
@@ -522,7 +522,7 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   // PIDファイルを削除
   @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
   @native.c_remove_file(
-    @native.string_to_cstring(@control.default_gateway_token_path),
+    @native.string_to_cstring(@control.default_gateway_token_path()),
   )
   |> ignore
   @native.c_ipc_server_cleanup() |> ignore
@@ -576,11 +576,11 @@ pub fn query_daemon_status(pid : Int, as_json : Bool) -> CliResult {
     let uptime_sec = if parts.length() > 3 { parts[3] } else { "0" }
     if as_json {
       CliResult::Ok(
-        "{\"mode\":\"daemon\",\"state\":\"running\",\"pid\":\{runtime_pid},\"uptime_sec\":\{uptime_sec},\"ipc\":\"connected\",\"pid_file\":\"\{@control.default_pid_path}\",\"socket\":\"\{@control.default_ipc_socket_path}\"}",
+        "{\"mode\":\"daemon\",\"state\":\"running\",\"pid\":\{runtime_pid},\"uptime_sec\":\{uptime_sec},\"ipc\":\"connected\",\"pid_file\":\"\{@control.default_pid_path()}\",\"socket\":\"\{@control.default_ipc_socket_path()}\"}",
       )
     } else {
       CliResult::Ok(
-        "Gateway Status (daemon mode):\n  State: running\n  PID: \{runtime_pid}\n  Uptime: \{uptime_sec}s\n  IPC: connected\n  PID file: \{@control.default_pid_path}\n  Socket: \{@control.default_ipc_socket_path}",
+        "Gateway Status (daemon mode):\n  State: running\n  PID: \{runtime_pid}\n  Uptime: \{uptime_sec}s\n  IPC: connected\n  PID file: \{@control.default_pid_path()}\n  Socket: \{@control.default_ipc_socket_path()}",
       )
     }
   } else if response.has_prefix("ERR unauthorized") {
@@ -828,15 +828,15 @@ pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus {
     @control.DaemonStatus::Stale(_) => {
       // stale検知時は運用アーティファクトをクリーンアップ
       @native.c_remove_file(
-        @native.string_to_cstring(@control.default_ipc_socket_path),
+        @native.string_to_cstring(@control.default_ipc_socket_path()),
       )
       |> ignore
       @native.c_remove_file(
-        @native.string_to_cstring(@control.default_gateway_state_path),
+        @native.string_to_cstring(@control.default_gateway_state_path()),
       )
       |> ignore
       @native.c_remove_file(
-        @native.string_to_cstring(@control.default_gateway_token_path),
+        @native.string_to_cstring(@control.default_gateway_token_path()),
       )
       |> ignore
       status

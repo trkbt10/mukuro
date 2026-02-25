@@ -240,7 +240,7 @@ pub fn WsServer::send(
   match self.clients.get(client_id) {
     None => raise WsServerError::ClientNotFound(client_id)
     Some(_) => {
-      let bytes = string_to_cstring(message)
+      let bytes = string_to_cstring_bytes(message)
       let result = moonbit_ws_server_send_raw(self.ptr, client_id, bytes)
       if result != 0 {
         raise WsServerError::SendFailed(
@@ -257,7 +257,7 @@ pub fn WsServer::broadcast(self : WsServer, message : String) -> Int {
   if not(self.is_running) {
     return 0
   }
-  let bytes = string_to_cstring(message)
+  let bytes = string_to_cstring_bytes(message)
   let result = moonbit_ws_server_broadcast_raw(self.ptr, bytes)
   if result < 0 {
     0
@@ -331,12 +331,13 @@ pub fn WsServer::get_client_ids(self : WsServer) -> Array[Int] {
 
 ///|
 /// Convert String to null-terminated C string bytes
-fn string_to_cstring(s : String) -> Bytes {
+fn string_to_cstring_bytes(s : String) -> Bytes {
   let utf8 = @utf8.encode(s)
-  let result = Bytes::new(utf8.length() + 1)
-  for i, b in utf8 {
-    result[i] = b
+  // Append null terminator
+  let arr : Array[Byte] = []
+  for b in utf8 {
+    arr.push(b)
   }
-  result[utf8.length()] = 0
-  result
+  arr.push(b'\x00')
+  Bytes::from_iter(arr.iter())
 }

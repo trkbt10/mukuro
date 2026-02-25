@@ -1,5 +1,7 @@
 ///|
 /// Native config file helpers (Source of Truth)
+
+///|
 fn read_config_text_impl(
   path : String,
 ) -> String raise @interfaces.ControlError {

@@ -48,5 +48,9 @@ options(
     "runtime_context_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "runtime_model_native.mbt": [ "native" ],
     "runtime_model_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "plugin_transport_native.mbt": [ "native" ],
+    "plugin_transport_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "plugin_watcher_native.mbt": [ "native" ],
+    "plugin_watcher_stub.mbt": [ "js", "wasm", "wasm-gc" ],
   },
 )

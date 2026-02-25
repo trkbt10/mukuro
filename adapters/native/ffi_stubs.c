@@ -1154,3 +1154,277 @@ int moonbit_get_home_dir(char* buffer, int buffer_len) {
     memcpy(buffer, home, len);
     return len;
 }
+
+/*
+ * UTF-16LE文字列（MoonBit native）から完全なUTF-8 C文字列に変換するヘルパー
+ * UTF-8の全範囲をサポート
+ */
+static int utf16le_to_utf8(const char* utf16, char* out, int max_len) {
+    if (!utf16 || !out || max_len <= 0) return -1;
+
+    const unsigned char* p = (const unsigned char*)utf16;
+    int i = 0;
+
+    while (i < max_len - 4) {  // UTF-8は最大4バイト
+        unsigned int low = p[0];
+        unsigned int high = p[1];
+
+        // null終端チェック (0x0000)
+        if (low == 0 && high == 0) break;
+
+        unsigned int codepoint = low | (high << 8);
+
+        // サロゲートペアの処理
+        if (codepoint >= 0xD800 && codepoint <= 0xDBFF) {
+            // 高サロゲート - 低サロゲートを読む
+            p += 2;
+            unsigned int low2 = p[0];
+            unsigned int high2 = p[1];
+            unsigned int low_surrogate = low2 | (high2 << 8);
+
+            if (low_surrogate >= 0xDC00 && low_surrogate <= 0xDFFF) {
+                codepoint = 0x10000 + ((codepoint - 0xD800) << 10) + (low_surrogate - 0xDC00);
+            }
+        }
+
+        // UTF-8エンコード
+        if (codepoint < 0x80) {
+            out[i++] = (char)codepoint;
+        } else if (codepoint < 0x800) {
+            out[i++] = (char)(0xC0 | (codepoint >> 6));
+            out[i++] = (char)(0x80 | (codepoint & 0x3F));
+        } else if (codepoint < 0x10000) {
+            out[i++] = (char)(0xE0 | (codepoint >> 12));
+            out[i++] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+            out[i++] = (char)(0x80 | (codepoint & 0x3F));
+        } else {
+            out[i++] = (char)(0xF0 | (codepoint >> 18));
+            out[i++] = (char)(0x80 | ((codepoint >> 12) & 0x3F));
+            out[i++] = (char)(0x80 | ((codepoint >> 6) & 0x3F));
+            out[i++] = (char)(0x80 | (codepoint & 0x3F));
+        }
+
+        p += 2;  // UTF-16は2バイト単位
+    }
+    out[i] = '\0';
+
+    return i > 0 ? i : -1;
+}
+
+/*
+ * Convert MoonBit UTF-16LE string to UTF-8 C string in a buffer
+ * src_utf16: UTF-16LE encoded MoonBit string
+ * dst: output buffer for UTF-8 string
+ * dst_len: size of output buffer
+ * returns: length of converted string, or -1 on error
+ */
+int moonbit_string_to_cstring(const char* src_utf16, char* dst, int dst_len) {
+    return utf16le_to_utf8(src_utf16, dst, dst_len);
+}
+
+/*
+ * popenラッパー - MoonBit UTF-16LE文字列を受け取る
+ * command: UTF-16LEエンコードされたコマンド文字列
+ * mode: UTF-16LEエンコードされたモード文字列 ("r" or "w")
+ * returns: FILEポインタ、失敗時はNULL
+ */
+FILE* moonbit_popen(const char* command_utf16, const char* mode_utf16) {
+    char command[8192];
+    char mode[8];
+
+    if (utf16le_to_utf8(command_utf16, command, sizeof(command)) < 0) {
+        return NULL;
+    }
+    if (utf16le_to_utf8(mode_utf16, mode, sizeof(mode)) < 0) {
+        return NULL;
+    }
+
+    return popen(command, mode);
+}
+
+/*
+ * popen with UTF-8 bytes buffer (null-terminated)
+ * This version takes Bytes directly, which MoonBit can fill with proper UTF-8 data
+ * Returns a "handle" int that's actually the FILE* cast to an int (works on 64-bit)
+ * Returns 0 on failure
+ */
+int64_t moonbit_popen_bytes(const unsigned char* command, const unsigned char* mode) {
+    FILE* f = popen((const char*)command, (const char*)mode);
+    return (int64_t)(uintptr_t)f;
+}
+
+/*
+ * fopen with UTF-8 bytes buffer (null-terminated)
+ * Returns handle (0 on failure)
+ */
+int64_t moonbit_fopen_bytes(const unsigned char* path, const unsigned char* mode) {
+    FILE* f = fopen((const char*)path, (const char*)mode);
+    return (int64_t)(uintptr_t)f;
+}
+
+/*
+ * fread with handle
+ */
+int moonbit_fread_handle(unsigned char* buffer, int size, int nmemb, int64_t handle) {
+    FILE* f = (FILE*)(uintptr_t)handle;
+    if (!f) return -1;
+    return (int)fread(buffer, (size_t)size, (size_t)nmemb, f);
+}
+
+/*
+ * pclose with handle
+ */
+int moonbit_pclose_handle(int64_t handle) {
+    FILE* f = (FILE*)(uintptr_t)handle;
+    if (!f) return -1;
+    return pclose(f);
+}
+
+/*
+ * fclose with handle
+ */
+int moonbit_fclose_handle(int64_t handle) {
+    FILE* f = (FILE*)(uintptr_t)handle;
+    if (!f) return -1;
+    return fclose(f);
+}
+
+/*
+ * pcloseラッパー
+ */
+int moonbit_pclose(FILE* stream) {
+    return pclose(stream);
+}
+
+/*
+ * fopenラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+FILE* moonbit_fopen(const char* path_utf16, const char* mode_utf16) {
+    char path[1024];
+    char mode[8];
+
+    if (utf16le_to_utf8(path_utf16, path, sizeof(path)) < 0) {
+        return NULL;
+    }
+    if (utf16le_to_utf8(mode_utf16, mode, sizeof(mode)) < 0) {
+        return NULL;
+    }
+
+    return fopen(path, mode);
+}
+
+/*
+ * accessラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+int moonbit_access(const char* path_utf16, int mode) {
+    char path[1024];
+
+    if (utf16le_to_utf8(path_utf16, path, sizeof(path)) < 0) {
+        return -1;
+    }
+
+    return access(path, mode);
+}
+
+/*
+ * removeラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+int moonbit_remove(const char* path_utf16) {
+    char path[1024];
+
+    if (utf16le_to_utf8(path_utf16, path, sizeof(path)) < 0) {
+        return -1;
+    }
+
+    return remove(path);
+}
+
+/*
+ * mkdirラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+int moonbit_mkdir(const char* path_utf16, int mode) {
+    char path[1024];
+
+    if (utf16le_to_utf8(path_utf16, path, sizeof(path)) < 0) {
+        return -1;
+    }
+
+    return mkdir(path, (mode_t)mode);
+}
+
+/*
+ * getenvラッパー - 結果をUTF-16LEで返す
+ * name_utf16: UTF-16LEエンコードされた環境変数名
+ * buffer: UTF-16LE出力バッファ
+ * buffer_len: バッファサイズ（バイト）
+ * returns: 書き込んだバイト数、環境変数がない場合は0、エラー時は-1
+ */
+int moonbit_getenv_utf16(const char* name_utf16, char* buffer, int buffer_len) {
+    if (!name_utf16 || !buffer || buffer_len <= 0) return -1;
+
+    char name[256];
+    if (utf16le_to_utf8(name_utf16, name, sizeof(name)) < 0) {
+        return -1;
+    }
+
+    const char* value = getenv(name);
+    if (!value) return 0;
+
+    return ascii_to_utf16le_bytes(value, buffer, buffer_len);
+}
+
+/*
+ * setenvラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+int moonbit_setenv(const char* name_utf16, const char* value_utf16, int overwrite) {
+    char name[256];
+    char value[8192];
+
+    if (utf16le_to_utf8(name_utf16, name, sizeof(name)) < 0) {
+        return -1;
+    }
+    if (utf16le_to_utf8(value_utf16, value, sizeof(value)) < 0) {
+        return -1;
+    }
+
+    return setenv(name, value, overwrite);
+}
+
+/*
+ * unsetenvラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+int moonbit_unsetenv(const char* name_utf16) {
+    char name[256];
+
+    if (utf16le_to_utf8(name_utf16, name, sizeof(name)) < 0) {
+        return -1;
+    }
+
+    return unsetenv(name);
+}
+
+/*
+ * putsラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+int moonbit_puts(const char* s_utf16) {
+    char s[8192];
+
+    if (utf16le_to_utf8(s_utf16, s, sizeof(s)) < 0) {
+        return -1;
+    }
+
+    return puts(s);
+}
+
+/*
+ * fputsラッパー - MoonBit UTF-16LE文字列を受け取る
+ */
+int moonbit_fputs(const char* s_utf16, FILE* stream) {
+    char s[8192];
+
+    if (utf16le_to_utf8(s_utf16, s, sizeof(s)) < 0) {
+        return -1;
+    }
+
+    return fputs(s, stream);
+}

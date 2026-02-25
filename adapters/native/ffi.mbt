@@ -22,12 +22,12 @@ pub type CFile
 ///|
 /// 標準出力に文字列を出力
 #borrow(s)
-pub extern "C" fn c_puts(s : CString) -> Int = "puts"
+pub extern "C" fn c_puts(s : CString) -> Int = "moonbit_puts"
 
 ///|
 /// 標準エラーに文字列を出力
 #borrow(s)
-pub extern "C" fn c_fputs(s : CString, stream : CFile) -> Int = "fputs"
+pub extern "C" fn c_fputs(s : CString, stream : CFile) -> Int = "moonbit_fputs"
 
 ///|
 /// stderr を取得（ヘルパー関数が必要）
@@ -40,7 +40,7 @@ pub extern "C" fn c_get_stderr() -> CFile = "moonbit_get_stderr"
 ///|
 /// ファイルを開く
 #borrow(path, mode)
-pub extern "C" fn c_fopen(path : CString, mode : CString) -> CFile? = "fopen"
+pub extern "C" fn c_fopen(path : CString, mode : CString) -> CFile? = "moonbit_fopen"
 
 ///|
 /// ファイルを閉じる
@@ -67,35 +67,65 @@ pub extern "C" fn c_fwrite(
 ///|
 /// ファイルの存在確認
 #borrow(path)
-pub extern "C" fn c_access(path : CString, mode : Int) -> Int = "access"
+pub extern "C" fn c_access(path : CString, mode : Int) -> Int = "moonbit_access"
 
 ///|
 /// ファイルを削除
 #borrow(path)
-pub extern "C" fn c_remove(path : CString) -> Int = "remove"
+pub extern "C" fn c_remove(path : CString) -> Int = "moonbit_remove"
 
 ///|
 /// ディレクトリを作成
 #borrow(path)
-pub extern "C" fn c_mkdir(path : CString, mode : Int) -> Int = "mkdir"
+pub extern "C" fn c_mkdir(path : CString, mode : Int) -> Int = "moonbit_mkdir"
 
 // ============================================================
 // プロセス実行
 // ============================================================
 
 ///|
-/// コマンドを実行（popen）
+/// コマンドを実行（popen）- 旧API（CString版、非推奨）
 #borrow(command, mode)
-pub extern "C" fn c_popen(command : CString, mode : CString) -> CFile? = "popen"
+pub extern "C" fn c_popen(command : CString, mode : CString) -> CFile? = "moonbit_popen"
+
+///|
+/// コマンドを実行（popen）- UTF-8 Bytes版
+/// command と mode は null終端されたUTF-8バイト列
+/// 戻り値はハンドル（Int64）、0は失敗
+#borrow(command, mode)
+pub extern "C" fn c_popen_handle(command : Bytes, mode : Bytes) -> Int64 = "moonbit_popen_bytes"
 
 ///|
 /// popen を閉じる
-pub extern "C" fn c_pclose(stream : CFile) -> Int = "pclose"
+pub extern "C" fn c_pclose(stream : CFile) -> Int = "moonbit_pclose"
+
+///|
+/// pclose - ハンドル版
+pub extern "C" fn c_pclose_handle(handle : Int64) -> Int = "moonbit_pclose_handle"
+
+///|
+/// fread - ハンドル版
+#borrow(buffer)
+pub extern "C" fn c_fread_handle(
+  buffer : Bytes,
+  size : Int,
+  nmemb : Int,
+  handle : Int64,
+) -> Int = "moonbit_fread_handle"
+
+///|
+/// fclose - ハンドル版
+pub extern "C" fn c_fclose_handle(handle : Int64) -> Int = "moonbit_fclose_handle"
 
 ///|
 /// system コマンド実行
 #borrow(command)
 pub extern "C" fn c_system(command : CString) -> Int = "system"
+
+///|
+/// ファイルを開く（fopen）- UTF-8 Bytes版、ハンドル返却
+#borrow(path, mode)
+pub extern "C" fn c_fopen_handle(path : Bytes, mode : Bytes) -> Int64 = "moonbit_fopen_bytes"
 
 // ============================================================
 // 環境変数
@@ -113,12 +143,12 @@ pub extern "C" fn c_setenv(
   name : CString,
   value : CString,
   overwrite : Int,
-) -> Int = "setenv"
+) -> Int = "moonbit_setenv"
 
 ///|
 /// 環境変数を削除
 #borrow(name)
-pub extern "C" fn c_unsetenv(name : CString) -> Int = "unsetenv"
+pub extern "C" fn c_unsetenv(name : CString) -> Int = "moonbit_unsetenv"
 
 // ============================================================
 // 文字列変換ヘルパー
@@ -136,6 +166,20 @@ pub fn string_to_cstring(s : String) -> CString = "%identity"
 ///|
 /// CString から MoonBit String への変換
 pub fn cstring_to_string(cs : CString) -> String = "%identity"
+
+///|
+/// MoonBit String から UTF-8 null終端 Bytes への変換
+/// C関数に渡すための適切なフォーマット
+pub fn string_to_utf8_cstring(s : String) -> Bytes {
+  let utf8 = @utf8.encode(s)
+  // Add null terminator - collect bytes into array and add null
+  let arr : Array[Byte] = []
+  for b in utf8 {
+    arr.push(b)
+  }
+  arr.push(b'\x00')
+  Bytes::from_iter(arr.iter())
+}
 
 // ============================================================
 // 定数

@@ -137,6 +137,10 @@ pub struct PluginSystemInitializer {
   tool_registry : PluginToolRegistry
   /// Plugin directory
   plugin_dir : String
+  /// Plugin watcher (optional, injected from adapter layer)
+  mut watcher : &@interfaces.PluginWatcher?
+  /// Whether watching is active
+  mut watching : Bool
 }
 
 ///|
@@ -146,7 +150,7 @@ pub fn PluginSystemInitializer::new(
 ) -> PluginSystemInitializer {
   let plugin_host = PluginHostImpl::new(plugin_dir~)
   let tool_registry = PluginToolRegistry::new()
-  { plugin_host, tool_registry, plugin_dir }
+  { plugin_host, tool_registry, plugin_dir, watcher: None, watching: false }
 }
 
 ///|
@@ -219,4 +223,145 @@ pub fn create_plugin_tool_executor(
       Some(PluginToolExecutor::new(plugin_host~, plugin_id~, method_name~))
     None => None
   }
+}
+
+///|
+/// Set the plugin watcher (injected from adapter layer)
+pub fn PluginSystemInitializer::set_watcher(
+  self : PluginSystemInitializer,
+  watcher : &@interfaces.PluginWatcher,
+) -> Unit {
+  self.watcher = Some(watcher)
+}
+
+///|
+/// Start watching for plugin changes
+pub fn PluginSystemInitializer::start_watching(
+  self : PluginSystemInitializer,
+) -> Unit raise {
+  match self.watcher {
+    Some(watcher) => {
+      let callback : @interfaces.PluginWatcherCallback = {
+        on_added: fn(plugin_id) { self.handle_plugin_added(plugin_id) },
+        on_modified: fn(plugin_id) { self.handle_plugin_modified(plugin_id) },
+        on_removed: fn(plugin_id) { self.handle_plugin_removed(plugin_id) },
+      }
+      @interfaces.PluginWatcher::watch(watcher, path=self.plugin_dir, callback~)
+      self.watching = true
+    }
+    None =>
+      raise @interfaces.PluginError::InvalidManifest(
+        "No plugin watcher configured",
+      )
+  }
+}
+
+///|
+/// Stop watching for plugin changes
+pub fn PluginSystemInitializer::stop_watching(
+  self : PluginSystemInitializer,
+) -> Unit {
+  match self.watcher {
+    Some(watcher) => {
+      @interfaces.PluginWatcher::stop(watcher)
+      self.watching = false
+    }
+    None => ()
+  }
+}
+
+///|
+/// Check if watching is active
+pub fn PluginSystemInitializer::is_watching(
+  self : PluginSystemInitializer,
+) -> Bool {
+  self.watching
+}
+
+///|
+/// Handle plugin added event
+fn PluginSystemInitializer::handle_plugin_added(
+  self : PluginSystemInitializer,
+  plugin_id : String,
+) -> Unit {
+  // Reload all plugins to pick up the new one
+  // This is simpler than trying to load a single plugin
+  @interfaces.PluginHost::load_plugins(
+    self.plugin_host,
+    path=self.plugin_dir,
+  ) catch {
+    _ => return
+  }
+  // Generate tools if schema available
+  match self.plugin_host.extended_manifests.get(plugin_id) {
+    Some(ext_manifest) => {
+      let tools = generate_tools_from_extended_manifest(ext_manifest)
+      self.tool_registry.register_plugin_tools(plugin_id, tools)
+      // Auto-start if enabled
+      if ext_manifest.enabled && ext_manifest.auto_start {
+        self.plugin_host.start_plugin(id=plugin_id) catch {
+          _ => ()
+        }
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+/// Handle plugin modified event
+fn PluginSystemInitializer::handle_plugin_modified(
+  self : PluginSystemInitializer,
+  plugin_id : String,
+) -> Unit {
+  // Stop the plugin if running
+  self.plugin_host.stop_plugin(id=plugin_id) catch {
+    _ => ()
+  }
+  // Unregister old data
+  self.plugin_host.registry.unregister(plugin_id)
+  self.tool_registry.unregister_plugin_tools(plugin_id)
+  self.plugin_host.transport_handlers.remove(plugin_id)
+  self.plugin_host.extended_manifests.remove(plugin_id)
+  // Reload all plugins to pick up the modified one
+  @interfaces.PluginHost::load_plugins(
+    self.plugin_host,
+    path=self.plugin_dir,
+  ) catch {
+    _ => return
+  }
+  // Regenerate tools
+  match self.plugin_host.extended_manifests.get(plugin_id) {
+    Some(ext_manifest) => {
+      let tools = generate_tools_from_extended_manifest(ext_manifest)
+      self.tool_registry.register_plugin_tools(plugin_id, tools)
+      // Restart if enabled
+      if ext_manifest.enabled && ext_manifest.auto_start {
+        self.plugin_host.start_plugin(id=plugin_id) catch {
+          _ => ()
+        }
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+/// Handle plugin removed event
+fn PluginSystemInitializer::handle_plugin_removed(
+  self : PluginSystemInitializer,
+  plugin_id : String,
+) -> Unit {
+  // Stop the plugin if running
+  self.plugin_host.stop_plugin(id=plugin_id) catch {
+    _ => ()
+  }
+  // Unregister from host
+  self.plugin_host.registry.unregister(plugin_id)
+  // Unregister tools
+  self.tool_registry.unregister_plugin_tools(plugin_id)
+  // Remove transport handler
+  self.plugin_host.transport_handlers.remove(plugin_id)
+  // Remove extended manifest
+  self.plugin_host.extended_manifests.remove(plugin_id)
 }
