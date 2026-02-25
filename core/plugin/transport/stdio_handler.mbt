@@ -18,10 +18,8 @@ pub struct StdioTransportHandler {
   pending_requests : Map[Int, @interfaces.PendingRequest]
   /// Request ID counter
   mut request_id : Int
-  /// Message callback
-  mut on_message_callback : ((@interfaces.JsonRpcRequest) -> Unit)?
-  /// Incoming message queue
-  incoming_queue : Array[@interfaces.JsonRpcRequest]
+  /// Shared message queue for incoming messages
+  message_queue : MessageQueue
   /// Restart attempt counter
   mut restart_attempts : Int
   /// Last restart timestamp
@@ -41,8 +39,7 @@ pub fn StdioTransportHandler::new(
     pid: None,
     pending_requests: {},
     request_id: 0,
-    on_message_callback: None,
-    incoming_queue: [],
+    message_queue: MessageQueue::new(),
     restart_attempts: 0,
     last_restart_time: 0L,
   }
@@ -279,11 +276,7 @@ pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with send_
 pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with try_receive(
   self,
 ) {
-  if self.incoming_queue.length() > 0 {
-    Some(self.incoming_queue.remove(0))
-  } else {
-    None
-  }
+  self.message_queue.pop()
 }
 
 ///|
@@ -292,7 +285,7 @@ pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with on_me
   self,
   callback,
 ) {
-  self.on_message_callback = Some(callback)
+  self.message_queue.set_callback(callback)
 }
 
 ///|
@@ -301,11 +294,7 @@ pub fn StdioTransportHandler::queue_incoming(
   self : StdioTransportHandler,
   request : @interfaces.JsonRpcRequest,
 ) -> Unit {
-  self.incoming_queue.push(request)
-  match self.on_message_callback {
-    Some(callback) => callback(request)
-    None => ()
-  }
+  self.message_queue.push(request)
 }
 
 ///|

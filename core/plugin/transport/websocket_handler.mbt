@@ -33,10 +33,8 @@ pub struct WebSocketTransportHandler {
   pending_requests : Map[Int, @interfaces.PendingRequest]
   /// Request ID counter
   mut request_id : Int
-  /// Message callback
-  mut on_message_callback : ((@interfaces.JsonRpcRequest) -> Unit)?
-  /// Incoming message queue
-  incoming_queue : Array[@interfaces.JsonRpcRequest]
+  /// Shared message queue for incoming messages
+  message_queue : MessageQueue
   /// Reconnect attempt counter
   mut reconnect_attempts : Int
   /// Last activity timestamp
@@ -57,8 +55,7 @@ pub fn WebSocketTransportHandler::new(
     state: WebSocketState::Disconnected,
     pending_requests: {},
     request_id: 0,
-    on_message_callback: None,
-    incoming_queue: [],
+    message_queue: MessageQueue::new(),
     reconnect_attempts: 0,
     last_activity_time: 0L,
     last_heartbeat_time: 0L,
@@ -283,11 +280,7 @@ pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with s
 pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with try_receive(
   self,
 ) {
-  if self.incoming_queue.length() > 0 {
-    Some(self.incoming_queue.remove(0))
-  } else {
-    None
-  }
+  self.message_queue.pop()
 }
 
 ///|
@@ -296,7 +289,7 @@ pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with o
   self,
   callback,
 ) {
-  self.on_message_callback = Some(callback)
+  self.message_queue.set_callback(callback)
 }
 
 ///|
@@ -305,11 +298,7 @@ pub fn WebSocketTransportHandler::queue_incoming(
   self : WebSocketTransportHandler,
   request : @interfaces.JsonRpcRequest,
 ) -> Unit {
-  self.incoming_queue.push(request)
-  match self.on_message_callback {
-    Some(callback) => callback(request)
-    None => ()
-  }
+  self.message_queue.push(request)
 }
 
 ///|

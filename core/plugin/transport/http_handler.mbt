@@ -23,10 +23,8 @@ pub struct HttpTransportHandler {
   auth_token : String?
   /// Token header name
   token_header : String
-  /// Message callback
-  mut on_message_callback : ((@interfaces.JsonRpcRequest) -> Unit)?
-  /// Incoming message queue
-  incoming_queue : Array[@interfaces.JsonRpcRequest]
+  /// Shared message queue for incoming messages
+  message_queue : MessageQueue
   /// HTTP client for making requests (optional, for actual HTTP calls)
   mut http_client : &@interfaces.HttpClient?
 }
@@ -99,8 +97,7 @@ pub fn HttpTransportHandler::with_tls(
     request_id: 0,
     auth_token,
     token_header,
-    on_message_callback: None,
-    incoming_queue: [],
+    message_queue: MessageQueue::new(),
     http_client,
   }
 }
@@ -310,11 +307,7 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_n
 pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with try_receive(
   self,
 ) {
-  if self.incoming_queue.length() > 0 {
-    Some(self.incoming_queue.remove(0))
-  } else {
-    None
-  }
+  self.message_queue.pop()
 }
 
 ///|
@@ -323,7 +316,7 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with on_mes
   self,
   callback,
 ) {
-  self.on_message_callback = Some(callback)
+  self.message_queue.set_callback(callback)
 }
 
 ///|
@@ -332,11 +325,7 @@ pub fn HttpTransportHandler::queue_incoming(
   self : HttpTransportHandler,
   request : @interfaces.JsonRpcRequest,
 ) -> Unit {
-  self.incoming_queue.push(request)
-  match self.on_message_callback {
-    Some(callback) => callback(request)
-    None => ()
-  }
+  self.message_queue.push(request)
 }
 
 ///|
