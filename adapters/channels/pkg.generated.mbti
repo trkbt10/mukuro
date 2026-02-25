@@ -8,6 +8,7 @@ import {
 }
 
 // Values
+pub fn pop_inbound_envelope(Array[@types.InboundEnvelope]) -> @types.InboundEnvelope?
 
 // Errors
 pub(all) suberror ChannelError {

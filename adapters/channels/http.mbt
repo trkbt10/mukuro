@@ -103,22 +103,9 @@ pub impl @interfaces.ChannelAdapter for HttpChannelAdapter with send(
 
 ///|
 pub impl @interfaces.ChannelAdapter for HttpChannelAdapter with receive(self) {
-  // キューからメッセージを取得（空の場合はエラー）
-  if self.received_messages.length() > 0 {
-    // 最初のメッセージを取り出す
-    let msg = self.received_messages[0]
-    // 配列をシフト（先頭を削除）
-    let new_arr : Array[@types.InboundEnvelope] = []
-    for i in 1..<self.received_messages.length() {
-      new_arr.push(self.received_messages[i])
-    }
-    self.received_messages.clear()
-    for m in new_arr {
-      self.received_messages.push(m)
-    }
-    msg
-  } else {
-    raise ChannelError::NetworkError("No messages in queue")
+  match pop_inbound_envelope(self.received_messages) {
+    Some(msg) => msg
+    None => raise ChannelError::NetworkError("No messages in queue")
   }
 }
 
