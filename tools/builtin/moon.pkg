@@ -13,6 +13,7 @@ import {
 } for "test"
 
 options(
+  "warn-list": "-29",
   targets: {
     "builtin_test.mbt": [ "js" ],
     "filesystem.mbt": [ "js" ],

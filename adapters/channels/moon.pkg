@@ -10,6 +10,7 @@ import {
 }
 
 options(
+  "warn-list": "-29",
   targets: {
     "channels_test.mbt": [ "js" ],
     "discord.mbt": [ "js" ],

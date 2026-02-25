@@ -6,5 +6,6 @@ import {
 }
 
 options(
+  "warn-list": "-29",
   targets: { "timer.mbt": [ "js" ] },
 )

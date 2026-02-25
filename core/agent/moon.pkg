@@ -5,3 +5,7 @@ import {
   "trkbt10/mukuro/core/tool",
   "moonbitlang/async" @async,
 }
+
+options(
+  "warn-list": "-29",
+)

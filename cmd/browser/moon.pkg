@@ -4,6 +4,7 @@ import {
 }
 
 options(
+  "warn-list": "-29",
   "is-main": true,
   targets: {
     "main.mbt": [ "js" ],

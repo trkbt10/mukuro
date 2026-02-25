@@ -10,6 +10,7 @@ import {
 }
 
 options(
+  "warn-list": "-29",
   link: { "native": { "cc-flags": "-lpthread" } },
   "native-stub": [ "ffi_stubs.c" ],
   targets: {

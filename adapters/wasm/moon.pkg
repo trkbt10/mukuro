@@ -2,3 +2,7 @@ import {
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
+
+options(
+  "warn-list": "-29",
+)

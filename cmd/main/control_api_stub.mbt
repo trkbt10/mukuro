@@ -7,7 +7,9 @@ pub fn run_control_api_server_blocking(
   _host : String,
   _port : Int,
 ) -> Unit raise {
-  abort("Control API server is available only on native target")
+  raise @interfaces.ControlError::InternalError(
+    "Control API server is available only on native target",
+  )
 }
 
 ///|
@@ -17,7 +19,9 @@ pub fn run_control_api_server_with_tick_blocking(
   _port : Int,
   _on_tick : () -> Bool,
 ) -> Unit raise {
-  abort("Control API server is available only on native target")
+  raise @interfaces.ControlError::InternalError(
+    "Control API server is available only on native target",
+  )
 }
 
 ///|
