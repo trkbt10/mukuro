@@ -3,6 +3,4 @@ import {
   "trkbt10/mukuro/interfaces",
 }
 
-options(
-  "warn-list": "-29",
-)
+warnings = "-29"

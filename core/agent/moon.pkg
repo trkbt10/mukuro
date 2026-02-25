@@ -6,6 +6,4 @@ import {
   "moonbitlang/async" @async,
 }
 
-options(
-  "warn-list": "-29",
-)
+warnings = "-29"

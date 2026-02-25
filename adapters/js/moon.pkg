@@ -6,8 +6,9 @@ import {
   "moonbitlang/async/js_async" @js_async,
 }
 
+warnings = "-29"
+
 options(
-  "warn-list": "-29",
   targets: {
     "crypto.mbt": [ "js" ],
     "crypto_test.mbt": [ "js" ],

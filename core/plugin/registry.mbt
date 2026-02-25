@@ -30,10 +30,7 @@ pub fn PluginRegistry::register(
 
 ///|
 /// Unregister a plugin by ID
-pub fn PluginRegistry::unregister(
-  self : PluginRegistry,
-  id : String,
-) -> Unit {
+pub fn PluginRegistry::unregister(self : PluginRegistry, id : String) -> Unit {
   self.plugins.remove(id)
 }
 

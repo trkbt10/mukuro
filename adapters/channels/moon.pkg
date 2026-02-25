@@ -9,8 +9,9 @@ import {
   "mizchi/x/websocket" @xws,
 }
 
+warnings = "-29"
+
 options(
-  "warn-list": "-29",
   targets: {
     "channels_test.mbt": [ "js" ],
     "discord.mbt": [ "js" ],

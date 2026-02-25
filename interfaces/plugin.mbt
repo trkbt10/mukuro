@@ -125,18 +125,22 @@ pub fn jsonrpc_error_parse_error() -> Int {
   -32700
 }
 
+///|
 pub fn jsonrpc_error_invalid_request() -> Int {
   -32600
 }
 
+///|
 pub fn jsonrpc_error_method_not_found() -> Int {
   -32601
 }
 
+///|
 pub fn jsonrpc_error_invalid_params() -> Int {
   -32602
 }
 
+///|
 pub fn jsonrpc_error_internal_error() -> Int {
   -32603
 }
@@ -294,11 +298,7 @@ pub(open) trait PluginHost {
   list_plugins(Self) -> Array[PluginManifest]
 
   /// Send a JSON-RPC request to a plugin
-  send_request(
-    Self,
-    plugin_id~ : String,
-    request~ : JsonRpcRequest,
-  ) -> JsonRpcResponse raise
+  send_request(Self, plugin_id~ : String, request~ : JsonRpcRequest) -> JsonRpcResponse raise
 }
 
 ///|
@@ -315,22 +315,57 @@ pub fn plugin_method_connect() -> String {
   "connect"
 }
 
+///|
 pub fn plugin_method_disconnect() -> String {
   "disconnect"
 }
 
+///|
 pub fn plugin_method_send() -> String {
   "send"
 }
 
+///|
 pub fn plugin_method_receive() -> String {
   "receive"
 }
 
+///|
 pub fn plugin_method_status() -> String {
   "status"
 }
 
+///|
 pub fn plugin_method_message_received() -> String {
   "message_received"
+}
+
+///|
+/// Trait for plugins that manage connection state
+/// Provides common connect/disconnect behavior
+pub(open) trait ConnectablePlugin {
+  /// Check if plugin is currently connected
+  is_connected(Self) -> Bool
+  /// Set connection state
+  set_connected(Self, Bool) -> Unit
+}
+
+///|
+/// Common connect handler for ConnectablePlugin
+pub fn[P : ConnectablePlugin] handle_connect_common(
+  plugin : P,
+  request : JsonRpcRequest,
+) -> JsonRpcResponse {
+  plugin.set_connected(true)
+  rpc_connect_response(request.id)
+}
+
+///|
+/// Common disconnect handler for ConnectablePlugin
+pub fn[P : ConnectablePlugin] handle_disconnect_common(
+  plugin : P,
+  request : JsonRpcRequest,
+) -> JsonRpcResponse {
+  plugin.set_connected(false)
+  rpc_disconnect_response(request.id)
 }

@@ -5,7 +5,8 @@ import {
   "moonbitlang/core/json",
 }
 
+warnings = "-29"
+
 options(
-  "warn-list": "-29",
   targets: { "timer.mbt": [ "js" ] },
 )

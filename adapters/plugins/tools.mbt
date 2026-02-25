@@ -32,7 +32,10 @@ pub fn UtilityToolPlugin::new(name~ : String) -> UtilityToolPlugin {
 
 ///|
 /// Set random seed (for testing)
-pub fn UtilityToolPlugin::set_seed(self : UtilityToolPlugin, seed : Int64) -> Unit {
+pub fn UtilityToolPlugin::set_seed(
+  self : UtilityToolPlugin,
+  seed : Int64,
+) -> Unit {
   self.random_seed = seed
 }
 
@@ -79,10 +82,16 @@ pub fn UtilityToolPlugin::uuid_v4(self : UtilityToolPlugin) -> String {
     } else if i == 19 {
       // Variant bits (8, 9, a, or b)
       let r = self.random_int(8, 11)
-      result = result + hex_chars.substring(start=r, end=r + 1)
+      result = result +
+        (hex_chars[r:r + 1].to_string() catch {
+          _ => abort("unreachable: r is within 8-11")
+        })
     } else {
       let r = self.random_int(0, 15)
-      result = result + hex_chars.substring(start=r, end=r + 1)
+      result = result +
+        (hex_chars[r:r + 1].to_string() catch {
+          _ => abort("unreachable: r is within 0-15")
+        })
     }
   }
   result
@@ -138,7 +147,7 @@ fn EvalState::current(self : EvalState) -> Char {
   if self.pos < self.chars.length() {
     self.chars[self.pos]
   } else {
-    '\x00'
+    '\u0000'
   }
 }
 
@@ -274,7 +283,9 @@ fn EvalState::parse_number(self : EvalState) -> Result[Double, String] {
   for i = start; i < self.pos; i = i + 1 {
     num_str = num_str + self.chars[i].to_string()
   }
-  let parsed = @strconv.parse_double(num_str) catch { _ => return Err("Invalid number") }
+  let parsed = @strconv.parse_double(num_str) catch {
+    _ => return Err("Invalid number")
+  }
   Ok(parsed)
 }
 
@@ -296,15 +307,27 @@ pub fn UtilityToolPlugin::base64_encode(
     let c1 = ((b0 & 3) << 4) | (b1 >> 4)
     let c2 = ((b1 & 15) << 2) | (b2 >> 6)
     let c3 = b2 & 63
-    result = result + alphabet.substring(start=c0, end=c0 + 1)
-    result = result + alphabet.substring(start=c1, end=c1 + 1)
+    result = result +
+      (alphabet[c0:c0 + 1].to_string() catch {
+        _ => abort("unreachable: c0 is within 0-63")
+      })
+    result = result +
+      (alphabet[c1:c1 + 1].to_string() catch {
+        _ => abort("unreachable: c1 is within 0-63")
+      })
     if i + 1 < bytes.length() {
-      result = result + alphabet.substring(start=c2, end=c2 + 1)
+      result = result +
+        (alphabet[c2:c2 + 1].to_string() catch {
+          _ => abort("unreachable: c2 is within 0-63")
+        })
     } else {
       result = result + "="
     }
     if i + 2 < bytes.length() {
-      result = result + alphabet.substring(start=c3, end=c3 + 1)
+      result = result +
+        (alphabet[c3:c3 + 1].to_string() catch {
+          _ => abort("unreachable: c3 is within 0-63")
+        })
     } else {
       result = result + "="
     }
@@ -334,14 +357,9 @@ fn UtilityToolPlugin::handle_calculate(
   self : UtilityToolPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let expr = match request.params {
-    Some({ "expression": String(e), .. }) => e
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'expression' parameter",
-        id=request.id,
-      )
+  let expr = match @interfaces.rpc_require_string(request, "expression") {
+    Ok(e) => e
+    Err(response) => return response
   }
   let result = self.calculate(expr)
   if result.success {
@@ -355,7 +373,7 @@ fn UtilityToolPlugin::handle_calculate(
   } else {
     @interfaces.JsonRpcResponse::error(
       code=@interfaces.jsonrpc_error_internal_error(),
-      message=result.error.or("Calculation failed"),
+      message=result.error.unwrap_or("Calculation failed"),
       id=request.id,
     )
   }
@@ -366,16 +384,10 @@ fn UtilityToolPlugin::handle_random_int(
   self : UtilityToolPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (min, max) = match request.params {
-    Some({ "min": Number(mi, ..), "max": Number(ma, ..), .. }) =>
-      (mi.to_int(), ma.to_int())
-    _ => (0, 100)
-  }
+  let min = @interfaces.rpc_optional_int(request, "min", 0)
+  let max = @interfaces.rpc_optional_int(request, "max", 100)
   let result = self.random_int(min, max)
-  @interfaces.JsonRpcResponse::success(
-    result={ "value": Json::number(result.to_double()) },
-    id=request.id,
-  )
+  @interfaces.rpc_success_int("value", result, request.id)
 }
 
 ///|
@@ -384,10 +396,7 @@ fn UtilityToolPlugin::handle_random_float(
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
   let result = self.random_float()
-  @interfaces.JsonRpcResponse::success(
-    result={ "value": Json::number(result) },
-    id=request.id,
-  )
+  @interfaces.rpc_success_double("value", result, request.id)
 }
 
 ///|
@@ -407,14 +416,9 @@ fn UtilityToolPlugin::handle_base64_encode(
   self : UtilityToolPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let input = match request.params {
-    Some({ "input": String(s), .. }) => s
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'input' parameter",
-        id=request.id,
-      )
+  let input = match @interfaces.rpc_require_string(request, "input") {
+    Ok(s) => s
+    Err(response) => return response
   }
   let encoded = self.base64_encode(input)
   @interfaces.JsonRpcResponse::success(

@@ -9,8 +9,9 @@ import {
   "trkbt10/mukuro/core/types" @types,
 }
 
+warnings = "-29"
+
 options(
-  "warn-list": "-29",
   "is-main": true,
   targets: {
     "main.mbt": [ "native" ],

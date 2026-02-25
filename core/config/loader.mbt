@@ -99,25 +99,20 @@ fn parse_config_json(
 fn parse_agent_config(
   obj : Map[String, Json],
 ) -> @types.AgentConfig raise @interfaces.ConfigError {
-  let max_iterations = match obj.get("max_iterations") {
-    Some(Number(n, ..)) => n.to_int()
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError(
-        "max_iterations must be a number",
-      )
-    None => 10
+  let max_iterations = match
+    @config_json_accessors.int_field_or_default(obj, "max_iterations", 10) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let timeout_ms : Int64 = match obj.get("timeout_ms") {
-    Some(Number(n, ..)) => n.to_int64()
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("timeout_ms must be a number")
-    None => 120000L
+  let timeout_ms = match
+    @config_json_accessors.int64_field_or_default(obj, "timeout_ms", 120000L) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let bootstrap = match obj.get("bootstrap") {
-    Some(String(s)) => s
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("bootstrap must be a string")
-    None => ""
+  let bootstrap = match
+    @config_json_accessors.string_field_or_default(obj, "bootstrap", "") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
   // model_optionsをパース
   let model_options = match
@@ -134,28 +129,31 @@ fn parse_agent_config(
 fn parse_model_options(
   obj : Map[String, Json],
 ) -> @types.ModelOptions raise @interfaces.ConfigError {
-  let model_name = match obj.get("model_name") {
-    Some(String(s)) => s
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("model_name must be a string")
-    None => "claude-sonnet-4-20250514"
+  let model_name = match
+    @config_json_accessors.string_field_or_default(
+      obj, "model_name", "claude-sonnet-4-20250514",
+    ) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let temperature : Double? = match obj.get("temperature") {
-    Some(Number(n, ..)) => Some(n)
-    Some(Null) => None
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("temperature must be a number")
-    None => Some(0.7)
+  // temperature: defaults to Some(0.7) if not specified
+  let temperature : Double? = match
+    @config_json_accessors.optional_double_field(obj, "temperature") {
+    Ok(Some(v)) => Some(v)
+    Ok(None) => Some(0.7) // default
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let max_tokens : Int? = match obj.get("max_tokens") {
-    Some(Number(n, ..)) => Some(n.to_int())
-    Some(Null) => None
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("max_tokens must be a number")
-    None => Some(4096)
+  // max_tokens: defaults to Some(4096) if not specified
+  let max_tokens : Int? = match
+    @config_json_accessors.optional_int_field(obj, "max_tokens") {
+    Ok(Some(v)) => Some(v)
+    Ok(None) => Some(4096) // default
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let stop_sequences : Array[String]? = match obj.get("stop_sequences") {
-    Some(Array(arr)) => {
+  // stop_sequences: None if not specified
+  let stop_sequences : Array[String]? = match
+    @config_json_accessors.optional_array_field(obj, "stop_sequences") {
+    Ok(Some(arr)) => {
       let result : Array[String] = []
       for item in arr {
         match item {
@@ -168,12 +166,8 @@ fn parse_model_options(
       }
       Some(result)
     }
-    Some(Null) => None
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError(
-        "stop_sequences must be an array",
-      )
-    None => None
+    Ok(None) => None
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
   { model_name, temperature, max_tokens, stop_sequences }
 }
@@ -183,50 +177,36 @@ fn parse_model_options(
 fn parse_provider_config(
   obj : Map[String, Json],
 ) -> @types.ProviderConfig raise @interfaces.ConfigError {
-  let name = match obj.get("name") {
-    Some(String(s)) => s
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError(
-        "provider name must be a string",
-      )
-    None =>
-      raise @interfaces.ConfigError::ValidationError(
-        "provider name is required",
-      )
+  let name = match @config_json_accessors.required_string_field(obj, "name") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ValidationError(msg)
   }
-  let api_key : String? = match obj.get("api_key") {
-    Some(String(s)) => Some(s)
-    Some(Null) => None
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("api_key must be a string")
-    None => None
+  let api_key = match
+    @config_json_accessors.optional_string_field(obj, "api_key") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let base_url : String? = match obj.get("base_url") {
-    Some(String(s)) => Some(s)
-    Some(Null) => None
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("base_url must be a string")
-    None => None
+  let base_url = match
+    @config_json_accessors.optional_string_field(obj, "base_url") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let default_model = match obj.get("default_model") {
-    Some(String(s)) => s
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError(
-        "default_model must be a string",
-      )
-    None => "default"
+  let default_model = match
+    @config_json_accessors.string_field_or_default(
+      obj, "default_model", "default",
+    ) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let timeout_ms = match obj.get("timeout_ms") {
-    Some(Number(n, ..)) => n.to_int()
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("timeout_ms must be a number")
-    None => 30000
+  let timeout_ms = match
+    @config_json_accessors.int_field_or_default(obj, "timeout_ms", 30000) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let max_retries = match obj.get("max_retries") {
-    Some(Number(n, ..)) => n.to_int()
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("max_retries must be a number")
-    None => 3
+  let max_retries = match
+    @config_json_accessors.int_field_or_default(obj, "max_retries", 3) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
   { name, api_key, base_url, default_model, timeout_ms, max_retries }
 }
@@ -236,38 +216,20 @@ fn parse_provider_config(
 fn parse_fallback_config(
   obj : Map[String, Json],
 ) -> @types.FallbackConfig raise @interfaces.ConfigError {
-  let enabled = match obj.get("enabled") {
-    Some(True) => true
-    Some(False) => false
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("enabled must be a boolean")
-    None => false
+  let enabled = match
+    @config_json_accessors.bool_field_or_default(obj, "enabled", false) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let providers : Array[String] = match obj.get("providers") {
-    Some(Array(arr)) => {
-      let result : Array[String] = []
-      for item in arr {
-        match item {
-          String(s) => result.push(s)
-          _ =>
-            raise @interfaces.ConfigError::ParseError(
-              "fallback providers must be strings",
-            )
-        }
-      }
-      result
-    }
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError(
-        "fallback providers must be an array",
-      )
-    None => []
+  let providers = match
+    @config_json_accessors.string_array_field_or_default(obj, "providers") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let cooldown_ms = match obj.get("cooldown_ms") {
-    Some(Number(n, ..)) => n.to_int()
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("cooldown_ms must be a number")
-    None => 30000
+  let cooldown_ms = match
+    @config_json_accessors.int_field_or_default(obj, "cooldown_ms", 30000) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
   { enabled, providers, cooldown_ms }
 }
@@ -277,33 +239,23 @@ fn parse_fallback_config(
 fn parse_channel_config(
   obj : Map[String, Json],
 ) -> @types.ChannelConfig raise @interfaces.ConfigError {
-  let name = match obj.get("name") {
-    Some(String(s)) => s
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("channel name must be a string")
-    None =>
-      raise @interfaces.ConfigError::ValidationError("channel name is required")
+  let name = match @config_json_accessors.required_string_field(obj, "name") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ValidationError(msg)
   }
-  let enabled = match obj.get("enabled") {
-    Some(True) => true
-    Some(False) => false
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("enabled must be a boolean")
-    None => true
+  let enabled = match
+    @config_json_accessors.bool_field_or_default(obj, "enabled", true) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let token : String? = match obj.get("token") {
-    Some(String(s)) => Some(s)
-    Some(Null) => None
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("token must be a string")
-    None => None
+  let token = match @config_json_accessors.optional_string_field(obj, "token") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  let webhook_url : String? = match obj.get("webhook_url") {
-    Some(String(s)) => Some(s)
-    Some(Null) => None
-    Some(_) =>
-      raise @interfaces.ConfigError::ParseError("webhook_url must be a string")
-    None => None
+  let webhook_url = match
+    @config_json_accessors.optional_string_field(obj, "webhook_url") {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
   let options : Map[String, Json] = match
     @config_json_accessors.optional_object_field(obj, "options") {

@@ -12,8 +12,9 @@ import {
   "moonbitlang/core/test",
 } for "test"
 
+warnings = "-29"
+
 options(
-  "warn-list": "-29",
   targets: {
     "builtin_test.mbt": [ "js" ],
     "filesystem.mbt": [ "js" ],

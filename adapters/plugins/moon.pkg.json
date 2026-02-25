@@ -1,8 +1,0 @@
-{
-  "import": [
-    "trkbt10/mukuro/interfaces",
-    "trkbt10/mukuro/lib/util",
-    "moonbitlang/core/json",
-    "moonbitlang/core/strconv"
-  ]
-}

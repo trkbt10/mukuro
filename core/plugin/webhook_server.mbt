@@ -14,10 +14,7 @@ pub struct WebhookServer {
 
 ///|
 /// Create a new webhook server
-pub fn WebhookServer::new(
-  host : PluginHostImpl,
-  port~ : Int,
-) -> WebhookServer {
+pub fn WebhookServer::new(host : PluginHostImpl, port~ : Int) -> WebhookServer {
   { host, port, routes: {}, is_running: false }
 }
 
@@ -51,10 +48,12 @@ pub fn WebhookServer::handle_request(
   // Find plugin for this path
   let plugin_id = match self.get_plugin_for_path(path) {
     Some(id) => id
-    None => {
+    None =>
       // Try default webhook path
-      if path.starts_with("/webhook/") {
-        path.substring(start=9)
+      if path.has_prefix("/webhook/") {
+        path[9:].to_string() catch {
+          _ => abort("unreachable: path has /webhook/ prefix")
+        }
       } else {
         // Return error response
         let response = @interfaces.JsonRpcResponse::error(
@@ -64,7 +63,6 @@ pub fn WebhookServer::handle_request(
         )
         return response.to_json().stringify()
       }
-    }
   }
   // Parse JSON-RPC request
   let json = @json.parse(body) catch {

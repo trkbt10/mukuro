@@ -18,8 +18,9 @@ import {
   "trkbt10/mukuro/adapters/native" @native,
 }
 
+warnings = "-29"
+
 options(
-  "warn-list": "-29",
   "is-main": true,
   targets: {
     "config_file_native.mbt": [ "native" ],

@@ -94,9 +94,9 @@ pub fn PluginHostImpl::handle_webhook(
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
   match request.rpc_method {
-    "message_received" => {
+    "message_received" =>
       match request.params {
-        Some(params) => {
+        Some(params) =>
           match parse_inbound_message(plugin_id, params) {
             Some(envelope) => {
               self.incoming_messages.push(envelope)
@@ -112,7 +112,6 @@ pub fn PluginHostImpl::handle_webhook(
                 id=request.id,
               )
           }
-        }
         None =>
           @interfaces.JsonRpcResponse::error(
             code=@interfaces.jsonrpc_error_invalid_params(),
@@ -120,7 +119,6 @@ pub fn PluginHostImpl::handle_webhook(
             id=request.id,
           )
       }
-    }
     "status" =>
       @interfaces.JsonRpcResponse::success(
         result=Json::object({ "status": "running" }),

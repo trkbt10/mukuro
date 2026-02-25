@@ -9,8 +9,9 @@ import {
   "moonbitlang/core/test",
 } for "test"
 
+warnings = "-29"
+
 options(
-  "warn-list": "-29",
   targets: {
     "anthropic.mbt": [ "js" ],
     "base.mbt": [ "js" ],
