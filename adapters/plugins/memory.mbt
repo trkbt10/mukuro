@@ -66,8 +66,8 @@ pub struct MemoryPlugin {
   config : MemoryPluginConfig
   /// All memory entries
   entries : Map[String, MemoryEntry]
-  /// Next ID counter
-  mut next_id : Int
+  /// ID generator
+  id_gen : @util.IdGenerator
   /// Timestamp provider
   mut get_timestamp : () -> Int64
 }
@@ -75,7 +75,12 @@ pub struct MemoryPlugin {
 ///|
 /// Create new memory plugin
 pub fn MemoryPlugin::new(config : MemoryPluginConfig) -> MemoryPlugin {
-  { config, entries: {}, next_id: 1, get_timestamp: fn() { 0L } }
+  {
+    config,
+    entries: {},
+    id_gen: @util.IdGenerator::new("mem_"),
+    get_timestamp: fn() { 0L },
+  }
 }
 
 ///|
@@ -85,14 +90,6 @@ pub fn MemoryPlugin::set_timestamp_provider(
   provider : () -> Int64,
 ) -> Unit {
   self.get_timestamp = provider
-}
-
-///|
-/// Generate next ID
-fn MemoryPlugin::generate_id(self : MemoryPlugin) -> String {
-  let id = "mem_\{self.next_id}"
-  self.next_id = self.next_id + 1
-  id
 }
 
 ///|
@@ -135,15 +132,16 @@ pub fn MemoryPlugin::remember(
   self : MemoryPlugin,
   content : String,
   embedding : Array[Double],
-  metadata~ : Map[String, Json] = {},
-  source~ : String = "user",
-  importance~ : Double = 0.5,
+  metadata? : Map[String, Json] = {},
+  source? : String = "user",
+  importance? : Double = 0.5,
 ) -> String {
   // Check max entries and compact if needed
-  if self.config.auto_compact && self.entries.length() >= self.config.max_entries {
+  if self.config.auto_compact &&
+    self.entries.length() >= self.config.max_entries {
     let _ = self.compact()
   }
-  let id = self.generate_id()
+  let id = self.id_gen.next()
   let timestamp = (self.get_timestamp)()
   let entry : MemoryEntry = {
     id,
@@ -163,9 +161,9 @@ pub fn MemoryPlugin::remember(
 pub fn MemoryPlugin::search(
   self : MemoryPlugin,
   query_embedding : Array[Double],
-  limit~ : Int? = None,
-  min_similarity~ : Double? = None,
-  source_filter~ : String? = None,
+  limit? : Int? = None,
+  min_similarity? : Double? = None,
+  source_filter? : String? = None,
 ) -> Array[SearchResult] {
   let actual_limit = match limit {
     Some(l) => l
@@ -330,36 +328,24 @@ fn MemoryPlugin::handle_remember(
   self : MemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (content, embedding) = match request.params {
-    Some({ "content": String(c), "embedding": Array(e), .. }) => {
-      let emb : Array[Double] = []
-      for v in e {
-        match v {
-          Number(n, ..) => emb.push(n)
-          _ => ()
-        }
-      }
-      (c, emb)
-    }
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'content' or 'embedding' parameter",
-        id=request.id,
-      )
+  let content = match @interfaces.rpc_require_string(request, "content") {
+    Ok(c) => c
+    Err(response) => return response
   }
-  let metadata : Map[String, Json] = match request.params {
-    Some({ "metadata": Object(m), .. }) => m
-    _ => {}
+  let embedding = @interfaces.rpc_double_array(request, "embedding")
+  if embedding.length() == 0 {
+    return @interfaces.rpc_invalid_params(
+      "Missing or empty 'embedding' parameter",
+      request.id,
+    )
   }
-  let source = match request.params {
-    Some({ "source": String(s), .. }) => s
-    _ => "user"
+  let metadata : Map[String, Json] = match
+    @interfaces.rpc_object_or_none(request, "metadata") {
+    Some(m) => m
+    None => {}
   }
-  let importance = match request.params {
-    Some({ "importance": Number(i, ..), .. }) => i
-    _ => 0.5
-  }
+  let source = @interfaces.rpc_optional_string(request, "source", "user")
+  let importance = @interfaces.rpc_optional_double(request, "importance", 0.5)
   let id = self.remember(content, embedding, metadata~, source~, importance~)
   @interfaces.JsonRpcResponse::success(result={ "id": id }, id=request.id)
 }
@@ -369,36 +355,16 @@ fn MemoryPlugin::handle_search(
   self : MemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let embedding = match request.params {
-    Some({ "embedding": Array(e), .. }) => {
-      let emb : Array[Double] = []
-      for v in e {
-        match v {
-          Number(n, ..) => emb.push(n)
-          _ => ()
-        }
-      }
-      emb
-    }
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'embedding' parameter",
-        id=request.id,
-      )
+  let embedding = @interfaces.rpc_double_array(request, "embedding")
+  if embedding.length() == 0 {
+    return @interfaces.rpc_invalid_params(
+      "Missing or empty 'embedding' parameter",
+      request.id,
+    )
   }
-  let limit = match request.params {
-    Some({ "limit": Number(l, ..), .. }) => Some(l.to_int())
-    _ => None
-  }
-  let min_similarity = match request.params {
-    Some({ "min_similarity": Number(s, ..), .. }) => Some(s)
-    _ => None
-  }
-  let source_filter = match request.params {
-    Some({ "source": String(s), .. }) => Some(s)
-    _ => None
-  }
+  let limit = @interfaces.rpc_int_or_none(request, "limit")
+  let min_similarity = @interfaces.rpc_double_or_none(request, "min_similarity")
+  let source_filter = @interfaces.rpc_string_or_none(request, "source")
   let results = self.search(embedding, limit~, min_similarity~, source_filter~)
   let results_json : Array[Json] = []
   for r in results {
@@ -423,14 +389,9 @@ fn MemoryPlugin::handle_get(
   self : MemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let mem_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let mem_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   match self.get(mem_id) {
     Some(entry) =>
@@ -458,17 +419,12 @@ fn MemoryPlugin::handle_forget(
   self : MemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let mem_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let mem_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let forgot = self.forget(mem_id)
-  @interfaces.JsonRpcResponse::success(result={ "deleted": forgot }, id=request.id)
+  @interfaces.rpc_success_bool("deleted", forgot, request.id)
 }
 
 ///|
@@ -476,17 +432,16 @@ fn MemoryPlugin::handle_update_importance(
   self : MemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (mem_id, importance) = match request.params {
-    Some({ "id": String(i), "importance": Number(imp, ..), .. }) => (i, imp)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' or 'importance' parameter",
-        id=request.id,
-      )
+  let mem_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
+  }
+  let importance = match @interfaces.rpc_require_double(request, "importance") {
+    Ok(imp) => imp
+    Err(response) => return response
   }
   let updated = self.update_importance(mem_id, importance)
-  @interfaces.JsonRpcResponse::success(result={ "updated": updated }, id=request.id)
+  @interfaces.rpc_success_bool("updated", updated, request.id)
 }
 
 ///|
@@ -494,10 +449,7 @@ fn MemoryPlugin::handle_get_recent(
   self : MemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let limit = match request.params {
-    Some({ "limit": Number(l, ..), .. }) => l.to_int()
-    _ => 10
-  }
+  let limit = @interfaces.rpc_optional_int(request, "limit", 10)
   let entries = self.get_recent(limit)
   let entries_json : Array[Json] = []
   for entry in entries {
@@ -534,7 +486,7 @@ fn MemoryPlugin::handle_clear(
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
   self.clear()
-  @interfaces.JsonRpcResponse::success(result={ "ok": true }, id=request.id)
+  @interfaces.rpc_ok(request.id)
 }
 
 ///|
@@ -543,8 +495,5 @@ fn MemoryPlugin::handle_count(
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
   let cnt = self.count()
-  @interfaces.JsonRpcResponse::success(
-    result={ "count": Json::number(cnt.to_double()) },
-    id=request.id,
-  )
+  @interfaces.rpc_success_int("count", cnt, request.id)
 }

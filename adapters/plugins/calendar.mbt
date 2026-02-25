@@ -124,22 +124,14 @@ pub struct CalendarPlugin {
   config : CalendarPluginConfig
   /// Cached events
   events : Map[String, CalendarEvent]
-  /// Next ID counter
-  mut next_id : Int
+  /// ID generator
+  id_gen : @util.IdGenerator
 }
 
 ///|
 /// Create new calendar plugin
 pub fn CalendarPlugin::new(config : CalendarPluginConfig) -> CalendarPlugin {
-  { config, events: {}, next_id: 1 }
-}
-
-///|
-/// Generate event ID
-fn CalendarPlugin::generate_id(self : CalendarPlugin) -> String {
-  let id = "evt_\{self.next_id}"
-  self.next_id = self.next_id + 1
-  id
+  { config, events: {}, id_gen: @util.IdGenerator::new("evt_") }
 }
 
 ///|
@@ -149,15 +141,15 @@ pub fn CalendarPlugin::create_event(
   title : String,
   start_time : String,
   end_time : String,
-  description~ : String = "",
-  location~ : String = "",
-  all_day~ : Bool = false,
-  recurrence~ : String? = None,
-  attendees~ : Array[String] = [],
-  reminder_minutes~ : Int? = None,
-  calendar_id~ : String? = None,
+  description? : String = "",
+  location? : String = "",
+  all_day? : Bool = false,
+  recurrence? : String? = None,
+  attendees? : Array[String] = [],
+  reminder_minutes? : Int? = None,
+  calendar_id? : String? = None,
 ) -> CalendarEvent {
-  let id = self.generate_id()
+  let id = self.id_gen.next()
   let cal_id = match calendar_id {
     Some(c) => c
     None => self.config.default_calendar_id
@@ -198,21 +190,21 @@ pub fn CalendarPlugin::get_event(
 pub fn CalendarPlugin::update_event(
   self : CalendarPlugin,
   id : String,
-  title~ : String? = None,
-  description~ : String? = None,
-  start_time~ : String? = None,
-  end_time~ : String? = None,
-  location~ : String? = None,
+  title? : String? = None,
+  description? : String? = None,
+  start_time? : String? = None,
+  end_time? : String? = None,
+  location? : String? = None,
 ) -> Bool {
   match self.events.get(id) {
     Some(event) => {
       let updated : CalendarEvent = {
         id: event.id,
-        title: title.or(event.title),
-        description: description.or(event.description),
-        start_time: start_time.or(event.start_time),
-        end_time: end_time.or(event.end_time),
-        location: location.or(event.location),
+        title: title.unwrap_or(event.title),
+        description: description.unwrap_or(event.description),
+        start_time: start_time.unwrap_or(event.start_time),
+        end_time: end_time.unwrap_or(event.end_time),
+        location: location.unwrap_or(event.location),
         all_day: event.all_day,
         recurrence: event.recurrence,
         attendees: event.attendees,
@@ -243,9 +235,9 @@ pub fn CalendarPlugin::delete_event(self : CalendarPlugin, id : String) -> Bool 
 /// List events in time range
 pub fn CalendarPlugin::list_events(
   self : CalendarPlugin,
-  start_time~ : String? = None,
-  end_time~ : String? = None,
-  calendar_id~ : String? = None,
+  start_time? : String? = None,
+  end_time? : String? = None,
+  calendar_id? : String? = None,
 ) -> Array[CalendarEvent] {
   let results : Array[CalendarEvent] = []
   for _, event in self.events {
@@ -284,7 +276,7 @@ pub fn CalendarPlugin::get_availability(
   self : CalendarPlugin,
   start_time : String,
   end_time : String,
-  calendar_id~ : String? = None,
+  calendar_id? : String? = None,
 ) -> Array[TimeSlot] {
   // Get all events in range
   let events = self.list_events(
@@ -351,7 +343,7 @@ fn CalendarPlugin::handle_create_event(
 ) -> @interfaces.JsonRpcResponse {
   let (title, start_time, end_time) = match request.params {
     Some(
-      { "title": String(t), "start_time": String(s), "end_time": String(e), .. },
+      { "title": String(t), "start_time": String(s), "end_time": String(e), .. }
     ) => (t, s, e)
     _ =>
       return @interfaces.JsonRpcResponse::error(
@@ -409,7 +401,10 @@ fn CalendarPlugin::handle_create_event(
     reminder_minutes~,
     calendar_id~,
   )
-  @interfaces.JsonRpcResponse::success(result=event_to_json(event), id=request.id)
+  @interfaces.JsonRpcResponse::success(
+    result=event_to_json(event),
+    id=request.id,
+  )
 }
 
 ///|
@@ -417,14 +412,9 @@ fn CalendarPlugin::handle_get_event(
   self : CalendarPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let event_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let event_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   match self.get_event(event_id) {
     Some(event) =>
@@ -446,39 +436,24 @@ fn CalendarPlugin::handle_update_event(
   self : CalendarPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let event_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let event_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
-  let title = match request.params {
-    Some({ "title": String(t), .. }) => Some(t)
-    _ => None
-  }
-  let description = match request.params {
-    Some({ "description": String(d), .. }) => Some(d)
-    _ => None
-  }
-  let start_time = match request.params {
-    Some({ "start_time": String(s), .. }) => Some(s)
-    _ => None
-  }
-  let end_time = match request.params {
-    Some({ "end_time": String(e), .. }) => Some(e)
-    _ => None
-  }
-  let location = match request.params {
-    Some({ "location": String(l), .. }) => Some(l)
-    _ => None
-  }
+  let title = @interfaces.rpc_string_or_none(request, "title")
+  let description = @interfaces.rpc_string_or_none(request, "description")
+  let start_time = @interfaces.rpc_string_or_none(request, "start_time")
+  let end_time = @interfaces.rpc_string_or_none(request, "end_time")
+  let location = @interfaces.rpc_string_or_none(request, "location")
   let updated = self.update_event(
-    event_id, title~, description~, start_time~, end_time~, location~,
+    event_id,
+    title~,
+    description~,
+    start_time~,
+    end_time~,
+    location~,
   )
-  @interfaces.JsonRpcResponse::success(result={ "updated": updated }, id=request.id)
+  @interfaces.rpc_success_bool("updated", updated, request.id)
 }
 
 ///|
@@ -486,17 +461,12 @@ fn CalendarPlugin::handle_delete_event(
   self : CalendarPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let event_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let event_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let deleted = self.delete_event(event_id)
-  @interfaces.JsonRpcResponse::success(result={ "deleted": deleted }, id=request.id)
+  @interfaces.rpc_success_bool("deleted", deleted, request.id)
 }
 
 ///|
@@ -504,27 +474,11 @@ fn CalendarPlugin::handle_list_events(
   self : CalendarPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let start_time = match request.params {
-    Some({ "start_time": String(s), .. }) => Some(s)
-    _ => None
-  }
-  let end_time = match request.params {
-    Some({ "end_time": String(e), .. }) => Some(e)
-    _ => None
-  }
-  let calendar_id = match request.params {
-    Some({ "calendar_id": String(c), .. }) => Some(c)
-    _ => None
-  }
+  let start_time = @interfaces.rpc_string_or_none(request, "start_time")
+  let end_time = @interfaces.rpc_string_or_none(request, "end_time")
+  let calendar_id = @interfaces.rpc_string_or_none(request, "calendar_id")
   let events = self.list_events(start_time~, end_time~, calendar_id~)
-  let events_json : Array[Json] = []
-  for event in events {
-    events_json.push(event_to_json(event))
-  }
-  @interfaces.JsonRpcResponse::success(
-    result={ "events": Json::array(events_json) },
-    id=request.id,
-  )
+  @interfaces.rpc_success_array("events", events, event_to_json, request.id)
 }
 
 ///|
@@ -532,28 +486,22 @@ fn CalendarPlugin::handle_get_availability(
   self : CalendarPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (start_time, end_time) = match request.params {
-    Some({ "start_time": String(s), "end_time": String(e), .. }) => (s, e)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'start_time' or 'end_time' parameter",
-        id=request.id,
-      )
+  let start_time = match @interfaces.rpc_require_string(request, "start_time") {
+    Ok(s) => s
+    Err(response) => return response
   }
-  let calendar_id = match request.params {
-    Some({ "calendar_id": String(c), .. }) => Some(c)
-    _ => None
+  let end_time = match @interfaces.rpc_require_string(request, "end_time") {
+    Ok(e) => e
+    Err(response) => return response
   }
+  let calendar_id = @interfaces.rpc_string_or_none(request, "calendar_id")
   let slots = self.get_availability(start_time, end_time, calendar_id~)
-  let slots_json : Array[Json] = []
-  for slot in slots {
-    slots_json.push(
-      { "start": slot.start, "end": slot.end, "busy": Json::boolean(slot.busy) },
-    )
-  }
-  @interfaces.JsonRpcResponse::success(
-    result={ "slots": Json::array(slots_json) },
-    id=request.id,
+  @interfaces.rpc_success_array(
+    "slots",
+    slots,
+    fn(slot) {
+      { "start": slot.start, "end": slot.end, "busy": Json::boolean(slot.busy) }
+    },
+    request.id,
   )
 }

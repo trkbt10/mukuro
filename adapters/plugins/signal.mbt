@@ -113,7 +113,12 @@ pub struct SignalPlugin {
 ///|
 /// Create new Signal plugin
 pub fn SignalPlugin::new(config : SignalPluginConfig) -> SignalPlugin {
-  { config, received_messages: [], next_timestamp: 1000000000000L, is_connected: false }
+  {
+    config,
+    received_messages: [],
+    next_timestamp: 1000000000000L,
+    is_connected: false,
+  }
 }
 
 ///|
@@ -130,17 +135,14 @@ pub fn SignalPlugin::create_send_command(
   self : SignalPlugin,
   recipient : String,
   text : String,
-  attachments~ : Array[String] = [],
-  quote~ : SignalQuote? = None,
-  mentions~ : Array[SignalMention] = [],
+  attachments? : Array[String] = [],
+  quote? : SignalQuote? = None,
+  mentions? : Array[SignalMention] = [],
 ) -> Json {
   let cmd : Map[String, Json] = {
     "jsonrpc": "2.0",
     "method": "send",
-    "params": {
-      "account": self.config.phone_number,
-      "message": text,
-    },
+    "params": { "account": self.config.phone_number, "message": text },
   }
   // Add recipient (could be phone or group)
   let params = match cmd.get("params") {
@@ -174,13 +176,11 @@ pub fn SignalPlugin::create_send_command(
   if mentions.length() > 0 {
     let mentions_json : Array[Json] = []
     for m in mentions {
-      mentions_json.push(
-        {
-          "start": Json::number(m.start.to_double()),
-          "length": Json::number(m.length.to_double()),
-          "uuid": m.uuid,
-        },
-      )
+      mentions_json.push({
+        "start": Json::number(m.start.to_double()),
+        "length": Json::number(m.length.to_double()),
+        "uuid": m.uuid,
+      })
     }
     params["mentions"] = Json::array(mentions_json)
   }
@@ -197,7 +197,7 @@ pub fn SignalPlugin::create_reaction_command(
   emoji : String,
   target_author : String,
   target_timestamp : Int64,
-  remove~ : Bool = false,
+  remove? : Bool = false,
 ) -> Json {
   let cmd : Map[String, Json] = {
     "jsonrpc": "2.0",
@@ -289,7 +289,8 @@ fn SignalPlugin::process_data_message(
   }
   // Check for group
   let (is_group, group_id, recipient) = match data_msg {
-    { "groupInfo": { "groupId": String(gid), .. }, .. } => (true, Some(gid), gid)
+    { "groupInfo": { "groupId": String(gid), .. }, .. } =>
+      (true, Some(gid), gid)
     _ => (false, None, sender)
   }
   // Parse attachments
@@ -322,10 +323,7 @@ fn SignalPlugin::process_data_message(
   }
   // Parse quote
   let quote = match data_msg {
-    {
-      "quote": { "id": Number(qid, ..), "author": String(qa), .. } as q,
-      ..
-    } => {
+    { "quote": { "id": Number(qid, ..), "author": String(qa), .. } as q, .. } => {
       let qtext = match q {
         { "text": String(t), .. } => t
         _ => ""
@@ -435,29 +433,20 @@ fn SignalPlugin::handle_send(
   self : SignalPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (recipient, text) = match request.params {
-    Some({ "recipient": String(r), "text": String(t), .. }) => (r, t)
-    Some({ "to": String(r), "text": String(t), .. }) => (r, t)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'recipient' or 'text' parameter",
-        id=request.id,
-      )
-  }
-  let attachments = match request.params {
-    Some({ "attachments": Array(a), .. }) => {
-      let result : Array[String] = []
-      for v in a {
-        match v {
-          String(s) => result.push(s)
-          _ => ()
-        }
+  // Try "recipient" first, fall back to "to"
+  let recipient = match @interfaces.rpc_string_or_none(request, "recipient") {
+    Some(r) => r
+    None =>
+      match @interfaces.rpc_require_string(request, "to") {
+        Ok(r) => r
+        Err(response) => return response
       }
-      result
-    }
-    _ => []
   }
+  let text = match @interfaces.rpc_require_string(request, "text") {
+    Ok(t) => t
+    Err(response) => return response
+  }
+  let attachments = @interfaces.rpc_string_array(request, "attachments")
   let cmd = self.create_send_command(recipient, text, attachments~)
   @interfaces.JsonRpcResponse::success(
     result={ "command": cmd, "status": "pending" },
@@ -470,29 +459,31 @@ fn SignalPlugin::handle_send_reaction(
   self : SignalPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (recipient, emoji, target_author, target_timestamp) = match request.params {
-    Some(
-      {
-        "recipient": String(r),
-        "emoji": String(e),
-        "target_author": String(ta),
-        "target_timestamp": Number(tt, ..),
-        ..
-      },
-    ) => (r, e, ta, tt.to_int64())
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing required parameters",
-        id=request.id,
-      )
+  let recipient = match @interfaces.rpc_require_string(request, "recipient") {
+    Ok(r) => r
+    Err(response) => return response
   }
-  let remove = match request.params {
-    Some({ "remove": True, .. }) => true
-    _ => false
+  let emoji = match @interfaces.rpc_require_string(request, "emoji") {
+    Ok(e) => e
+    Err(response) => return response
   }
+  let target_author = match
+    @interfaces.rpc_require_string(request, "target_author") {
+    Ok(ta) => ta
+    Err(response) => return response
+  }
+  let target_timestamp = match
+    @interfaces.rpc_require_int64(request, "target_timestamp") {
+    Ok(tt) => tt
+    Err(response) => return response
+  }
+  let remove = @interfaces.rpc_optional_bool(request, "remove", false)
   let cmd = self.create_reaction_command(
-    recipient, emoji, target_author, target_timestamp, remove~,
+    recipient,
+    emoji,
+    target_author,
+    target_timestamp,
+    remove~,
   )
   @interfaces.JsonRpcResponse::success(
     result={ "command": cmd, "status": "pending" },
@@ -508,7 +499,8 @@ fn SignalPlugin::handle_incoming_rpc(
   let data = match request.params {
     Some({ "data": d, .. }) => d
     Some(d) => d
-    None => return @interfaces.JsonRpcResponse::error(
+    None =>
+      return @interfaces.JsonRpcResponse::error(
         code=@interfaces.jsonrpc_error_invalid_params(),
         message="Missing data",
         id=request.id,
@@ -546,7 +538,10 @@ fn SignalPlugin::handle_receive(
           }
         None => ()
       }
-      @interfaces.JsonRpcResponse::success(result=Json::object(result), id=request.id)
+      @interfaces.JsonRpcResponse::success(
+        result=Json::object(result),
+        id=request.id,
+      )
     }
     None =>
       @interfaces.JsonRpcResponse::success(
@@ -561,16 +556,13 @@ fn SignalPlugin::handle_status(
   self : SignalPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  @interfaces.JsonRpcResponse::success(
-    result={
-      "connected": self.is_connected,
-      "phone_number": self.config.phone_number,
-      "pending_messages": Json::number(
-        self.received_messages.length().to_double(),
-      ),
-    },
-    id=request.id,
-  )
+  let extra : Map[String, Json] = {
+    "phone_number": self.config.phone_number,
+    "pending_messages": Json::number(
+      self.received_messages.length().to_double(),
+    ),
+  }
+  @interfaces.rpc_status_response(self.is_connected, extra, request.id)
 }
 
 ///|
@@ -578,8 +570,7 @@ fn SignalPlugin::handle_connect(
   self : SignalPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = true
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -587,6 +578,19 @@ fn SignalPlugin::handle_disconnect(
   self : SignalPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = false
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for SignalPlugin with is_connected(self) {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for SignalPlugin with set_connected(
+  self,
+  connected,
+) {
+  self.is_connected = connected
 }

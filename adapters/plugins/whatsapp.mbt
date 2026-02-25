@@ -118,29 +118,13 @@ pub struct WhatsAppPlugin {
   received_messages : Array[WhatsAppMessage]
   /// Message status updates
   status_updates : Map[String, String]
-  /// Next ID counter
-  mut next_id : Int
   mut is_connected : Bool
 }
 
 ///|
 /// Create new WhatsApp plugin
 pub fn WhatsAppPlugin::new(config : WhatsAppPluginConfig) -> WhatsAppPlugin {
-  {
-    config,
-    received_messages: [],
-    status_updates: {},
-    next_id: 1,
-    is_connected: false,
-  }
-}
-
-///|
-/// Generate message ID
-fn WhatsAppPlugin::generate_id(self : WhatsAppPlugin) -> String {
-  let id = "wamid.\{self.next_id}"
-  self.next_id = self.next_id + 1
-  id
+  { config, received_messages: [], status_updates: {}, is_connected: false }
 }
 
 ///|
@@ -165,7 +149,7 @@ pub fn WhatsAppPlugin::create_image_message(
   _self : WhatsAppPlugin,
   to : String,
   image_url : String,
-  caption~ : String = "",
+  caption? : String = "",
 ) -> Json {
   let image : Map[String, Json] = { "link": image_url }
   if caption.length() > 0 {
@@ -187,7 +171,7 @@ pub fn WhatsAppPlugin::create_document_message(
   to : String,
   document_url : String,
   filename : String,
-  caption~ : String = "",
+  caption? : String = "",
 ) -> Json {
   let doc : Map[String, Json] = { "link": document_url, "filename": filename }
   if caption.length() > 0 {
@@ -209,8 +193,8 @@ pub fn WhatsAppPlugin::create_location_message(
   to : String,
   latitude : Double,
   longitude : Double,
-  name~ : String = "",
-  address~ : String = "",
+  name? : String = "",
+  address? : String = "",
 ) -> Json {
   let loc : Map[String, Json] = {
     "latitude": Json::number(latitude),
@@ -238,14 +222,12 @@ pub fn WhatsAppPlugin::create_buttons_message(
   to : String,
   body_text : String,
   buttons : Array[WhatsAppButton],
-  header~ : String = "",
-  footer~ : String = "",
+  header? : String = "",
+  footer? : String = "",
 ) -> Json {
   let btns : Array[Json] = []
   for btn in buttons {
-    btns.push(
-      { "type": "reply", "reply": { "id": btn.id, "title": btn.title } },
-    )
+    btns.push({ "type": "reply", "reply": { "id": btn.id, "title": btn.title } })
   }
   let action : Map[String, Json] = { "buttons": Json::array(btns) }
   let interactive : Map[String, Json] = {
@@ -425,14 +407,13 @@ fn WhatsAppPlugin::handle_send_text(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (to, text) = match request.params {
-    Some({ "to": String(t), "text": String(txt), .. }) => (t, txt)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'to' or 'text' parameter",
-        id=request.id,
-      )
+  let to = match @interfaces.rpc_require_string(request, "to") {
+    Ok(t) => t
+    Err(response) => return response
+  }
+  let text = match @interfaces.rpc_require_string(request, "text") {
+    Ok(t) => t
+    Err(response) => return response
   }
   let payload = self.create_text_message(to, text)
   @interfaces.JsonRpcResponse::success(
@@ -446,19 +427,15 @@ fn WhatsAppPlugin::handle_send_image(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (to, url) = match request.params {
-    Some({ "to": String(t), "url": String(u), .. }) => (t, u)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'to' or 'url' parameter",
-        id=request.id,
-      )
+  let to = match @interfaces.rpc_require_string(request, "to") {
+    Ok(t) => t
+    Err(response) => return response
   }
-  let caption = match request.params {
-    Some({ "caption": String(c), .. }) => c
-    _ => ""
+  let url = match @interfaces.rpc_require_string(request, "url") {
+    Ok(u) => u
+    Err(response) => return response
   }
+  let caption = @interfaces.rpc_optional_string(request, "caption", "")
   let payload = self.create_image_message(to, url, caption~)
   @interfaces.JsonRpcResponse::success(
     result={ "payload": payload, "status": "pending" },
@@ -471,20 +448,19 @@ fn WhatsAppPlugin::handle_send_document(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (to, url, filename) = match request.params {
-    Some({ "to": String(t), "url": String(u), "filename": String(f), .. }) =>
-      (t, u, f)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing required parameters",
-        id=request.id,
-      )
+  let to = match @interfaces.rpc_require_string(request, "to") {
+    Ok(t) => t
+    Err(response) => return response
   }
-  let caption = match request.params {
-    Some({ "caption": String(c), .. }) => c
-    _ => ""
+  let url = match @interfaces.rpc_require_string(request, "url") {
+    Ok(u) => u
+    Err(response) => return response
   }
+  let filename = match @interfaces.rpc_require_string(request, "filename") {
+    Ok(f) => f
+    Err(response) => return response
+  }
+  let caption = @interfaces.rpc_optional_string(request, "caption", "")
   let payload = self.create_document_message(to, url, filename, caption~)
   @interfaces.JsonRpcResponse::success(
     result={ "payload": payload, "status": "pending" },
@@ -497,30 +473,20 @@ fn WhatsAppPlugin::handle_send_location(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (to, lat, lng) = match request.params {
-    Some(
-      {
-        "to": String(t),
-        "latitude": Number(la, ..),
-        "longitude": Number(lo, ..),
-        ..
-      },
-    ) => (t, la, lo)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing required parameters",
-        id=request.id,
-      )
+  let to = match @interfaces.rpc_require_string(request, "to") {
+    Ok(t) => t
+    Err(response) => return response
   }
-  let name = match request.params {
-    Some({ "name": String(n), .. }) => n
-    _ => ""
+  let lat = match @interfaces.rpc_require_double(request, "latitude") {
+    Ok(l) => l
+    Err(response) => return response
   }
-  let address = match request.params {
-    Some({ "address": String(a), .. }) => a
-    _ => ""
+  let lng = match @interfaces.rpc_require_double(request, "longitude") {
+    Ok(l) => l
+    Err(response) => return response
   }
+  let name = @interfaces.rpc_optional_string(request, "name", "")
+  let address = @interfaces.rpc_optional_string(request, "address", "")
   let payload = self.create_location_message(to, lat, lng, name~, address~)
   @interfaces.JsonRpcResponse::success(
     result={ "payload": payload, "status": "pending" },
@@ -533,8 +499,16 @@ fn WhatsAppPlugin::handle_send_buttons(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (to, body_text, buttons) = match request.params {
-    Some({ "to": String(t), "body": String(b), "buttons": Array(btns), .. }) => {
+  let to = match @interfaces.rpc_require_string(request, "to") {
+    Ok(t) => t
+    Err(response) => return response
+  }
+  let body_text = match @interfaces.rpc_require_string(request, "body") {
+    Ok(b) => b
+    Err(response) => return response
+  }
+  let buttons = match request.params {
+    Some({ "buttons": Array(btns), .. }) => {
       let parsed_btns : Array[WhatsAppButton] = []
       for btn in btns {
         match btn {
@@ -543,25 +517,22 @@ fn WhatsAppPlugin::handle_send_buttons(
           _ => ()
         }
       }
-      (t, b, parsed_btns)
+      parsed_btns
     }
     _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing required parameters",
-        id=request.id,
+      return @interfaces.rpc_invalid_params(
+        "Missing 'buttons' parameter",
+        request.id,
       )
   }
-  let header = match request.params {
-    Some({ "header": String(h), .. }) => h
-    _ => ""
-  }
-  let footer = match request.params {
-    Some({ "footer": String(f), .. }) => f
-    _ => ""
-  }
+  let header = @interfaces.rpc_optional_string(request, "header", "")
+  let footer = @interfaces.rpc_optional_string(request, "footer", "")
   let payload = self.create_buttons_message(
-    to, body_text, buttons, header~, footer~,
+    to,
+    body_text,
+    buttons,
+    header~,
+    footer~,
   )
   @interfaces.JsonRpcResponse::success(
     result={ "payload": payload, "status": "pending" },
@@ -574,27 +545,28 @@ fn WhatsAppPlugin::handle_send_template(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (to, template_name, language) = match request.params {
-    Some(
-      {
-        "to": String(t),
-        "template_name": String(n),
-        "language": String(l),
-        ..
-      },
-    ) => (t, n, l)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing required parameters",
-        id=request.id,
-      )
+  let to = match @interfaces.rpc_require_string(request, "to") {
+    Ok(t) => t
+    Err(response) => return response
+  }
+  let template_name = match
+    @interfaces.rpc_require_string(request, "template_name") {
+    Ok(n) => n
+    Err(response) => return response
+  }
+  let language = match @interfaces.rpc_require_string(request, "language") {
+    Ok(l) => l
+    Err(response) => return response
   }
   let components = match request.params {
     Some({ "components": Array(c), .. }) => c
     _ => []
   }
-  let template : WhatsAppTemplate = { name: template_name, language, components }
+  let template : WhatsAppTemplate = {
+    name: template_name,
+    language,
+    components,
+  }
   let payload = self.create_template_message(to, template)
   @interfaces.JsonRpcResponse::success(
     result={ "payload": payload, "status": "pending" },
@@ -610,7 +582,8 @@ fn WhatsAppPlugin::handle_webhook_rpc(
   let payload = match request.params {
     Some({ "payload": p, .. }) => p
     Some(p) => p
-    None => return @interfaces.JsonRpcResponse::error(
+    None =>
+      return @interfaces.JsonRpcResponse::error(
         code=@interfaces.jsonrpc_error_invalid_params(),
         message="Missing payload",
         id=request.id,
@@ -651,16 +624,13 @@ fn WhatsAppPlugin::handle_status(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  @interfaces.JsonRpcResponse::success(
-    result={
-      "connected": self.is_connected,
-      "phone_number_id": self.config.phone_number_id,
-      "pending_messages": Json::number(
-        self.received_messages.length().to_double(),
-      ),
-    },
-    id=request.id,
-  )
+  let extra : Map[String, Json] = {
+    "phone_number_id": self.config.phone_number_id,
+    "pending_messages": Json::number(
+      self.received_messages.length().to_double(),
+    ),
+  }
+  @interfaces.rpc_status_response(self.is_connected, extra, request.id)
 }
 
 ///|
@@ -668,8 +638,7 @@ fn WhatsAppPlugin::handle_connect(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = true
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -677,6 +646,21 @@ fn WhatsAppPlugin::handle_disconnect(
   self : WhatsAppPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = false
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for WhatsAppPlugin with is_connected(
+  self,
+) {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for WhatsAppPlugin with set_connected(
+  self,
+  connected,
+) {
+  self.is_connected = connected
 }

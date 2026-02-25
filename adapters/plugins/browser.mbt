@@ -141,7 +141,8 @@ pub fn BrowserPlugin::new(config : BrowserPluginConfig) -> BrowserPlugin {
 pub fn BrowserPlugin::action_to_params(action : BrowserAction) -> Json {
   match action {
     BrowserAction::Navigate(url) => { "action": "navigate", "url": url }
-    BrowserAction::Click(selector) => { "action": "click", "selector": selector }
+    BrowserAction::Click(selector) =>
+      { "action": "click", "selector": selector }
     BrowserAction::Type(selector~, text~) =>
       { "action": "type", "selector": selector, "text": text }
     BrowserAction::Screenshot(full_page~) =>
@@ -157,7 +158,11 @@ pub fn BrowserPlugin::action_to_params(action : BrowserAction) -> Json {
     BrowserAction::GetText(selector) =>
       { "action": "get_text", "selector": selector }
     BrowserAction::GetAttribute(selector~, attribute~) =>
-      { "action": "get_attribute", "selector": selector, "attribute": attribute }
+      {
+        "action": "get_attribute",
+        "selector": selector,
+        "attribute": attribute,
+      }
     BrowserAction::Scroll(x~, y~) =>
       {
         "action": "scroll",
@@ -265,14 +270,9 @@ fn BrowserPlugin::handle_navigate(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let url = match request.params {
-    Some({ "url": String(u), .. }) => u
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'url' parameter",
-        id=request.id,
-      )
+  let url = match @interfaces.rpc_require_string(request, "url") {
+    Ok(u) => u
+    Err(response) => return response
   }
   self.record_action(BrowserAction::Navigate(url))
   // Actual navigation would be done by external CDP client
@@ -287,14 +287,9 @@ fn BrowserPlugin::handle_click(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let selector = match request.params {
-    Some({ "selector": String(s), .. }) => s
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'selector' parameter",
-        id=request.id,
-      )
+  let selector = match @interfaces.rpc_require_string(request, "selector") {
+    Ok(s) => s
+    Err(response) => return response
   }
   self.record_action(BrowserAction::Click(selector))
   @interfaces.JsonRpcResponse::success(
@@ -308,14 +303,13 @@ fn BrowserPlugin::handle_type(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (selector, text) = match request.params {
-    Some({ "selector": String(s), "text": String(t), .. }) => (s, t)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'selector' or 'text' parameter",
-        id=request.id,
-      )
+  let selector = match @interfaces.rpc_require_string(request, "selector") {
+    Ok(s) => s
+    Err(response) => return response
+  }
+  let text = match @interfaces.rpc_require_string(request, "text") {
+    Ok(t) => t
+    Err(response) => return response
   }
   self.record_action(BrowserAction::Type(selector~, text~))
   @interfaces.JsonRpcResponse::success(
@@ -334,13 +328,14 @@ fn BrowserPlugin::handle_screenshot(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let full_page = match request.params {
-    Some({ "full_page": True, .. }) => true
-    _ => false
-  }
+  let full_page = @interfaces.rpc_optional_bool(request, "full_page", false)
   self.record_action(BrowserAction::Screenshot(full_page~))
   @interfaces.JsonRpcResponse::success(
-    result={ "action": "screenshot", "full_page": full_page, "status": "pending" },
+    result={
+      "action": "screenshot",
+      "full_page": full_page,
+      "status": "pending",
+    },
     id=request.id,
   )
 }
@@ -350,14 +345,9 @@ fn BrowserPlugin::handle_evaluate(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let script = match request.params {
-    Some({ "script": String(s), .. }) => s
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'script' parameter",
-        id=request.id,
-      )
+  let script = match @interfaces.rpc_require_string(request, "script") {
+    Ok(s) => s
+    Err(response) => return response
   }
   self.record_action(BrowserAction::Evaluate(script))
   @interfaces.JsonRpcResponse::success(
@@ -371,19 +361,15 @@ fn BrowserPlugin::handle_wait_for(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let selector = match request.params {
-    Some({ "selector": String(s), .. }) => s
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'selector' parameter",
-        id=request.id,
-      )
+  let selector = match @interfaces.rpc_require_string(request, "selector") {
+    Ok(s) => s
+    Err(response) => return response
   }
-  let timeout_ms = match request.params {
-    Some({ "timeout_ms": Number(t, ..), .. }) => t.to_int()
-    _ => self.config.default_timeout_ms
-  }
+  let timeout_ms = @interfaces.rpc_optional_int(
+    request,
+    "timeout_ms",
+    self.config.default_timeout_ms,
+  )
   self.record_action(BrowserAction::WaitFor(selector~, timeout_ms~))
   @interfaces.JsonRpcResponse::success(
     result={
@@ -401,14 +387,9 @@ fn BrowserPlugin::handle_get_text(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let selector = match request.params {
-    Some({ "selector": String(s), .. }) => s
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'selector' parameter",
-        id=request.id,
-      )
+  let selector = match @interfaces.rpc_require_string(request, "selector") {
+    Ok(s) => s
+    Err(response) => return response
   }
   self.record_action(BrowserAction::GetText(selector))
   @interfaces.JsonRpcResponse::success(
@@ -422,14 +403,13 @@ fn BrowserPlugin::handle_get_attribute(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (selector, attribute) = match request.params {
-    Some({ "selector": String(s), "attribute": String(a), .. }) => (s, a)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'selector' or 'attribute' parameter",
-        id=request.id,
-      )
+  let selector = match @interfaces.rpc_require_string(request, "selector") {
+    Ok(s) => s
+    Err(response) => return response
+  }
+  let attribute = match @interfaces.rpc_require_string(request, "attribute") {
+    Ok(a) => a
+    Err(response) => return response
   }
   self.record_action(BrowserAction::GetAttribute(selector~, attribute~))
   @interfaces.JsonRpcResponse::success(
@@ -448,11 +428,8 @@ fn BrowserPlugin::handle_scroll(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (x, y) = match request.params {
-    Some({ "x": Number(px, ..), "y": Number(py, ..), .. }) =>
-      (px.to_int(), py.to_int())
-    _ => (0, 0)
-  }
+  let x = @interfaces.rpc_optional_int(request, "x", 0)
+  let y = @interfaces.rpc_optional_int(request, "y", 0)
   self.record_action(BrowserAction::Scroll(x~, y~))
   @interfaces.JsonRpcResponse::success(
     result={
@@ -531,7 +508,7 @@ fn BrowserPlugin::handle_connect(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = true
+  self.set_connected(true)
   @interfaces.JsonRpcResponse::success(
     result={ "status": "connected", "endpoint": self.config.cdp_endpoint },
     id=request.id,
@@ -543,10 +520,21 @@ fn BrowserPlugin::handle_disconnect(
   self : BrowserPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = false
+  self.set_connected(false)
   self.page_state = None
-  @interfaces.JsonRpcResponse::success(
-    result={ "status": "disconnected" },
-    id=request.id,
-  )
+  @interfaces.rpc_disconnect_response(request.id)
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for BrowserPlugin with is_connected(self) {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for BrowserPlugin with set_connected(
+  self,
+  connected,
+) {
+  self.is_connected = connected
 }

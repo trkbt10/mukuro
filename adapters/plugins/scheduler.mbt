@@ -67,8 +67,8 @@ pub struct SchedulerPlugin {
   config : SchedulerPluginConfig
   /// All scheduled tasks
   tasks : Map[String, ScheduledTask]
-  /// Next task ID counter
-  mut next_id : Int
+  /// ID generator
+  id_gen : @util.IdGenerator
   /// Current timestamp provider
   mut get_timestamp : () -> Int64
   /// Task execution callback
@@ -81,7 +81,7 @@ pub fn SchedulerPlugin::new(config : SchedulerPluginConfig) -> SchedulerPlugin {
   {
     config,
     tasks: {},
-    next_id: 1,
+    id_gen: @util.IdGenerator::new("task_"),
     get_timestamp: fn() { 0L },
     on_task_execute: fn(_task) { () },
   }
@@ -106,14 +106,6 @@ pub fn SchedulerPlugin::set_on_execute(
 }
 
 ///|
-/// Generate next task ID
-fn SchedulerPlugin::generate_id(self : SchedulerPlugin) -> String {
-  let id = "task_\{self.next_id}"
-  self.next_id = self.next_id + 1
-  id
-}
-
-///|
 /// Schedule a one-time task
 pub fn SchedulerPlugin::schedule_once(
   self : SchedulerPlugin,
@@ -126,7 +118,7 @@ pub fn SchedulerPlugin::schedule_once(
     return None
   }
   let now = (self.get_timestamp)()
-  let id = self.generate_id()
+  let id = self.id_gen.next()
   let task : ScheduledTask = {
     id,
     name,
@@ -152,14 +144,14 @@ pub fn SchedulerPlugin::schedule_repeat(
   rpc_method : String,
   params : Json?,
   interval_ms : Int64,
-  max_executions~ : Int = 0,
-  initial_delay_ms~ : Int64 = 0L,
+  max_executions? : Int = 0,
+  initial_delay_ms? : Int64 = 0L,
 ) -> String? {
   if self.tasks.length() >= self.config.max_tasks {
     return None
   }
   let now = (self.get_timestamp)()
-  let id = self.generate_id()
+  let id = self.id_gen.next()
   let scheduled_at = if initial_delay_ms > 0L {
     now + initial_delay_ms
   } else {
@@ -184,7 +176,10 @@ pub fn SchedulerPlugin::schedule_repeat(
 
 ///|
 /// Cancel a scheduled task
-pub fn SchedulerPlugin::cancel(self : SchedulerPlugin, task_id : String) -> Bool {
+pub fn SchedulerPlugin::cancel(
+  self : SchedulerPlugin,
+  task_id : String,
+) -> Bool {
   match self.tasks.get(task_id) {
     Some(task) =>
       match task.status {
@@ -209,7 +204,9 @@ pub fn SchedulerPlugin::get_task(
 
 ///|
 /// List all tasks
-pub fn SchedulerPlugin::list_tasks(self : SchedulerPlugin) -> Array[ScheduledTask] {
+pub fn SchedulerPlugin::list_tasks(
+  self : SchedulerPlugin,
+) -> Array[ScheduledTask] {
   let result : Array[ScheduledTask] = []
   for _, task in self.tasks {
     result.push(task)
@@ -219,7 +216,9 @@ pub fn SchedulerPlugin::list_tasks(self : SchedulerPlugin) -> Array[ScheduledTas
 
 ///|
 /// List pending tasks
-pub fn SchedulerPlugin::list_pending(self : SchedulerPlugin) -> Array[ScheduledTask] {
+pub fn SchedulerPlugin::list_pending(
+  self : SchedulerPlugin,
+) -> Array[ScheduledTask] {
   let result : Array[ScheduledTask] = []
   for _, task in self.tasks {
     match task.status {
@@ -239,10 +238,7 @@ pub fn SchedulerPlugin::get_ready_tasks(
   let ready : Array[ScheduledTask] = []
   for _, task in self.tasks {
     match task.status {
-      TaskStatus::Pending =>
-        if task.scheduled_at <= now {
-          ready.push(task)
-        }
+      TaskStatus::Pending => if task.scheduled_at <= now { ready.push(task) }
       _ => ()
     }
   }
@@ -326,12 +322,7 @@ fn SchedulerPlugin::handle_schedule_once(
 ) -> @interfaces.JsonRpcResponse {
   let (name, rpc_method, params, delay_ms) = match request.params {
     Some(
-      {
-        "name": String(n),
-        "method": String(m),
-        "delay_ms": Number(d, ..),
-        ..
-      } as p,
+      { "name": String(n), "method": String(m), "delay_ms": Number(d, ..), .. } as p
     ) => {
       let params = match p {
         { "params": params, .. } => Some(params)
@@ -366,14 +357,15 @@ fn SchedulerPlugin::handle_schedule_repeat(
   self : SchedulerPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (name, rpc_method, params, interval_ms, max_execs, initial_delay) = match request.params {
+  let (name, rpc_method, params, interval_ms, max_execs, initial_delay) = match
+    request.params {
     Some(
       {
         "name": String(n),
         "method": String(m),
         "interval_ms": Number(i, ..),
         ..
-      } as p,
+      } as p
     ) => {
       let params = match p {
         { "params": params, .. } => Some(params)
@@ -396,14 +388,15 @@ fn SchedulerPlugin::handle_schedule_repeat(
         id=request.id,
       )
   }
-  match self.schedule_repeat(
-    name,
-    rpc_method,
-    params,
-    interval_ms,
-    max_executions=max_execs,
-    initial_delay_ms=initial_delay,
-  ) {
+  match
+    self.schedule_repeat(
+      name,
+      rpc_method,
+      params,
+      interval_ms,
+      max_executions=max_execs,
+      initial_delay_ms=initial_delay,
+    ) {
     Some(task_id) =>
       @interfaces.JsonRpcResponse::success(
         result={ "task_id": Json::string(task_id) },
@@ -423,20 +416,12 @@ fn SchedulerPlugin::handle_cancel(
   self : SchedulerPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let task_id = match request.params {
-    Some({ "task_id": String(id), .. }) => id
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'task_id' parameter",
-        id=request.id,
-      )
+  let task_id = match @interfaces.rpc_require_string(request, "task_id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let cancelled = self.cancel(task_id)
-  @interfaces.JsonRpcResponse::success(
-    result={ "cancelled": cancelled },
-    id=request.id,
-  )
+  @interfaces.rpc_success_bool("cancelled", cancelled, request.id)
 }
 
 ///|
@@ -444,18 +429,16 @@ fn SchedulerPlugin::handle_get_task(
   self : SchedulerPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let task_id = match request.params {
-    Some({ "task_id": String(id), .. }) => id
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'task_id' parameter",
-        id=request.id,
-      )
+  let task_id = match @interfaces.rpc_require_string(request, "task_id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   match self.get_task(task_id) {
     Some(task) =>
-      @interfaces.JsonRpcResponse::success(result=task_to_json(task), id=request.id)
+      @interfaces.JsonRpcResponse::success(
+        result=task_to_json(task),
+        id=request.id,
+      )
     None =>
       @interfaces.JsonRpcResponse::error(
         code=@interfaces.jsonrpc_error_invalid_params(),
@@ -471,14 +454,7 @@ fn SchedulerPlugin::handle_list_tasks(
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
   let tasks = self.list_tasks()
-  let tasks_json : Array[Json] = []
-  for task in tasks {
-    tasks_json.push(task_to_json(task))
-  }
-  @interfaces.JsonRpcResponse::success(
-    result={ "tasks": Json::array(tasks_json) },
-    id=request.id,
-  )
+  @interfaces.rpc_success_array("tasks", tasks, task_to_json, request.id)
 }
 
 ///|

@@ -217,8 +217,10 @@ pub struct VoicePlugin {
   sessions : Map[String, StreamingSession]
   /// Wake word config
   mut wake_word_config : WakeWordConfig?
-  /// Next ID counter
-  mut next_id : Int
+  /// ID generators for different entity types
+  tts_id_gen : @util.IdGenerator
+  stt_id_gen : @util.IdGenerator
+  stream_id_gen : @util.IdGenerator
   /// Simulated timestamp
   mut current_time : Int64
 }
@@ -275,17 +277,11 @@ pub fn VoicePlugin::new(config : VoicePluginConfig) -> VoicePlugin {
     voices,
     sessions: {},
     wake_word_config: None,
-    next_id: 1,
+    tts_id_gen: @util.IdGenerator::new("tts_"),
+    stt_id_gen: @util.IdGenerator::new("stt_"),
+    stream_id_gen: @util.IdGenerator::new("stream_"),
     current_time: 1000000000000L,
   }
-}
-
-///|
-/// Generate unique ID
-fn VoicePlugin::generate_id(self : VoicePlugin, prefix : String) -> String {
-  let id = "\{prefix}_\{self.next_id}"
-  self.next_id = self.next_id + 1
-  id
 }
 
 ///|
@@ -301,12 +297,12 @@ fn VoicePlugin::get_timestamp(self : VoicePlugin) -> Int64 {
 pub fn VoicePlugin::synthesize(
   self : VoicePlugin,
   text : String,
-  voice_id~ : String? = None,
-  format~ : AudioFormat = Wav,
-  rate~ : Double = 1.0,
-  pitch~ : Double = 0.0,
-  volume_gain_db~ : Double = 0.0,
-  ssml~ : Bool = false,
+  voice_id? : String? = None,
+  format? : AudioFormat = Wav,
+  rate? : Double = 1.0,
+  pitch? : Double = 0.0,
+  volume_gain_db? : Double = 0.0,
+  ssml? : Bool = false,
 ) -> SpeechResult {
   // Future: Use these for SSML generation
   let _ = pitch
@@ -316,22 +312,16 @@ pub fn VoicePlugin::synthesize(
     Some(v) => v
     None => self.config.default_voice_id
   }
-  let id = self.generate_id("tts")
+  let id = self.tts_id_gen.next()
   // Simulate audio generation
   // In reality, this would call the TTS API
   let char_count = text.length()
   // Estimate duration: ~150 words per minute, ~5 chars per word
   let words = char_count / 5
-  let duration_ms = ((words.to_double() / 150.0) * 60000.0 / rate).to_int()
+  let duration_ms = (words.to_double() / 150.0 * 60000.0 / rate).to_int()
   // Generate placeholder audio data (base64)
   let audio_data = "PLACEHOLDER_AUDIO_\{vid}_\{format.to_string()}"
-  {
-    id,
-    audio_data,
-    format,
-    duration_ms,
-    character_count: char_count,
-  }
+  { id, audio_data, format, duration_ms, character_count: char_count }
 }
 
 ///|
@@ -339,13 +329,13 @@ pub fn VoicePlugin::synthesize(
 pub fn VoicePlugin::transcribe(
   self : VoicePlugin,
   audio_data : String,
-  format~ : AudioFormat = Wav,
-  language~ : String? = None,
-  word_timestamps~ : Bool = false,
-  punctuation~ : Bool = true,
-  profanity_filter~ : Bool = false,
+  format? : AudioFormat = Wav,
+  language? : String? = None,
+  word_timestamps? : Bool = false,
+  punctuation? : Bool = true,
+  profanity_filter? : Bool = false,
 ) -> TranscriptionResult {
-  let id = self.generate_id("stt")
+  let id = self.stt_id_gen.next()
   let lang = match language {
     Some(l) => l
     None => self.config.default_language
@@ -360,7 +350,12 @@ pub fn VoicePlugin::transcribe(
     for word_view in word_list {
       let word = word_view.to_string()
       let duration = word.length() * 100 // ~100ms per char
-      result.push({ word, start_ms: start, end_ms: start + duration, confidence: 0.95 })
+      result.push({
+        word,
+        start_ms: start,
+        end_ms: start + duration,
+        confidence: 0.95,
+      })
       start = start + duration + 50 // 50ms gap
     }
     result
@@ -385,9 +380,9 @@ pub fn VoicePlugin::transcribe(
 pub fn VoicePlugin::configure_wake_word(
   self : VoicePlugin,
   phrases : Array[String],
-  sensitivity~ : Double = 0.5,
-  timeout_seconds~ : Int = 10,
-  format~ : AudioFormat = Pcm16,
+  sensitivity? : Double = 0.5,
+  timeout_seconds? : Int = 10,
+  format? : AudioFormat = Pcm16,
 ) -> Unit {
   self.wake_word_config = Some({ phrases, sensitivity, timeout_seconds, format })
 }
@@ -402,9 +397,9 @@ pub fn VoicePlugin::disable_wake_word(self : VoicePlugin) -> Unit {
 /// Start streaming session
 pub fn VoicePlugin::start_streaming(
   self : VoicePlugin,
-  format~ : AudioFormat = Pcm16,
+  format? : AudioFormat = Pcm16,
 ) -> String {
-  let id = self.generate_id("stream")
+  let id = self.stream_id_gen.next()
   let session : StreamingSession = {
     id,
     active: true,
@@ -464,8 +459,8 @@ pub fn VoicePlugin::end_streaming(
 /// List available voices
 pub fn VoicePlugin::list_voices(
   self : VoicePlugin,
-  language~ : String? = None,
-  provider~ : String? = None,
+  language? : String? = None,
+  provider? : String? = None,
 ) -> Array[VoiceModel] {
   let results : Array[VoiceModel] = []
   for _, voice in self.voices {
@@ -517,14 +512,12 @@ fn speech_result_to_json(result : SpeechResult) -> Json {
 fn transcription_result_to_json(result : TranscriptionResult) -> Json {
   let words_json : Array[Json] = []
   for word in result.words {
-    words_json.push(
-      {
-        "word": word.word,
-        "start_ms": Json::number(word.start_ms.to_double()),
-        "end_ms": Json::number(word.end_ms.to_double()),
-        "confidence": Json::number(word.confidence),
-      },
-    )
+    words_json.push({
+      "word": word.word,
+      "start_ms": Json::number(word.start_ms.to_double()),
+      "end_ms": Json::number(word.end_ms.to_double()),
+      "confidence": Json::number(word.confidence),
+    })
   }
   {
     "id": result.id,
@@ -562,19 +555,11 @@ fn VoicePlugin::handle_synthesize(
   self : VoicePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let text = match request.params {
-    Some({ "text": String(t), .. }) => t
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'text' parameter",
-        id=request.id,
-      )
+  let text = match @interfaces.rpc_require_string(request, "text") {
+    Ok(t) => t
+    Err(response) => return response
   }
-  let voice_id = match request.params {
-    Some({ "voice_id": String(v), .. }) => Some(v)
-    _ => None
-  }
+  let voice_id = @interfaces.rpc_string_or_none(request, "voice_id")
   let format = match request.params {
     Some({ "format": String(f), .. }) =>
       match AudioFormat::from_string(f) {
@@ -600,7 +585,13 @@ fn VoicePlugin::handle_synthesize(
     _ => false
   }
   let result = self.synthesize(
-    text, voice_id~, format~, rate~, pitch~, volume_gain_db~, ssml~,
+    text,
+    voice_id~,
+    format~,
+    rate~,
+    pitch~,
+    volume_gain_db~,
+    ssml~,
   )
   @interfaces.JsonRpcResponse::success(
     result=speech_result_to_json(result),
@@ -613,27 +604,16 @@ fn VoicePlugin::handle_transcribe(
   self : VoicePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let audio_data = match request.params {
-    Some({ "audio_data": String(a), .. }) => a
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'audio_data' parameter",
-        id=request.id,
-      )
+  let audio_data = match @interfaces.rpc_require_string(request, "audio_data") {
+    Ok(a) => a
+    Err(response) => return response
   }
-  let format = match request.params {
-    Some({ "format": String(f), .. }) =>
-      match AudioFormat::from_string(f) {
-        Some(fmt) => fmt
-        None => Wav
-      }
-    _ => Wav
+  let format_str = @interfaces.rpc_optional_string(request, "format", "wav")
+  let format = match AudioFormat::from_string(format_str) {
+    Some(fmt) => fmt
+    None => Wav
   }
-  let language = match request.params {
-    Some({ "language": String(l), .. }) => Some(l)
-    _ => None
-  }
+  let language = @interfaces.rpc_string_or_none(request, "language")
   let word_timestamps = match request.params {
     Some({ "word_timestamps": True, .. }) => true
     _ => false
@@ -647,7 +627,12 @@ fn VoicePlugin::handle_transcribe(
     _ => false
   }
   let result = self.transcribe(
-    audio_data, format~, language~, word_timestamps~, punctuation~, profanity_filter~,
+    audio_data,
+    format~,
+    language~,
+    word_timestamps~,
+    punctuation~,
+    profanity_filter~,
   )
   @interfaces.JsonRpcResponse::success(
     result=transcription_result_to_json(result),
@@ -660,23 +645,10 @@ fn VoicePlugin::handle_list_voices(
   self : VoicePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let language = match request.params {
-    Some({ "language": String(l), .. }) => Some(l)
-    _ => None
-  }
-  let provider = match request.params {
-    Some({ "provider": String(p), .. }) => Some(p)
-    _ => None
-  }
+  let language = @interfaces.rpc_string_or_none(request, "language")
+  let provider = @interfaces.rpc_string_or_none(request, "provider")
   let voices = self.list_voices(language~, provider~)
-  let voices_json : Array[Json] = []
-  for voice in voices {
-    voices_json.push(voice_to_json(voice))
-  }
-  @interfaces.JsonRpcResponse::success(
-    result={ "voices": Json::array(voices_json) },
-    id=request.id,
-  )
+  @interfaces.rpc_success_array("voices", voices, voice_to_json, request.id)
 }
 
 ///|
@@ -692,8 +664,8 @@ fn VoicePlugin::handle_add_voice(
         "language": String(l),
         "gender": String(g),
         "provider": String(p),
-        ..,
-      },
+        ..
+      }
     ) => (i, n, l, g, p)
     _ =>
       return @interfaces.JsonRpcResponse::error(
@@ -715,39 +687,21 @@ fn VoicePlugin::handle_configure_wake_word(
   self : VoicePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let phrases = match request.params {
-    Some({ "phrases": Array(p), .. }) => {
-      let result : Array[String] = []
-      for v in p {
-        match v {
-          String(s) => result.push(s)
-          _ => ()
-        }
-      }
-      result
-    }
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'phrases' parameter",
-        id=request.id,
-      )
+  let phrases = @interfaces.rpc_string_array(request, "phrases")
+  if phrases.length() == 0 {
+    return @interfaces.rpc_invalid_params(
+      "Missing or empty 'phrases' parameter",
+      request.id,
+    )
   }
-  let sensitivity = match request.params {
-    Some({ "sensitivity": Number(s, ..), .. }) => s
-    _ => 0.5
-  }
-  let timeout_seconds = match request.params {
-    Some({ "timeout_seconds": Number(t, ..), .. }) => t.to_int()
-    _ => 10
-  }
-  let format = match request.params {
-    Some({ "format": String(f), .. }) =>
-      match AudioFormat::from_string(f) {
-        Some(fmt) => fmt
-        None => Pcm16
-      }
-    _ => Pcm16
+  let sensitivity = @interfaces.rpc_optional_double(request, "sensitivity", 0.5)
+  let timeout_seconds = @interfaces.rpc_optional_int(
+    request, "timeout_seconds", 10,
+  )
+  let format_str = @interfaces.rpc_optional_string(request, "format", "pcm16")
+  let format = match AudioFormat::from_string(format_str) {
+    Some(fmt) => fmt
+    None => Pcm16
   }
   self.configure_wake_word(phrases, sensitivity~, timeout_seconds~, format~)
   @interfaces.JsonRpcResponse::success(
@@ -773,13 +727,10 @@ fn VoicePlugin::handle_start_streaming(
   self : VoicePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let format = match request.params {
-    Some({ "format": String(f), .. }) =>
-      match AudioFormat::from_string(f) {
-        Some(fmt) => fmt
-        None => Pcm16
-      }
-    _ => Pcm16
+  let format_str = @interfaces.rpc_optional_string(request, "format", "pcm16")
+  let format = match AudioFormat::from_string(format_str) {
+    Some(fmt) => fmt
+    None => Pcm16
   }
   let session_id = self.start_streaming(format~)
   @interfaces.JsonRpcResponse::success(
@@ -793,14 +744,14 @@ fn VoicePlugin::handle_add_audio_chunk(
   self : VoicePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (session_id, audio_chunk) = match request.params {
-    Some({ "session_id": String(s), "audio_chunk": String(a), .. }) => (s, a)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'session_id' or 'audio_chunk' parameter",
-        id=request.id,
-      )
+  let session_id = match @interfaces.rpc_require_string(request, "session_id") {
+    Ok(s) => s
+    Err(response) => return response
+  }
+  let audio_chunk = match
+    @interfaces.rpc_require_string(request, "audio_chunk") {
+    Ok(a) => a
+    Err(response) => return response
   }
   match self.add_audio_chunk(session_id, audio_chunk) {
     Some(partial) =>
@@ -821,14 +772,9 @@ fn VoicePlugin::handle_end_streaming(
   self : VoicePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let session_id = match request.params {
-    Some({ "session_id": String(s), .. }) => s
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'session_id' parameter",
-        id=request.id,
-      )
+  let session_id = match @interfaces.rpc_require_string(request, "session_id") {
+    Ok(s) => s
+    Err(response) => return response
   }
   match self.end_streaming(session_id) {
     Some(result) =>

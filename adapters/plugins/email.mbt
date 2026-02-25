@@ -135,22 +135,14 @@ pub struct EmailPlugin {
   messages : Map[String, EmailMessage]
   /// Drafts
   drafts : Map[String, EmailMessage]
-  /// Next ID counter
-  mut next_id : Int
+  /// ID generator
+  id_gen : @util.IdGenerator
 }
 
 ///|
 /// Create new email plugin
 pub fn EmailPlugin::new(config : EmailPluginConfig) -> EmailPlugin {
-  { config, messages: {}, drafts: {}, next_id: 1 }
-}
-
-///|
-/// Generate message ID
-fn EmailPlugin::generate_id(self : EmailPlugin) -> String {
-  let id = "msg_\{self.next_id}"
-  self.next_id = self.next_id + 1
-  id
+  { config, messages: {}, drafts: {}, id_gen: @util.IdGenerator::new("msg_") }
 }
 
 ///|
@@ -159,13 +151,13 @@ pub fn EmailPlugin::compose(
   self : EmailPlugin,
   to : Array[EmailAddress],
   subject : String,
-  body_text~ : String = "",
-  body_html~ : String = "",
-  cc~ : Array[EmailAddress] = [],
-  bcc~ : Array[EmailAddress] = [],
-  attachments~ : Array[EmailAttachment] = [],
+  body_text? : String = "",
+  body_html? : String = "",
+  cc? : Array[EmailAddress] = [],
+  bcc? : Array[EmailAddress] = [],
+  attachments? : Array[EmailAttachment] = [],
 ) -> EmailMessage {
-  let id = self.generate_id()
+  let id = self.id_gen.next()
   let message : EmailMessage = {
     id,
     thread_id: id,
@@ -182,7 +174,9 @@ pub fn EmailPlugin::compose(
     is_starred: false,
     date: "",
     snippet: if body_text.length() > 100 {
-      body_text.substring(end=100)
+      body_text[:100].to_string() catch {
+        _ => abort("unreachable: body_text length already checked")
+      }
     } else {
       body_text
     },
@@ -208,7 +202,7 @@ pub fn EmailPlugin::get_message(
 pub fn EmailPlugin::search(
   self : EmailPlugin,
   filter : EmailSearchFilter,
-  limit~ : Int? = None,
+  limit? : Int? = None,
 ) -> Array[EmailMessage] {
   let actual_limit = match limit {
     Some(l) => l
@@ -234,10 +228,7 @@ pub fn EmailPlugin::search(
       None => ()
     }
     match filter.has_attachment {
-      Some(has_att) =>
-        if (msg.attachments.length() > 0) != has_att {
-          continue
-        }
+      Some(has_att) => if (msg.attachments.length() > 0) != has_att { continue }
       None => ()
     }
     match filter.label {
@@ -421,7 +412,7 @@ pub fn EmailPlugin::delete(self : EmailPlugin, id : String) -> Bool {
       self.messages[id] = updated
       true
     }
-    None => {
+    None =>
       // Check drafts
       match self.drafts.get(id) {
         Some(_) => {
@@ -430,7 +421,6 @@ pub fn EmailPlugin::delete(self : EmailPlugin, id : String) -> Bool {
         }
         None => false
       }
-    }
   }
 }
 
@@ -468,14 +458,12 @@ fn message_to_json(msg : EmailMessage) -> Json {
   }
   let att_json : Array[Json] = []
   for att in msg.attachments {
-    att_json.push(
-      {
-        "filename": att.filename,
-        "mime_type": att.mime_type,
-        "size": Json::number(att.size.to_double()),
-        "attachment_id": att.attachment_id,
-      },
-    )
+    att_json.push({
+      "filename": att.filename,
+      "mime_type": att.mime_type,
+      "size": Json::number(att.size.to_double()),
+      "attachment_id": att.attachment_id,
+    })
   }
   let labels_json : Array[Json] = []
   for l in msg.labels {
@@ -561,7 +549,10 @@ fn EmailPlugin::handle_compose(
     _ => ""
   }
   let msg = self.compose(to, subject, body_text~, body_html~)
-  @interfaces.JsonRpcResponse::success(result=message_to_json(msg), id=request.id)
+  @interfaces.JsonRpcResponse::success(
+    result=message_to_json(msg),
+    id=request.id,
+  )
 }
 
 ///|
@@ -569,14 +560,9 @@ fn EmailPlugin::handle_send(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let msg_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   match self.drafts.get(msg_id) {
     Some(msg) => {
@@ -607,14 +593,9 @@ fn EmailPlugin::handle_get(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let msg_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   match self.get_message(msg_id) {
     Some(msg) =>
@@ -685,17 +666,12 @@ fn EmailPlugin::handle_mark_read(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let msg_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let success = self.mark_read(msg_id)
-  @interfaces.JsonRpcResponse::success(result={ "success": success }, id=request.id)
+  @interfaces.rpc_success_bool("success", success, request.id)
 }
 
 ///|
@@ -703,17 +679,12 @@ fn EmailPlugin::handle_mark_unread(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let msg_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let success = self.mark_unread(msg_id)
-  @interfaces.JsonRpcResponse::success(result={ "success": success }, id=request.id)
+  @interfaces.rpc_success_bool("success", success, request.id)
 }
 
 ///|
@@ -721,17 +692,12 @@ fn EmailPlugin::handle_star(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let msg_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let success = self.star(msg_id)
-  @interfaces.JsonRpcResponse::success(result={ "success": success }, id=request.id)
+  @interfaces.rpc_success_bool("success", success, request.id)
 }
 
 ///|
@@ -739,17 +705,12 @@ fn EmailPlugin::handle_unstar(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let msg_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let success = self.unstar(msg_id)
-  @interfaces.JsonRpcResponse::success(result={ "success": success }, id=request.id)
+  @interfaces.rpc_success_bool("success", success, request.id)
 }
 
 ///|
@@ -757,17 +718,16 @@ fn EmailPlugin::handle_add_label(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (msg_id, label) = match request.params {
-    Some({ "id": String(i), "label": String(l), .. }) => (i, l)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' or 'label' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
+  }
+  let label = match @interfaces.rpc_require_string(request, "label") {
+    Ok(l) => l
+    Err(response) => return response
   }
   let success = self.add_label(msg_id, label)
-  @interfaces.JsonRpcResponse::success(result={ "success": success }, id=request.id)
+  @interfaces.rpc_success_bool("success", success, request.id)
 }
 
 ///|
@@ -775,17 +735,16 @@ fn EmailPlugin::handle_remove_label(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (msg_id, label) = match request.params {
-    Some({ "id": String(i), "label": String(l), .. }) => (i, l)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' or 'label' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
+  }
+  let label = match @interfaces.rpc_require_string(request, "label") {
+    Ok(l) => l
+    Err(response) => return response
   }
   let success = self.remove_label_from_message(msg_id, label)
-  @interfaces.JsonRpcResponse::success(result={ "success": success }, id=request.id)
+  @interfaces.rpc_success_bool("success", success, request.id)
 }
 
 ///|
@@ -793,15 +752,10 @@ fn EmailPlugin::handle_delete(
   self : EmailPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let msg_id = match request.params {
-    Some({ "id": String(i), .. }) => i
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'id' parameter",
-        id=request.id,
-      )
+  let msg_id = match @interfaces.rpc_require_string(request, "id") {
+    Ok(id) => id
+    Err(response) => return response
   }
   let success = self.delete(msg_id)
-  @interfaces.JsonRpcResponse::success(result={ "deleted": success }, id=request.id)
+  @interfaces.rpc_success_bool("deleted", success, request.id)
 }

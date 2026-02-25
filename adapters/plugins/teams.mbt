@@ -67,7 +67,10 @@ pub(all) struct AdaptiveCard {
 pub fn AdaptiveCard::to_json(self : AdaptiveCard) -> Json {
   let body_json : Array[Json] = []
   for elem in self.body {
-    let obj : Map[String, Json] = { "type": elem.element_type, "text": elem.text }
+    let obj : Map[String, Json] = {
+      "type": elem.element_type,
+      "text": elem.text,
+    }
     if elem.size.length() > 0 {
       obj["size"] = Json::string(elem.size)
     }
@@ -175,7 +178,10 @@ pub fn TeamsPlugin::create_card_response(
 
 ///|
 /// Process incoming activity
-pub fn TeamsPlugin::handle_activity(self : TeamsPlugin, activity : Json) -> Json {
+pub fn TeamsPlugin::handle_activity(
+  self : TeamsPlugin,
+  activity : Json,
+) -> Json {
   let activity_type = match activity {
     { "type": String(t), .. } => t
     _ => return { "status": "ignored" }
@@ -271,10 +277,7 @@ fn TeamsPlugin::process_conversation_update(
 }
 
 ///|
-fn TeamsPlugin::process_invoke(
-  _self : TeamsPlugin,
-  activity : Json,
-) -> Json {
+fn TeamsPlugin::process_invoke(_self : TeamsPlugin, activity : Json) -> Json {
   // Handle card action invokes
   let invoke_name = match activity {
     { "name": String(n), .. } => n
@@ -288,7 +291,11 @@ fn TeamsPlugin::process_invoke(
       }
       {
         "status": 200,
-        "body": { "statusCode": 200, "type": "application/vnd.microsoft.activity.message", "value": action_data },
+        "body": {
+          "statusCode": 200,
+          "type": "application/vnd.microsoft.activity.message",
+          "value": action_data,
+        },
       }
     }
     _ => { "status": 200 }
@@ -324,14 +331,14 @@ fn TeamsPlugin::handle_send(
   self : TeamsPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let (conversation_id, text) = match request.params {
-    Some({ "conversation_id": String(c), "text": String(t), .. }) => (c, t)
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'conversation_id' or 'text' parameter",
-        id=request.id,
-      )
+  let conversation_id = match
+    @interfaces.rpc_require_string(request, "conversation_id") {
+    Ok(c) => c
+    Err(response) => return response
+  }
+  let text = match @interfaces.rpc_require_string(request, "text") {
+    Ok(t) => t
+    Err(response) => return response
   }
   // Get conversation context
   match self.conversations.get(conversation_id) {
@@ -342,12 +349,7 @@ fn TeamsPlugin::handle_send(
         id=request.id,
       )
     }
-    None =>
-      @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Conversation not found",
-        id=request.id,
-      )
+    None => @interfaces.rpc_not_found("Conversation", request.id)
   }
 }
 
@@ -356,14 +358,10 @@ fn TeamsPlugin::handle_send_card(
   self : TeamsPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  let conversation_id = match request.params {
-    Some({ "conversation_id": String(c), .. }) => c
-    _ =>
-      return @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Missing 'conversation_id' parameter",
-        id=request.id,
-      )
+  let conversation_id = match
+    @interfaces.rpc_require_string(request, "conversation_id") {
+    Ok(c) => c
+    Err(response) => return response
   }
   // Parse card body
   let body = match request.params {
@@ -419,12 +417,7 @@ fn TeamsPlugin::handle_send_card(
         id=request.id,
       )
     }
-    None =>
-      @interfaces.JsonRpcResponse::error(
-        code=@interfaces.jsonrpc_error_invalid_params(),
-        message="Conversation not found",
-        id=request.id,
-      )
+    None => @interfaces.rpc_not_found("Conversation", request.id)
   }
 }
 
@@ -436,7 +429,8 @@ fn TeamsPlugin::handle_activity_rpc(
   let activity = match request.params {
     Some({ "activity": a, .. }) => a
     Some(a) => a
-    None => return @interfaces.JsonRpcResponse::error(
+    None =>
+      return @interfaces.JsonRpcResponse::error(
         code=@interfaces.jsonrpc_error_invalid_params(),
         message="Missing activity",
         id=request.id,
@@ -477,16 +471,13 @@ fn TeamsPlugin::handle_status(
   self : TeamsPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  @interfaces.JsonRpcResponse::success(
-    result={
-      "connected": self.is_connected,
-      "bot_id": self.config.bot_id,
-      "pending_messages": Json::number(
-        self.received_messages.length().to_double(),
-      ),
-    },
-    id=request.id,
-  )
+  let extra : Map[String, Json] = {
+    "bot_id": self.config.bot_id,
+    "pending_messages": Json::number(
+      self.received_messages.length().to_double(),
+    ),
+  }
+  @interfaces.rpc_status_response(self.is_connected, extra, request.id)
 }
 
 ///|
@@ -494,8 +485,7 @@ fn TeamsPlugin::handle_connect(
   self : TeamsPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = true
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -503,6 +493,19 @@ fn TeamsPlugin::handle_disconnect(
   self : TeamsPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.is_connected = false
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for TeamsPlugin with is_connected(self) {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for TeamsPlugin with set_connected(
+  self,
+  connected,
+) {
+  self.is_connected = connected
 }
