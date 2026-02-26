@@ -1,30 +1,76 @@
 ///|
-/// パス解決モジュール (Source of Truth)
-/// 全てのパス定数はここから導出される
+/// mukuro アプリケーション固有のパス解決モジュール
+/// core/dirs を使ってOS標準ディレクトリを取得し、mukuro固有のパスを構築
 
 ///|
-/// mukuro ディレクトリ名
-let mukuro_dir_name : String = ".mukuro"
-
-///|
-/// ホームディレクトリを取得（プラットフォーム依存）
-/// Native: HOME環境変数から取得
-/// JS/WASM: 空文字列を返す
-pub fn home_dir() -> String {
-  home_dir_impl()
+/// パスモード
+pub(all) enum PathMode {
+  /// OS標準パス（デフォルト）
+  Standard
+  /// カレントディレクトリの.mukuro（プロジェクトローカル）
+  Local
+  /// 任意パス指定
+  Custom(String)
 }
 
 ///|
-/// mukuro 設定ディレクトリのパスを取得
-/// ホームディレクトリが取得できれば ~/.mukuro
-/// 取得できなければ .mukuro (カレントディレクトリ相対)
+/// mukuro ディレクトリ名（Local mode用）
+let mukuro_dir_name : String = ".mukuro"
+
+///|
+/// アプリ名（Standard mode用）
+pub let app_name : String = "mukuro"
+
+///|
+/// グローバルなパスモード設定
+let path_mode : Ref[PathMode] = Ref::new(PathMode::Standard)
+
+///|
+/// パスモードを設定
+pub fn set_path_mode(mode : PathMode) -> Unit {
+  path_mode.val = mode
+}
+
+///|
+/// 現在のパスモードを取得
+pub fn get_path_mode() -> PathMode {
+  path_mode.val
+}
+
+///|
+/// 現在のモードに応じた設定ディレクトリを取得
 pub fn config_dir() -> String {
-  let home = home_dir()
-  if home.is_empty() {
-    mukuro_dir_name
-  } else {
-    home + "/" + mukuro_dir_name
+  match path_mode.val {
+    Standard => @dirs.config_dir_for(app_name)
+    Local => mukuro_dir_name
+    Custom(base) => base
   }
+}
+
+///|
+/// 現在のモードに応じたデータディレクトリを取得
+pub fn data_dir() -> String {
+  match path_mode.val {
+    Standard => @dirs.data_dir_for(app_name)
+    Local => mukuro_dir_name
+    Custom(base) => base
+  }
+}
+
+///|
+/// 現在のモードに応じたキャッシュ/ランタイムディレクトリを取得
+pub fn cache_dir() -> String {
+  match path_mode.val {
+    Standard => @dirs.cache_dir_for(app_name)
+    Local => mukuro_dir_name
+    Custom(base) => base
+  }
+}
+
+///|
+/// ローカル(.mukuro)ディレクトリのパスを取得
+pub fn local_dir() -> String {
+  mukuro_dir_name
 }
 
 ///|
@@ -36,35 +82,35 @@ pub fn config_file() -> String {
 ///|
 /// PIDファイルのパスを取得
 pub fn pid_file() -> String {
-  config_dir() + "/gateway.pid"
+  cache_dir() + "/gateway.pid"
 }
 
 ///|
 /// IPCソケットのパスを取得
 pub fn socket_file() -> String {
-  config_dir() + "/gateway.sock"
+  cache_dir() + "/gateway.sock"
 }
 
 ///|
 /// Gateway状態スナップショットのパスを取得
 pub fn state_file() -> String {
-  config_dir() + "/gateway-state.json"
+  data_dir() + "/gateway-state.json"
 }
 
 ///|
 /// Gateway認証トークンのパスを取得
 pub fn token_file() -> String {
-  config_dir() + "/gateway.token"
+  cache_dir() + "/gateway.token"
 }
 
 ///|
 /// Gateway認証ログのパスを取得
 pub fn auth_log_file() -> String {
-  config_dir() + "/gateway-auth.log"
+  cache_dir() + "/gateway-auth.log"
 }
 
 ///|
 /// ワークスペースディレクトリのパスを取得
 pub fn workspace_dir() -> String {
-  config_dir() + "/workspace"
+  data_dir() + "/workspace"
 }

@@ -1137,25 +1137,6 @@ int moonbit_append_gateway_auth_audit_detail(
 }
 
 /*
- * ホームディレクトリを取得してバッファに書き込む
- * buffer: UTF-8文字列を書き込むバッファ
- * buffer_len: バッファサイズ
- * returns: 書き込んだバイト数（null終端含まず）、エラー時 -1
- */
-int moonbit_get_home_dir(char* buffer, int buffer_len) {
-    if (!buffer || buffer_len <= 0) return -1;
-
-    const char* home = getenv("HOME");
-    if (!home) return -1;
-
-    int len = strlen(home);
-    if (len >= buffer_len) return -1;
-
-    memcpy(buffer, home, len);
-    return len;
-}
-
-/*
  * UTF-16LE文字列（MoonBit native）から完全なUTF-8 C文字列に変換するヘルパー
  * UTF-8の全範囲をサポート
  */
@@ -1480,3 +1461,6 @@ int moonbit_write_stdout(const unsigned char* data, int len) {
 int moonbit_fflush_stdout(void) {
     return fflush(stdout);
 }
+
+/* Note: moonbit_get_home_dir, moonbit_get_os_name, moonbit_getenv_safe
+ * are now defined in core/dirs/dirs_native_stub.c to avoid symbol duplication */

@@ -1,12 +1,5 @@
 import {
-  "moonbitlang/core/encoding/utf8",
+  "trkbt10/mukuro/lib/dirs" @dirs,
 }
 
 warnings = "-29"
-
-options(
-  targets: {
-    "paths_native.mbt": [ "native" ],
-    "paths_stub.mbt": [ "js", "wasm", "wasm-gc" ],
-  },
-)

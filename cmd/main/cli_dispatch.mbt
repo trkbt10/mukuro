@@ -88,9 +88,17 @@ fn print_result(result : CliResult) -> Unit {
 }
 
 ///|
+/// グローバルオプションを適用
+fn apply_global_options(opts : GlobalOptions) -> Unit {
+  @paths.set_path_mode(opts.path_mode)
+}
+
+///|
 /// CLIを実行（引数配列を受け取る） (async)
 pub async fn run_cli(args : Array[String]) -> CliResult {
-  let cmd = parse_args(args)
+  let (global_opts, remaining) = parse_global_options(args)
+  apply_global_options(global_opts)
+  let cmd = parse_args(remaining)
   execute_command(cmd)
 }
 
@@ -112,8 +120,11 @@ pub fn run_cli_from_env() -> Unit {
   if args.is_empty() {
     println(get_help_message())
   } else {
+    // Parse global options first
+    let (global_opts, remaining) = parse_global_options(args)
+    apply_global_options(global_opts)
     // For non-async commands, parse and handle directly
-    let cmd = parse_args(args)
+    let cmd = parse_args(remaining)
     match cmd {
       Command::Help => print_result(CliResult::Ok(get_help_message()))
       Command::Version => print_result(CliResult::Ok(get_version_message()))

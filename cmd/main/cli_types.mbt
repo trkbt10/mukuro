@@ -7,6 +7,13 @@
 pub let version : String = "0.1.0"
 
 ///|
+/// グローバルオプション（全コマンド共通）
+pub(all) struct GlobalOptions {
+  /// パスモード: Standard（デフォルト）、Local、Custom
+  mut path_mode : @paths.PathMode
+}
+
+///|
 /// CLIコマンド
 pub(all) enum Command {
   /// ヘルプを表示
@@ -108,7 +115,12 @@ pub(all) enum CliResult {
 ///|
 /// ヘルプメッセージを取得
 pub fn get_help_message() -> String {
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway              Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\nGateway Options:\n  --config <path>      Path to configuration file\n                       (default: \{default_runtime_config_path()})\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode\n\nGateway Status Options:\n  --json               Output status as JSON\n\nGateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON\n\nExamples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway\n  mukuro gateway --config ~/.mukuro/config.json\n  mukuro gateway --daemon\n  mukuro gateway status\n  mukuro gateway stop\n  mukuro cron list"
+  let global_opts = "Global Options:\n  --local              Use .mukuro in current directory (project-local)\n  --data-dir <path>    Use custom data directory"
+  let gateway_opts = "Gateway Options:\n  --config <path>      Path to configuration file\n                       (default: \{default_runtime_config_path()})\n  --host <host>        Host to bind (default: 127.0.0.1)\n  --port <port>        Port to bind (default: 8080)\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode"
+  let status_opts = "Gateway Status Options:\n  --json               Output status as JSON"
+  let auth_log_opts = "Gateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON"
+  let examples = "Examples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway\n  mukuro gateway --config ~/.mukuro/config.json\n  mukuro gateway --daemon\n  mukuro gateway status\n  mukuro gateway stop\n  mukuro --local gateway          # Use project-local .mukuro\n  mukuro cron list"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro [global-options] <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway              Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\n\{global_opts}\n\n\{gateway_opts}\n\n\{status_opts}\n\n\{auth_log_opts}\n\n\{examples}"
 }
 
 ///|
