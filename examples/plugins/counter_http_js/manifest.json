@@ -1,0 +1,155 @@
+{
+  "id": "counter-http",
+  "name": "Counter Plugin (HTTP)",
+  "version": "1.0.0",
+  "type": "tool",
+  "transport": "http",
+  "capabilities": ["increment", "decrement", "get", "set", "reset", "list", "status"],
+  "http": {
+    "port": 9200,
+    "baseUrl": "http://localhost:9200",
+    "rpcEndpoint": "/rpc",
+    "healthEndpoint": "/health"
+  },
+  "capabilitySchemas": {
+    "increment": {
+      "description": "Increment a counter by a specified amount",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Counter name (optional, defaults to 'default')"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount to increment (optional, defaults to 1)"
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "integer", "description": "New counter value" },
+          "previous": { "type": "integer", "description": "Previous counter value" }
+        }
+      }
+    },
+    "decrement": {
+      "description": "Decrement a counter by a specified amount",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Counter name (optional, defaults to 'default')"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount to decrement (optional, defaults to 1)"
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "integer" },
+          "previous": { "type": "integer" }
+        }
+      }
+    },
+    "get": {
+      "description": "Get the current value of a counter",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Counter name (optional, defaults to 'default')"
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "integer" },
+          "name": { "type": "string" }
+        }
+      }
+    },
+    "set": {
+      "description": "Set a counter to a specific value",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Counter name (optional, defaults to 'default')"
+          },
+          "value": {
+            "type": "integer",
+            "description": "Value to set"
+          }
+        },
+        "required": ["value"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "integer" },
+          "previous": { "type": "integer" }
+        }
+      }
+    },
+    "reset": {
+      "description": "Reset a counter to zero",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Counter name (optional, defaults to 'default')"
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "integer" },
+          "previous": { "type": "integer" }
+        }
+      }
+    },
+    "list": {
+      "description": "List all counters and their values",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "counters": { "type": "object", "description": "Map of counter names to values" },
+          "total_operations": { "type": "integer" }
+        }
+      }
+    },
+    "status": {
+      "description": "Get plugin status information",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "transport": { "type": "string" },
+          "counter_count": { "type": "integer" },
+          "total_operations": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "id": "echo-websocket",
+  "name": "Echo Plugin (WebSocket)",
+  "version": "1.0.0",
+  "type": "tool",
+  "transport": "websocket",
+  "capabilities": ["echo", "broadcast", "subscribe", "history", "ping", "status"],
+  "websocket": {
+    "port": 9300,
+    "url": "ws://localhost:9300",
+    "reconnect": {
+      "enabled": true,
+      "maxRetries": 5,
+      "delayMs": 1000,
+      "backoffMultiplier": 2
+    },
+    "heartbeat": {
+      "enabled": true,
+      "intervalMs": 30000,
+      "timeoutMs": 10000
+    }
+  },
+  "dependencies": {
+    "ws": "^8.0.0"
+  },
+  "capabilitySchemas": {
+    "echo": {
+      "description": "Echo back a message with metadata",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Message to echo"
+          }
+        },
+        "required": ["message"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "echoed": { "type": "string" },
+          "timestamp": { "type": "integer" },
+          "client_count": { "type": "integer" }
+        }
+      }
+    },
+    "broadcast": {
+      "description": "Broadcast a message to all connected clients",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Message to broadcast"
+          }
+        },
+        "required": ["message"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "delivered_to": { "type": "integer" }
+        }
+      }
+    },
+    "subscribe": {
+      "description": "Subscribe to receive broadcast messages",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "subscribed": { "type": "boolean" },
+          "client_count": { "type": "integer" }
+        }
+      }
+    },
+    "history": {
+      "description": "Get recent message history",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "Maximum number of messages to return (default: 10, max: 100)"
+          }
+        }
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "timestamp": { "type": "integer" },
+                "method": { "type": "string" },
+                "params": { "type": "object" },
+                "result": { "type": "object" }
+              }
+            }
+          },
+          "count": { "type": "integer" },
+          "total": { "type": "integer" }
+        }
+      }
+    },
+    "ping": {
+      "description": "Ping the server to check connectivity",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "pong": { "type": "boolean" },
+          "timestamp": { "type": "integer" },
+          "latency_ms": { "type": "integer" }
+        }
+      }
+    },
+    "status": {
+      "description": "Get plugin status and statistics",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "transport": { "type": "string" },
+          "connected_clients": { "type": "integer" },
+          "total_messages": { "type": "integer" },
+          "history_size": { "type": "integer" },
+          "uptime_ms": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "notifications": {
+    "connected": {
+      "description": "Sent when a client connects",
+      "params": {
+        "message": { "type": "string" },
+        "client_count": { "type": "integer" },
+        "timestamp": { "type": "integer" }
+      }
+    },
+    "message": {
+      "description": "Broadcast message notification",
+      "params": {
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "integer" },
+        "from": { "type": "string" }
+      }
+    },
+    "disconnecting": {
+      "description": "Sent when server is shutting down",
+      "params": {
+        "reason": { "type": "string" }
+      }
+    }
+  }
+}
