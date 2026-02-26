@@ -43,14 +43,16 @@ pub fn execute_datetime_tool(args : Json) -> ToolExecutionResult {
     "now" => {
       let timestamp = get_current_time_ms()
       ToolExecutionResult::success({
-        "timestamp_ms": timestamp.to_int(),
-        "timestamp_seconds": (timestamp / 1000L).to_int(),
+        "timestamp_ms": Json::number(timestamp.to_double()),
+        "timestamp_seconds": Json::number((timestamp / 1000L).to_double()),
         "iso8601": format_iso8601(timestamp),
       })
     }
     "timestamp" => {
       let timestamp = get_current_time_ms()
-      ToolExecutionResult::success({ "timestamp": timestamp.to_int() })
+      ToolExecutionResult::success({
+        "timestamp": Json::number(timestamp.to_double()),
+      })
     }
     "format" => {
       let timestamp = get_current_time_ms()

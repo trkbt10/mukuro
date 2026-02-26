@@ -337,6 +337,14 @@ test "execute_memory_tool returns error for unknown action" {
 // =============================================================================
 
 ///|
+extern "js" fn js_to_iso8601(ms : Double) -> String =
+  #|(ms) => {
+  #|  if (!Number.isFinite(ms)) return `invalid:${String(ms)}`;
+  #|  const d = new Date(ms);
+  #|  return Number.isNaN(d.getTime()) ? `invalid:${String(ms)}` : d.toISOString();
+  #|}
+
+///|
 test "get_current_time_seconds returns non-negative value" {
   let seconds = get_current_time_seconds()
   assert_true(seconds >= 0L)
@@ -387,6 +395,21 @@ test "execute_datetime_tool format action returns formatted string" {
   match result.data {
     { "formatted": String(s), .. } => assert_true(s.length() > 0)
     _ => fail("Expected formatted string in data")
+  }
+}
+
+///|
+test "execute_datetime_tool now action matches Node.js ISO8601" {
+  let args : Json = { "action": "now" }
+  let result = execute_datetime_tool(args)
+  match result.status {
+    ToolResultStatus::Success => ()
+    _ => fail("Expected success")
+  }
+  match result.data {
+    { "timestamp_ms": Number(ms, ..), "iso8601": String(iso), .. } =>
+      inspect(iso, content=js_to_iso8601(ms))
+    _ => fail("Expected timestamp and iso8601")
   }
 }
 
