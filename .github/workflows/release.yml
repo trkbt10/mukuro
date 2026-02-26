@@ -1,0 +1,186 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install MoonBit CLI
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Moon update
+        run: moon update
+
+      - name: Run tests
+        run: moon test
+
+      - name: Check (wasm-gc)
+        run: moon check --target wasm-gc
+
+      - name: Build wasm-gc
+        run: moon build --target wasm-gc --release
+
+      - name: Smoke test wasm-gc
+        run: |
+          # Verify wasm files are generated
+          wasm_file="_build/wasm-gc/release/build/cmd/main/main.wasm"
+          if [ ! -f "$wasm_file" ]; then
+            echo "WASM file not found at $wasm_file"
+            exit 1
+          fi
+          wasm_size=$(stat -c%s "$wasm_file" 2>/dev/null || stat -f%z "$wasm_file")
+          echo "WASM file size: $wasm_size bytes"
+          if [ "$wasm_size" -lt 1000 ]; then
+            echo "WASM file seems too small"
+            exit 1
+          fi
+          echo "Smoke test passed"
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x64
+            asset_name: mukuro-linux-x64
+          - os: macos-latest
+            target: darwin-arm64
+            asset_name: mukuro-darwin-arm64
+          - os: macos-13
+            target: darwin-x64
+            asset_name: mukuro-darwin-x64
+          - os: windows-latest
+            target: windows-x64
+            asset_name: mukuro-windows-x64.exe
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install MoonBit CLI (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Install MoonBit CLI (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+          irm https://cli.moonbitlang.com/install/powershell.ps1 | iex
+          echo "$env:USERPROFILE\.moon\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Moon update
+        run: moon update
+
+      - name: Build
+        run: moon build --target native --release
+
+      - name: Prepare artifact (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          bin_path="_build/native/release/build/cmd/main/main.exe"
+          if [ ! -f "$bin_path" ]; then
+            echo "Binary not found at $bin_path"
+            exit 1
+          fi
+          cp "$bin_path" ${{ matrix.asset_name }}
+          chmod +x ${{ matrix.asset_name }}
+
+      - name: Prepare artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $binPath = "_build/native/release/build/cmd/main/main.exe"
+          if (-not (Test-Path $binPath)) {
+            Write-Error "Binary not found at $binPath"
+            exit 1
+          }
+          Copy-Item $binPath "${{ matrix.asset_name }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release/linux release/macos release/windows
+
+          # Linux
+          if [ -d "artifacts/mukuro-linux-x64" ]; then
+            cp artifacts/mukuro-linux-x64/mukuro-linux-x64 release/linux/mukuro
+            chmod +x release/linux/mukuro
+          fi
+
+          # macOS ARM64
+          if [ -d "artifacts/mukuro-darwin-arm64" ]; then
+            cp artifacts/mukuro-darwin-arm64/mukuro-darwin-arm64 release/macos/mukuro-arm64
+            chmod +x release/macos/mukuro-arm64
+          fi
+
+          # macOS x64
+          if [ -d "artifacts/mukuro-darwin-x64" ]; then
+            cp artifacts/mukuro-darwin-x64/mukuro-darwin-x64 release/macos/mukuro-x64
+            chmod +x release/macos/mukuro-x64
+          fi
+
+          # Windows
+          if [ -d "artifacts/mukuro-windows-x64.exe" ]; then
+            cp "artifacts/mukuro-windows-x64.exe/mukuro-windows-x64.exe" release/windows/mukuro.exe
+          fi
+
+          # Create archives
+          cd release
+          tar -czvf mukuro-linux-x64.tar.gz -C linux .
+          tar -czvf mukuro-darwin-arm64.tar.gz -C macos mukuro-arm64
+          tar -czvf mukuro-darwin-x64.tar.gz -C macos mukuro-x64
+          zip -j mukuro-windows-x64.zip windows/mukuro.exe
+
+          # Generate checksums
+          sha256sum *.tar.gz *.zip > checksums.sha256
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/mukuro-linux-x64.tar.gz
+            release/mukuro-darwin-arm64.tar.gz
+            release/mukuro-darwin-x64.tar.gz
+            release/mukuro-windows-x64.zip
+            release/checksums.sha256
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}
