@@ -1,9 +1,12 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.1.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -175,6 +178,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag }}
           files: |
             release/mukuro-linux-x64.tar.gz
             release/mukuro-darwin-arm64.tar.gz
@@ -183,4 +187,4 @@ jobs:
             release/checksums.sha256
           generate_release_notes: true
           draft: false
-          prerelease: ${{ contains(github.ref, '-') }}
+          prerelease: ${{ contains(github.event.inputs.tag, '-') }}
