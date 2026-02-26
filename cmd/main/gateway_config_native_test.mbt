@@ -16,7 +16,7 @@ fn cleanup_test_file(path : String) -> Unit {
 }
 
 ///|
-test "gateway start loads config file on native" {
+async test "gateway start loads config file on native" {
   ignore(execute_gateway_command(GatewayCommand::Stop))
   let path = ".mukuro/test-gateway-config.json"
   let json = "{\n  \"gateway\": {\n    \"host\": \"0.0.0.0\",\n    \"port\": 9123,\n    \"auth_token\": \"test-token\",\n    \"auto_connect_channels\": false\n  }\n}"
@@ -44,7 +44,7 @@ test "gateway start loads config file on native" {
 }
 
 ///|
-test "gateway start returns error for missing config file on native" {
+async test "gateway start returns error for missing config file on native" {
   let opts : GatewayStartOptions = {
     config_path: Some(".mukuro/not-found-config.json"),
     host: None,

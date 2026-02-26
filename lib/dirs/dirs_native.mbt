@@ -56,11 +56,7 @@ fn get_env(name : String) -> String? {
   if read_len <= 0 {
     return None
   }
-  Some(
-    @utf8.decode(buffer[:read_len]) catch {
-      _ => return None
-    },
-  )
+  Some(@utf8.decode(buffer[:read_len]) catch { _ => return None })
 }
 
 ///|
@@ -75,13 +71,12 @@ fn config_dir_impl() -> String {
         _ => if home.is_empty() { ".config" } else { home + "/.config" }
       }
     }
-    MacOS => {
+    MacOS =>
       if home.is_empty() {
         "Library/Application Support"
       } else {
         home + "/Library/Application Support"
       }
-    }
     Windows => {
       let appdata = get_env("APPDATA")
       match appdata {
@@ -94,9 +89,7 @@ fn config_dir_impl() -> String {
           }
       }
     }
-    Unknown => {
-      if home.is_empty() { "." } else { home }
-    }
+    Unknown => if home.is_empty() { "." } else { home }
   }
 }
 
@@ -109,16 +102,20 @@ fn data_dir_impl() -> String {
       let xdg = get_env("XDG_DATA_HOME")
       match xdg {
         Some(v) if not(v.is_empty()) => v
-        _ => if home.is_empty() { ".local/share" } else { home + "/.local/share" }
+        _ =>
+          if home.is_empty() {
+            ".local/share"
+          } else {
+            home + "/.local/share"
+          }
       }
     }
-    MacOS => {
+    MacOS =>
       if home.is_empty() {
         "Library/Application Support"
       } else {
         home + "/Library/Application Support"
       }
-    }
     Windows => {
       let appdata = get_env("APPDATA")
       match appdata {
@@ -131,9 +128,7 @@ fn data_dir_impl() -> String {
           }
       }
     }
-    Unknown => {
-      if home.is_empty() { "." } else { home }
-    }
+    Unknown => if home.is_empty() { "." } else { home }
   }
 }
 
@@ -156,13 +151,12 @@ fn cache_dir_impl() -> String {
         }
       }
     }
-    MacOS => {
+    MacOS =>
       if home.is_empty() {
         "Library/Caches"
       } else {
         home + "/Library/Caches"
       }
-    }
     Windows => {
       let localappdata = get_env("LOCALAPPDATA")
       match localappdata {
@@ -175,9 +169,7 @@ fn cache_dir_impl() -> String {
           }
       }
     }
-    Unknown => {
-      if home.is_empty() { "." } else { home }
-    }
+    Unknown => if home.is_empty() { "." } else { home }
   }
 }
 
@@ -197,5 +189,5 @@ extern "C" fn c_get_os_name(buffer : Bytes, buffer_len : Int) -> Int = "moonbit_
 extern "C" fn c_getenv_safe(
   name : Bytes,
   buffer : Bytes,
-  buffer_len : Int
+  buffer_len : Int,
 ) -> Int = "moonbit_getenv_safe"

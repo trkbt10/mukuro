@@ -3,6 +3,8 @@ package "trkbt10/mukuro/cmd/main"
 
 import {
   "trkbt10/mukuro/core/control",
+  "trkbt10/mukuro/core/paths",
+  "trkbt10/mukuro/core/plugin",
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
@@ -16,19 +18,19 @@ pub fn control_api_healthcheck_message() -> String
 
 pub fn create_global_gateway(String) -> @control.Gateway
 
-pub let default_runtime_config_path : String
+pub fn default_runtime_config_path() -> String
 
-pub fn dispatch_echo_for_test(String) -> CliResult
+pub async fn dispatch_echo_for_test(String) -> CliResult
 
 pub fn enrich_envelope_with_workspace_context_impl(@types.InboundEnvelope) -> @types.InboundEnvelope
 
-pub fn execute_command(Command) -> CliResult
+pub async fn execute_command(Command) -> CliResult
 
 pub fn execute_cron_command(CronCommand) -> CliResult
 
 pub fn execute_daemon_child(String) -> CliResult
 
-pub fn execute_gateway_command(GatewayCommand) -> CliResult
+pub async fn execute_gateway_command(GatewayCommand) -> CliResult
 
 pub fn execute_onboard(OnboardOptions) -> CliResult
 
@@ -38,17 +40,35 @@ pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus
 
 pub fn get_help_message() -> String
 
+pub fn get_plugin_host() -> @plugin.PluginHostImpl?
+
+pub fn get_plugin_tool_registry() -> @plugin.PluginToolRegistry?
+
 pub fn get_version_message() -> String
 
 pub async fn handle_inbound_with_agent_loop_async(@types.InboundEnvelope) -> @types.OutboundMessage
+
+pub async fn initialize_plugin_system() -> Unit
+
+pub async fn initialize_plugin_system_from_dir(plugin_dir~ : String) -> Unit
+
+pub async fn initialize_plugin_system_with_native_transport() -> Unit
+
+pub fn is_plugin_tool(String) -> Bool
+
+pub fn list_plugin_tools() -> Array[@types.ToolDefinition]
 
 pub fn load_gateway_config_impl(String) -> @interfaces.GatewayConfig raise @interfaces.ControlError
 
 pub fn parse_args(Array[String]) -> Command
 
-pub fn pump_registered_channels_once((@types.InboundEnvelope) -> Unit) -> Int
+pub fn parse_global_options(Array[String]) -> (GlobalOptions, Array[String])
 
-pub fn pump_registered_channels_to_gateway(@control.Gateway, @interfaces.AuthContext) -> Int
+pub fn poll_plugin_changes() -> Unit
+
+pub async fn pump_registered_channels_once((@types.InboundEnvelope) -> Unit) -> Int
+
+pub async fn pump_registered_channels_to_gateway(@control.Gateway, @interfaces.AuthContext) -> Int
 
 pub fn query_daemon_status(Int, Bool) -> CliResult
 
@@ -58,9 +78,11 @@ pub fn registered_channel_names_for_test() -> Array[String]
 
 pub fn request_daemon_stop(Int) -> CliResult
 
-pub fn run_cli(Array[String]) -> CliResult
+pub async fn run_cli(Array[String]) -> CliResult
 
 pub fn run_cli_from_env() -> Unit
+
+pub async fn run_cli_from_env_async() -> Unit
 
 pub fn run_control_api_server_blocking(@control.Gateway, String, Int) -> Unit raise
 
@@ -82,7 +104,15 @@ pub fn set_runtime_model_config_path_for_process(String) -> Unit
 
 pub fn set_workspace_context_dir_for_process(String) -> Unit
 
+pub fn setup_native_transport_handlers() -> Unit
+
+pub fn setup_plugin_watcher(String) -> Unit
+
+pub fn start_plugin_watching() -> Unit
+
 pub fn stop_daemon(pid_path~ : String) -> CliResult
+
+pub fn stop_plugin_watching() -> Unit
 
 pub let version : String
 
@@ -134,6 +164,10 @@ pub(all) struct GatewayStartOptions {
 
 pub(all) struct GatewayStatusOptions {
   mut json : Bool
+}
+
+pub(all) struct GlobalOptions {
+  mut path_mode : @paths.PathMode
 }
 
 type InMemorySessionStore

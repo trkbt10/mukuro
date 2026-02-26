@@ -5,6 +5,7 @@
 // FFI declarations for stdin/stdout (native only)
 extern "C" fn c_read_stdin_line(buffer : Bytes, buffer_len : Int) -> Int = "moonbit_read_stdin_line"
 
+///|
 extern "C" fn c_write_stdout(data : Bytes, len : Int) -> Int = "moonbit_write_stdout"
 
 ///|

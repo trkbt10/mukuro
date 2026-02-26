@@ -101,17 +101,9 @@ pub impl @interfaces.HealthChecker for InitializationChecker with check(self) {
 }
 
 ///|
-pub impl @interfaces.HealthChecker for InitializationChecker with check_async(
-  self,
-  on_complete~,
-) {
-  on_complete(self.check())
-}
-
-///|
 /// フルヘルスチェック（/health）
 /// すべてのチェッカーを実行し、詳細な結果を返す
-pub fn health_full() -> String {
+pub async fn health_full() -> String {
   let aggregator = health_aggregator.init()
   let health = aggregator.check_all()
   // JSON形式で出力
@@ -139,12 +131,15 @@ pub fn health_full() -> String {
 ///|
 /// ライブネスチェック（/health/live）
 /// シンプルな生存確認のみ
-pub fn health_live() -> String {
+pub async fn health_live() -> String {
   let aggregator = health_aggregator.init()
-  let check = aggregator.get_check(name="liveness")
-  let status = match check {
-    Some(c) => c.status.to_string()
-    None => "unknown"
+  let health = aggregator.check_all()
+  let mut status = "unknown"
+  for check in health.checks {
+    if check.name == "liveness" {
+      status = check.status.to_string()
+      break
+    }
   }
   let result : Json = { "status": status }
   result.stringify()
@@ -153,7 +148,7 @@ pub fn health_live() -> String {
 ///|
 /// レディネスチェック（/health/ready）
 /// アプリケーションがリクエストを処理できる状態かどうか
-pub fn health_ready() -> String {
+pub async fn health_ready() -> String {
   let aggregator = health_aggregator.init()
   let health = aggregator.check_all()
   // 全てのチェックが正常であればready

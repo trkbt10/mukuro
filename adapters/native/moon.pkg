@@ -1,7 +1,6 @@
 import {
   "moonbitlang/async",
   "moonbitlang/async/io",
-  "moonbitlang/core/random" @random,
   "mizchi/x/http" @xhttp,
   "mizchi/x/websocket" @websocket,
   "trkbt10/mukuro/interfaces",
@@ -10,7 +9,6 @@ import {
   "trkbt10/mukuro/core/plugin/transport" @plugin_transport,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
-  "moonbitlang/x/uuid" @uuid,
 }
 
 warnings = "-29"
@@ -19,7 +17,6 @@ options(
   "native-stub": [ "ffi_stubs.c", "sqlite_stubs.c", "ws_server_stubs.c" ],
   targets: {
     "clock.mbt": [ "native" ],
-    "crypto.mbt": [ "native" ],
     "daemon.mbt": [ "native" ],
     "debug_popen_test.mbt": [ "native" ],
     "ffi.mbt": [ "native" ],

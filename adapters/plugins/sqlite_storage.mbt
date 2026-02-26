@@ -131,7 +131,7 @@ pub fn SqliteStoragePlugin::set_connected(
 ///|
 /// ConnectablePlugin trait implementation
 pub impl @interfaces.ConnectablePlugin for SqliteStoragePlugin with is_connected(
-  self
+  self,
 ) -> Bool {
   self.is_connected
 }
@@ -139,7 +139,7 @@ pub impl @interfaces.ConnectablePlugin for SqliteStoragePlugin with is_connected
 ///|
 pub impl @interfaces.ConnectablePlugin for SqliteStoragePlugin with set_connected(
   self,
-  value
+  value,
 ) -> Unit {
   self.is_connected = value
 }

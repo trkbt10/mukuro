@@ -128,7 +128,8 @@ pub fn run_cli_from_env() -> Unit {
     match cmd {
       Command::Help => print_result(CliResult::Ok(get_help_message()))
       Command::Version => print_result(CliResult::Ok(get_version_message()))
-      _ => println("Note: This command requires native target for async support")
+      _ =>
+        println("Note: This command requires native target for async support")
     }
   }
 }

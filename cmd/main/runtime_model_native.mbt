@@ -399,7 +399,7 @@ fn parse_anthropic_response(body : String) -> @types.ModelResponse {
 }
 
 ///|
-fn call_openai_impl(
+async fn call_openai_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
@@ -425,7 +425,7 @@ fn call_openai_impl(
     headers,
     body: Some(string_to_body_bytes(body)),
   }
-  let response = orchestrator.http_client.do_request(req) catch {
+  let response = @interfaces.HttpClient::request(orchestrator.http_client, req) catch {
     _ => return @types.ModelResponse::ModelError("OpenAI request failed")
   }
   if response.status == 429 {
@@ -445,7 +445,7 @@ fn call_openai_impl(
 }
 
 ///|
-fn call_anthropic_impl(
+async fn call_anthropic_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
@@ -462,7 +462,7 @@ fn call_anthropic_impl(
     headers,
     body: Some(string_to_body_bytes(body)),
   }
-  let response = orchestrator.http_client.do_request(req) catch {
+  let response = @interfaces.HttpClient::request(orchestrator.http_client, req) catch {
     _ => return @types.ModelResponse::ModelError("Anthropic request failed")
   }
   if response.status == 429 {

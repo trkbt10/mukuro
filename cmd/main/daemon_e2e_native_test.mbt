@@ -69,7 +69,7 @@ test "native e2e stale status triggers artifact cleanup" {
 }
 
 ///|
-test "native e2e gateway status --json reports stale daemon" {
+async test "native e2e gateway status --json reports stale daemon" {
   cleanup_daemon_artifacts()
 
   @native.c_write_pid_file(
@@ -93,7 +93,7 @@ test "native e2e gateway status --json reports stale daemon" {
 }
 
 ///|
-test "native e2e gateway stop cleans stale pid file" {
+async test "native e2e gateway stop cleans stale pid file" {
   cleanup_daemon_artifacts()
 
   @native.c_write_pid_file(

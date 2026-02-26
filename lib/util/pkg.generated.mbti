@@ -1,0 +1,22 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/lib/util"
+
+// Values
+pub fn[T] pop_first(Array[T]) -> T?
+
+// Errors
+
+// Types and methods
+pub struct IdGenerator {
+  prefix : String
+  mut counter : Int64
+}
+pub fn IdGenerator::current(Self) -> Int64
+pub fn IdGenerator::new(String, start? : Int64) -> Self
+pub fn IdGenerator::next(Self) -> String
+pub fn IdGenerator::reset(Self, Int64) -> Unit
+
+// Type aliases
+
+// Traits
+

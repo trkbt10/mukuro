@@ -157,7 +157,7 @@ pub fn PluginSystemInitializer::new(
 /// Initialize the plugin system (async)
 pub async fn PluginSystemInitializer::initialize(
   self : PluginSystemInitializer,
-) -> Unit raise {
+) -> Unit {
   // 1. Load plugins from directory
   @interfaces.PluginHost::load_plugins(self.plugin_host, path=self.plugin_dir)
   // 2. Generate tools from plugin schemas

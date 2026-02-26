@@ -465,7 +465,7 @@ pub async fn PluginHostImpl::send_notification(
   self : PluginHostImpl,
   plugin_id : String,
   request : @interfaces.JsonRpcRequest,
-) -> Unit raise {
+) -> Unit {
   match self.transport_handlers.get(plugin_id) {
     Some(handler) =>
       @interfaces.PluginTransportHandler::send_notification(handler, request)

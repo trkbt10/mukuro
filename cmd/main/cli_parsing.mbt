@@ -5,7 +5,7 @@
 ///|
 /// グローバルオプションをパースし、残りの引数を返す
 pub fn parse_global_options(
-  args : Array[String]
+  args : Array[String],
 ) -> (GlobalOptions, Array[String]) {
   let opts : GlobalOptions = { path_mode: @paths.PathMode::Standard }
   let remaining : Array[String] = []

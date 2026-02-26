@@ -156,7 +156,7 @@ pub fn DynamicPluginManagerImpl::enable(
 pub async fn DynamicPluginManagerImpl::disable(
   self : DynamicPluginManagerImpl,
   id : String,
-) -> Unit raise {
+) -> Unit {
   match self.states.get(id) {
     Some(state) => {
       // Stop if running
@@ -186,7 +186,7 @@ pub async fn DynamicPluginManagerImpl::disable(
 pub async fn DynamicPluginManagerImpl::reload(
   self : DynamicPluginManagerImpl,
   id : String,
-) -> Unit raise {
+) -> Unit {
   match self.states.get(id) {
     Some(state) => {
       // Stop if running
@@ -247,7 +247,7 @@ pub async fn DynamicPluginManagerImpl::reload(
 pub async fn DynamicPluginManagerImpl::remove(
   self : DynamicPluginManagerImpl,
   id : String,
-) -> Unit raise {
+) -> Unit {
   match self.states.get(id) {
     Some(state) => {
       // Stop if running

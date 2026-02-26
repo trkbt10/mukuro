@@ -41,8 +41,8 @@ type ToolEntry
 pub struct ToolExecutionManager {
   registry : &@interfaces.ToolRegistry
 }
-pub fn ToolExecutionManager::execute(Self, String, Json, @types.ToolContext) -> @types.ToolResult raise ToolExecutionError
-pub fn ToolExecutionManager::execute_calls(Self, Array[@types.ToolCallRequest], @types.ToolContext) -> Array[(@types.ToolCallRequest, @types.ToolResult)] raise ToolExecutionError
+pub async fn ToolExecutionManager::execute(Self, String, Json, @types.ToolContext) -> @types.ToolResult raise ToolExecutionError
+pub async fn ToolExecutionManager::execute_calls(Self, Array[@types.ToolCallRequest], @types.ToolContext) -> Array[(@types.ToolCallRequest, @types.ToolResult)] raise ToolExecutionError
 pub fn ToolExecutionManager::new(&@interfaces.ToolRegistry) -> Self
 
 // Type aliases

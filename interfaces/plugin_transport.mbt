@@ -7,19 +7,19 @@
 /// For testing WebSocket, use async tests with the async client directly.
 pub(open) trait PluginTransportHandler {
   /// Start the transport connection (async)
-  async start(Self) -> Unit raise
+  async start(Self) -> Unit
 
   /// Stop the transport connection (async)
-  async stop(Self) -> Unit raise
+  async stop(Self) -> Unit
 
   /// Check if the transport is currently active
   is_active(Self) -> Bool
 
   /// Send a JSON-RPC request and wait for response (async)
-  async send_request(Self, JsonRpcRequest) -> JsonRpcResponse raise
+  async send_request(Self, JsonRpcRequest) -> JsonRpcResponse
 
   /// Send a JSON-RPC notification (no response expected) (async)
-  async send_notification(Self, JsonRpcRequest) -> Unit raise
+  async send_notification(Self, JsonRpcRequest) -> Unit
 
   /// Try to receive an incoming request (non-blocking)
   try_receive(Self) -> JsonRpcRequest?

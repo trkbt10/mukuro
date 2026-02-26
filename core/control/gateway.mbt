@@ -16,13 +16,13 @@ pub fn TimeProvider::new(provider~ : () -> Int64) -> TimeProvider {
 /// エージェント処理関数型
 /// InboundEnvelope を受け取り、OutboundMessage を返す（または失敗）(async)
 pub struct AgentHandler(
-  async (@types.InboundEnvelope) -> @types.OutboundMessage raise
+  async (@types.InboundEnvelope) -> @types.OutboundMessage
 )
 
 ///|
 /// AgentHandlerを生成
 pub fn AgentHandler::new(
-  handler~ : async (@types.InboundEnvelope) -> @types.OutboundMessage raise,
+  handler~ : async (@types.InboundEnvelope) -> @types.OutboundMessage,
 ) -> AgentHandler {
   AgentHandler(handler)
 }

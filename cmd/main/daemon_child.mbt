@@ -63,12 +63,21 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   let startup = load_daemon_startup_config()
   set_runtime_model_config_path_for_process(startup.runtime_model_config_path)
   bootstrap_runtime_channels_from_config(startup.runtime_model_config_path)
-  global_gateway.start(config=startup.gateway_config) catch {
-    _ => {
-      @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
-      @native.c_exit(1)
-      return CliResult::Exit(1)
+  let mut start_ok = false
+  @async.with_event_loop(fn(_group) {
+    global_gateway.start(config=startup.gateway_config) catch {
+      _ => ()
     }
+    if global_gateway.status().state.is_running() {
+      start_ok = true
+    }
+  }) catch {
+    _ => ()
+  }
+  if !start_ok {
+    @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+    @native.c_exit(1)
+    return CliResult::Exit(1)
   }
 
   let self_pid = @native.c_getpid()
@@ -95,10 +104,6 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   let mut auth_fail_window_started_at : Int64 = 0
   let mut auth_rate_limited_until : Int64 = 0
   let mut last_snapshot_uptime = -1
-  let daemon_auth = @interfaces.AuthContext::token_only(
-    startup.gateway_config.auth_token,
-  )
-
   if @native.c_write_gateway_token_record(token, session_id, started_at) != 0 {
     @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
     @native.c_exit(1)
@@ -170,7 +175,6 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
     let ipc_result = @native.c_ipc_server_poll(
       current_token_for_auth, prev_token_for_auth, session_id, self_pid, uptime_sec,
     )
-    ignore(pump_registered_channels_to_gateway(global_gateway, daemon_auth))
     if !is_rate_limited && ipc_result == 3 {
       if auth_fail_window_started_at == 0 ||
         now - auth_fail_window_started_at > daemon_auth_fail_window_sec {

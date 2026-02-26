@@ -183,19 +183,6 @@ pub(open) trait ProcessExecutor {
 }
 
 ///|
-/// 乱数生成 トレイト
-pub(open) trait Random {
-  /// 0.0から1.0の乱数を生成
-  random(Self) -> Double
-  /// 指定範囲の整数乱数を生成
-  random_int(Self, min~ : Int, max~ : Int) -> Int
-  /// ランダムなバイト列を生成
-  random_bytes(Self, length~ : Int) -> Bytes
-  /// UUIDv4を生成
-  uuid_v4(Self) -> String
-}
-
-///|
 /// プラットフォームランタイム
 /// 全プラットフォーム機能を統合したインターフェース
 pub(all) struct PlatformRuntime {

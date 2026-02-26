@@ -1,6 +1,5 @@
 ///|
 /// Paths module tests
-
 test "config_dir defaults to standard mode" {
   // Reset to default state
   set_path_mode(PathMode::Standard)
@@ -12,6 +11,7 @@ test "config_dir defaults to standard mode" {
   }
 }
 
+///|
 test "config_dir in local mode returns .mukuro" {
   set_path_mode(PathMode::Local)
   let dir = config_dir()
@@ -20,6 +20,7 @@ test "config_dir in local mode returns .mukuro" {
   set_path_mode(PathMode::Standard)
 }
 
+///|
 test "config_dir in custom mode returns custom path" {
   set_path_mode(PathMode::Custom("/tmp/my-mukuro"))
   let dir = config_dir()
@@ -28,6 +29,7 @@ test "config_dir in custom mode returns custom path" {
   set_path_mode(PathMode::Standard)
 }
 
+///|
 test "config_file returns correct path" {
   set_path_mode(PathMode::Local)
   let path = config_file()
@@ -35,6 +37,7 @@ test "config_file returns correct path" {
   set_path_mode(PathMode::Standard)
 }
 
+///|
 test "pid_file returns cache_dir based path" {
   set_path_mode(PathMode::Local)
   let path = pid_file()
@@ -42,6 +45,7 @@ test "pid_file returns cache_dir based path" {
   set_path_mode(PathMode::Standard)
 }
 
+///|
 test "state_file returns data_dir based path" {
   set_path_mode(PathMode::Local)
   let path = state_file()
@@ -49,6 +53,7 @@ test "state_file returns data_dir based path" {
   set_path_mode(PathMode::Standard)
 }
 
+///|
 test "workspace_dir returns data_dir based path" {
   set_path_mode(PathMode::Local)
   let path = workspace_dir()
@@ -56,6 +61,7 @@ test "workspace_dir returns data_dir based path" {
   set_path_mode(PathMode::Standard)
 }
 
+///|
 test "get_path_mode returns current mode" {
   set_path_mode(PathMode::Local)
   match get_path_mode() {

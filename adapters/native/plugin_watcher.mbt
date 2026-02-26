@@ -71,6 +71,16 @@ fn hash_string(s : String) -> Int {
 }
 
 ///|
+fn run_watcher_callback(
+  callback : async (String) -> Unit,
+  plugin_id : String,
+) -> Unit {
+  @async.with_event_loop(fn(_group) { callback(plugin_id) }) catch {
+    _ => ()
+  }
+}
+
+///|
 /// Scan for plugins and detect changes
 pub fn NativePluginWatcher::poll(self : NativePluginWatcher) -> Unit {
   // List directories in plugin_dir
@@ -110,7 +120,7 @@ pub fn NativePluginWatcher::poll(self : NativePluginWatcher) -> Unit {
           info.content_hash = content_hash
           // Fire modified event
           match self.callback {
-            Some(cb) => (cb.on_modified)(dir)
+            Some(cb) => run_watcher_callback(cb.on_modified, dir)
             None => ()
           }
         }
@@ -123,7 +133,7 @@ pub fn NativePluginWatcher::poll(self : NativePluginWatcher) -> Unit {
         }
         // Fire added event
         match self.callback {
-          Some(cb) => (cb.on_added)(dir)
+          Some(cb) => run_watcher_callback(cb.on_added, dir)
           None => ()
         }
       }
@@ -140,7 +150,7 @@ pub fn NativePluginWatcher::poll(self : NativePluginWatcher) -> Unit {
     self.known_plugins.remove(plugin_id)
     // Fire removed event
     match self.callback {
-      Some(cb) => (cb.on_removed)(plugin_id)
+      Some(cb) => run_watcher_callback(cb.on_removed, plugin_id)
       None => ()
     }
   }

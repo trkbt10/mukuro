@@ -6,6 +6,6 @@ import {
   "moonbitlang/core/encoding/utf8" @utf8,
 }
 
-import "test" {
+import {
   "moonbitlang/async",
-}
+} for "test"

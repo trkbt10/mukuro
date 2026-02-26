@@ -943,13 +943,6 @@ pub(open) trait ProcessExecutor {
   exec_async(Self, command~ : String, args~ : Array[String], options~ : ProcessOptions, on_complete~ : (ProcessResult) -> Unit, on_error~ : (String) -> Unit) -> Unit
 }
 
-pub(open) trait Random {
-  random(Self) -> Double
-  random_int(Self, min~ : Int, max~ : Int) -> Int
-  random_bytes(Self, length~ : Int) -> Bytes
-  uuid_v4(Self) -> String
-}
-
 pub(open) trait Scheduler {
   register(Self, ScheduledTask) -> Unit raise
   unregister(Self, task_id~ : String) -> Unit raise

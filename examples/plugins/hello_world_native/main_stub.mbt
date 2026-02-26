@@ -7,6 +7,7 @@ fn _stub_use_interfaces() -> Unit {
   let _ : @interfaces.PluginType = @interfaces.PluginType::Tool
 }
 
+///|
 fn main {
   // This plugin requires native target for stdin/stdout I/O
   // Build with: moon build --target native

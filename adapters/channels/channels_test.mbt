@@ -6,7 +6,7 @@
 // =============================================================================
 
 ///|
-test "ChannelBaseConfig::default has reasonable values" {
+async test "ChannelBaseConfig::default has reasonable values" {
   let config = ChannelBaseConfig::default(name="test_channel")
   inspect(config.name, content="test_channel")
   inspect(config.enabled, content="true")
@@ -19,7 +19,7 @@ test "ChannelBaseConfig::default has reasonable values" {
 // =============================================================================
 
 ///|
-test "ChannelStatus variants exist" {
+async test "ChannelStatus variants exist" {
   let connected : ChannelStatus = ChannelStatus::Connected
   let connecting : ChannelStatus = ChannelStatus::Connecting
   let disconnected : ChannelStatus = ChannelStatus::Disconnected
@@ -38,7 +38,7 @@ test "ChannelStatus variants exist" {
 // =============================================================================
 
 ///|
-test "SendResult::success creates success result" {
+async test "SendResult::success creates success result" {
   let result = SendResult::success(message_id="msg_123")
   inspect(result.success, content="true")
   inspect(result.message_id, content="Some(\"msg_123\")")
@@ -46,7 +46,7 @@ test "SendResult::success creates success result" {
 }
 
 ///|
-test "SendResult::failure creates failure result" {
+async test "SendResult::failure creates failure result" {
   let result = SendResult::failure(error="Connection failed")
   inspect(result.success, content="false")
   inspect(result.message_id, content="None")
@@ -58,7 +58,7 @@ test "SendResult::failure creates failure result" {
 // =============================================================================
 
 ///|
-test "RouteResolver::new creates empty resolver" {
+async test "RouteResolver::new creates empty resolver" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -66,7 +66,7 @@ test "RouteResolver::new creates empty resolver" {
 }
 
 ///|
-test "RouteResolver::add_rule adds rules" {
+async test "RouteResolver::add_rule adds rules" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -81,7 +81,7 @@ test "RouteResolver::add_rule adds rules" {
 }
 
 ///|
-test "RouteResolver::resolve returns default strategy for no match" {
+async test "RouteResolver::resolve returns default strategy for no match" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -94,7 +94,7 @@ test "RouteResolver::resolve returns default strategy for no match" {
 }
 
 ///|
-test "RouteResolver::resolve matches exact channel pattern" {
+async test "RouteResolver::resolve matches exact channel pattern" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -123,7 +123,7 @@ test "RouteResolver::resolve matches exact channel pattern" {
 }
 
 ///|
-test "RouteResolver::resolve matches wildcard channel pattern" {
+async test "RouteResolver::resolve matches wildcard channel pattern" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -152,7 +152,7 @@ test "RouteResolver::resolve matches wildcard channel pattern" {
 }
 
 ///|
-test "RouteResolver::resolve matches star pattern" {
+async test "RouteResolver::resolve matches star pattern" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -181,7 +181,7 @@ test "RouteResolver::resolve matches star pattern" {
 }
 
 ///|
-test "RouteResolver::resolve matches chat pattern" {
+async test "RouteResolver::resolve matches chat pattern" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -231,7 +231,7 @@ test "RouteResolver::resolve matches chat pattern" {
 // =============================================================================
 
 ///|
-test "ChannelManagerImpl::new creates empty manager" {
+async test "ChannelManagerImpl::new creates empty manager" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -241,7 +241,7 @@ test "ChannelManagerImpl::new creates empty manager" {
 }
 
 ///|
-test "ChannelManagerImpl registers and retrieves channels" {
+async test "ChannelManagerImpl registers and retrieves channels" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -262,7 +262,7 @@ test "ChannelManagerImpl registers and retrieves channels" {
 }
 
 ///|
-test "ChannelManagerImpl unregister removes channel" {
+async test "ChannelManagerImpl unregister removes channel" {
   let resolver = RouteResolver::new(
     default_strategy=@session.SessionStrategy::PerChat,
   )
@@ -282,7 +282,7 @@ test "ChannelManagerImpl unregister removes channel" {
 // =============================================================================
 
 ///|
-test "HttpChannelConfig::default has correct values" {
+async test "HttpChannelConfig::default has correct values" {
   let config = HttpChannelConfig::default(name="http_api")
   inspect(config.name, content="http_api")
   inspect(config.auth_token, content="None")
@@ -291,7 +291,7 @@ test "HttpChannelConfig::default has correct values" {
 }
 
 ///|
-test "HttpChannelAdapter::new creates adapter" {
+async test "HttpChannelAdapter::new creates adapter" {
   let config = HttpChannelConfig::default(name="http")
   let adapter = HttpChannelAdapter::new(config)
   inspect(@interfaces.ChannelAdapter::name(adapter), content="http")
@@ -299,7 +299,7 @@ test "HttpChannelAdapter::new creates adapter" {
 }
 
 ///|
-test "HttpChannelAdapter connect and disconnect" {
+async test "HttpChannelAdapter connect and disconnect" {
   let config = HttpChannelConfig::default(name="http")
   let adapter = HttpChannelAdapter::new(config)
   inspect(@interfaces.ChannelAdapter::is_connected(adapter), content="false")
@@ -310,7 +310,7 @@ test "HttpChannelAdapter connect and disconnect" {
 }
 
 ///|
-test "HttpChannelAdapter::handle_request parses content field" {
+async test "HttpChannelAdapter::handle_request parses content field" {
   let config = HttpChannelConfig::default(name="http")
   let adapter = HttpChannelAdapter::new(config)
   let request : Json = { "content": "Hello, world!" }
@@ -323,7 +323,7 @@ test "HttpChannelAdapter::handle_request parses content field" {
 }
 
 ///|
-test "HttpChannelAdapter::handle_request parses message field" {
+async test "HttpChannelAdapter::handle_request parses message field" {
   let config = HttpChannelConfig::default(name="http")
   let adapter = HttpChannelAdapter::new(config)
   let request : Json = { "message": "Test message" }
@@ -333,7 +333,7 @@ test "HttpChannelAdapter::handle_request parses message field" {
 }
 
 ///|
-test "HttpChannelAdapter::handle_request parses text field" {
+async test "HttpChannelAdapter::handle_request parses text field" {
   let config = HttpChannelConfig::default(name="http")
   let adapter = HttpChannelAdapter::new(config)
   let request : Json = { "text": "Plain text" }
@@ -343,7 +343,7 @@ test "HttpChannelAdapter::handle_request parses text field" {
 }
 
 ///|
-test "HttpChannelAdapter::handle_request handles unknown format" {
+async test "HttpChannelAdapter::handle_request handles unknown format" {
   let config = HttpChannelConfig::default(name="http")
   let adapter = HttpChannelAdapter::new(config)
   let request : Json = { "data": "value" }
@@ -354,7 +354,7 @@ test "HttpChannelAdapter::handle_request handles unknown format" {
 }
 
 ///|
-test "HttpChannelAdapter::receive raises error when queue is empty" {
+async test "HttpChannelAdapter::receive raises error when queue is empty" {
   let config = HttpChannelConfig::default(name="http")
   let adapter = HttpChannelAdapter::new(config)
   let mut got_error = false
@@ -376,7 +376,7 @@ test "HttpChannelAdapter::receive raises error when queue is empty" {
 // =============================================================================
 
 ///|
-test "SlackChannelConfig::default has correct values" {
+async test "SlackChannelConfig::default has correct values" {
   let config = SlackChannelConfig::default(name="slack", bot_token="xoxb-test")
   inspect(config.name, content="slack")
   inspect(config.bot_token, content="xoxb-test")
@@ -386,7 +386,7 @@ test "SlackChannelConfig::default has correct values" {
 }
 
 ///|
-test "SlackChannelAdapter::new creates adapter" {
+async test "SlackChannelAdapter::new creates adapter" {
   let config = SlackChannelConfig::default(name="slack", bot_token="xoxb-test")
   let adapter = SlackChannelAdapter::new(config)
   inspect(@interfaces.ChannelAdapter::name(adapter), content="slack")
@@ -394,7 +394,7 @@ test "SlackChannelAdapter::new creates adapter" {
 }
 
 ///|
-test "SlackChannelAdapter::handle_webhook returns challenge for url_verification" {
+async test "SlackChannelAdapter::handle_webhook returns challenge for url_verification" {
   let config = SlackChannelConfig::default(name="slack", bot_token="xoxb-test")
   let adapter = SlackChannelAdapter::new(config)
   let request : Json = {
@@ -409,7 +409,7 @@ test "SlackChannelAdapter::handle_webhook returns challenge for url_verification
 }
 
 ///|
-test "SlackChannelAdapter::handle_webhook processes message event" {
+async test "SlackChannelAdapter::handle_webhook processes message event" {
   let config = SlackChannelConfig::default(name="slack", bot_token="xoxb-test")
   let adapter = SlackChannelAdapter::new(config)
   let request : Json = {
@@ -428,7 +428,7 @@ test "SlackChannelAdapter::handle_webhook processes message event" {
 }
 
 ///|
-test "SlackChannelAdapter::handle_webhook ignores bot messages" {
+async test "SlackChannelAdapter::handle_webhook ignores bot messages" {
   let config = SlackChannelConfig::default(name="slack", bot_token="xoxb-test")
   let adapter = SlackChannelAdapter::new(config)
   let request : Json = {
@@ -457,7 +457,7 @@ test "SlackChannelAdapter::handle_webhook ignores bot messages" {
 }
 
 ///|
-test "SlackChannelAdapter::handle_webhook ignores subtype messages" {
+async test "SlackChannelAdapter::handle_webhook ignores subtype messages" {
   let config = SlackChannelConfig::default(name="slack", bot_token="xoxb-test")
   let adapter = SlackChannelAdapter::new(config)
   let request : Json = {
@@ -489,7 +489,7 @@ test "SlackChannelAdapter::handle_webhook ignores subtype messages" {
 // =============================================================================
 
 ///|
-test "DiscordChannelConfig::default has correct values" {
+async test "DiscordChannelConfig::default has correct values" {
   let config = DiscordChannelConfig::default(
     name="discord",
     bot_token="test_token",
@@ -506,7 +506,7 @@ test "DiscordChannelConfig::default has correct values" {
 }
 
 ///|
-test "DiscordChannelAdapter::new creates adapter" {
+async test "DiscordChannelAdapter::new creates adapter" {
   let config = DiscordChannelConfig::default(
     name="discord",
     bot_token="test_token",
@@ -522,7 +522,7 @@ test "DiscordChannelAdapter::new creates adapter" {
 // =============================================================================
 
 ///|
-test "TelegramChannelConfig::default has correct values" {
+async test "TelegramChannelConfig::default has correct values" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -534,7 +534,7 @@ test "TelegramChannelConfig::default has correct values" {
 }
 
 ///|
-test "TelegramChannelAdapter::new creates adapter" {
+async test "TelegramChannelAdapter::new creates adapter" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -545,7 +545,7 @@ test "TelegramChannelAdapter::new creates adapter" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update processes message" {
+async test "TelegramChannelAdapter::handle_update processes message" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -568,7 +568,7 @@ test "TelegramChannelAdapter::handle_update processes message" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update processes edited_message" {
+async test "TelegramChannelAdapter::handle_update processes edited_message" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -589,7 +589,7 @@ test "TelegramChannelAdapter::handle_update processes edited_message" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update handles caption" {
+async test "TelegramChannelAdapter::handle_update handles caption" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -611,7 +611,7 @@ test "TelegramChannelAdapter::handle_update handles caption" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update ignores empty content" {
+async test "TelegramChannelAdapter::handle_update ignores empty content" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -642,7 +642,7 @@ test "TelegramChannelAdapter::handle_update ignores empty content" {
 }
 
 ///|
-test "TelegramChannelAdapter updates last_update_id" {
+async test "TelegramChannelAdapter updates last_update_id" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -667,7 +667,7 @@ test "TelegramChannelAdapter updates last_update_id" {
 // =============================================================================
 
 ///|
-test "WebSocketChannelConfig::default has correct values" {
+async test "WebSocketChannelConfig::default has correct values" {
   let config = WebSocketChannelConfig::default(
     name="ws",
     url="wss://example.com/ws",
@@ -679,7 +679,7 @@ test "WebSocketChannelConfig::default has correct values" {
 }
 
 ///|
-test "WebSocketChannelAdapter::new creates adapter" {
+async test "WebSocketChannelAdapter::new creates adapter" {
   let config = WebSocketChannelConfig::default(
     name="ws",
     url="wss://example.com/ws",
@@ -694,7 +694,7 @@ test "WebSocketChannelAdapter::new creates adapter" {
 // =============================================================================
 
 ///|
-test "ChannelError variants exist" {
+async test "ChannelError variants exist" {
   let err1 : ChannelError = ChannelError::ConnectionFailed("test")
   let err2 : ChannelError = ChannelError::AuthenticationFailed("test")
   let err3 : ChannelError = ChannelError::RateLimited(retry_after=60)
@@ -712,7 +712,7 @@ test "ChannelError variants exist" {
 }
 
 ///|
-test "ChannelError::RateLimited contains retry info" {
+async test "ChannelError::RateLimited contains retry info" {
   let err : ChannelError = ChannelError::RateLimited(retry_after=120)
   match err {
     ChannelError::RateLimited(retry_after~) =>
@@ -722,7 +722,7 @@ test "ChannelError::RateLimited contains retry info" {
 }
 
 ///|
-test "ChannelError::MessageTooLong contains max length" {
+async test "ChannelError::MessageTooLong contains max length" {
   let err : ChannelError = ChannelError::MessageTooLong(max_length=4000)
   match err {
     ChannelError::MessageTooLong(max_length~) =>
@@ -736,7 +736,7 @@ test "ChannelError::MessageTooLong contains max length" {
 // =============================================================================
 
 ///|
-test "RoutingRule::new creates rule correctly" {
+async test "RoutingRule::new creates rule correctly" {
   let rule = RoutingRule::new(
     name="test_rule",
     channel_pattern="discord*",
@@ -753,7 +753,7 @@ test "RoutingRule::new creates rule correctly" {
 // =============================================================================
 
 ///|
-test "TelegramChannelConfig has polling settings" {
+async test "TelegramChannelConfig has polling settings" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -763,7 +763,7 @@ test "TelegramChannelConfig has polling settings" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update processes sender name" {
+async test "TelegramChannelAdapter::handle_update processes sender name" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -784,7 +784,7 @@ test "TelegramChannelAdapter::handle_update processes sender name" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update processes callback_query" {
+async test "TelegramChannelAdapter::handle_update processes callback_query" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -811,7 +811,7 @@ test "TelegramChannelAdapter::handle_update processes callback_query" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update processes photo attachment" {
+async test "TelegramChannelAdapter::handle_update processes photo attachment" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -845,7 +845,7 @@ test "TelegramChannelAdapter::handle_update processes photo attachment" {
 }
 
 ///|
-test "TelegramChannelAdapter::handle_update processes document attachment" {
+async test "TelegramChannelAdapter::handle_update processes document attachment" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",
@@ -879,7 +879,7 @@ test "TelegramChannelAdapter::handle_update processes document attachment" {
 }
 
 ///|
-test "InlineKeyboardButton::callback creates callback button" {
+async test "InlineKeyboardButton::callback creates callback button" {
   let button = InlineKeyboardButton::callback("Click me", "action_1")
   inspect(button.text, content="Click me")
   inspect(button.callback_data, content="Some(\"action_1\")")
@@ -887,7 +887,7 @@ test "InlineKeyboardButton::callback creates callback button" {
 }
 
 ///|
-test "InlineKeyboardButton::link creates URL button" {
+async test "InlineKeyboardButton::link creates URL button" {
   let button = InlineKeyboardButton::link("Visit", "https://example.com")
   inspect(button.text, content="Visit")
   inspect(button.callback_data, content="None")
@@ -895,7 +895,7 @@ test "InlineKeyboardButton::link creates URL button" {
 }
 
 ///|
-test "TelegramChannelAdapter metadata includes message_id" {
+async test "TelegramChannelAdapter metadata includes message_id" {
   let config = TelegramChannelConfig::default(
     name="telegram",
     bot_token="123456:ABC",

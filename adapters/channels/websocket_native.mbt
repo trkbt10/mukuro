@@ -182,9 +182,9 @@ fn WebSocketChannelAdapter::connect_once(
 }
 
 ///|
-fn WebSocketChannelAdapter::ensure_connected(
+async fn WebSocketChannelAdapter::ensure_connected(
   self : WebSocketChannelAdapter,
-) -> Unit raise {
+) -> Unit {
   if !@interfaces.ChannelAdapter::is_connected(self) || self.conn is None {
     @interfaces.ChannelAdapter::connect(self)
   }
@@ -249,7 +249,7 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with receive(
   self,
 ) {
   if self.received_messages.length() > 0 {
-    match pop_inbound_envelope(self.received_messages) {
+    match @util.pop_first(self.received_messages) {
       Some(msg) => msg
       None => raise ChannelError::NetworkError("No messages in queue")
     }

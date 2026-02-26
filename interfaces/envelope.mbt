@@ -3,7 +3,7 @@
 /// チャネルへメッセージを送信する (async)
 pub(open) trait OutboundDispatcher {
   /// メッセージを送信 (async)
-  async dispatch(Self, @types.OutboundMessage) -> Unit raise
+  async dispatch(Self, @types.OutboundMessage) -> Unit
 }
 
 ///|

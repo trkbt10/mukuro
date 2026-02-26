@@ -8,7 +8,7 @@ pub(open) trait ModelOrchestrator {
     messages~ : Array[@types.ModelMessage],
     tools~ : Array[@types.ToolDefinition],
     options~ : @types.ModelOptions,
-  ) -> @types.ModelResponse raise
+  ) -> @types.ModelResponse
 }
 
 ///|
@@ -25,7 +25,7 @@ pub(open) trait ModelProvider {
     messages~ : Array[@types.ModelMessage],
     tools~ : Array[@types.ToolDefinition],
     options~ : @types.ModelOptions,
-  ) -> @types.ModelResponse raise
+  ) -> @types.ModelResponse
 }
 
 ///|

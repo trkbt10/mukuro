@@ -103,6 +103,14 @@ pub(all) struct OutboundMessage {
 }
 pub fn OutboundMessage::default() -> Self
 
+pub(all) enum ParameterType {
+  String
+  Number
+  Boolean
+  Object
+  Array
+}
+
 pub(all) struct ProviderConfig {
   name : String
   api_key : String?
@@ -168,6 +176,8 @@ pub(all) struct ToolDefinition {
   name : String
   description : String
   parameters : Json
+  schema : Json?
+  metadata : Map[String, String]
 }
 pub fn ToolDefinition::new(name~ : String, description~ : String, parameters~ : Json) -> Self
 
@@ -196,6 +206,13 @@ pub(all) enum ToolParamType {
   Boolean
   Array_(ToolParamType)
   Object(Map[String, ToolParamType])
+}
+
+pub(all) struct ToolParameter {
+  name : String
+  param_type : ParameterType
+  description : String
+  required : Bool
 }
 
 pub(all) enum ToolResult {

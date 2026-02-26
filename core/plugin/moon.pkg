@@ -5,6 +5,6 @@ import {
   "moonbitlang/core/json",
 }
 
-import "test" {
+import {
   "moonbitlang/async",
-}
+} for "test"

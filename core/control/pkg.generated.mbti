@@ -7,13 +7,21 @@ import {
 }
 
 // Values
-pub let default_gateway_state_path : String
+pub fn default_gateway_state_path() -> String
 
-pub let default_gateway_token_path : String
+pub fn default_gateway_token_path() -> String
 
-pub let default_ipc_socket_path : String
+pub fn default_ipc_socket_path() -> String
 
-pub let default_pid_path : String
+pub fn default_pid_path() -> String
+
+pub fn event_to_json(GatewayEvent) -> Json
+
+pub fn get_event_type(GatewayEvent) -> String
+
+pub fn jsonrpc_error_response(Int?, Int, String, Json?) -> String
+
+pub fn jsonrpc_success_response(Int?, Json) -> String
 
 // Errors
 pub(all) suberror DaemonError {
@@ -26,10 +34,10 @@ pub(all) suberror DaemonError {
 }
 
 // Types and methods
-pub struct AgentHandler((@types.InboundEnvelope) -> @types.OutboundMessage raise)
+pub struct AgentHandler(async (@types.InboundEnvelope) -> @types.OutboundMessage)
 #deprecated
-pub fn AgentHandler::inner(Self) -> (@types.InboundEnvelope) -> @types.OutboundMessage raise
-pub fn AgentHandler::new(handler~ : (@types.InboundEnvelope) -> @types.OutboundMessage raise) -> Self
+pub fn AgentHandler::inner(Self) -> async (@types.InboundEnvelope) -> @types.OutboundMessage
+pub fn AgentHandler::new(handler~ : async (@types.InboundEnvelope) -> @types.OutboundMessage) -> Self
 
 pub struct DaemonManager {
   pid_manager : PidManager
@@ -78,6 +86,15 @@ pub struct GatewayDependencies {
   agent_handler : AgentHandler?
 }
 
+pub(all) enum GatewayEvent {
+  StateChanged(old~ : @interfaces.GatewayState, new~ : @interfaces.GatewayState)
+  MessageReceived(envelope~ : @types.InboundEnvelope)
+  MessageSent(message~ : @types.OutboundMessage)
+  ChannelConnected(channel~ : String)
+  ChannelDisconnected(channel~ : String)
+  Error(error~ : String)
+}
+
 pub struct NoAuthAuthenticator {
   _placeholder : Unit
 }
@@ -106,6 +123,34 @@ pub struct TimeProvider(() -> Int64)
 #deprecated
 pub fn TimeProvider::inner(Self) -> () -> Int64
 pub fn TimeProvider::new(provider~ : () -> Int64) -> Self
+
+pub(all) struct WsClientConnection {
+  id : String
+  mut authenticated : Bool
+  mut auth_context : @interfaces.AuthContext?
+  subscriptions : Array[String]
+  connected_at : Int64
+}
+pub fn WsClientConnection::new(String, Int64) -> Self
+
+pub struct WsGatewayHandler {
+  gateway : Gateway?
+  clients : Map[String, WsClientConnection]
+  message_buffers : Map[String, Array[String]]
+  event_handlers : Array[(GatewayEvent) -> Unit]
+  mut get_timestamp : () -> Int64
+  mut next_client_id : Int
+}
+pub fn WsGatewayHandler::authenticate_client(Self, String, String) -> @interfaces.AuthResult
+pub fn WsGatewayHandler::broadcast_event(Self, GatewayEvent) -> Unit
+pub fn WsGatewayHandler::client_count(Self) -> Int
+pub fn WsGatewayHandler::get_pending_messages(Self, String) -> Array[String]
+pub async fn WsGatewayHandler::handle_message(Self, String, String) -> String
+pub fn WsGatewayHandler::is_client_authenticated(Self, String) -> Bool
+pub fn WsGatewayHandler::new(Gateway?) -> Self
+pub fn WsGatewayHandler::on_client_connect(Self) -> String
+pub fn WsGatewayHandler::on_client_disconnect(Self, String) -> Unit
+pub fn WsGatewayHandler::set_timestamp_provider(Self, () -> Int64) -> Unit
 
 // Type aliases
 

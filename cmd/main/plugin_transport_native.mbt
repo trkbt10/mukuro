@@ -21,7 +21,7 @@ pub fn setup_native_transport_handlers() -> Unit {
 
 ///|
 /// Initialize plugin system with native transport
-pub fn initialize_plugin_system_with_native_transport() -> Unit raise {
+pub async fn initialize_plugin_system_with_native_transport() -> Unit {
   // First initialize normally
   initialize_plugin_system()
   // Then setup native transport handlers

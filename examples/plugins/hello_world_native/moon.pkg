@@ -9,7 +9,7 @@ options(
   link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
   targets: {
     "main.mbt": [ "native" ],
-    "plugin.mbt": [ "native" ],
     "main_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "plugin.mbt": [ "native" ],
   },
 )

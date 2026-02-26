@@ -254,7 +254,7 @@ fn build_envelope(
 }
 
 ///|
-fn run_once(
+async fn run_once(
   deps : @agent.AgentDependencies,
   options : @agent.AgentLoopOptions,
   mode : SessionMode,
@@ -304,22 +304,34 @@ fn main {
   }
   let options = @agent.AgentLoopOptions::default()
 
-  let (warmup_done, warmup_failed) = run_once(
-    deps,
-    options,
-    bench_opts.mode,
-    bench_opts.rich_metadata,
-    bench_opts.warmup,
-    bench_opts.content_size,
-  )
-  let (iter_done, iter_failed) = run_once(
-    deps,
-    options,
-    bench_opts.mode,
-    bench_opts.rich_metadata,
-    bench_opts.iterations,
-    bench_opts.content_size,
-  )
+  let mut warmup_done = 0
+  let mut warmup_failed = bench_opts.warmup
+  let mut iter_done = 0
+  let mut iter_failed = bench_opts.iterations
+  @async.with_event_loop(fn(_group) {
+    let (done, failed) = run_once(
+      deps,
+      options,
+      bench_opts.mode,
+      bench_opts.rich_metadata,
+      bench_opts.warmup,
+      bench_opts.content_size,
+    )
+    warmup_done = done
+    warmup_failed = failed
+    let (done, failed) = run_once(
+      deps,
+      options,
+      bench_opts.mode,
+      bench_opts.rich_metadata,
+      bench_opts.iterations,
+      bench_opts.content_size,
+    )
+    iter_done = done
+    iter_failed = failed
+  }) catch {
+    _ => ()
+  }
 
   println(
     "bench_run_agent_loop mode=\{mode_to_string(bench_opts.mode)} rich_metadata=\{bench_opts.rich_metadata} warmup=\{warmup_done} warmup_failed=\{warmup_failed} iterations=\{iter_done} iter_failed=\{iter_failed} content_size=\{bench_opts.content_size}",

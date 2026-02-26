@@ -286,10 +286,10 @@ pub(open) trait PluginHost {
   load_plugins(Self, path~ : String) -> Unit raise
 
   /// Start a plugin by ID (async)
-  async start_plugin(Self, id~ : String) -> Unit raise
+  async start_plugin(Self, id~ : String) -> Unit
 
   /// Stop a plugin by ID (async)
-  async stop_plugin(Self, id~ : String) -> Unit raise
+  async stop_plugin(Self, id~ : String) -> Unit
 
   /// Get plugin status
   get_status(Self, id~ : String) -> PluginStatus raise
@@ -298,7 +298,7 @@ pub(open) trait PluginHost {
   list_plugins(Self) -> Array[PluginManifest]
 
   /// Send a JSON-RPC request to a plugin (async)
-  async send_request(Self, plugin_id~ : String, request~ : JsonRpcRequest) -> JsonRpcResponse raise
+  async send_request(Self, plugin_id~ : String, request~ : JsonRpcRequest) -> JsonRpcResponse
 }
 
 ///|

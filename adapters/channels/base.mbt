@@ -11,14 +11,6 @@ pub(all) suberror ChannelError {
 }
 
 ///|
-/// 受信キューの先頭メッセージを取り出す（空ならNone）
-pub fn pop_inbound_envelope(
-  queue : Array[@types.InboundEnvelope],
-) -> @types.InboundEnvelope? {
-  @util.pop_first(queue)
-}
-
-///|
 /// チャネルの状態
 pub(all) enum ChannelStatus {
   Connected

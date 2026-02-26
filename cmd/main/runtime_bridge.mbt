@@ -97,7 +97,7 @@ let global_model_orchestrator : RuntimeModelOrchestrator = RuntimeModelOrchestra
 ///|
 async fn handle_inbound_with_agent_loop(
   envelope : @types.InboundEnvelope,
-) -> @types.OutboundMessage raise {
+) -> @types.OutboundMessage {
   let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
   let options = @agent.AgentLoopOptions::default()
   let deps : @agent.AgentDependencies = {
@@ -216,13 +216,13 @@ let global_plugin_initializer : Ref[@plugin.PluginSystemInitializer?] = {
 
 ///|
 /// Initialize the plugin system from the default plugin directory (async)
-pub async fn initialize_plugin_system() -> Unit raise {
+pub async fn initialize_plugin_system() -> Unit {
   initialize_plugin_system_from_dir(plugin_dir=".mukuro/plugins")
 }
 
 ///|
 /// Initialize the plugin system from a custom directory (async)
-pub async fn initialize_plugin_system_from_dir(plugin_dir~ : String) -> Unit raise {
+pub async fn initialize_plugin_system_from_dir(plugin_dir~ : String) -> Unit {
   let initializer = @plugin.PluginSystemInitializer::new(plugin_dir~)
   initializer.initialize()
   // Register plugin tools with the global tool registry

@@ -5,15 +5,15 @@ pub(open) trait ChannelAdapter {
   /// チャネル名を取得
   name(Self) -> String
   /// 接続 (async)
-  async connect(Self) -> Unit raise
+  async connect(Self) -> Unit
   /// 切断 (async)
-  async disconnect(Self) -> Unit raise
+  async disconnect(Self) -> Unit
   /// 接続中かどうか
   is_connected(Self) -> Bool
   /// メッセージを送信 (async)
-  async send(Self, @types.OutboundMessage) -> Unit raise
+  async send(Self, @types.OutboundMessage) -> Unit
   /// メッセージを受信 (async)
-  async receive(Self) -> @types.InboundEnvelope raise
+  async receive(Self) -> @types.InboundEnvelope
 }
 
 ///|
@@ -29,9 +29,9 @@ pub(open) trait ChannelManager {
   /// 全チャネル名のリスト
   list_channels(Self) -> Array[String]
   /// 全チャネルに接続 (async)
-  async connect_all(Self) -> Unit raise
+  async connect_all(Self) -> Unit
   /// 全チャネルから切断 (async)
-  async disconnect_all(Self) -> Unit raise
+  async disconnect_all(Self) -> Unit
 }
 
 ///|

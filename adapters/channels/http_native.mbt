@@ -81,13 +81,13 @@ pub impl @interfaces.ChannelAdapter for HttpChannelAdapter with send(
         .iter()
         .map(fn(c) { c.to_int().land(0xFF).to_byte() }),
       )
-      let _ = self.http_client.do_request({
+      let _ = @interfaces.HttpClient::request(self.http_client, {
         url,
         http_method: @interfaces.HttpMethod::Post,
         headers,
         body: Some(body),
       }) catch {
-        e => raise ChannelError::NetworkError(http_error_message(e))
+        e => raise ChannelError::NetworkError(e.to_string())
       }
     }
     None => ()
@@ -95,20 +95,8 @@ pub impl @interfaces.ChannelAdapter for HttpChannelAdapter with send(
 }
 
 ///|
-fn http_error_message(err : @interfaces.HttpError) -> String {
-  match err {
-    @interfaces.HttpError::ConnectionError(msg) => msg
-    @interfaces.HttpError::Timeout => "timeout"
-    @interfaces.HttpError::InvalidUrl(url) => "invalid url: \{url}"
-    @interfaces.HttpError::StatusError(status, msg) =>
-      "status \{status}: \{msg}"
-    @interfaces.HttpError::ParseError(msg) => "parse error: \{msg}"
-  }
-}
-
-///|
 pub impl @interfaces.ChannelAdapter for HttpChannelAdapter with receive(self) {
-  match pop_inbound_envelope(self.received_messages) {
+  match @util.pop_first(self.received_messages) {
     Some(msg) => msg
     None => raise ChannelError::NetworkError("No messages in queue")
   }

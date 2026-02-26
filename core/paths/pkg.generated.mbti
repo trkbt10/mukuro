@@ -1,0 +1,45 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/paths"
+
+// Values
+pub let app_name : String
+
+pub fn auth_log_file() -> String
+
+pub fn cache_dir() -> String
+
+pub fn config_dir() -> String
+
+pub fn config_file() -> String
+
+pub fn data_dir() -> String
+
+pub fn get_path_mode() -> PathMode
+
+pub fn local_dir() -> String
+
+pub fn pid_file() -> String
+
+pub fn set_path_mode(PathMode) -> Unit
+
+pub fn socket_file() -> String
+
+pub fn state_file() -> String
+
+pub fn token_file() -> String
+
+pub fn workspace_dir() -> String
+
+// Errors
+
+// Types and methods
+pub(all) enum PathMode {
+  Standard
+  Local
+  Custom(String)
+}
+
+// Type aliases
+
+// Traits
+

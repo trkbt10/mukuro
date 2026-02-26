@@ -4,13 +4,35 @@ package "trkbt10/mukuro/core/config/json_accessors"
 // Values
 pub fn bool_field_or_default(Map[String, Json], String, Bool) -> Result[Bool, String]
 
+pub fn double_field_or_default(Map[String, Json], String, Double) -> Result[Double, String]
+
+pub fn int64_field_or_default(Map[String, Json], String, Int64) -> Result[Int64, String]
+
 pub fn int_field_or_default(Map[String, Json], String, Int) -> Result[Int, String]
 
 pub fn optional_array_field(Map[String, Json], String) -> Result[Array[Json]?, String]
 
+pub fn optional_bool_field(Map[String, Json], String) -> Result[Bool?, String]
+
+pub fn optional_double_field(Map[String, Json], String) -> Result[Double?, String]
+
+pub fn optional_int64_field(Map[String, Json], String) -> Result[Int64?, String]
+
+pub fn optional_int_field(Map[String, Json], String) -> Result[Int?, String]
+
 pub fn optional_object_field(Map[String, Json], String) -> Result[Map[String, Json]?, String]
 
+pub fn optional_string_field(Map[String, Json], String) -> Result[String?, String]
+
 pub fn parse_root_object(String) -> Result[Map[String, Json], String]
+
+pub fn required_int64_field(Map[String, Json], String) -> Result[Int64, String]
+
+pub fn required_int_field(Map[String, Json], String) -> Result[Int, String]
+
+pub fn required_string_field(Map[String, Json], String) -> Result[String, String]
+
+pub fn string_array_field_or_default(Map[String, Json], String) -> Result[Array[String], String]
 
 pub fn string_field_or_default(Map[String, Json], String, String) -> Result[String, String]
 

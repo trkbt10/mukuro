@@ -1,5 +1,5 @@
 ///|
-test "WebSocketChannelAdapter native connect/disconnect state transition" {
+async test "WebSocketChannelAdapter native connect/disconnect state transition" {
   let config = WebSocketChannelConfig::default(
     name="ws",
     url="wss://example.invalid/ws",
@@ -12,7 +12,7 @@ test "WebSocketChannelAdapter native connect/disconnect state transition" {
 }
 
 ///|
-test "WebSocketChannelAdapter native handle_incoming_text and receive" {
+async test "WebSocketChannelAdapter native handle_incoming_text and receive" {
   let config = WebSocketChannelConfig::default(
     name="ws",
     url="wss://example.invalid/ws",

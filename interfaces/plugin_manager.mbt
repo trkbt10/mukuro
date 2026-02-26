@@ -52,16 +52,16 @@ pub(open) trait DynamicPluginManager {
   add_plugin(Self, manifest_path~ : String) -> Unit raise
 
   /// Remove a plugin by ID (async)
-  async remove_plugin(Self, id~ : String) -> Unit raise
+  async remove_plugin(Self, id~ : String) -> Unit
 
   /// Enable a plugin (async)
-  async enable_plugin(Self, id~ : String) -> Unit raise
+  async enable_plugin(Self, id~ : String) -> Unit
 
   /// Disable a plugin (async)
-  async disable_plugin(Self, id~ : String) -> Unit raise
+  async disable_plugin(Self, id~ : String) -> Unit
 
   /// Reload a plugin (stop, reload manifest, start) (async)
-  async reload_plugin(Self, id~ : String) -> Unit raise
+  async reload_plugin(Self, id~ : String) -> Unit
 
   /// Get plugin state
   get_plugin_state(Self, id~ : String) -> PluginState raise
@@ -90,11 +90,7 @@ pub(all) struct PluginWatcherCallback {
 ///|
 /// Default watcher callback (no-op)
 pub fn PluginWatcherCallback::default() -> PluginWatcherCallback {
-  {
-    on_added: fn(_) {},
-    on_modified: fn(_) {},
-    on_removed: fn(_) {},
-  }
+  { on_added: fn(_) {  }, on_modified: fn(_) {  }, on_removed: fn(_) {  } }
 }
 
 ///|

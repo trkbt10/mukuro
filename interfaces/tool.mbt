@@ -8,7 +8,7 @@ pub(open) trait ToolExecutor {
     tool_name~ : String,
     arguments~ : Json,
     context~ : @types.ToolContext,
-  ) -> @types.ToolResult raise
+  ) -> @types.ToolResult
 }
 
 ///|

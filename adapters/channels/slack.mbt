@@ -220,7 +220,7 @@ pub impl @interfaces.ChannelAdapter for SlackChannelAdapter with send(
 
 ///|
 pub impl @interfaces.ChannelAdapter for SlackChannelAdapter with receive(self) {
-  match pop_inbound_envelope(self.received_messages) {
+  match @util.pop_first(self.received_messages) {
     Some(msg) => msg
     None => raise ChannelError::NetworkError("No messages in queue")
   }

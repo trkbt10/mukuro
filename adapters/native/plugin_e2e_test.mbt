@@ -5,7 +5,7 @@
 ///|
 /// Test HTTP transport handler with actual HTTP client
 /// This test requires a Node.js plugin server running on port 9100
-test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plugin)" {
+async test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plugin)" {
   // Create HTTP client
   let http_client = NativeHttpClient::default()
   // Create HTTP config for port 9100
@@ -130,7 +130,7 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
 
 ///|
 /// Test direct HTTP client JSON-RPC call
-test "E2E: Direct NativeHttpClient JSON-RPC call" {
+async test "E2E: Direct NativeHttpClient JSON-RPC call" {
   let client = NativeHttpClient::default()
   let url = "http://localhost:9100"
   // Create JSON-RPC request

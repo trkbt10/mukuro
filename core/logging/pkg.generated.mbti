@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/logging"
+
+import {
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn build_json_log(String, @interfaces.LogLevel, String, @interfaces.LogContext) -> String
+
+pub fn build_plain_log(String, @interfaces.LogLevel, String, @interfaces.LogContext) -> String
+
+pub fn escape_json_string(String) -> String
+
+pub fn get_effective_level(Array[@interfaces.ComponentLogLevel], @interfaces.LogLevel, String?) -> @interfaces.LogLevel
+
+pub fn level_to_int(@interfaces.LogLevel) -> Int
+
+pub fn level_to_json_string(@interfaces.LogLevel) -> String
+
+pub fn level_to_string(@interfaces.LogLevel) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

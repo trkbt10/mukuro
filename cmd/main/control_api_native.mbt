@@ -327,6 +327,63 @@ fn validate_control_api_access(
 }
 
 ///|
+fn read_gateway_status_sync(
+  gateway : @control.Gateway,
+) -> @interfaces.GatewayStatus {
+  let mut status = @interfaces.GatewayStatus::stopped(version="unknown")
+  @async.with_event_loop(fn(_group) { status = gateway.status() }) catch {
+    _ => ()
+  }
+  status
+}
+
+///|
+fn dispatch_outbound_sync(
+  gateway : @control.Gateway,
+  auth : @interfaces.AuthContext,
+  message : @types.OutboundMessage,
+) -> Unit raise @interfaces.ControlError {
+  let mut dispatch_error : @interfaces.ControlError? = None
+  @async.with_event_loop(fn(_group) {
+    gateway.dispatch_outbound(auth~, message~) catch {
+      e => dispatch_error = Some(e)
+    }
+  }) catch {
+    e =>
+      dispatch_error = Some(
+        @interfaces.ControlError::InternalError(e.to_string()),
+      )
+  }
+  match dispatch_error {
+    Some(e) => raise e
+    None => ()
+  }
+}
+
+///|
+fn dispatch_inbound_sync(
+  gateway : @control.Gateway,
+  auth : @interfaces.AuthContext,
+  envelope : @types.InboundEnvelope,
+) -> Unit raise @interfaces.ControlError {
+  let mut dispatch_error : @interfaces.ControlError? = None
+  @async.with_event_loop(fn(_group) {
+    gateway.dispatch_inbound(auth~, envelope~) catch {
+      e => dispatch_error = Some(e)
+    }
+  }) catch {
+    e =>
+      dispatch_error = Some(
+        @interfaces.ControlError::InternalError(e.to_string()),
+      )
+  }
+  match dispatch_error {
+    Some(e) => raise e
+    None => ()
+  }
+}
+
+///|
 pub fn handle_control_api_request(
   gateway : @control.Gateway,
   meth : @xhttp.RequestMethod,
@@ -346,7 +403,10 @@ pub fn handle_control_api_request(
           Some(resp) => return resp
           None => ()
         }
-        return json_response(200, status_json(gateway.status()))
+        return json_response(
+          200,
+          status_json(read_gateway_status_sync(gateway)),
+        )
       } else if path == "/health" {
         match
           validate_control_api_access(
@@ -357,7 +417,10 @@ pub fn handle_control_api_request(
           Some(resp) => return resp
           None => ()
         }
-        return json_response(200, health_summary_json(gateway.status()))
+        return json_response(
+          200,
+          health_summary_json(read_gateway_status_sync(gateway)),
+        )
       } else if path == "/health/live" {
         match
           validate_control_api_access(
@@ -368,7 +431,10 @@ pub fn handle_control_api_request(
           Some(resp) => return resp
           None => ()
         }
-        return json_response(200, health_live_json(gateway.status()))
+        return json_response(
+          200,
+          health_live_json(read_gateway_status_sync(gateway)),
+        )
       } else if path == "/health/ready" {
         match
           validate_control_api_access(
@@ -379,7 +445,10 @@ pub fn handle_control_api_request(
           Some(resp) => return resp
           None => ()
         }
-        return json_response(200, health_ready_json(gateway.status()))
+        return json_response(
+          200,
+          health_ready_json(read_gateway_status_sync(gateway)),
+        )
       } else {
         return error_response(404, "not_found", "Unknown endpoint")
       }
@@ -401,7 +470,7 @@ pub fn handle_control_api_request(
     let outbound = parse_outbound_message(body)
     match outbound {
       Some(msg) =>
-        gateway.dispatch_outbound(auth~, message=msg) catch {
+        dispatch_outbound_sync(gateway, auth, msg) catch {
           e => return control_error_to_response(e)
         }
       None =>
@@ -413,7 +482,7 @@ pub fn handle_control_api_request(
     let envelope = parse_dispatch_envelope(body)
     match envelope {
       Some(env) =>
-        gateway.dispatch_inbound(auth~, envelope=env) catch {
+        dispatch_inbound_sync(gateway, auth, env) catch {
           e => return control_error_to_response(e)
         }
       None =>
