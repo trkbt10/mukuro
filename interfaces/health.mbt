@@ -172,30 +172,24 @@ fn calculate_overall_status(checks : Array[HealthCheck]) -> HealthStatus {
 
 ///|
 /// ヘルスチェッカー トレイト
-/// 個別のコンポーネントのヘルスを確認する
+/// 個別のコンポーネントのヘルスを確認する (async)
 pub(open) trait HealthChecker {
   /// チェッカー名を取得
   name(Self) -> String
-  /// ヘルスチェックを実行
-  check(Self) -> HealthCheck
-  /// 非同期ヘルスチェックを実行
-  check_async(Self, on_complete~ : (HealthCheck) -> Unit) -> Unit
+  /// ヘルスチェックを実行 (async)
+  async check(Self) -> HealthCheck
 }
 
 ///|
 /// ヘルス集約 トレイト
-/// 複数のチェッカーを管理し、全体のヘルス状態を提供する
+/// 複数のチェッカーを管理し、全体のヘルス状態を提供する (async)
 pub(open) trait HealthAggregator {
   /// チェッカーを登録
   register(Self, checker~ : &HealthChecker) -> Unit
   /// チェッカーを登録解除
   unregister(Self, name~ : String) -> Unit
-  /// 全チェッカーを実行して結果を取得
-  check_all(Self) -> SystemHealth
-  /// 非同期で全チェッカーを実行
-  check_all_async(Self, on_complete~ : (SystemHealth) -> Unit) -> Unit
-  /// 特定のチェッカーの結果を取得
-  get_check(Self, name~ : String) -> HealthCheck?
+  /// 全チェッカーを実行して結果を取得 (async)
+  async check_all(Self) -> SystemHealth
   /// 登録済みチェッカー名一覧を取得
   list_checkers(Self) -> Array[String]
 }

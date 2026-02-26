@@ -227,9 +227,9 @@ fn extract_context_overrides(
 }
 
 ///|
-/// エージェントループを実行
+/// エージェントループを実行 (async)
 /// 入力メッセージを処理し、モデル呼び出しとツール実行を反復して応答を生成する
-pub fn run_agent_loop(
+pub async fn run_agent_loop(
   envelope : @types.InboundEnvelope,
   options : AgentLoopOptions,
   deps : AgentDependencies,
@@ -308,8 +308,13 @@ pub fn run_agent_loop(
             AgentState::ExecutingTool(tool_name=call.name, call_id=call.id),
           )
           ctx.record_tool_call(call)
-          // ツール実行
-          let tool_result = execute_tool_call(call, session, envelope, deps)
+          // ツール実行 (asyncエラーをキャッチ)
+          let tool_result = execute_tool_call(call, session, envelope, deps) catch {
+            e =>
+              @types.ToolResult::Error(
+                message="Tool execution failed: \{e.to_string()}",
+              )
+          }
           // 結果をメッセージに追加
           ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
         }
@@ -331,8 +336,8 @@ pub fn run_agent_loop(
 }
 
 ///|
-/// リトライロジック付きでモデルを呼び出す
-fn call_model_with_retry(
+/// リトライロジック付きでモデルを呼び出す (async)
+async fn call_model_with_retry(
   orchestrator : &@interfaces.ModelOrchestrator,
   messages : Array[@types.ModelMessage],
   tools : Array[@types.ToolDefinition],
@@ -351,9 +356,12 @@ fn call_model_with_retry(
         if retry_config.retry_on_rate_limit &&
           retry_state.can_retry(retry_config) {
           retry_state.set_retry_after(retry_after)
+          let delay_ms = retry_state.next_delay_ms
           retry_state.increment(retry_config)
-          // 注: 実際の遅延は非同期APIが必要
-          // 現在は即座にリトライする（実運用では遅延が必要）
+          // 実際に遅延を適用
+          @async.sleep(delay_ms) catch {
+            e => raise AgentLoopError::ModelCallFailed("Sleep cancelled: \{e}")
+          }
           continue
         } else {
           // リトライ上限に達した
@@ -362,7 +370,11 @@ fn call_model_with_retry(
       @types.ModelResponse::ModelError(msg) =>
         // 一部のエラーはリトライ可能
         if is_retryable_error(msg) && retry_state.can_retry(retry_config) {
+          let delay_ms = retry_state.next_delay_ms
           retry_state.increment(retry_config)
+          @async.sleep(delay_ms) catch {
+            e => raise AgentLoopError::ModelCallFailed("Sleep cancelled: \{e}")
+          }
           continue
         } else {
           return response
@@ -387,8 +399,8 @@ fn is_retryable_error(error_msg : String) -> Bool {
 }
 
 ///|
-/// ツール呼び出しを実行
-fn execute_tool_call(
+/// ツール呼び出しを実行 (async)
+async fn execute_tool_call(
   call : @types.ToolCallRequest,
   session : @types.Session,
   envelope : @types.InboundEnvelope,
@@ -405,8 +417,8 @@ fn execute_tool_call(
 }
 
 ///|
-/// 単一のモデル呼び出しを実行（ツール呼び出しなし）
-pub fn single_model_call(
+/// 単一のモデル呼び出しを実行（ツール呼び出しなし）(async)
+pub async fn single_model_call(
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
   model_orchestrator : &@interfaces.ModelOrchestrator,
@@ -572,10 +584,15 @@ pub async fn run_agent_loop_async(
             AgentState::ExecutingTool(tool_name=call.name, call_id=call.id),
           )
           ctx.record_tool_call(call)
-          // ツール実行
+          // ツール実行 (asyncエラーをキャッチ)
           let tool_result = execute_tool_call_async(
             call, session, envelope, deps,
-          )
+          ) catch {
+            e =>
+              @types.ToolResult::Error(
+                message="Tool execution failed: \{e.to_string()}",
+              )
+          }
           // 結果をメッセージに追加
           ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
         }
@@ -598,7 +615,7 @@ pub async fn run_agent_loop_async(
 
 ///|
 /// ツール呼び出しを実行（async版用）
-fn execute_tool_call_async(
+async fn execute_tool_call_async(
   call : @types.ToolCallRequest,
   session : @types.Session,
   envelope : @types.InboundEnvelope,

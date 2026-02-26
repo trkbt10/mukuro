@@ -10,6 +10,7 @@ warnings = "-29"
 
 options(
   "is-main": true,
+  link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
   targets: {
     "main.mbt": [ "native" ],
     "main_js.mbt": [ "js" ],

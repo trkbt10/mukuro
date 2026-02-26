@@ -134,36 +134,6 @@ pub impl @interfaces.HealthAggregator for HealthAggregatorImpl with check_all(
 }
 
 ///|
-pub impl @interfaces.HealthAggregator for HealthAggregatorImpl with check_all_async(
-  self,
-  on_complete~,
-) {
-  // 非同期バージョン - 実際には各チェッカーの check_async を呼び出す必要があるが
-  // シンプルな実装では同期版を呼び出す
-  let result = self.check_all()
-  on_complete(result)
-}
-
-///|
-pub impl @interfaces.HealthAggregator for HealthAggregatorImpl with get_check(
-  self,
-  name~,
-) {
-  match self.checkers.get(name) {
-    Some(checker) =>
-      match self.get_cached_check(name) {
-        Some(cached) => Some(cached)
-        None => {
-          let result = checker.check()
-          self.cache_check(result)
-          Some(result)
-        }
-      }
-    None => None
-  }
-}
-
-///|
 pub impl @interfaces.HealthAggregator for HealthAggregatorImpl with list_checkers(
   self,
 ) {
@@ -200,14 +170,6 @@ pub impl @interfaces.HealthChecker for AlwaysHealthyChecker with check(self) {
     latency_ms=Some(0L),
     last_check=0L, // 時計がないのでダミー
   )
-}
-
-///|
-pub impl @interfaces.HealthChecker for AlwaysHealthyChecker with check_async(
-  self,
-  on_complete~,
-) {
-  on_complete(self.check())
 }
 
 ///|
@@ -283,15 +245,6 @@ pub impl @interfaces.HealthChecker for HttpHealthChecker with check(self) {
 }
 
 ///|
-pub impl @interfaces.HealthChecker for HttpHealthChecker with check_async(
-  self,
-  on_complete~,
-) {
-  // シンプルな実装では同期版を呼び出す
-  on_complete(self.check())
-}
-
-///|
 /// メモリ使用量チェッカー（スタブ）
 pub struct MemoryHealthChecker {
   /// チェッカー名
@@ -341,14 +294,6 @@ pub impl @interfaces.HealthChecker for MemoryHealthChecker with check(self) {
 }
 
 ///|
-pub impl @interfaces.HealthChecker for MemoryHealthChecker with check_async(
-  self,
-  on_complete~,
-) {
-  on_complete(self.check())
-}
-
-///|
 /// コールバック付きカスタムチェッカー
 pub struct CallbackHealthChecker {
   /// チェッカー名
@@ -375,12 +320,4 @@ pub impl @interfaces.HealthChecker for CallbackHealthChecker with name(self) {
 ///|
 pub impl @interfaces.HealthChecker for CallbackHealthChecker with check(self) {
   (self.check_fn)()
-}
-
-///|
-pub impl @interfaces.HealthChecker for CallbackHealthChecker with check_async(
-  self,
-  on_complete~,
-) {
-  on_complete(self.check())
 }

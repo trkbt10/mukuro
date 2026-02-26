@@ -111,9 +111,7 @@ test "HttpTransportHandler: start/stop lifecycle" {
   }
   assert_true(handler.is_active())
   // Stop
-  handler.stop() catch {
-    _ => panic()
-  }
+  handler.stop()
   assert_false(handler.is_active())
 }
 
@@ -142,7 +140,7 @@ test "HttpTransportHandler: double start raises error" {
 }
 
 ///|
-test "HttpTransportHandler: send_request without starting raises error" {
+async test "HttpTransportHandler: send_request without starting raises error" {
   let config : @interfaces.PluginHttpConfig = {
     port: 8080,
     base_url: None,
@@ -318,7 +316,7 @@ test "HttpTransportHandler: on_message callback" {
 }
 
 ///|
-test "HttpTransportHandler: no HTTP client returns placeholder" {
+async test "HttpTransportHandler: no HTTP client returns placeholder" {
   let config : @interfaces.PluginHttpConfig = {
     port: 8080,
     base_url: None,

@@ -54,7 +54,7 @@ pub impl @interfaces.ChannelAdapter for QueueChannel with receive(self) {
 }
 
 ///|
-test "pump_registered_channels_once drains queue channels" {
+async test "pump_registered_channels_once drains queue channels" {
   let ch = QueueChannel::new("pump-test")
   ch.queue.push({
     channel: ch.name,

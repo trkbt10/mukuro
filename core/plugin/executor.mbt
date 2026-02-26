@@ -31,8 +31,8 @@ pub fn PluginToolExecutor::new(
 }
 
 ///|
-/// Execute the plugin tool
-pub fn PluginToolExecutor::execute(
+/// Execute the plugin tool (async)
+pub async fn PluginToolExecutor::execute(
   self : PluginToolExecutor,
   tool_name~ : String,
   arguments~ : Json,
@@ -154,8 +154,8 @@ pub fn PluginSystemInitializer::new(
 }
 
 ///|
-/// Initialize the plugin system
-pub fn PluginSystemInitializer::initialize(
+/// Initialize the plugin system (async)
+pub async fn PluginSystemInitializer::initialize(
   self : PluginSystemInitializer,
 ) -> Unit raise {
   // 1. Load plugins from directory
@@ -242,9 +242,13 @@ pub fn PluginSystemInitializer::start_watching(
   match self.watcher {
     Some(watcher) => {
       let callback : @interfaces.PluginWatcherCallback = {
-        on_added: fn(plugin_id) { self.handle_plugin_added(plugin_id) },
-        on_modified: fn(plugin_id) { self.handle_plugin_modified(plugin_id) },
-        on_removed: fn(plugin_id) { self.handle_plugin_removed(plugin_id) },
+        on_added: async fn(plugin_id) { self.handle_plugin_added(plugin_id) },
+        on_modified: async fn(plugin_id) {
+          self.handle_plugin_modified(plugin_id)
+        },
+        on_removed: async fn(plugin_id) {
+          self.handle_plugin_removed(plugin_id)
+        },
       }
       @interfaces.PluginWatcher::watch(watcher, path=self.plugin_dir, callback~)
       self.watching = true
@@ -279,8 +283,8 @@ pub fn PluginSystemInitializer::is_watching(
 }
 
 ///|
-/// Handle plugin added event
-fn PluginSystemInitializer::handle_plugin_added(
+/// Handle plugin added event (async)
+async fn PluginSystemInitializer::handle_plugin_added(
   self : PluginSystemInitializer,
   plugin_id : String,
 ) -> Unit {
@@ -306,8 +310,8 @@ fn PluginSystemInitializer::handle_plugin_added(
 }
 
 ///|
-/// Handle plugin modified event
-fn PluginSystemInitializer::handle_plugin_modified(
+/// Handle plugin modified event (async)
+async fn PluginSystemInitializer::handle_plugin_modified(
   self : PluginSystemInitializer,
   plugin_id : String,
 ) -> Unit {
@@ -341,8 +345,8 @@ fn PluginSystemInitializer::handle_plugin_modified(
 }
 
 ///|
-/// Handle plugin removed event
-fn PluginSystemInitializer::handle_plugin_removed(
+/// Handle plugin removed event (async)
+async fn PluginSystemInitializer::handle_plugin_removed(
   self : PluginSystemInitializer,
   plugin_id : String,
 ) -> Unit {

@@ -177,7 +177,7 @@ test "parse_args unknown command" {
 }
 
 ///|
-test "execute_command Help" {
+async test "execute_command Help" {
   let result = execute_command(Command::Help)
   assert_true(
     match result {
@@ -188,7 +188,7 @@ test "execute_command Help" {
 }
 
 ///|
-test "execute_command Version" {
+async test "execute_command Version" {
   let result = execute_command(Command::Version)
   assert_true(
     match result {
@@ -199,7 +199,7 @@ test "execute_command Version" {
 }
 
 ///|
-test "execute_onboard missing provider" {
+async test "execute_onboard missing provider" {
   let opts : OnboardOptions = {
     provider: None,
     api_key: Some("key"),
@@ -216,7 +216,7 @@ test "execute_onboard missing provider" {
 }
 
 ///|
-test "execute_onboard missing api_key" {
+async test "execute_onboard missing api_key" {
   let opts : OnboardOptions = {
     provider: Some("anthropic"),
     api_key: None,
@@ -233,7 +233,7 @@ test "execute_onboard missing api_key" {
 }
 
 ///|
-test "execute_onboard success with interpolated config" {
+async test "execute_onboard success with interpolated config" {
   let opts : OnboardOptions = {
     provider: Some("anthropic"),
     api_key: Some("sk-test123"),
@@ -253,7 +253,7 @@ test "execute_onboard success with interpolated config" {
 }
 
 ///|
-test "run_cli help" {
+async test "run_cli help" {
   let result = run_cli(["help"])
   assert_true(
     match result {
@@ -264,7 +264,7 @@ test "run_cli help" {
 }
 
 ///|
-test "run_cli gateway status" {
+async test "run_cli gateway status" {
   let result = run_cli(["gateway", "status"])
   assert_true(
     match result {
@@ -275,7 +275,7 @@ test "run_cli gateway status" {
 }
 
 ///|
-test "run_cli gateway status --json" {
+async test "run_cli gateway status --json" {
   let result = run_cli(["gateway", "status", "--json"])
   assert_true(
     match result {
@@ -352,7 +352,7 @@ test "parse_args gateway start without daemon" {
 }
 
 ///|
-test "execute_gateway_start with daemon and control-api returns expected runtime-dependent result" {
+async test "execute_gateway_start with daemon and control-api returns expected runtime-dependent result" {
   let opts : GatewayStartOptions = {
     config_path: None,
     host: None,
@@ -467,7 +467,7 @@ test "request_daemon_stop returns auth error when ipc unauthorized" {
 }
 
 ///|
-test "dispatch_inbound runs integrated agent loop" {
+async test "dispatch_inbound runs integrated agent loop" {
   let result = dispatch_echo_for_test("hello")
   assert_true(
     match result {
@@ -478,7 +478,7 @@ test "dispatch_inbound runs integrated agent loop" {
 }
 
 ///|
-test "execute_gateway auth-log returns runtime-dependent result" {
+async test "execute_gateway auth-log returns runtime-dependent result" {
   let result = execute_gateway_command(
     GatewayCommand::AuthLog({ since_seconds: 60, json: true }),
   )

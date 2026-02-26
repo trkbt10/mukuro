@@ -1,9 +1,9 @@
 ///|
 /// ツール実行トレイト
-/// 個々のツールの実行を担当する
+/// 個々のツールの実行を担当する (async)
 pub(open) trait ToolExecutor {
-  /// ツールを実行
-  execute(
+  /// ツールを実行 (async)
+  async execute(
     Self,
     tool_name~ : String,
     arguments~ : Json,

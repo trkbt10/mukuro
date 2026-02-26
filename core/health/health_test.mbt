@@ -118,7 +118,7 @@ test "SystemHealth::new calculates overall unhealthy status" {
 }
 
 ///|
-test "AlwaysHealthyChecker returns healthy status" {
+async test "AlwaysHealthyChecker returns healthy status" {
   let checker = AlwaysHealthyChecker::new(name="liveness")
   inspect(checker.name(), content="liveness")
   let check = checker.check()
@@ -138,7 +138,7 @@ test "HealthAggregatorImpl registers and lists checkers" {
 }
 
 ///|
-test "HealthAggregatorImpl::check_all returns system health" {
+async test "HealthAggregatorImpl::check_all returns system health" {
   let clock = MockClock::new(1000L)
   let aggregator = HealthAggregatorImpl::with_defaults(clock~)
   let checker = AlwaysHealthyChecker::new(name="test")
@@ -160,32 +160,10 @@ test "HealthAggregatorImpl::unregister removes checker" {
   inspect(aggregator.list_checkers().length(), content="0")
 }
 
-///|
-test "HealthAggregatorImpl::get_check returns check for registered checker" {
-  let clock = MockClock::new(1000L)
-  let aggregator = HealthAggregatorImpl::with_defaults(clock~)
-  let checker = AlwaysHealthyChecker::new(name="mycheck")
-  aggregator.register(checker~)
-  let result = aggregator.get_check(name="mycheck")
-  match result {
-    Some(check) => inspect(check.name, content="mycheck")
-    None => fail("Expected check to be found")
-  }
-}
+// get_check was removed from the HealthAggregator trait during async migration
 
 ///|
-test "HealthAggregatorImpl::get_check returns None for unknown checker" {
-  let clock = MockClock::new(1000L)
-  let aggregator = HealthAggregatorImpl::with_defaults(clock~)
-  let result = aggregator.get_check(name="unknown")
-  match result {
-    Some(_) => fail("Expected None for unknown checker")
-    None => ()
-  }
-}
-
-///|
-test "CallbackHealthChecker uses provided function" {
+async test "CallbackHealthChecker uses provided function" {
   let checker = CallbackHealthChecker::new(name="custom", check_fn=fn() {
     @interfaces.HealthCheck::degraded(
       name="custom",
@@ -227,7 +205,7 @@ test "HealthEndpointConfig::readiness has full config" {
 }
 
 ///|
-test "MemoryHealthChecker::default has reasonable thresholds" {
+async test "MemoryHealthChecker::default has reasonable thresholds" {
   let checker = MemoryHealthChecker::default()
   inspect(checker.name(), content="memory")
   // スタブなので常に正常を返す

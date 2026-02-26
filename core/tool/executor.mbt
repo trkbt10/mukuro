@@ -24,8 +24,8 @@ pub fn ToolExecutionManager::new(
 }
 
 ///|
-/// ツールを実行
-pub fn ToolExecutionManager::execute(
+/// ツールを実行 (async)
+pub async fn ToolExecutionManager::execute(
   self : ToolExecutionManager,
   tool_name : String,
   arguments : Json,
@@ -43,8 +43,8 @@ pub fn ToolExecutionManager::execute(
 }
 
 ///|
-/// 複数のツール呼び出しを実行
-pub fn ToolExecutionManager::execute_calls(
+/// 複数のツール呼び出しを実行 (async)
+pub async fn ToolExecutionManager::execute_calls(
   self : ToolExecutionManager,
   calls : Array[@types.ToolCallRequest],
   context : @types.ToolContext,

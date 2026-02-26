@@ -7,8 +7,8 @@
 let global_gateway : @control.Gateway = create_global_gateway(version)
 
 ///|
-/// コマンドを実行
-pub fn execute_command(cmd : Command) -> CliResult {
+/// コマンドを実行 (async)
+pub async fn execute_command(cmd : Command) -> CliResult {
   match cmd {
     Command::Help => CliResult::Ok(get_help_message())
     Command::Version => CliResult::Ok(get_version_message())
@@ -22,8 +22,8 @@ pub fn execute_command(cmd : Command) -> CliResult {
 }
 
 ///|
-/// 統合経路テスト用: dispatch_inbound -> agent loop -> outbound を実行
-pub fn dispatch_echo_for_test(content : String) -> CliResult {
+/// 統合経路テスト用: dispatch_inbound -> agent loop -> outbound を実行 (async)
+pub async fn dispatch_echo_for_test(content : String) -> CliResult {
   set_forced_response_for_test(Some("Echo: \{content}"))
   let start_result : Result[Unit, @interfaces.ControlError] = Ok(
     global_gateway.start(config=@interfaces.GatewayConfig::default()),
@@ -88,20 +88,37 @@ fn print_result(result : CliResult) -> Unit {
 }
 
 ///|
-/// CLIを実行（引数配列を受け取る）
-pub fn run_cli(args : Array[String]) -> CliResult {
+/// CLIを実行（引数配列を受け取る） (async)
+pub async fn run_cli(args : Array[String]) -> CliResult {
   let cmd = parse_args(args)
   execute_command(cmd)
 }
 
 ///|
-pub fn run_cli_from_env() -> Unit {
+pub async fn run_cli_from_env_async() -> Unit {
   let args = get_command_line_args()
   if args.is_empty() {
     println(get_help_message())
   } else {
     let result = run_cli(args)
     print_result(result)
+  }
+}
+
+///|
+/// Synchronous entry point - async operations require native target
+pub fn run_cli_from_env() -> Unit {
+  let args = get_command_line_args()
+  if args.is_empty() {
+    println(get_help_message())
+  } else {
+    // For non-async commands, parse and handle directly
+    let cmd = parse_args(args)
+    match cmd {
+      Command::Help => print_result(CliResult::Ok(get_help_message()))
+      Command::Version => print_result(CliResult::Ok(get_version_message()))
+      _ => println("Note: This command requires native target for async support")
+    }
   }
 }
 

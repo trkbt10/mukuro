@@ -58,13 +58,7 @@ pub impl @interfaces.ModelProvider for AnthropicProvider with invoke(
   tools~,
   options~,
 ) {
-  // リクエストボディを構築
-  let request_body = self.build_request(messages, tools, options)
-  // 注意: 同期的なHTTP呼び出しはJavaScriptでは直接サポートされないため、
-  // 実際にはコールバックベースまたはasync実装が必要
-  // これはプレースホルダー実装
-  ignore(request_body)
-  @types.ModelResponse::ModelError("Synchronous HTTP not supported in JS")
+  invoke_anthropic_async(self, messages, tools, options)
 }
 
 ///|

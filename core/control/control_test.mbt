@@ -63,7 +63,7 @@ test "GatewayConfig::default" {
 }
 
 ///|
-test "Gateway::new and status" {
+async test "Gateway::new and status" {
   let gw = Gateway::with_components(
     channel_manager=None,
     session_resolver=None,
@@ -80,7 +80,7 @@ test "Gateway::new and status" {
 }
 
 ///|
-test "Gateway::minimal" {
+async test "Gateway::minimal" {
   let gw = Gateway::minimal(version="0.1.0")
   let status = gw.status()
   assert_false(status.state.is_running())
@@ -88,7 +88,7 @@ test "Gateway::minimal" {
 }
 
 ///|
-test "Gateway::start and stop" {
+async test "Gateway::start and stop" {
   let gw = Gateway::minimal(version="0.1.0")
   // 起動
   let cfg = @interfaces.GatewayConfig::default()
@@ -102,7 +102,7 @@ test "Gateway::start and stop" {
 }
 
 ///|
-test "Gateway::start already running" {
+async test "Gateway::start already running" {
   let gw = Gateway::minimal(version="0.1.0")
   let cfg = @interfaces.GatewayConfig::default()
   gw.start(config=cfg)
@@ -119,7 +119,7 @@ test "Gateway::start already running" {
 }
 
 ///|
-test "Gateway::stop already stopped" {
+async test "Gateway::stop already stopped" {
   let gw = Gateway::minimal(version="0.1.0")
   // 停止中に停止はエラー
   let result : Result[Unit, @interfaces.ControlError] = Ok(gw.stop()) catch {
@@ -134,7 +134,7 @@ test "Gateway::stop already stopped" {
 }
 
 ///|
-test "Gateway::authenticate with empty token" {
+async test "Gateway::authenticate with empty token" {
   let gw = Gateway::minimal(version="0.1.0")
   let cfg = @interfaces.GatewayConfig::default()
   gw.start(config=cfg)
@@ -149,7 +149,7 @@ test "Gateway::authenticate with empty token" {
 }
 
 ///|
-test "Gateway::authenticate with valid token" {
+async test "Gateway::authenticate with valid token" {
   let gw = Gateway::minimal(version="0.1.0")
   let default_cfg = @interfaces.GatewayConfig::default()
   let cfg : @interfaces.GatewayConfig = {
@@ -168,7 +168,7 @@ test "Gateway::authenticate with valid token" {
 }
 
 ///|
-test "Gateway::authenticate with invalid token" {
+async test "Gateway::authenticate with invalid token" {
   let gw = Gateway::minimal(version="0.1.0")
   let default_cfg = @interfaces.GatewayConfig::default()
   let cfg : @interfaces.GatewayConfig = {

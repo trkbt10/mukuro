@@ -2,7 +2,6 @@ import {
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/json",
   "trkbt10/mukuro/interfaces",
-  "trkbt10/mukuro/adapters/native" @native,
 }
 
 options(

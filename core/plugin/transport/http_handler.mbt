@@ -199,7 +199,7 @@ pub fn HttpTransportHandler::start(self : HttpTransportHandler) -> Unit raise {
 
 ///|
 /// Stop the transport
-pub fn HttpTransportHandler::stop(self : HttpTransportHandler) -> Unit raise {
+pub fn HttpTransportHandler::stop(self : HttpTransportHandler) -> Unit {
   self.state = @interfaces.TransportState::Stopped
   self.pending_requests.clear()
 }
@@ -214,7 +214,7 @@ pub fn HttpTransportHandler::is_active(self : HttpTransportHandler) -> Bool {
 }
 
 ///|
-/// Implementation of PluginTransportHandler trait
+/// Implementation of PluginTransportHandler trait (async)
 pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with start(
   self,
 ) {
@@ -236,7 +236,7 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with is_act
 }
 
 ///|
-/// Send a JSON-RPC request
+/// Send a JSON-RPC request (async)
 pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_request(
   self,
   request,
@@ -294,7 +294,7 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_r
 }
 
 ///|
-/// Send a notification (no response expected)
+/// Send a notification (no response expected) (async)
 pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_notification(
   self,
   request,

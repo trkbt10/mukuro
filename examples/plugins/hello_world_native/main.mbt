@@ -2,11 +2,16 @@
 /// Hello World Plugin (Native) - Main entry point
 /// Runs as a standalone process communicating via stdin/stdout JSON-RPC
 
+// FFI declarations for stdin/stdout (native only)
+extern "C" fn c_read_stdin_line(buffer : Bytes, buffer_len : Int) -> Int = "moonbit_read_stdin_line"
+
+extern "C" fn c_write_stdout(data : Bytes, len : Int) -> Int = "moonbit_write_stdout"
+
 ///|
 /// Read a line from stdin (native backend only)
 fn read_stdin_line() -> String? {
   let buffer = Bytes::new(65536)
-  let bytes_read = @native.c_read_stdin_line(buffer, buffer.length())
+  let bytes_read = c_read_stdin_line(buffer, buffer.length())
   if bytes_read <= 0 {
     return None
   }
@@ -37,7 +42,7 @@ fn read_stdin_line() -> String? {
 fn write_stdout_line(line : String) -> Unit {
   let bytes = @utf8.encode(line + "\n")
   let arr = Bytes::from_iter(bytes.iter())
-  let _ = @native.c_write_stdout(arr, arr.length())
+  let _ = c_write_stdout(arr, arr.length())
 }
 
 ///|

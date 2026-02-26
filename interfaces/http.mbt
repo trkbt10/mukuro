@@ -51,14 +51,14 @@ pub(all) struct HttpResponse {
 
 ///|
 /// HTTPクライアント トレイト
-/// HTTP通信を抽象化
+/// HTTP通信を抽象化 (async)
 pub(open) trait HttpClient {
-  /// リクエストを送信
-  request(Self, HttpRequest) -> HttpResponse raise
-  /// GETリクエスト
-  get(Self, url~ : String, headers~ : Map[String, String]) -> HttpResponse raise
-  /// POSTリクエスト
-  post(Self, url~ : String, body~ : Bytes, headers~ : Map[String, String]) -> HttpResponse raise
+  /// リクエストを送信 (async)
+  async request(Self, HttpRequest) -> HttpResponse
+  /// GETリクエスト (async)
+  async get(Self, url~ : String, headers~ : Map[String, String]) -> HttpResponse
+  /// POSTリクエスト (async)
+  async post(Self, url~ : String, body~ : Bytes, headers~ : Map[String, String]) -> HttpResponse
 }
 
 ///|

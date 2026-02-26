@@ -153,7 +153,7 @@ pub fn DynamicPluginManagerImpl::enable(
 
 ///|
 /// Disable a plugin
-pub fn DynamicPluginManagerImpl::disable(
+pub async fn DynamicPluginManagerImpl::disable(
   self : DynamicPluginManagerImpl,
   id : String,
 ) -> Unit raise {
@@ -183,7 +183,7 @@ pub fn DynamicPluginManagerImpl::disable(
 
 ///|
 /// Reload a plugin
-pub fn DynamicPluginManagerImpl::reload(
+pub async fn DynamicPluginManagerImpl::reload(
   self : DynamicPluginManagerImpl,
   id : String,
 ) -> Unit raise {
@@ -244,7 +244,7 @@ pub fn DynamicPluginManagerImpl::reload(
 
 ///|
 /// Remove a plugin
-pub fn DynamicPluginManagerImpl::remove(
+pub async fn DynamicPluginManagerImpl::remove(
   self : DynamicPluginManagerImpl,
   id : String,
 ) -> Unit raise {
@@ -312,7 +312,7 @@ pub fn DynamicPluginManagerImpl::stop_watching(
 
 ///|
 /// Handle plugin added event
-pub fn DynamicPluginManagerImpl::handle_plugin_added(
+pub async fn DynamicPluginManagerImpl::handle_plugin_added(
   self : DynamicPluginManagerImpl,
   plugin_id : String,
 ) -> Unit {
@@ -328,7 +328,7 @@ pub fn DynamicPluginManagerImpl::handle_plugin_added(
 
 ///|
 /// Handle plugin modified event
-pub fn DynamicPluginManagerImpl::handle_plugin_modified(
+pub async fn DynamicPluginManagerImpl::handle_plugin_modified(
   self : DynamicPluginManagerImpl,
   plugin_id : String,
 ) -> Unit {
@@ -343,7 +343,7 @@ pub fn DynamicPluginManagerImpl::handle_plugin_modified(
 
 ///|
 /// Handle plugin removed event
-pub fn DynamicPluginManagerImpl::handle_plugin_removed(
+pub async fn DynamicPluginManagerImpl::handle_plugin_removed(
   self : DynamicPluginManagerImpl,
   plugin_id : String,
 ) -> Unit {

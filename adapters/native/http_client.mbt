@@ -56,67 +56,59 @@ fn response_from_x(
 }
 
 ///|
-fn NativeHttpClient::request_with_x(
+/// Async request implementation using @xhttp
+async fn NativeHttpClient::request_async_impl(
   self : NativeHttpClient,
   request : @interfaces.HttpRequest,
 ) -> @interfaces.HttpResponse raise @interfaces.HttpError {
-  let mut out : @interfaces.HttpResponse? = None
   let headers : Map[String, String] = {}
   for key, value in request.headers {
     headers[key] = value
   }
   headers["User-Agent"] = self.user_agent
-  // with_event_loop は native 同期コードから async HTTP を使うために利用
-  @async.with_event_loop(fn(_group) {
-    match request.http_method {
-      @interfaces.HttpMethod::Get => {
-        let (resp, body_data) = @xhttp.get(request.url, headers~) catch {
-          e => raise map_http_error(e)
-        }
-        out = Some(response_from_x(resp, body_data))
+  ignore(self.timeout_seconds)
+  match request.http_method {
+    @interfaces.HttpMethod::Get => {
+      let (resp, body_data) = @xhttp.get(request.url, headers~) catch {
+        e => raise map_http_error(e)
       }
-      @interfaces.HttpMethod::Post => {
-        let body = request.body.unwrap_or(Bytes::new(0))
-        // Use UTF-8 decoding instead of to_unchecked_string (which may use UTF-16)
-        let body_text = @utf8.decode(body) catch { _ => "" }
-        let (resp, body_data) = @xhttp.post(request.url, body_text, headers~) catch {
-          e => raise map_http_error(e)
-        }
-        out = Some(response_from_x(resp, body_data))
-      }
-      @interfaces.HttpMethod::Put => {
-        let body = request.body.unwrap_or(Bytes::new(0))
-        // Use UTF-8 decoding instead of to_unchecked_string (which may use UTF-16)
-        let body_text = @utf8.decode(body) catch { _ => "" }
-        let (resp, body_data) = @xhttp.put(request.url, body_text, headers~) catch {
-          e => raise map_http_error(e)
-        }
-        out = Some(response_from_x(resp, body_data))
-      }
-      _ =>
-        raise @interfaces.HttpError::ConnectionError(
-          "Unsupported HTTP method for NativeHttpClient: \{method_name(request.http_method)}",
-        )
+      response_from_x(resp, body_data)
     }
-  }) catch {
-    e => raise @interfaces.HttpError::ConnectionError(e.to_string())
+    @interfaces.HttpMethod::Post => {
+      let body = request.body.unwrap_or(Bytes::new(0))
+      let body_text = @utf8.decode(body) catch { _ => "" }
+      let (resp, body_data) = @xhttp.post(request.url, body_text, headers~) catch {
+        e => raise map_http_error(e)
+      }
+      response_from_x(resp, body_data)
+    }
+    @interfaces.HttpMethod::Put => {
+      let body = request.body.unwrap_or(Bytes::new(0))
+      let body_text = @utf8.decode(body) catch { _ => "" }
+      let (resp, body_data) = @xhttp.put(request.url, body_text, headers~) catch {
+        e => raise map_http_error(e)
+      }
+      response_from_x(resp, body_data)
+    }
+    _ =>
+      raise @interfaces.HttpError::ConnectionError(
+        "Unsupported HTTP method for NativeHttpClient: \{method_name(request.http_method)}",
+      )
   }
-  out.unwrap_or({ status: 500, headers: {}, body: Bytes::new(0) })
 }
 
 ///|
-/// Internal request implementation
-pub fn NativeHttpClient::do_request(
+/// Async internal request implementation
+pub async fn NativeHttpClient::do_request_async(
   self : NativeHttpClient,
   request : @interfaces.HttpRequest,
 ) -> @interfaces.HttpResponse raise @interfaces.HttpError {
-  ignore(self.timeout_seconds)
-  self.request_with_x(request)
+  self.request_async_impl(request)
 }
 
 ///|
 pub impl @interfaces.HttpClient for NativeHttpClient with request(self, request) {
-  self.do_request(request)
+  self.do_request_async(request)
 }
 
 ///|
@@ -149,7 +141,7 @@ pub impl @interfaces.HttpClient for NativeHttpClient with post(
 }
 
 ///|
-pub fn NativeHttpClient::post_json(
+pub async fn NativeHttpClient::post_json(
   self : NativeHttpClient,
   url : String,
   json : Json,
@@ -159,7 +151,7 @@ pub fn NativeHttpClient::post_json(
   let body = Bytes::from_iter(
     json.stringify().iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
   )
-  self.do_request({
+  self.do_request_async({
     url,
     http_method: @interfaces.HttpMethod::Post,
     headers,
@@ -168,13 +160,13 @@ pub fn NativeHttpClient::post_json(
 }
 
 ///|
-pub fn NativeHttpClient::get_json(
+pub async fn NativeHttpClient::get_json(
   self : NativeHttpClient,
   url : String,
 ) -> Json raise @interfaces.HttpError {
   let headers : Map[String, String] = {}
   headers["Accept"] = "application/json"
-  let response = self.do_request({
+  let response = self.do_request_async({
     url,
     http_method: @interfaces.HttpMethod::Get,
     headers,

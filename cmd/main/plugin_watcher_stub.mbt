@@ -4,13 +4,13 @@
 
 ///|
 /// Setup plugin watcher (stub - no-op on non-native targets)
-pub fn setup_plugin_watcher(_plugin_dir : String) -> Unit raise {
+pub fn setup_plugin_watcher(_plugin_dir : String) -> Unit {
   // Plugin watching not supported on this target
 }
 
 ///|
 /// Start plugin watching (stub - no-op on non-native targets)
-pub fn start_plugin_watching() -> Unit raise {
+pub fn start_plugin_watching() -> Unit {
   // Plugin watching not supported on this target
 }
 

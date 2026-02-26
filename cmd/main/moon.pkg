@@ -24,6 +24,7 @@ warnings = "-29"
 
 options(
   "is-main": true,
+  link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
   targets: {
     "config_file_native.mbt": [ "native" ],
     "control_api_native.mbt": [ "native" ],

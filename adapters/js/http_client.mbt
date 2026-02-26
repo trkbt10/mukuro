@@ -28,9 +28,8 @@ fn headers_to_js(headers : Map[String, String]) -> JsValue {
 }
 
 ///|
-/// HttpClient実装
+/// HttpClient async 実装
 pub impl @interfaces.HttpClient for JsFetchClient with request(self, req) {
-  // オプションを構築
   let method_str = match req.http_method {
     @interfaces.HttpMethod::Get => "GET"
     @interfaces.HttpMethod::Post => "POST"
@@ -40,19 +39,8 @@ pub impl @interfaces.HttpClient for JsFetchClient with request(self, req) {
     @interfaces.HttpMethod::Head => "HEAD"
     @interfaces.HttpMethod::Options => "OPTIONS"
   }
-  let headers_js = headers_to_js(req.headers)
-  let body_js = match req.body {
-    Some(data) => bytes_to_js_value(data)
-    None => js_undefined()
-  }
-  let options = js_create_fetch_options(method_str, headers_js, body_js)
-  // fetch呼び出し（同期的に結果を返す必要があるため、実際にはasync対応が必要）
-  // 注意: これはプレースホルダー実装。実際にはasync/awaitパターンが必要
   ignore(self.timeout_ms)
-  ignore(options)
-  ignore(req.url)
-  // 仮の実装（実際のasync実装は別途必要）
-  { status: 200, headers: {}, body: b"" }
+  fetch_async(req.url, method_str, req.headers, req.body)
 }
 
 ///|
@@ -63,7 +51,7 @@ pub impl @interfaces.HttpClient for JsFetchClient with get(self, url~, headers~)
     headers,
     body: None,
   }
-  @interfaces.HttpClient::request(self, req)
+  self.request(req)
 }
 
 ///|
@@ -79,7 +67,7 @@ pub impl @interfaces.HttpClient for JsFetchClient with post(
     headers,
     body: Some(body),
   }
-  @interfaces.HttpClient::request(self, req)
+  self.request(req)
 }
 
 ///|

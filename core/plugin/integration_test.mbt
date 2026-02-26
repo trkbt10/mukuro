@@ -180,7 +180,7 @@ test "plugin tool registry: full workflow" {
 }
 
 ///|
-test "dynamic plugin manager: enable/disable workflow" {
+async test "dynamic plugin manager: enable/disable workflow" {
   let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
   let manifests : Map[String, String] = {}
   let manifest_json =

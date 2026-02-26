@@ -8,8 +8,8 @@ pub fn setup_native_transport_handlers() -> Unit {
 }
 
 ///|
-/// Initialize plugin system with native transport (stub - uses default)
-pub fn initialize_plugin_system_with_native_transport() -> Unit raise {
+/// Initialize plugin system with native transport (stub - uses default) (async)
+pub async fn initialize_plugin_system_with_native_transport() -> Unit raise {
   // Just use regular initialization on non-native targets
   initialize_plugin_system()
 }

@@ -355,8 +355,8 @@ pub async fn spawn_agent_async(
 }
 
 ///|
-/// サブエージェントのツール呼び出しを実行
-fn execute_subagent_tool_call(
+/// サブエージェントのツール呼び出しを実行 (async)
+async fn execute_subagent_tool_call(
   call : @types.ToolCallRequest,
   tool_registry : &@interfaces.ToolRegistry,
 ) -> @types.ToolResult {

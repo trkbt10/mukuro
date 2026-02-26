@@ -2,13 +2,13 @@
 /// WebSocket Gateway Handler Tests
 
 ///|
-test "WsGatewayHandler::new creates empty handler" {
+async test "WsGatewayHandler::new creates empty handler" {
   let handler = WsGatewayHandler::new(None)
   inspect(handler.client_count(), content="0")
 }
 
 ///|
-test "WsGatewayHandler::on_client_connect creates client" {
+async test "WsGatewayHandler::on_client_connect creates client" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   inspect(handler.client_count(), content="1")
@@ -16,7 +16,7 @@ test "WsGatewayHandler::on_client_connect creates client" {
 }
 
 ///|
-test "WsGatewayHandler::on_client_disconnect removes client" {
+async test "WsGatewayHandler::on_client_disconnect removes client" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   inspect(handler.client_count(), content="1")
@@ -25,7 +25,7 @@ test "WsGatewayHandler::on_client_disconnect removes client" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message invalid JSON" {
+async test "WsGatewayHandler::handle_message invalid JSON" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   let response = handler.handle_message(client_id, "not valid json")
@@ -48,7 +48,7 @@ test "WsGatewayHandler::handle_message invalid JSON" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message unknown method" {
+async test "WsGatewayHandler::handle_message unknown method" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   let request = "{\"jsonrpc\":\"2.0\",\"method\":\"unknown\",\"id\":1}"
@@ -71,7 +71,7 @@ test "WsGatewayHandler::handle_message unknown method" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message auth without token" {
+async test "WsGatewayHandler::handle_message auth without token" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   let request = "{\"jsonrpc\":\"2.0\",\"method\":\"auth\",\"params\":{},\"id\":1}"
@@ -94,7 +94,7 @@ test "WsGatewayHandler::handle_message auth without token" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message gateway.status not authenticated" {
+async test "WsGatewayHandler::handle_message gateway.status not authenticated" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   let request = "{\"jsonrpc\":\"2.0\",\"method\":\"gateway.status\",\"id\":1}"
@@ -117,7 +117,7 @@ test "WsGatewayHandler::handle_message gateway.status not authenticated" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message subscribe" {
+async test "WsGatewayHandler::handle_message subscribe" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   let request =
@@ -141,7 +141,7 @@ test "WsGatewayHandler::handle_message subscribe" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message unsubscribe" {
+async test "WsGatewayHandler::handle_message unsubscribe" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // First subscribe
@@ -170,7 +170,7 @@ test "WsGatewayHandler::handle_message unsubscribe" {
 }
 
 ///|
-test "WsGatewayHandler::broadcast_event adds to client buffers" {
+async test "WsGatewayHandler::broadcast_event adds to client buffers" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Subscribe to all events
@@ -186,7 +186,7 @@ test "WsGatewayHandler::broadcast_event adds to client buffers" {
 }
 
 ///|
-test "WsGatewayHandler::broadcast_event respects subscriptions" {
+async test "WsGatewayHandler::broadcast_event respects subscriptions" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Subscribe only to state_changed
@@ -202,7 +202,7 @@ test "WsGatewayHandler::broadcast_event respects subscriptions" {
 }
 
 ///|
-test "WsGatewayHandler::is_client_authenticated" {
+async test "WsGatewayHandler::is_client_authenticated" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Not authenticated initially
@@ -210,7 +210,7 @@ test "WsGatewayHandler::is_client_authenticated" {
 }
 
 ///|
-test "WsClientConnection::new creates unauthenticated client" {
+async test "WsClientConnection::new creates unauthenticated client" {
   let client = WsClientConnection::new("test_client", 1000L)
   inspect(client.id, content="test_client")
   inspect(client.authenticated, content="false")
@@ -218,7 +218,7 @@ test "WsClientConnection::new creates unauthenticated client" {
 }
 
 ///|
-test "GatewayEvent event types" {
+async test "GatewayEvent event types" {
   let event1 = GatewayEvent::StateChanged(
     old=@interfaces.GatewayState::Stopped,
     new=@interfaces.GatewayState::Running,
@@ -231,7 +231,7 @@ test "GatewayEvent event types" {
 }
 
 ///|
-test "event_to_json creates valid JSON" {
+async test "event_to_json creates valid JSON" {
   let event = GatewayEvent::ChannelConnected(channel="discord")
   let json = event_to_json(event)
   match json {
@@ -254,7 +254,7 @@ test "event_to_json creates valid JSON" {
 }
 
 ///|
-test "jsonrpc_success_response" {
+async test "jsonrpc_success_response" {
   let response = jsonrpc_success_response(Some(1), { "status": "ok" })
   let parsed : Json = @json.parse(response) catch {
     _ => fail("Expected valid JSON")
@@ -283,7 +283,7 @@ test "jsonrpc_success_response" {
 }
 
 ///|
-test "jsonrpc_error_response" {
+async test "jsonrpc_error_response" {
   let response = jsonrpc_error_response(
     Some(1),
     -32600,
@@ -313,7 +313,7 @@ test "jsonrpc_error_response" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message channel.connect" {
+async test "WsGatewayHandler::handle_message channel.connect" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Authenticate first
@@ -342,7 +342,7 @@ test "WsGatewayHandler::handle_message channel.connect" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message channel.disconnect" {
+async test "WsGatewayHandler::handle_message channel.disconnect" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Authenticate first
@@ -371,7 +371,7 @@ test "WsGatewayHandler::handle_message channel.disconnect" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message session.get not found" {
+async test "WsGatewayHandler::handle_message session.get not found" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Authenticate first
@@ -400,7 +400,7 @@ test "WsGatewayHandler::handle_message session.get not found" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message message.send" {
+async test "WsGatewayHandler::handle_message message.send" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Authenticate first
@@ -434,7 +434,7 @@ test "WsGatewayHandler::handle_message message.send" {
 }
 
 ///|
-test "WsGatewayHandler::handle_message message.send missing params" {
+async test "WsGatewayHandler::handle_message message.send missing params" {
   let handler = WsGatewayHandler::new(None)
   let client_id = handler.on_client_connect()
   // Authenticate first

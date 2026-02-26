@@ -184,24 +184,24 @@ pub fn GatewayConfig::default() -> GatewayConfig {
 
 ///|
 /// Gatewayサービス トレイト
-/// チャネル受信からエージェント応答送信までの統合制御を提供
+/// チャネル受信からエージェント応答送信までの統合制御を提供 (async)
 pub(open) trait GatewayService {
-  /// Gatewayを起動
-  start(Self, config~ : GatewayConfig) -> Unit raise ControlError
-  /// Gatewayを停止
-  stop(Self) -> Unit raise ControlError
-  /// 状態を取得
-  status(Self) -> GatewayStatus
+  /// Gatewayを起動 (async)
+  async start(Self, config~ : GatewayConfig) -> Unit raise ControlError
+  /// Gatewayを停止 (async)
+  async stop(Self) -> Unit raise ControlError
+  /// 状態を取得 (async)
+  async status(Self) -> GatewayStatus
   /// 認証を検証（操作前に呼び出す）
   authenticate(Self, token~ : String) -> AuthResult
-  /// インバウンドメッセージをディスパッチ（認証済み操作）
-  dispatch_inbound(
+  /// インバウンドメッセージをディスパッチ（認証済み操作）(async)
+  async dispatch_inbound(
     Self,
     auth~ : AuthContext,
     envelope~ : @types.InboundEnvelope,
   ) -> Unit raise ControlError
-  /// アウトバウンドメッセージをディスパッチ（認証済み操作）
-  dispatch_outbound(
+  /// アウトバウンドメッセージをディスパッチ（認証済み操作）(async)
+  async dispatch_outbound(
     Self,
     auth~ : AuthContext,
     message~ : @types.OutboundMessage,

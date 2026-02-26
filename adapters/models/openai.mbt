@@ -58,12 +58,7 @@ pub impl @interfaces.ModelProvider for OpenAIProvider with invoke(
   tools~,
   options~,
 ) {
-  // プレースホルダー実装（同期HTTPはJSでサポートされない）
-  ignore(messages)
-  ignore(tools)
-  ignore(options)
-  ignore(self)
-  @types.ModelResponse::ModelError("Synchronous HTTP not supported in JS")
+  invoke_openai_async(self, messages, tools, options)
 }
 
 ///|

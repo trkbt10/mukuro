@@ -51,7 +51,7 @@ pub impl @interfaces.FileStore for NativeFileStore with read_file(self, path~) {
       }
       // サブセットを取得
       if bytes_read < buffer_size {
-        Bytes::from_iter(buffer.sub(end=bytes_read).iter())
+        Bytes::from_iter(buffer[:bytes_read].iter())
       } else {
         buffer
       }
@@ -119,7 +119,7 @@ pub impl @interfaces.FileStore for NativeFileStore with list_dir(self, path~) {
       if bytes_read <= 0 {
         return []
       }
-      let output_bytes = Bytes::from_iter(buffer.sub(end=bytes_read).iter())
+      let output_bytes = Bytes::from_iter(buffer[:bytes_read].iter())
       let output = output_bytes.to_unchecked_string()
       let result : Array[String] = []
       for line in output.split("\n") {
@@ -152,7 +152,7 @@ pub fn NativeFileStore::read_text(
         raise FileSystemError::IoError("Read error: \{resolved}")
       }
       if bytes_read < buffer_size {
-        Bytes::from_iter(buffer.sub(end=bytes_read).iter()).to_unchecked_string()
+        Bytes::from_iter(buffer[:bytes_read].iter()).to_unchecked_string()
       } else {
         buffer.to_unchecked_string()
       }

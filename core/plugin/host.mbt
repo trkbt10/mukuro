@@ -448,8 +448,8 @@ pub fn PluginHostImpl::get_extended_manifest(
 }
 
 ///|
-/// Auto-start plugins that have autoStart enabled
-pub fn PluginHostImpl::auto_start_plugins(self : PluginHostImpl) -> Unit raise {
+/// Auto-start plugins that have autoStart enabled (async)
+pub async fn PluginHostImpl::auto_start_plugins(self : PluginHostImpl) -> Unit {
   for id, ext in self.extended_manifests {
     if ext.auto_start && ext.enabled {
       @interfaces.PluginHost::start_plugin(self, id~) catch {
@@ -460,8 +460,8 @@ pub fn PluginHostImpl::auto_start_plugins(self : PluginHostImpl) -> Unit raise {
 }
 
 ///|
-/// Send notification to a plugin
-pub fn PluginHostImpl::send_notification(
+/// Send notification to a plugin (async)
+pub async fn PluginHostImpl::send_notification(
   self : PluginHostImpl,
   plugin_id : String,
   request : @interfaces.JsonRpcRequest,

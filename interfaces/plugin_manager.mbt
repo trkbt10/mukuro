@@ -43,7 +43,7 @@ pub fn PluginState::default(id~ : String) -> PluginState {
 }
 
 ///|
-/// Dynamic plugin manager trait
+/// Dynamic plugin manager trait (async)
 pub(open) trait DynamicPluginManager {
   /// Scan plugin directory for available plugins
   scan_plugins(Self) -> Array[String] raise
@@ -51,17 +51,17 @@ pub(open) trait DynamicPluginManager {
   /// Add a plugin from manifest path
   add_plugin(Self, manifest_path~ : String) -> Unit raise
 
-  /// Remove a plugin by ID
-  remove_plugin(Self, id~ : String) -> Unit raise
+  /// Remove a plugin by ID (async)
+  async remove_plugin(Self, id~ : String) -> Unit raise
 
-  /// Enable a plugin
-  enable_plugin(Self, id~ : String) -> Unit raise
+  /// Enable a plugin (async)
+  async enable_plugin(Self, id~ : String) -> Unit raise
 
-  /// Disable a plugin
-  disable_plugin(Self, id~ : String) -> Unit raise
+  /// Disable a plugin (async)
+  async disable_plugin(Self, id~ : String) -> Unit raise
 
-  /// Reload a plugin (stop, reload manifest, start)
-  reload_plugin(Self, id~ : String) -> Unit raise
+  /// Reload a plugin (stop, reload manifest, start) (async)
+  async reload_plugin(Self, id~ : String) -> Unit raise
 
   /// Get plugin state
   get_plugin_state(Self, id~ : String) -> PluginState raise
@@ -77,20 +77,24 @@ pub(open) trait DynamicPluginManager {
 }
 
 ///|
-/// Plugin watcher callback
+/// Plugin watcher callback (async)
 pub(all) struct PluginWatcherCallback {
-  /// Called when a plugin is added
-  on_added : (String) -> Unit
-  /// Called when a plugin is modified
-  on_modified : (String) -> Unit
-  /// Called when a plugin is removed
-  on_removed : (String) -> Unit
+  /// Called when a plugin is added (async)
+  on_added : async (String) -> Unit
+  /// Called when a plugin is modified (async)
+  on_modified : async (String) -> Unit
+  /// Called when a plugin is removed (async)
+  on_removed : async (String) -> Unit
 }
 
 ///|
 /// Default watcher callback (no-op)
 pub fn PluginWatcherCallback::default() -> PluginWatcherCallback {
-  { on_added: fn(_) {  }, on_modified: fn(_) {  }, on_removed: fn(_) {  } }
+  {
+    on_added: fn(_) {},
+    on_modified: fn(_) {},
+    on_removed: fn(_) {},
+  }
 }
 
 ///|

@@ -194,7 +194,7 @@ pub fn WebSocketTransportHandler::start(
 /// Stop the transport (close WebSocket connection)
 pub fn WebSocketTransportHandler::stop(
   self : WebSocketTransportHandler,
-) -> Unit raise {
+) -> Unit {
   match self.state {
     WebSocketState::Connected | WebSocketState::Connecting => {
       // In Phase 7, send close frame and close connection
@@ -217,7 +217,7 @@ pub fn WebSocketTransportHandler::is_active(
 }
 
 ///|
-/// Implementation of PluginTransportHandler trait
+/// Implementation of PluginTransportHandler trait (async)
 pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with start(
   self,
 ) {
@@ -239,7 +239,7 @@ pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with i
 }
 
 ///|
-/// Send a JSON-RPC request
+/// Send a JSON-RPC request (async)
 /// Note: Actual WebSocket sending will be implemented in Phase 7
 pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with send_request(
   self,
@@ -265,7 +265,7 @@ pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with s
 }
 
 ///|
-/// Send a notification (no response expected)
+/// Send a notification (no response expected) (async)
 pub impl @interfaces.PluginTransportHandler for WebSocketTransportHandler with send_notification(
   self,
   request,

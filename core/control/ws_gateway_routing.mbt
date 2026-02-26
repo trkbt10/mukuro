@@ -3,8 +3,8 @@
 /// Message dispatch and request handlers
 
 ///|
-/// Handle incoming JSON-RPC message from WebSocket client
-pub fn WsGatewayHandler::handle_message(
+/// Handle incoming JSON-RPC message from WebSocket client (async)
+pub async fn WsGatewayHandler::handle_message(
   self : WsGatewayHandler,
   client_id : String,
   message : String,
@@ -23,8 +23,8 @@ pub fn WsGatewayHandler::handle_message(
 }
 
 ///|
-/// Dispatch JSON-RPC request to appropriate handler
-fn WsGatewayHandler::dispatch_request(
+/// Dispatch JSON-RPC request to appropriate handler (async)
+async fn WsGatewayHandler::dispatch_request(
   self : WsGatewayHandler,
   client : WsClientConnection,
   request : @interfaces.JsonRpcRequest,
@@ -34,7 +34,7 @@ fn WsGatewayHandler::dispatch_request(
     "auth" => self.handle_auth(client, request)
     // Gateway methods (require auth)
     "gateway.status" =>
-      self.require_auth(client, request, fn(_) {
+      self.require_auth_async(client, request, async fn(_) {
         self.handle_gateway_status(request)
       })
     "gateway.health" =>
@@ -101,6 +101,24 @@ fn WsGatewayHandler::require_auth(
 }
 
 ///|
+/// Require authentication wrapper for async handlers
+async fn WsGatewayHandler::require_auth_async(
+  _self : WsGatewayHandler,
+  client : WsClientConnection,
+  request : @interfaces.JsonRpcRequest,
+  handler : async (@interfaces.AuthContext) -> String,
+) -> String {
+  if not(client.authenticated) {
+    return jsonrpc_error_response(request.id, -32000, "Not authenticated", None)
+  }
+  match client.auth_context {
+    Some(ctx) => handler(ctx)
+    None =>
+      jsonrpc_error_response(request.id, -32000, "Invalid auth context", None)
+  }
+}
+
+///|
 /// Handle auth request
 fn WsGatewayHandler::handle_auth(
   self : WsGatewayHandler,
@@ -136,8 +154,8 @@ fn WsGatewayHandler::handle_auth(
 }
 
 ///|
-/// Handle gateway.status request
-fn WsGatewayHandler::handle_gateway_status(
+/// Handle gateway.status request (async)
+async fn WsGatewayHandler::handle_gateway_status(
   self : WsGatewayHandler,
   request : @interfaces.JsonRpcRequest,
 ) -> String {

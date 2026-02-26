@@ -139,7 +139,7 @@ pub fn StdioTransportHandler::start(self : StdioTransportHandler) -> Unit raise 
 
 ///|
 /// Stop the transport (terminate child process)
-pub fn StdioTransportHandler::stop(self : StdioTransportHandler) -> Unit raise {
+pub fn StdioTransportHandler::stop(self : StdioTransportHandler) -> Unit {
   match self.pid {
     Some(_) =>
       // Process termination will be handled in Phase 7
@@ -210,7 +210,7 @@ pub fn StdioTransportHandler::increment_restart_counter(
 }
 
 ///|
-/// Implementation of PluginTransportHandler trait
+/// Implementation of PluginTransportHandler trait (async)
 pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with start(
   self,
 ) {
@@ -232,7 +232,7 @@ pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with is_ac
 }
 
 ///|
-/// Send a JSON-RPC request
+/// Send a JSON-RPC request (async)
 pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with send_request(
   self,
   request,
@@ -259,7 +259,7 @@ pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with send_
 }
 
 ///|
-/// Send a notification (no response expected)
+/// Send a notification (no response expected) (async)
 pub impl @interfaces.PluginTransportHandler for StdioTransportHandler with send_notification(
   self,
   request,

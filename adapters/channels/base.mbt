@@ -281,8 +281,8 @@ pub impl @interfaces.ChannelManager for ChannelManagerImpl with disconnect_all(
 }
 
 ///|
-/// 全チャネルにメッセージをブロードキャスト
-pub fn ChannelManagerImpl::broadcast(
+/// 全チャネルにメッセージをブロードキャスト (async)
+pub async fn ChannelManagerImpl::broadcast(
   self : ChannelManagerImpl,
   message : @types.OutboundMessage,
 ) -> Unit {

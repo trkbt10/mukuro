@@ -15,7 +15,6 @@ import {
 warnings = "-29"
 
 options(
-  link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
   "native-stub": [ "ffi_stubs.c", "sqlite_stubs.c", "ws_server_stubs.c" ],
   targets: {
     "clock.mbt": [ "native" ],

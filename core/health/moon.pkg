@@ -1,3 +1,7 @@
 import {
   "trkbt10/mukuro/interfaces",
 }
+
+import "test" {
+  "moonbitlang/async",
+}

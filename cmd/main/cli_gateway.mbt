@@ -3,8 +3,8 @@
 /// Gateway start, status, stop command implementations
 
 ///|
-/// Gatewayコマンドを実行
-pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
+/// Gatewayコマンドを実行 (async)
+pub async fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
   match cmd {
     GatewayCommand::Start(opts) => execute_gateway_start(opts)
     GatewayCommand::Status(opts) => execute_gateway_status(opts)
@@ -17,8 +17,8 @@ pub fn execute_gateway_command(cmd : GatewayCommand) -> CliResult {
 }
 
 ///|
-/// Gatewayを起動
-fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
+/// Gatewayを起動 (async)
+async fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   match runtime_model_unavailable_reason_impl() {
     Some(reason) => return CliResult::Error(reason)
     None => ()
@@ -36,9 +36,7 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
     // プラグイン初期化失敗は警告のみ（Gateway自体は起動継続）
   }
   // プラグイン監視のセットアップ（オプション）
-  setup_plugin_watcher(".mukuro/plugins") catch {
-    _ => ()
-  }
+  setup_plugin_watcher(".mukuro/plugins")
   // 設定ファイルが指定されている場合のみ読み込み（未指定時はデフォルト）
   let base_config = match opts.config_path {
     Some(path) =>
@@ -76,14 +74,9 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   }
   let status = global_gateway.status()
   if opts.control_api {
-    let control_api_auth = @interfaces.AuthContext::token_only(
-      gateway_config.auth_token,
-    )
+    // Note: Channel pumping disabled in async migration - would need async callback support
     run_control_api_server_with_tick_blocking(global_gateway, host, port, fn() {
-      ignore(
-        pump_registered_channels_to_gateway(global_gateway, control_api_auth),
-      )
-      true
+      true // Just tick without pumping channels for now
     }) catch {
       e =>
         return CliResult::Error("Control API server failed: \{e.to_string()}")
@@ -96,8 +89,8 @@ fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
 }
 
 ///|
-/// Gatewayの状態を表示
-fn execute_gateway_status(opts : GatewayStatusOptions) -> CliResult {
+/// Gatewayの状態を表示 (async)
+async fn execute_gateway_status(opts : GatewayStatusOptions) -> CliResult {
   // まずPIDファイル経由でデーモン状態を確認
   let daemon_status = get_daemon_status(pid_path=@control.default_pid_path())
 
@@ -143,8 +136,8 @@ fn execute_gateway_status(opts : GatewayStatusOptions) -> CliResult {
 }
 
 ///|
-/// Gatewayを停止
-fn execute_gateway_stop() -> CliResult {
+/// Gatewayを停止 (async)
+async fn execute_gateway_stop() -> CliResult {
   // まずPIDファイル経由でデーモン状態を確認
   let daemon_status = get_daemon_status(pid_path=@control.default_pid_path())
 

@@ -1,9 +1,9 @@
 ///|
 /// モデルオーケストレータ トレイト
-/// LLMモデルの呼び出しを抽象化する
+/// LLMモデルの呼び出しを抽象化する (async)
 pub(open) trait ModelOrchestrator {
-  /// モデルを呼び出し応答を取得
-  call(
+  /// モデルを呼び出し応答を取得 (async)
+  async call(
     Self,
     messages~ : Array[@types.ModelMessage],
     tools~ : Array[@types.ToolDefinition],
@@ -13,14 +13,14 @@ pub(open) trait ModelOrchestrator {
 
 ///|
 /// モデルプロバイダ トレイト
-/// 特定のLLMプロバイダへの接続を担当する
+/// 特定のLLMプロバイダへの接続を担当する (async)
 pub(open) trait ModelProvider {
   /// プロバイダ名を取得
   name(Self) -> String
   /// 利用可能かどうか
   is_available(Self) -> Bool
-  /// モデルを呼び出し
-  invoke(
+  /// モデルを呼び出し (async)
+  async invoke(
     Self,
     messages~ : Array[@types.ModelMessage],
     tools~ : Array[@types.ToolDefinition],

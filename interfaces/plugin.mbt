@@ -280,16 +280,16 @@ pub(all) suberror PluginError {
 
 ///|
 /// Plugin host trait
-/// Manages plugin lifecycle and communication
+/// Manages plugin lifecycle and communication (async)
 pub(open) trait PluginHost {
   /// Load plugins from directory
   load_plugins(Self, path~ : String) -> Unit raise
 
-  /// Start a plugin by ID
-  start_plugin(Self, id~ : String) -> Unit raise
+  /// Start a plugin by ID (async)
+  async start_plugin(Self, id~ : String) -> Unit raise
 
-  /// Stop a plugin by ID
-  stop_plugin(Self, id~ : String) -> Unit raise
+  /// Stop a plugin by ID (async)
+  async stop_plugin(Self, id~ : String) -> Unit raise
 
   /// Get plugin status
   get_status(Self, id~ : String) -> PluginStatus raise
@@ -297,8 +297,8 @@ pub(open) trait PluginHost {
   /// List all plugins
   list_plugins(Self) -> Array[PluginManifest]
 
-  /// Send a JSON-RPC request to a plugin
-  send_request(Self, plugin_id~ : String, request~ : JsonRpcRequest) -> JsonRpcResponse raise
+  /// Send a JSON-RPC request to a plugin (async)
+  async send_request(Self, plugin_id~ : String, request~ : JsonRpcRequest) -> JsonRpcResponse raise
 }
 
 ///|

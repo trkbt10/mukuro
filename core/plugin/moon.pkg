@@ -4,3 +4,7 @@ import {
   "trkbt10/mukuro/core/plugin/transport" @transport,
   "moonbitlang/core/json",
 }
+
+import "test" {
+  "moonbitlang/async",
+}
