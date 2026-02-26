@@ -1,6 +1,6 @@
 ///|
-/// mukuro アプリケーション固有のパス解決モジュール
-/// core/dirs を使ってOS標準ディレクトリを取得し、mukuro固有のパスを構築
+/// mukuro 設定パス解決モジュール
+/// PathMode を管理し、設定ディレクトリ・ファイルのパスを解決する
 
 ///|
 /// パスモード
@@ -15,7 +15,7 @@ pub(all) enum PathMode {
 
 ///|
 /// mukuro ディレクトリ名（Local mode用）
-let mukuro_dir_name : String = ".mukuro"
+pub let mukuro_dir_name : String = ".mukuro"
 
 ///|
 /// アプリ名（Standard mode用）
@@ -48,6 +48,12 @@ pub fn config_dir() -> String {
 }
 
 ///|
+/// 設定ファイルのパスを取得
+pub fn config_file() -> String {
+  config_dir() + "/config.json"
+}
+
+///|
 /// 現在のモードに応じたデータディレクトリを取得
 pub fn data_dir() -> String {
   match path_mode.val {
@@ -71,12 +77,6 @@ pub fn cache_dir() -> String {
 /// ローカル(.mukuro)ディレクトリのパスを取得
 pub fn local_dir() -> String {
   mukuro_dir_name
-}
-
-///|
-/// 設定ファイルのパスを取得
-pub fn config_file() -> String {
-  config_dir() + "/config.json"
 }
 
 ///|

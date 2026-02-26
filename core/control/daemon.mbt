@@ -22,25 +22,25 @@ pub(all) suberror DaemonError {
 ///|
 /// PIDファイルパス（デフォルト）
 pub fn default_pid_path() -> String {
-  @paths.pid_file()
+  @config.pid_file()
 }
 
 ///|
 /// IPCソケットパス（デフォルト）
 pub fn default_ipc_socket_path() -> String {
-  @paths.socket_file()
+  @config.socket_file()
 }
 
 ///|
 /// 状態スナップショットパス（デフォルト）
 pub fn default_gateway_state_path() -> String {
-  @paths.state_file()
+  @config.state_file()
 }
 
 ///|
 /// IPC認証トークンファイルパス（デフォルト）
 pub fn default_gateway_token_path() -> String {
-  @paths.token_file()
+  @config.token_file()
 }
 
 ///|

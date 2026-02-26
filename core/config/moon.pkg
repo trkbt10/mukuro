@@ -1,4 +1,5 @@
 import {
+  "trkbt10/mukuro/lib/dirs" @dirs,
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,

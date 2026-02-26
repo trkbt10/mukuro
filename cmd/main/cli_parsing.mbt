@@ -7,19 +7,19 @@
 pub fn parse_global_options(
   args : Array[String],
 ) -> (GlobalOptions, Array[String]) {
-  let opts : GlobalOptions = { path_mode: @paths.PathMode::Standard }
+  let opts : GlobalOptions = { path_mode: @config.PathMode::Standard }
   let remaining : Array[String] = []
   let mut i = 0
   while i < args.length() {
     let arg = args[i]
     match arg {
       "--local" => {
-        opts.path_mode = @paths.PathMode::Local
+        opts.path_mode = @config.PathMode::Local
         i = i + 1
       }
       "--data-dir" =>
         if i + 1 < args.length() {
-          opts.path_mode = @paths.PathMode::Custom(args[i + 1])
+          opts.path_mode = @config.PathMode::Custom(args[i + 1])
           i = i + 2
         } else {
           i = i + 1

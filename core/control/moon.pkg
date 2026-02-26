@@ -1,7 +1,7 @@
 import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/types",
-  "trkbt10/mukuro/core/paths" @paths,
+  "trkbt10/mukuro/core/config" @config,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8" @utf8,
 }

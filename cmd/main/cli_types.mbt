@@ -10,7 +10,7 @@ pub let version : String = "0.1.0"
 /// グローバルオプション（全コマンド共通）
 pub(all) struct GlobalOptions {
   /// パスモード: Standard（デフォルト）、Local、Custom
-  mut path_mode : @paths.PathMode
+  mut path_mode : @config.PathMode
 }
 
 ///|

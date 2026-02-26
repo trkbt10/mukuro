@@ -90,7 +90,7 @@ fn print_result(result : CliResult) -> Unit {
 ///|
 /// グローバルオプションを適用
 fn apply_global_options(opts : GlobalOptions) -> Unit {
-  @paths.set_path_mode(opts.path_mode)
+  @config.set_path_mode(opts.path_mode)
 }
 
 ///|

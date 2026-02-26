@@ -1,5 +1,0 @@
-import {
-  "trkbt10/mukuro/lib/dirs" @dirs,
-}
-
-warnings = "-29"
