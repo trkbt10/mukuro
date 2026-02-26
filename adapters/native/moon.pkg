@@ -5,7 +5,6 @@ import {
   "mizchi/x/websocket" @websocket,
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/control",
-  "trkbt10/mukuro/core/crypto" @crypto,
   "trkbt10/mukuro/core/logging" @logging,
   "trkbt10/mukuro/core/plugin/transport" @plugin_transport,
   "moonbitlang/core/json",

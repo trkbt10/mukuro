@@ -9,7 +9,6 @@ pub struct NativePlatform {
   http_client : NativeHttpClient
   process : NativeProcessExecutor
   timer : NativeTimer
-  crypto : NativeCrypto
   random : NativeRandom
 }
 
@@ -22,7 +21,6 @@ pub fn NativePlatform::new() -> NativePlatform {
     http_client: NativeHttpClient::default(),
     process: NativeProcessExecutor::default(),
     timer: NativeTimer::new(),
-    crypto: NativeCrypto::new(),
     random: NativeRandom::new(),
   }
 }
@@ -49,7 +47,6 @@ pub fn NativePlatform::with_config(
     ),
     process: NativeProcessExecutor::default(),
     timer: NativeTimer::new(),
-    crypto: NativeCrypto::new(),
     random: NativeRandom::new(),
   }
 }

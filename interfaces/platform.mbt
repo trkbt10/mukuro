@@ -196,19 +196,6 @@ pub(open) trait Random {
 }
 
 ///|
-/// 暗号化 トレイト
-pub(open) trait Crypto {
-  /// SHA-256ハッシュを計算
-  sha256(Self, data~ : Bytes) -> Bytes
-  /// HMAC-SHA256を計算
-  hmac_sha256(Self, key~ : Bytes, data~ : Bytes) -> Bytes
-  /// Base64エンコード
-  base64_encode(Self, data~ : Bytes) -> String
-  /// Base64デコード
-  base64_decode(Self, data~ : String) -> Bytes raise
-}
-
-///|
 /// プラットフォームランタイム
 /// 全プラットフォーム機能を統合したインターフェース
 pub(all) struct PlatformRuntime {

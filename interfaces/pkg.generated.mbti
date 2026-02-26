@@ -6,6 +6,129 @@ import {
 }
 
 // Values
+pub fn extract_bearer_token(String) -> String?
+
+pub fn extract_parameters(Json) -> Array[ToolParameter]
+
+pub fn format_bearer_token(String) -> String
+
+pub fn[P : ConnectablePlugin] handle_connect_common(P, JsonRpcRequest) -> JsonRpcResponse
+
+pub fn[P : ConnectablePlugin] handle_disconnect_common(P, JsonRpcRequest) -> JsonRpcResponse
+
+pub fn json_array_field(Map[String, Json], String) -> Array[Json]?
+
+pub fn json_bool_field(Map[String, Json], String) -> Bool?
+
+pub fn json_bool_or(Map[String, Json], String, Bool) -> Bool
+
+pub fn json_double_field(Map[String, Json], String) -> Double?
+
+pub fn json_double_or(Map[String, Json], String, Double) -> Double
+
+pub fn json_int64_field(Map[String, Json], String) -> Int64?
+
+pub fn json_int64_or(Map[String, Json], String, Int64) -> Int64
+
+pub fn json_int_field(Map[String, Json], String) -> Int?
+
+pub fn json_int_or(Map[String, Json], String, Int) -> Int
+
+pub fn json_object_field(Map[String, Json], String) -> Map[String, Json]?
+
+pub fn json_string_field(Map[String, Json], String) -> String?
+
+pub fn json_string_or(Map[String, Json], String, String) -> String
+
+pub fn jsonrpc_error_internal_error() -> Int
+
+pub fn jsonrpc_error_invalid_params() -> Int
+
+pub fn jsonrpc_error_invalid_request() -> Int
+
+pub fn jsonrpc_error_method_not_found() -> Int
+
+pub fn jsonrpc_error_parse_error() -> Int
+
+pub fn[P : MessagingPlugin] messaging_receive_response(P, Int?) -> JsonRpcResponse
+
+pub fn[P : MessagingPlugin + ConnectablePlugin] messaging_status_response(P, Map[String, Json], Int?) -> JsonRpcResponse
+
+pub fn parse_capability_schema(Json) -> CapabilitySchema?
+
+pub fn plugin_method_connect() -> String
+
+pub fn plugin_method_disconnect() -> String
+
+pub fn plugin_method_message_received() -> String
+
+pub fn plugin_method_receive() -> String
+
+pub fn plugin_method_send() -> String
+
+pub fn plugin_method_status() -> String
+
+pub fn rpc_connect_response(Int?) -> JsonRpcResponse
+
+pub fn rpc_disconnect_response(Int?) -> JsonRpcResponse
+
+pub fn rpc_double_array(JsonRpcRequest, String) -> Array[Double]
+
+pub fn rpc_double_or_none(JsonRpcRequest, String) -> Double?
+
+pub fn rpc_get_params(JsonRpcRequest) -> Map[String, Json]?
+
+pub fn rpc_int64_or_none(JsonRpcRequest, String) -> Int64?
+
+pub fn rpc_int_or_none(JsonRpcRequest, String) -> Int?
+
+pub fn rpc_invalid_params(String, Int?) -> JsonRpcResponse
+
+pub fn rpc_method_not_found(String, Int?) -> JsonRpcResponse
+
+pub fn rpc_not_found(String, Int?) -> JsonRpcResponse
+
+pub fn rpc_null_result(String, Int?) -> JsonRpcResponse
+
+pub fn rpc_object_or_none(JsonRpcRequest, String) -> Map[String, Json]?
+
+pub fn rpc_ok(Int?) -> JsonRpcResponse
+
+pub fn rpc_optional_bool(JsonRpcRequest, String, Bool) -> Bool
+
+pub fn rpc_optional_double(JsonRpcRequest, String, Double) -> Double
+
+pub fn rpc_optional_int(JsonRpcRequest, String, Int) -> Int
+
+pub fn rpc_optional_int64(JsonRpcRequest, String, Int64) -> Int64
+
+pub fn rpc_optional_string(JsonRpcRequest, String, String) -> String
+
+pub fn rpc_require_bool(JsonRpcRequest, String) -> Result[Bool, JsonRpcResponse]
+
+pub fn rpc_require_double(JsonRpcRequest, String) -> Result[Double, JsonRpcResponse]
+
+pub fn rpc_require_int(JsonRpcRequest, String) -> Result[Int, JsonRpcResponse]
+
+pub fn rpc_require_int64(JsonRpcRequest, String) -> Result[Int64, JsonRpcResponse]
+
+pub fn rpc_require_string(JsonRpcRequest, String) -> Result[String, JsonRpcResponse]
+
+pub fn rpc_status_response(Bool, Map[String, Json], Int?) -> JsonRpcResponse
+
+pub fn rpc_string_array(JsonRpcRequest, String) -> Array[String]
+
+pub fn rpc_string_or_none(JsonRpcRequest, String) -> String?
+
+pub fn[T] rpc_success_array(String, Array[T], (T) -> Json, Int?) -> JsonRpcResponse
+
+pub fn rpc_success_bool(String, Bool, Int?) -> JsonRpcResponse
+
+pub fn rpc_success_double(String, Double, Int?) -> JsonRpcResponse
+
+pub fn rpc_success_int(String, Int, Int?) -> JsonRpcResponse
+
+pub fn rpc_success_status(String, Int?) -> JsonRpcResponse
 
 // Errors
 pub(all) suberror AuthError {
@@ -30,6 +153,56 @@ pub(all) suberror ControlError {
   InternalError(String)
 }
 
+pub(all) suberror HttpError {
+  ConnectionError(String)
+  Timeout
+  InvalidUrl(String)
+  ParseError(String)
+  StatusError(Int, String)
+}
+
+pub(all) suberror PluginAuthError {
+  MissingToken(String)
+  InvalidToken(String)
+  TokenExpired(String)
+  AuthNotConfigured(String)
+}
+
+pub(all) suberror PluginError {
+  NotFound(String)
+  StartFailed(String)
+  CommunicationError(String)
+  InvalidManifest(String)
+  MethodNotSupported(String)
+}
+
+pub(all) suberror PluginManagerError {
+  NotFound(String)
+  AlreadyExists(String)
+  InvalidManifest(String)
+  Disabled(String)
+  WatchError(String)
+  FilesystemError(String)
+}
+
+pub(all) suberror ToolError {
+  NotFound(String)
+  InvalidArguments(String)
+  ExecutionFailed(String)
+  PermissionDenied(String)
+  Timeout
+}
+
+pub(all) suberror TransportError {
+  ConnectionFailed(String)
+  ConnectionLost(String)
+  Timeout(String)
+  ProtocolError(String)
+  AlreadyStarted
+  NotStarted
+  SendFailed(String)
+}
+
 // Types and methods
 pub(all) struct AuthContext {
   token : String
@@ -44,6 +217,17 @@ pub(all) enum AuthResult {
   Denied(String)
   Expired
 }
+
+pub(all) struct CapabilitySchema {
+  description : String
+  parameters : Json
+  returns : Json?
+  examples : Array[Json]
+}
+pub fn CapabilitySchema::default(description~ : String) -> Self
+pub fn CapabilitySchema::full(description~ : String, parameters~ : Json, returns~ : Json, examples~ : Array[Json]) -> Self
+pub fn CapabilitySchema::to_json(Self) -> Json
+pub fn CapabilitySchema::with_params(description~ : String, parameters~ : Json) -> Self
 
 pub(all) enum ChannelEvent {
   MessageReceived(@types.InboundEnvelope)
@@ -179,6 +363,55 @@ pub(all) struct HttpResponse {
   body : Bytes
 }
 
+pub(all) struct JsonRpcError {
+  code : Int
+  message : String
+  data : Json?
+}
+
+pub(all) struct JsonRpcRequest {
+  jsonrpc : String
+  rpc_method : String
+  params : Json?
+  id : Int?
+}
+pub fn JsonRpcRequest::from_json(Json) -> Self?
+pub fn JsonRpcRequest::new(rpc_method~ : String, params~ : Json?, id~ : Int?) -> Self
+pub fn JsonRpcRequest::to_json(Self) -> Json
+
+pub(all) struct JsonRpcResponse {
+  jsonrpc : String
+  result : Json?
+  error : JsonRpcError?
+  id : Int?
+}
+pub fn JsonRpcResponse::error(code~ : Int, message~ : String, id~ : Int?) -> Self
+pub fn JsonRpcResponse::success(result~ : Json, id~ : Int?) -> Self
+pub fn JsonRpcResponse::to_json(Self) -> Json
+
+pub struct JsonSchemaBuilder {
+  properties : Map[String, JsonSchemaProperty]
+  required : Array[String]
+  description : String?
+}
+pub fn JsonSchemaBuilder::add_property(Self, String, JsonSchemaProperty) -> Self
+pub fn JsonSchemaBuilder::build(Self) -> Json
+pub fn JsonSchemaBuilder::new() -> Self
+pub fn JsonSchemaBuilder::with_description(Self, String) -> Self
+
+pub(all) struct JsonSchemaProperty {
+  schema_type : String
+  description : String
+  required : Bool
+  default_value : Json?
+  enum_values : Array[Json]?
+}
+pub fn JsonSchemaProperty::boolean(description~ : String, default~ : Bool?) -> Self
+pub fn JsonSchemaProperty::number(description~ : String) -> Self
+pub fn JsonSchemaProperty::optional_string(description~ : String, default~ : String?) -> Self
+pub fn JsonSchemaProperty::string(description~ : String) -> Self
+pub fn JsonSchemaProperty::to_json(Self) -> Json
+
 pub(all) struct LogContext {
   request_id : String?
   agent_id : String?
@@ -202,6 +435,13 @@ pub(all) enum LogLevel {
   Error
 }
 
+pub(all) struct PendingRequest {
+  id : Int
+  sent_at : Int64
+  timeout_ms : Int
+}
+pub fn PendingRequest::is_timed_out(Self, Int64) -> Bool
+
 pub(all) struct PlatformInfo {
   platform_type : PlatformType
   arch : String
@@ -224,6 +464,138 @@ pub(all) enum PlatformType {
   Native(String)
   Unknown
 }
+
+pub(all) struct PluginAuthConfig {
+  mode : PluginAuthMode
+  host_token : String?
+  plugin_token : String?
+  token_header : String
+}
+pub fn PluginAuthConfig::default() -> Self
+pub fn PluginAuthConfig::host_only(host_token~ : String, token_header~ : String) -> Self
+pub fn PluginAuthConfig::mutual(host_token~ : String, plugin_token~ : String, token_header~ : String) -> Self
+pub fn PluginAuthConfig::plugin_only(plugin_token~ : String, token_header~ : String) -> Self
+pub fn PluginAuthConfig::requires_host_token(Self) -> Bool
+pub fn PluginAuthConfig::requires_plugin_token(Self) -> Bool
+
+pub(all) enum PluginAuthMode {
+  None
+  HostOnly
+  PluginOnly
+  Mutual
+}
+pub fn PluginAuthMode::from_string(String) -> Self
+pub fn PluginAuthMode::to_string(Self) -> String
+
+pub(all) enum PluginAuthResult {
+  Authenticated
+  NotRequired
+  Failed(String)
+}
+
+pub(all) enum PluginChangeEvent {
+  Added(String)
+  Modified(String)
+  Removed(String)
+}
+
+pub(all) struct PluginHttpConfig {
+  port : Int
+  base_url : String?
+  endpoints : Map[String, PluginHttpEndpoint]
+}
+
+pub(all) struct PluginHttpEndpoint {
+  http_method : String
+  path : String
+}
+
+pub(all) struct PluginInstance {
+  manifest : PluginManifest
+  mut status : PluginStatus
+  mut pid : Int?
+}
+
+pub(all) struct PluginManifest {
+  id : String
+  name : String
+  version : String
+  plugin_type : PluginType
+  transport : PluginTransport
+  http : PluginHttpConfig?
+  entry : String?
+  capabilities : Array[String]
+  config : Json?
+}
+pub fn PluginManifest::default(id~ : String, name~ : String) -> Self
+
+pub(all) struct PluginState {
+  id : String
+  enabled : Bool
+  auto_start : Bool
+  status : PluginStatus
+  loaded_at : Int64
+  modified_at : Int64
+}
+pub fn PluginState::default(id~ : String) -> Self
+
+pub(all) enum PluginStatus {
+  Stopped
+  Starting
+  Running
+  Error(String)
+}
+
+pub(all) struct PluginStdioConfig {
+  command : String
+  args : Array[String]
+  cwd : String?
+  env : Map[String, String]
+  framing : StdioFraming
+  startup_timeout_ms : Int
+  restart_policy : RestartPolicy
+}
+pub fn PluginStdioConfig::default(command~ : String) -> Self
+
+pub(all) struct PluginTlsConfig {
+  enabled : Bool
+  verify_host : Bool
+  ca_cert_path : String?
+  client_cert_path : String?
+  client_key_path : String?
+}
+pub fn PluginTlsConfig::default() -> Self
+pub fn PluginTlsConfig::is_mutual_tls(Self) -> Bool
+pub fn PluginTlsConfig::mutual_tls(ca_cert_path~ : String, client_cert_path~ : String, client_key_path~ : String) -> Self
+pub fn PluginTlsConfig::with_verification(ca_cert_path~ : String) -> Self
+
+pub(all) enum PluginTransport {
+  Http
+  Stdio
+  WebSocket
+}
+
+pub(all) enum PluginType {
+  Channel
+  Tool
+  Storage
+  Custom(String)
+}
+
+pub(all) struct PluginWatcherCallback {
+  on_added : async (String) -> Unit
+  on_modified : async (String) -> Unit
+  on_removed : async (String) -> Unit
+}
+pub fn PluginWatcherCallback::default() -> Self
+
+pub(all) struct PluginWebSocketConfig {
+  url : String
+  headers : Map[String, String]
+  reconnect : ReconnectConfig
+  heartbeat_interval_ms : Int
+}
+pub fn PluginWebSocketConfig::default(url~ : String) -> Self
 
 pub(all) struct ProcessOptions {
   cwd : String?
@@ -249,6 +621,20 @@ pub(all) enum ProviderError {
 }
 pub fn ProviderError::is_retriable(Self) -> Bool
 
+pub(all) struct ReconnectConfig {
+  enabled : Bool
+  max_attempts : Int
+  base_delay_ms : Int
+  max_delay_ms : Int
+}
+pub fn ReconnectConfig::default() -> Self
+
+pub(all) enum RestartPolicy {
+  Never
+  OnFailure(max_retries~ : Int, delay_ms~ : Int)
+  Always(base_delay_ms~ : Int, max_delay_ms~ : Int)
+}
+
 pub(all) enum Schedule {
   Cron(String)
   Interval(Int64)
@@ -262,10 +648,25 @@ pub(all) struct ScheduledTask {
   enabled : Bool
 }
 
+pub struct SimpleTokenAuthenticator {
+  plugin_tokens : Map[String, String]
+  host_tokens : Map[String, String]
+}
+pub fn SimpleTokenAuthenticator::new() -> Self
+pub fn SimpleTokenAuthenticator::register_host_token(Self, String, String) -> Unit
+pub fn SimpleTokenAuthenticator::register_plugin_token(Self, String, String) -> Unit
+pub fn SimpleTokenAuthenticator::validate(Self, String, String) -> PluginAuthResult
+pub impl PluginAuthenticator for SimpleTokenAuthenticator
+
 pub(all) struct SkillDefinition {
   name : String
   description : String
   instructions : String
+}
+
+pub(all) enum StdioFraming {
+  NewlineDelimited
+  LengthPrefixed
 }
 
 pub(all) struct SystemHealth {
@@ -277,13 +678,45 @@ pub(all) struct SystemHealth {
 }
 pub fn SystemHealth::new(checks~ : Array[HealthCheck], uptime_ms~ : Int64, version~ : String, checked_at~ : Int64) -> Self
 
-pub(all) enum ToolError {
-  NotFound(String)
-  InvalidArguments(String)
-  ExecutionFailed(String)
-  PermissionDenied(String)
-  Timeout
+pub(all) struct ToolParameter {
+  name : String
+  param_type : String
+  description : String
+  required : Bool
 }
+
+pub(all) struct TransportConfig {
+  timeout_ms : Int
+  request_timeout_ms : Int
+  auto_reconnect : Bool
+  max_reconnect_attempts : Int
+  reconnect_base_delay_ms : Int
+  reconnect_max_delay_ms : Int
+}
+pub fn TransportConfig::default() -> Self
+
+pub(all) enum TransportState {
+  Disconnected
+  Connecting
+  Connected
+  Reconnecting
+  Stopped
+  Error(String)
+}
+
+pub(all) struct UnifiedMessage {
+  id : String
+  chat_id : String
+  sender_id : String
+  sender_name : String
+  content : String
+  timestamp : Int64
+  reply_to : String?
+  metadata : Map[String, Json]
+}
+pub fn UnifiedMessage::new(id~ : String, chat_id~ : String, sender_id~ : String, sender_name~ : String, content~ : String, timestamp~ : Int64) -> Self
+pub fn UnifiedMessage::to_json(Self) -> Json
+pub fn UnifiedMessage::with_reply(id~ : String, chat_id~ : String, sender_id~ : String, sender_name~ : String, content~ : String, timestamp~ : Int64, reply_to~ : String) -> Self
 
 pub(all) enum WsMessage {
   Text(String)
@@ -304,11 +737,11 @@ pub(open) trait Authenticator {
 
 pub(open) trait ChannelAdapter {
   name(Self) -> String
-  connect(Self) -> Unit raise
-  disconnect(Self) -> Unit raise
+  async connect(Self) -> Unit
+  async disconnect(Self) -> Unit
   is_connected(Self) -> Bool
-  send(Self, @types.OutboundMessage) -> Unit raise
-  receive(Self) -> @types.InboundEnvelope raise
+  async send(Self, @types.OutboundMessage) -> Unit
+  async receive(Self) -> @types.InboundEnvelope
 }
 
 pub(open) trait ChannelManager {
@@ -316,8 +749,8 @@ pub(open) trait ChannelManager {
   unregister(Self, String) -> Unit
   get_channel(Self, String) -> &ChannelAdapter?
   list_channels(Self) -> Array[String]
-  connect_all(Self) -> Unit raise
-  disconnect_all(Self) -> Unit raise
+  async connect_all(Self) -> Unit
+  async disconnect_all(Self) -> Unit
 }
 
 pub(open) trait Clock {
@@ -336,15 +769,26 @@ pub(open) trait ConfigValidator {
   validate(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
 }
 
+pub(open) trait ConnectablePlugin {
+  is_connected(Self) -> Bool
+  set_connected(Self, Bool) -> Unit
+}
+
 pub(open) trait ContextBuilder {
   build(Self, ContextInput) -> Array[@types.ModelMessage]
 }
 
-pub(open) trait Crypto {
-  sha256(Self, data~ : Bytes) -> Bytes
-  hmac_sha256(Self, key~ : Bytes, data~ : Bytes) -> Bytes
-  base64_encode(Self, data~ : Bytes) -> String
-  base64_decode(Self, data~ : String) -> Bytes raise
+pub(open) trait DynamicPluginManager {
+  scan_plugins(Self) -> Array[String] raise
+  add_plugin(Self, manifest_path~ : String) -> Unit raise
+  async remove_plugin(Self, id~ : String) -> Unit
+  async enable_plugin(Self, id~ : String) -> Unit
+  async disable_plugin(Self, id~ : String) -> Unit
+  async reload_plugin(Self, id~ : String) -> Unit
+  get_plugin_state(Self, id~ : String) -> PluginState raise
+  list_plugin_states(Self) -> Array[PluginState]
+  start_watching(Self) -> Unit raise
+  stop_watching(Self) -> Unit
 }
 
 pub(open) trait Environment {
@@ -371,33 +815,30 @@ pub(open) trait GatewayEventListener {
 }
 
 pub(open) trait GatewayService {
-  start(Self, config~ : GatewayConfig) -> Unit raise ControlError
-  stop(Self) -> Unit raise ControlError
-  status(Self) -> GatewayStatus
+  async start(Self, config~ : GatewayConfig) -> Unit raise ControlError
+  async stop(Self) -> Unit raise ControlError
+  async status(Self) -> GatewayStatus
   authenticate(Self, token~ : String) -> AuthResult
-  dispatch_inbound(Self, auth~ : AuthContext, envelope~ : @types.InboundEnvelope) -> Unit raise ControlError
-  dispatch_outbound(Self, auth~ : AuthContext, message~ : @types.OutboundMessage) -> Unit raise ControlError
+  async dispatch_inbound(Self, auth~ : AuthContext, envelope~ : @types.InboundEnvelope) -> Unit raise ControlError
+  async dispatch_outbound(Self, auth~ : AuthContext, message~ : @types.OutboundMessage) -> Unit raise ControlError
 }
 
 pub(open) trait HealthAggregator {
   register(Self, checker~ : &HealthChecker) -> Unit
   unregister(Self, name~ : String) -> Unit
-  check_all(Self) -> SystemHealth
-  check_all_async(Self, on_complete~ : (SystemHealth) -> Unit) -> Unit
-  get_check(Self, name~ : String) -> HealthCheck?
+  async check_all(Self) -> SystemHealth
   list_checkers(Self) -> Array[String]
 }
 
 pub(open) trait HealthChecker {
   name(Self) -> String
-  check(Self) -> HealthCheck
-  check_async(Self, on_complete~ : (HealthCheck) -> Unit) -> Unit
+  async check(Self) -> HealthCheck
 }
 
 pub(open) trait HttpClient {
-  request(Self, HttpRequest) -> HttpResponse raise
-  get(Self, url~ : String, headers~ : Map[String, String]) -> HttpResponse raise
-  post(Self, url~ : String, body~ : Bytes, headers~ : Map[String, String]) -> HttpResponse raise
+  async request(Self, HttpRequest) -> HttpResponse
+  async get(Self, url~ : String, headers~ : Map[String, String]) -> HttpResponse
+  async post(Self, url~ : String, body~ : Bytes, headers~ : Map[String, String]) -> HttpResponse
 }
 
 pub(open) trait HttpServer {
@@ -441,18 +882,61 @@ pub(open) trait MemoryStore {
   remove(Self, key~ : String) -> Unit raise
 }
 
+pub(open) trait MessagingPlugin {
+  name(Self) -> String
+  api_base_url(Self) -> String
+  api_endpoint(Self, String) -> String
+  receive(Self) -> UnifiedMessage?
+  pending_count(Self) -> Int
+}
+
 pub(open) trait ModelOrchestrator {
-  call(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse raise
+  async call(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse
 }
 
 pub(open) trait ModelProvider {
   name(Self) -> String
   is_available(Self) -> Bool
-  invoke(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse raise
+  async invoke(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse
 }
 
 pub(open) trait OutboundDispatcher {
-  dispatch(Self, @types.OutboundMessage) -> Unit raise
+  async dispatch(Self, @types.OutboundMessage) -> Unit
+}
+
+pub(open) trait PluginAuthenticator {
+  validate_plugin_token(Self, plugin_id~ : String, token~ : String) -> Bool
+  get_host_token(Self, plugin_id~ : String) -> String?
+  requires_auth(Self, plugin_id~ : String) -> Bool
+}
+
+pub(open) trait PluginHost {
+  load_plugins(Self, path~ : String) -> Unit raise
+  async start_plugin(Self, id~ : String) -> Unit
+  async stop_plugin(Self, id~ : String) -> Unit
+  get_status(Self, id~ : String) -> PluginStatus raise
+  list_plugins(Self) -> Array[PluginManifest]
+  async send_request(Self, plugin_id~ : String, request~ : JsonRpcRequest) -> JsonRpcResponse
+}
+
+pub(open) trait PluginMessageHandler {
+  handle_request(Self, JsonRpcRequest) -> JsonRpcResponse
+}
+
+pub(open) trait PluginTransportHandler {
+  async start(Self) -> Unit
+  async stop(Self) -> Unit
+  is_active(Self) -> Bool
+  async send_request(Self, JsonRpcRequest) -> JsonRpcResponse
+  async send_notification(Self, JsonRpcRequest) -> Unit
+  try_receive(Self) -> JsonRpcRequest?
+  on_message(Self, (JsonRpcRequest) -> Unit) -> Unit
+}
+
+pub(open) trait PluginWatcher {
+  watch(Self, path~ : String, callback~ : PluginWatcherCallback) -> Unit raise
+  stop(Self) -> Unit
+  is_watching(Self) -> Bool
 }
 
 pub(open) trait ProcessExecutor {
@@ -502,7 +986,7 @@ pub(open) trait Timer {
 }
 
 pub(open) trait ToolExecutor {
-  execute(Self, tool_name~ : String, arguments~ : Json, context~ : @types.ToolContext) -> @types.ToolResult raise
+  async execute(Self, tool_name~ : String, arguments~ : Json, context~ : @types.ToolContext) -> @types.ToolResult
 }
 
 pub(open) trait ToolRegistry {
