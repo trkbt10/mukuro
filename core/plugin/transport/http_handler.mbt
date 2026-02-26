@@ -180,7 +180,9 @@ pub fn HttpTransportHandler::has_http_client(
 
 ///|
 /// Get the base URL
-pub fn HttpTransportHandler::get_base_url(self : HttpTransportHandler) -> String {
+pub fn HttpTransportHandler::get_base_url(
+  self : HttpTransportHandler,
+) -> String {
   self.base_url
 }
 

@@ -129,6 +129,31 @@ pub fn SqliteMemoryPlugin::is_connected(self : SqliteMemoryPlugin) -> Bool {
 }
 
 ///|
+/// Set connected state
+pub fn SqliteMemoryPlugin::set_connected(
+  self : SqliteMemoryPlugin,
+  value : Bool,
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for SqliteMemoryPlugin with is_connected(
+  self
+) -> Bool {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for SqliteMemoryPlugin with set_connected(
+  self,
+  value
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
 /// Store a memory
 pub fn SqliteMemoryPlugin::remember(
   self : SqliteMemoryPlugin,
@@ -626,8 +651,7 @@ fn SqliteMemoryPlugin::handle_connect(
   self : SqliteMemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.connect()
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -635,8 +659,7 @@ fn SqliteMemoryPlugin::handle_disconnect(
   self : SqliteMemoryPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.disconnect()
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
 }
 
 ///|

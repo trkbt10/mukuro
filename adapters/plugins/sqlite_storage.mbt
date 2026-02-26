@@ -120,6 +120,31 @@ pub fn SqliteStoragePlugin::is_connected(self : SqliteStoragePlugin) -> Bool {
 }
 
 ///|
+/// Set connected state
+pub fn SqliteStoragePlugin::set_connected(
+  self : SqliteStoragePlugin,
+  value : Bool,
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for SqliteStoragePlugin with is_connected(
+  self
+) -> Bool {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for SqliteStoragePlugin with set_connected(
+  self,
+  value
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
 /// Set a value with optional TTL
 pub fn SqliteStoragePlugin::set(
   self : SqliteStoragePlugin,
@@ -385,8 +410,7 @@ fn SqliteStoragePlugin::handle_connect(
   self : SqliteStoragePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.connect()
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -394,8 +418,7 @@ fn SqliteStoragePlugin::handle_disconnect(
   self : SqliteStoragePlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.disconnect()
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
 }
 
 ///|

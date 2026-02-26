@@ -92,9 +92,7 @@ pub async fn NativeWebSocketClient::recv(
 
 ///|
 /// Close the connection
-pub async fn NativeWebSocketClient::close(
-  self : NativeWebSocketClient,
-) -> Unit {
+pub async fn NativeWebSocketClient::close(self : NativeWebSocketClient) -> Unit {
   match self.conn {
     Some(conn) => {
       conn.send_close() catch {

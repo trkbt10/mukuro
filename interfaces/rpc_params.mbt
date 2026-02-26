@@ -336,3 +336,121 @@ pub fn rpc_object_or_none(
     _ => None
   }
 }
+
+// ============================================================================
+// JSON Object Field Extraction Utilities
+// Direct extraction from Map[String, Json] without RPC context
+// ============================================================================
+
+///|
+/// Extract string from JSON object
+pub fn json_string_field(obj : Map[String, Json], key : String) -> String? {
+  match obj.get(key) {
+    Some(String(v)) => Some(v)
+    _ => None
+  }
+}
+
+///|
+/// Extract string with default value
+pub fn json_string_or(
+  obj : Map[String, Json],
+  key : String,
+  default : String,
+) -> String {
+  json_string_field(obj, key).unwrap_or(default)
+}
+
+///|
+/// Extract int from JSON object
+pub fn json_int_field(obj : Map[String, Json], key : String) -> Int? {
+  match obj.get(key) {
+    Some(Number(n, ..)) => Some(n.to_int())
+    _ => None
+  }
+}
+
+///|
+/// Extract int with default value
+pub fn json_int_or(obj : Map[String, Json], key : String, default : Int) -> Int {
+  json_int_field(obj, key).unwrap_or(default)
+}
+
+///|
+/// Extract int64 from JSON object
+pub fn json_int64_field(obj : Map[String, Json], key : String) -> Int64? {
+  match obj.get(key) {
+    Some(Number(n, ..)) => Some(n.to_int64())
+    _ => None
+  }
+}
+
+///|
+/// Extract int64 with default value
+pub fn json_int64_or(
+  obj : Map[String, Json],
+  key : String,
+  default : Int64,
+) -> Int64 {
+  json_int64_field(obj, key).unwrap_or(default)
+}
+
+///|
+/// Extract double from JSON object
+pub fn json_double_field(obj : Map[String, Json], key : String) -> Double? {
+  match obj.get(key) {
+    Some(Number(n, ..)) => Some(n)
+    _ => None
+  }
+}
+
+///|
+/// Extract double with default value
+pub fn json_double_or(
+  obj : Map[String, Json],
+  key : String,
+  default : Double,
+) -> Double {
+  json_double_field(obj, key).unwrap_or(default)
+}
+
+///|
+/// Extract bool from JSON object
+pub fn json_bool_field(obj : Map[String, Json], key : String) -> Bool? {
+  match obj.get(key) {
+    Some(True) => Some(true)
+    Some(False) => Some(false)
+    _ => None
+  }
+}
+
+///|
+/// Extract bool with default value
+pub fn json_bool_or(
+  obj : Map[String, Json],
+  key : String,
+  default : Bool,
+) -> Bool {
+  json_bool_field(obj, key).unwrap_or(default)
+}
+
+///|
+/// Extract nested object from JSON object
+pub fn json_object_field(
+  obj : Map[String, Json],
+  key : String,
+) -> Map[String, Json]? {
+  match obj.get(key) {
+    Some(Object(o)) => Some(o)
+    _ => None
+  }
+}
+
+///|
+/// Extract array from JSON object
+pub fn json_array_field(obj : Map[String, Json], key : String) -> Array[Json]? {
+  match obj.get(key) {
+    Some(Array(a)) => Some(a)
+    _ => None
+  }
+}

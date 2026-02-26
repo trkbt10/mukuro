@@ -195,6 +195,31 @@ pub fn TelegramPlugin::is_connected(self : TelegramPlugin) -> Bool {
 }
 
 ///|
+/// Set connection state (for ConnectablePlugin trait)
+pub fn TelegramPlugin::set_connected(
+  self : TelegramPlugin,
+  value : Bool,
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for TelegramPlugin with is_connected(
+  self,
+) -> Bool {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for TelegramPlugin with set_connected(
+  self,
+  value,
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
 /// Get API URL
 fn TelegramPlugin::api_url(
   self : TelegramPlugin,
@@ -901,8 +926,7 @@ fn TelegramPlugin::handle_connect(
   self : TelegramPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.connect()
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -910,8 +934,7 @@ fn TelegramPlugin::handle_disconnect(
   self : TelegramPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.disconnect()
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
 }
 
 ///|

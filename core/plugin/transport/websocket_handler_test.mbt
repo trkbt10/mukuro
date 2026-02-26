@@ -6,10 +6,7 @@ test "WebSocketTransportHandler: constructor with default config" {
   let config = @interfaces.PluginWebSocketConfig::default(
     url="ws://localhost:9000",
   )
-  let handler = WebSocketTransportHandler::new(
-    plugin_id="test-plugin",
-    config~,
-  )
+  let handler = WebSocketTransportHandler::new(plugin_id="test-plugin", config~)
   assert_false(@interfaces.PluginTransportHandler::is_active(handler))
 }
 
@@ -73,14 +70,9 @@ test "WebSocketTransportHandler: queue_incoming and try_receive" {
   let config = @interfaces.PluginWebSocketConfig::default(
     url="ws://localhost:9000",
   )
-  let handler = WebSocketTransportHandler::new(
-    plugin_id="test-plugin",
-    config~,
-  )
+  let handler = WebSocketTransportHandler::new(plugin_id="test-plugin", config~)
   // Initially empty
-  assert_true(
-    @interfaces.PluginTransportHandler::try_receive(handler) is None,
-  )
+  assert_true(@interfaces.PluginTransportHandler::try_receive(handler) is None)
   // Queue messages
   let msg1 = @interfaces.JsonRpcRequest::new(
     rpc_method="ws_event1",
@@ -109,9 +101,7 @@ test "WebSocketTransportHandler: queue_incoming and try_receive" {
     None => panic()
   }
   // Now empty
-  assert_true(
-    @interfaces.PluginTransportHandler::try_receive(handler) is None,
-  )
+  assert_true(@interfaces.PluginTransportHandler::try_receive(handler) is None)
 }
 
 ///|
@@ -119,10 +109,7 @@ test "WebSocketTransportHandler: on_message callback" {
   let config = @interfaces.PluginWebSocketConfig::default(
     url="ws://localhost:9000",
   )
-  let handler = WebSocketTransportHandler::new(
-    plugin_id="test-plugin",
-    config~,
-  )
+  let handler = WebSocketTransportHandler::new(plugin_id="test-plugin", config~)
   let mut callback_count = 0
   let mut received_method = ""
   @interfaces.PluginTransportHandler::on_message(handler, fn(req) {

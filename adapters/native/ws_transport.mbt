@@ -43,7 +43,10 @@ pub fn NativeWebSocketTransportHandler::new(
   plugin_id~ : String,
   config~ : @interfaces.PluginWebSocketConfig,
 ) -> NativeWebSocketTransportHandler {
-  let client = NativeWebSocketClient::new(url=config.url, headers=config.headers)
+  let client = NativeWebSocketClient::new(
+    url=config.url,
+    headers=config.headers,
+  )
   {
     plugin_id,
     config,
@@ -70,15 +73,19 @@ pub async fn NativeWebSocketTransportHandler::start_async(
   self : NativeWebSocketTransportHandler,
 ) -> Unit raise @interfaces.TransportError {
   match self.state {
-    @plugin_transport.WebSocketState::Connected |
-    @plugin_transport.WebSocketState::Connecting =>
+    @plugin_transport.WebSocketState::Connected
+    | @plugin_transport.WebSocketState::Connecting =>
       raise @interfaces.TransportError::AlreadyStarted
     _ => {
       self.state = @plugin_transport.WebSocketState::Connecting
       self.client.connect() catch {
         e => {
-          self.state = @plugin_transport.WebSocketState::Error("Connection failed")
-          raise @interfaces.TransportError::ConnectionFailed(ws_error_message(e))
+          self.state = @plugin_transport.WebSocketState::Error(
+            "Connection failed",
+          )
+          raise @interfaces.TransportError::ConnectionFailed(
+            ws_error_message(e),
+          )
         }
       }
       self.state = @plugin_transport.WebSocketState::Connected
@@ -93,8 +100,8 @@ pub async fn NativeWebSocketTransportHandler::stop_async(
   self : NativeWebSocketTransportHandler,
 ) -> Unit {
   match self.state {
-    @plugin_transport.WebSocketState::Connected |
-    @plugin_transport.WebSocketState::Connecting => {
+    @plugin_transport.WebSocketState::Connected
+    | @plugin_transport.WebSocketState::Connecting => {
       self.client.close()
       self.state = @plugin_transport.WebSocketState::Closed
     }
@@ -180,7 +187,7 @@ pub fn NativeWebSocketTransportHandler::start(
   self : NativeWebSocketTransportHandler,
 ) -> Unit raise @interfaces.TransportError {
   let handler = self
-  @async.with_event_loop((_group) => { handler.start_async() }) catch {
+  @async.with_event_loop(_group => handler.start_async()) catch {
     @interfaces.TransportError::ConnectionFailed(msg) =>
       raise @interfaces.TransportError::ConnectionFailed(msg)
     @interfaces.TransportError::AlreadyStarted =>
@@ -195,7 +202,7 @@ pub fn NativeWebSocketTransportHandler::stop(
   self : NativeWebSocketTransportHandler,
 ) -> Unit raise @interfaces.TransportError {
   let handler = self
-  @async.with_event_loop((_group) => { handler.stop_async() }) catch {
+  @async.with_event_loop(_group => handler.stop_async()) catch {
     _ => ()
   }
 }
@@ -208,7 +215,7 @@ pub fn NativeWebSocketTransportHandler::send_request(
 ) -> @interfaces.JsonRpcResponse raise @interfaces.TransportError {
   let handler = self
   let mut result : @interfaces.JsonRpcResponse? = None
-  @async.with_event_loop((_group) => {
+  @async.with_event_loop(_group => {
     let response = handler.send_request_async(request)
     result = Some(response)
   }) catch {
@@ -231,7 +238,7 @@ pub fn NativeWebSocketTransportHandler::send_notification(
   request : @interfaces.JsonRpcRequest,
 ) -> Unit raise @interfaces.TransportError {
   let handler = self
-  @async.with_event_loop((_group) => { handler.send_notification_async(request) }) catch {
+  @async.with_event_loop(_group => handler.send_notification_async(request)) catch {
     _ => ()
   }
 }

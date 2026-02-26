@@ -11,9 +11,7 @@ pub fn setup_native_transport_handlers() -> Unit {
       let factory = @native.get_native_transport_factory()
       // Replace transport handlers for all registered plugins
       for manifest in @interfaces.PluginHost::list_plugins(host) {
-        let handler = factory.create_handler(manifest) catch {
-          _ => continue
-        }
+        let handler = factory.create_handler(manifest) catch { _ => continue }
         host.set_transport_handler(manifest.id, handler)
       }
     }

@@ -224,6 +224,26 @@ pub fn DiscordPlugin::is_connected(self : DiscordPlugin) -> Bool {
 }
 
 ///|
+/// Set connection state (for ConnectablePlugin trait)
+pub fn DiscordPlugin::set_connected(self : DiscordPlugin, value : Bool) -> Unit {
+  self.is_connected = value
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for DiscordPlugin with is_connected(self) -> Bool {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for DiscordPlugin with set_connected(
+  self,
+  value,
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
 /// Get API endpoint URL
 fn DiscordPlugin::api_endpoint(self : DiscordPlugin, path : String) -> String {
   "\{self.config.api_base_url}\{path}"
@@ -870,8 +890,7 @@ fn DiscordPlugin::handle_connect(
   self : DiscordPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.connect()
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -879,8 +898,7 @@ fn DiscordPlugin::handle_disconnect(
   self : DiscordPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.disconnect()
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
 }
 
 ///|

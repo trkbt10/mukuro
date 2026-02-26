@@ -106,10 +106,14 @@ test "HttpTransportHandler: start/stop lifecycle" {
   // Initially not active
   assert_false(handler.is_active())
   // Start
-  handler.start() catch { _ => panic() }
+  handler.start() catch {
+    _ => panic()
+  }
   assert_true(handler.is_active())
   // Stop
-  handler.stop() catch { _ => panic() }
+  handler.stop() catch {
+    _ => panic()
+  }
   assert_false(handler.is_active())
 }
 
@@ -126,7 +130,9 @@ test "HttpTransportHandler: double start raises error" {
     auth_token=None,
     token_header="X-Plugin-Token",
   )
-  handler.start() catch { _ => panic() }
+  handler.start() catch {
+    _ => panic()
+  }
   // Second start should raise AlreadyStarted
   handler.start() catch {
     @interfaces.TransportError::AlreadyStarted => return
@@ -180,10 +186,7 @@ test "HttpTransportHandler: build_url with endpoints" {
   assert_eq(handler.build_url("greet"), Some("http://localhost:9100/api/greet"))
   assert_eq(handler.build_url("echo"), Some("http://localhost:9100/api/echo"))
   // Fallback for unknown endpoint
-  assert_eq(
-    handler.build_url("unknown"),
-    Some("http://localhost:9100/unknown"),
-  )
+  assert_eq(handler.build_url("unknown"), Some("http://localhost:9100/unknown"))
 }
 
 ///|
@@ -257,9 +260,7 @@ test "HttpTransportHandler: queue_incoming and try_receive" {
     token_header="X-Plugin-Token",
   )
   // Initially empty
-  assert_true(
-    @interfaces.PluginTransportHandler::try_receive(handler) is None,
-  )
+  assert_true(@interfaces.PluginTransportHandler::try_receive(handler) is None)
   // Queue some messages
   let msg1 = @interfaces.JsonRpcRequest::new(
     rpc_method="event1",
@@ -285,9 +286,7 @@ test "HttpTransportHandler: queue_incoming and try_receive" {
     None => panic()
   }
   // Queue should be empty now
-  assert_true(
-    @interfaces.PluginTransportHandler::try_receive(handler) is None,
-  )
+  assert_true(@interfaces.PluginTransportHandler::try_receive(handler) is None)
 }
 
 ///|
@@ -331,15 +330,16 @@ test "HttpTransportHandler: no HTTP client returns placeholder" {
     auth_token=None,
     token_header="X-Plugin-Token",
   )
-  handler.start() catch { _ => panic() }
+  handler.start() catch {
+    _ => panic()
+  }
   let request = @interfaces.JsonRpcRequest::new(
     rpc_method="test",
     params=None,
     id=Some(1),
   )
   let response = @interfaces.PluginTransportHandler::send_request(
-    handler,
-    request,
+    handler, request,
   ) catch {
     _ => panic()
   }

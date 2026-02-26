@@ -21,6 +21,7 @@ options(
     "clock.mbt": [ "native" ],
     "crypto.mbt": [ "native" ],
     "daemon.mbt": [ "native" ],
+    "debug_popen_test.mbt": [ "native" ],
     "ffi.mbt": [ "native" ],
     "filesystem.mbt": [ "native" ],
     "http_client.mbt": [ "native" ],
@@ -35,9 +36,8 @@ options(
     "stdio_e2e_test.mbt": [ "native" ],
     "timer.mbt": [ "native" ],
     "websocket_client.mbt": [ "native" ],
+    "ws_e2e_test.mbt": [ "native" ],
     "ws_server.mbt": [ "native" ],
     "ws_transport.mbt": [ "native" ],
-    "ws_e2e_test.mbt": [ "native" ],
-    "debug_popen_test.mbt": [ "native" ],
   },
 )

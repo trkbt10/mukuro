@@ -16,6 +16,7 @@ options(
     "anthropic.mbt": [ "js" ],
     "base.mbt": [ "js" ],
     "fallback.mbt": [ "js" ],
+    "http_helpers.mbt": [ "js" ],
     "models_test.mbt": [ "js" ],
     "openai.mbt": [ "js" ],
   },

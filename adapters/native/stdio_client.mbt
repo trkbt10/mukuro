@@ -330,9 +330,7 @@ pub impl @interfaces.PluginTransportHandler for StdioTransportAdapter with send_
     raise @interfaces.TransportError::NotStarted
   }
   // For stateless stdio, notifications are fire-and-forget
-  try {
-    ignore(self.client.send_request(request))
-  } catch {
+  ignore(self.client.send_request(request)) catch {
     _ => ()
   }
 }

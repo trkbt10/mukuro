@@ -130,7 +130,7 @@ async test "WebSocket E2E: multiple requests" {
     e => raise e
   }
   // Send multiple requests on same connection
-  for i in 1..=3 {
+  for i in 1..<=3 {
     let request = @interfaces.JsonRpcRequest::new(
       rpc_method="ping",
       params=None,

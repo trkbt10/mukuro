@@ -286,10 +286,7 @@ fn PluginSystemInitializer::handle_plugin_added(
 ) -> Unit {
   // Reload all plugins to pick up the new one
   // This is simpler than trying to load a single plugin
-  @interfaces.PluginHost::load_plugins(
-    self.plugin_host,
-    path=self.plugin_dir,
-  ) catch {
+  @interfaces.PluginHost::load_plugins(self.plugin_host, path=self.plugin_dir) catch {
     _ => return
   }
   // Generate tools if schema available
@@ -324,10 +321,7 @@ fn PluginSystemInitializer::handle_plugin_modified(
   self.plugin_host.transport_handlers.remove(plugin_id)
   self.plugin_host.extended_manifests.remove(plugin_id)
   // Reload all plugins to pick up the modified one
-  @interfaces.PluginHost::load_plugins(
-    self.plugin_host,
-    path=self.plugin_dir,
-  ) catch {
+  @interfaces.PluginHost::load_plugins(self.plugin_host, path=self.plugin_dir) catch {
     _ => return
   }
   // Regenerate tools

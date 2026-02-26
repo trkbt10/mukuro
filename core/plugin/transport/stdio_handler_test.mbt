@@ -35,7 +35,9 @@ test "StdioTransportHandler: start/stop lifecycle" {
   // Initially not active
   assert_false(@interfaces.PluginTransportHandler::is_active(handler))
   // Start (will not actually spawn process in test)
-  handler.start() catch { _ => () }
+  handler.start() catch {
+    _ => ()
+  }
   // Note: In actual use, this would be active after starting
   // But since we don't have a real process, we test the state change
 }
@@ -49,7 +51,10 @@ test "StdioTransportHandler: restart policy OnFailure" {
     env: {},
     framing: @interfaces.StdioFraming::NewlineDelimited,
     startup_timeout_ms: 5000,
-    restart_policy: @interfaces.RestartPolicy::OnFailure(max_retries=3, delay_ms=1000),
+    restart_policy: @interfaces.RestartPolicy::OnFailure(
+      max_retries=3,
+      delay_ms=1000,
+    ),
   }
   let handler = StdioTransportHandler::new(plugin_id="test-plugin", config~)
   match handler.config.restart_policy {
@@ -126,9 +131,7 @@ test "StdioTransportHandler: queue_incoming and try_receive" {
   let config = @interfaces.PluginStdioConfig::default(command="node index.js")
   let handler = StdioTransportHandler::new(plugin_id="test-plugin", config~)
   // Initially empty
-  assert_true(
-    @interfaces.PluginTransportHandler::try_receive(handler) is None,
-  )
+  assert_true(@interfaces.PluginTransportHandler::try_receive(handler) is None)
   // Queue messages
   let msg1 = @interfaces.JsonRpcRequest::new(
     rpc_method="notification1",
@@ -143,9 +146,7 @@ test "StdioTransportHandler: queue_incoming and try_receive" {
     None => panic()
   }
   // Now empty
-  assert_true(
-    @interfaces.PluginTransportHandler::try_receive(handler) is None,
-  )
+  assert_true(@interfaces.PluginTransportHandler::try_receive(handler) is None)
 }
 
 ///|

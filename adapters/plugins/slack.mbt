@@ -152,6 +152,26 @@ pub fn SlackPlugin::is_connected(self : SlackPlugin) -> Bool {
 }
 
 ///|
+/// Set connection state (for ConnectablePlugin trait)
+pub fn SlackPlugin::set_connected(self : SlackPlugin, value : Bool) -> Unit {
+  self.is_connected = value
+}
+
+///|
+/// ConnectablePlugin trait implementation
+pub impl @interfaces.ConnectablePlugin for SlackPlugin with is_connected(self) -> Bool {
+  self.is_connected
+}
+
+///|
+pub impl @interfaces.ConnectablePlugin for SlackPlugin with set_connected(
+  self,
+  value,
+) -> Unit {
+  self.is_connected = value
+}
+
+///|
 /// Get API endpoint URL
 fn SlackPlugin::api_endpoint(self : SlackPlugin, api_method : String) -> String {
   "\{self.config.api_base_url}/\{api_method}"
@@ -821,8 +841,7 @@ fn SlackPlugin::handle_connect(
   self : SlackPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.connect()
-  @interfaces.rpc_connect_response(request.id)
+  @interfaces.handle_connect_common(self, request)
 }
 
 ///|
@@ -830,8 +849,7 @@ fn SlackPlugin::handle_disconnect(
   self : SlackPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  self.disconnect()
-  @interfaces.rpc_disconnect_response(request.id)
+  @interfaces.handle_disconnect_common(self, request)
 }
 
 ///|

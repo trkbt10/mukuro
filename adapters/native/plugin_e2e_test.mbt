@@ -20,7 +20,7 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
     config=http_config,
     auth_token=None,
     token_header="X-Plugin-Token",
-    http_client=http_client,
+    http_client~,
   )
   // Start the handler
   handler.start() catch {
@@ -39,8 +39,7 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
   println("Handler active: \{handler.is_active()}")
   println("Handler has HTTP client: \{handler.has_http_client()}")
   let greet_response = @interfaces.PluginTransportHandler::send_request(
-    handler,
-    greet_request,
+    handler, greet_request,
   ) catch {
     e => {
       println("Request failed: \{e}")
@@ -55,18 +54,15 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
           println("Received greeting: \{greeting}")
           assert_true(greeting.contains("MoonBitE2E"))
         }
-        _ => {
-          println("Unexpected result format: \{result}")
-          // Don't fail if plugin isn't running
-        }
+        _ => println("Unexpected result format: \{result}")
+        // Don't fail if plugin isn't running
       }
-    None => {
+    None =>
       match greet_response.error {
         Some(e) => println("No result in response, error: \{e.message}")
         None => println("No result and no error in response")
       }
-      // Don't fail if plugin isn't running
-    }
+    // Don't fail if plugin isn't running
   }
   // Send echo request
   let echo_request = @interfaces.JsonRpcRequest::new(
@@ -75,8 +71,7 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
     id=Some(2),
   )
   let echo_response = @interfaces.PluginTransportHandler::send_request(
-    handler,
-    echo_request,
+    handler, echo_request,
   ) catch {
     e => {
       println("Echo request failed: \{e}")
@@ -101,8 +96,7 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
     id=Some(3),
   )
   let describe_response = @interfaces.PluginTransportHandler::send_request(
-    handler,
-    describe_request,
+    handler, describe_request,
   ) catch {
     e => {
       println("Describe request failed: \{e}")
@@ -112,7 +106,12 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
   match describe_response.result {
     Some(result) =>
       match result {
-        { "id": String(id), "name": String(name), "capabilities": Array(caps), .. } => {
+        {
+          "id": String(id),
+          "name": String(name),
+          "capabilities": Array(caps),
+          ..
+        } => {
           println("Plugin ID: \{id}")
           println("Plugin Name: \{name}")
           println("Capabilities: \{caps.length()}")
@@ -124,7 +123,9 @@ test "E2E: HttpTransportHandler with real HTTP client (requires hello-world plug
     None => println("No describe result")
   }
   // Stop the handler
-  handler.stop() catch { _ => () }
+  handler.stop() catch {
+    _ => ()
+  }
 }
 
 ///|
@@ -163,7 +164,11 @@ test "E2E: Direct NativeHttpClient JSON-RPC call" {
     }
   }
   match parsed {
-    { "jsonrpc": String("2.0"), "result": { "greeting": String(g), .. }, "id": Number(id, ..) } => {
+    {
+      "jsonrpc": String("2.0"),
+      "result": { "greeting": String(g), .. },
+      "id": Number(id, ..),
+    } => {
       println("Greeting: \{g}")
       println("ID: \{id}")
       assert_true(g.contains("DirectTest"))
