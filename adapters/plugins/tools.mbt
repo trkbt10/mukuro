@@ -20,14 +20,14 @@ pub(all) struct CalcResult {
 pub struct UtilityToolPlugin {
   /// Name of the plugin
   name : String
-  /// Random seed (for reproducible testing)
-  mut random_seed : Int64
+  /// Random generator
+  mut random : @random.Rand
 }
 
 ///|
 /// Create new utility tool plugin
 pub fn UtilityToolPlugin::new(name~ : String) -> UtilityToolPlugin {
-  { name, random_seed: 12345L }
+  { name, random: @random.Rand::chacha8(seed=seed_material(12345L)) }
 }
 
 ///|
@@ -36,15 +36,7 @@ pub fn UtilityToolPlugin::set_seed(
   self : UtilityToolPlugin,
   seed : Int64,
 ) -> Unit {
-  self.random_seed = seed
-}
-
-///|
-/// Simple pseudo-random number generator (LCG)
-fn UtilityToolPlugin::next_random(self : UtilityToolPlugin) -> Int64 {
-  // Linear Congruential Generator
-  self.random_seed = (self.random_seed * 1103515245L + 12345L) % 2147483648L
-  self.random_seed
+  self.random = @random.Rand::chacha8(seed=seed_material(seed))
 }
 
 ///|
@@ -57,44 +49,35 @@ pub fn UtilityToolPlugin::random_int(
   if min >= max {
     min
   } else {
-    let range = (max - min + 1).to_int64()
-    let r = self.next_random() % range
-    min + r.to_int()
+    min + self.random.int(limit=max - min + 1)
   }
 }
 
 ///|
 /// Generate random float in range [0, 1)
 pub fn UtilityToolPlugin::random_float(self : UtilityToolPlugin) -> Double {
-  self.next_random().to_double() / 2147483648.0
+  self.random.double()
 }
 
 ///|
 /// Generate UUID v4 (pseudo-random)
 pub fn UtilityToolPlugin::uuid_v4(self : UtilityToolPlugin) -> String {
-  let hex_chars = "0123456789abcdef"
-  let mut result = ""
-  for i = 0; i < 36; i = i + 1 {
-    if i == 8 || i == 13 || i == 18 || i == 23 {
-      result = result + "-"
-    } else if i == 14 {
-      result = result + "4" // Version 4
-    } else if i == 19 {
-      // Variant bits (8, 9, a, or b)
-      let r = self.random_int(8, 11)
-      result = result +
-        (hex_chars[r:r + 1].to_string() catch {
-          _ => abort("unreachable: r is within 8-11")
-        })
-    } else {
-      let r = self.random_int(0, 15)
-      result = result +
-        (hex_chars[r:r + 1].to_string() catch {
-          _ => abort("unreachable: r is within 0-15")
-        })
-    }
+  let bytes = Bytes::makei(16, fn(_i) { self.random.uint(limit=256U).to_byte() })
+  @uuid.from_bytes(bytes).as_version(@uuid.V4).to_string() catch {
+    _ => abort("unreachable: 16-byte UUID input is always valid")
   }
-  result
+}
+
+///|
+fn seed_material(seed : Int64) -> Bytes {
+  let base = seed.reinterpret_as_uint64()
+  let bytes : FixedArray[Byte] = FixedArray::make(32, b'\x00')
+  for i in 0..<32 {
+    let shift = i % 8 * 8
+    let mixed = (((base >> shift) & 0xFFUL).to_int() ^ (i * 73 + 41)) & 0xFF
+    bytes[i] = mixed.to_byte()
+  }
+  Bytes::from_array(bytes[:])
 }
 
 ///|

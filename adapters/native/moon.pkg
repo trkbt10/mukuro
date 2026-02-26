@@ -1,6 +1,7 @@
 import {
   "moonbitlang/async",
   "moonbitlang/async/io",
+  "moonbitlang/core/random" @random,
   "mizchi/x/http" @xhttp,
   "mizchi/x/websocket" @websocket,
   "trkbt10/mukuro/interfaces",
@@ -9,6 +10,7 @@ import {
   "trkbt10/mukuro/core/plugin/transport" @plugin_transport,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
+  "moonbitlang/x/uuid" @uuid,
 }
 
 warnings = "-29"
@@ -32,7 +34,6 @@ options(
     "sqlite.mbt": [ "native" ],
     "stdio_client.mbt": [ "native" ],
     "stdio_e2e_test.mbt": [ "native" ],
-    "timer.mbt": [ "native" ],
     "websocket_client.mbt": [ "native" ],
     "ws_e2e_test.mbt": [ "native" ],
     "ws_server.mbt": [ "native" ],

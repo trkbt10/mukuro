@@ -39,17 +39,3 @@ pub(open) trait Scheduler {
   /// 実行すべきタスクを取得（現在時刻ベース）
   due_tasks(Self, now~ : Int64) -> Array[ScheduledTask]
 }
-
-///|
-/// タイマー トレイト
-/// プラットフォーム固有のタイマー機能を抽象化
-pub(open) trait Timer {
-  /// 現在時刻を取得（Unix epoch ms）
-  now(Self) -> Int64
-  /// 指定時間後にコールバック（ミリ秒）
-  set_timeout(Self, delay_ms~ : Int64, callback~ : () -> Unit) -> String
-  /// 定期的にコールバック（ミリ秒）
-  set_interval(Self, interval_ms~ : Int64, callback~ : () -> Unit) -> String
-  /// タイマーをキャンセル
-  cancel(Self, timer_id~ : String) -> Unit
-}

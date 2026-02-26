@@ -8,7 +8,6 @@ pub struct NativePlatform {
   filesystem : NativeFileStore
   http_client : NativeHttpClient
   process : NativeProcessExecutor
-  timer : NativeTimer
   random : NativeRandom
 }
 
@@ -20,7 +19,6 @@ pub fn NativePlatform::new() -> NativePlatform {
     filesystem: NativeFileStore::default(),
     http_client: NativeHttpClient::default(),
     process: NativeProcessExecutor::default(),
-    timer: NativeTimer::new(),
     random: NativeRandom::new(),
   }
 }
@@ -46,7 +44,6 @@ pub fn NativePlatform::with_config(
       user_agent~,
     ),
     process: NativeProcessExecutor::default(),
-    timer: NativeTimer::new(),
     random: NativeRandom::new(),
   }
 }
@@ -179,37 +176,6 @@ pub fn NativePlatform::exec(
     }
     None => raise ProcessError::ExecutionFailed("Failed to execute: \{command}")
   }
-}
-
-///|
-pub fn NativePlatform::set_timeout(
-  self : NativePlatform,
-  delay_ms : Int64,
-  callback : () -> Unit,
-) -> String {
-  self.timer.set_timeout(delay_ms~, callback~)
-}
-
-///|
-pub fn NativePlatform::set_interval(
-  self : NativePlatform,
-  interval_ms : Int64,
-  callback : () -> Unit,
-) -> String {
-  self.timer.set_interval(interval_ms~, callback~)
-}
-
-///|
-pub fn NativePlatform::cancel_timer(
-  self : NativePlatform,
-  timer_id : String,
-) -> Unit {
-  self.timer.cancel(timer_id~)
-}
-
-///|
-pub fn NativePlatform::tick(self : NativePlatform) -> Unit {
-  self.timer.tick()
 }
 
 ///|

@@ -211,8 +211,6 @@ pub(all) struct PlatformRuntime {
   fs : &FileStore
   /// プロセス実行
   process : &ProcessExecutor
-  /// タイマー
-  timer : &Timer
 }
 
 ///|

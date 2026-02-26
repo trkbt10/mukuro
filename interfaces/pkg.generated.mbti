@@ -455,7 +455,6 @@ pub(all) struct PlatformRuntime {
   http : &HttpClient
   fs : &FileStore
   process : &ProcessExecutor
-  timer : &Timer
 }
 
 pub(all) enum PlatformType {
@@ -976,13 +975,6 @@ pub(open) trait StructuredLogger {
   with_context(Self, context~ : LogContext) -> Self
   with_request_id(Self, request_id~ : String) -> Self
   with_component(Self, component~ : String) -> Self
-}
-
-pub(open) trait Timer {
-  now(Self) -> Int64
-  set_timeout(Self, delay_ms~ : Int64, callback~ : () -> Unit) -> String
-  set_interval(Self, interval_ms~ : Int64, callback~ : () -> Unit) -> String
-  cancel(Self, timer_id~ : String) -> Unit
 }
 
 pub(open) trait ToolExecutor {

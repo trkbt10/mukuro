@@ -1,60 +1,52 @@
 ///|
 /// Native Random実装
 pub struct NativeRandom {
-  mut seed : Int64
+  mut rand : @random.Rand
 }
 
 ///|
 pub fn NativeRandom::new() -> NativeRandom {
-  { seed: c_time() }
-}
-
-///|
-fn NativeRandom::next_int(self : NativeRandom) -> Int {
-  self.seed = (self.seed * 1103515245L + 12345L) & 0x7FFFFFFFL
-  self.seed.to_int()
+  { rand: @random.Rand::chacha8(seed=seed_material(c_time())) }
 }
 
 ///|
 pub impl @interfaces.Random for NativeRandom with random(self) {
-  let n = self.next_int()
-  n.to_double() / 2147483647.0
+  self.rand.double()
 }
 
 ///|
 pub impl @interfaces.Random for NativeRandom with random_int(self, min~, max~) {
-  let r = self.random()
-  let range = (max - min + 1).to_double()
-  min + (r * range).to_int()
+  if min >= max {
+    min
+  } else {
+    min + self.rand.int(limit=max - min + 1)
+  }
 }
 
 ///|
 pub impl @interfaces.Random for NativeRandom with random_bytes(self, length~) {
   Bytes::makei(length, fn(i) {
     ignore(i)
-    let n = self.next_int()
-    n.land(0xFF).to_byte()
+    self.rand.uint(limit=256U).to_byte()
   })
 }
 
 ///|
 pub impl @interfaces.Random for NativeRandom with uuid_v4(self) {
-  let sb = StringBuilder::new()
-  for i in 0..<32 {
-    if i == 8 || i == 12 || i == 16 || i == 20 {
-      sb.write_char('-')
-    }
-    let n = self.next_int() & 0xF
-    sb.write_char(hex_char(n))
+  let bytes = self.random_bytes(length=16)
+  @uuid.from_bytes(bytes).as_version(@uuid.V4).to_string() catch {
+    _ => abort("unreachable: 16-byte UUID input is always valid")
   }
-  sb.to_string()
 }
 
 ///|
-fn hex_char(n : Int) -> Char {
-  if n < 10 {
-    (48 + n).unsafe_to_char()
-  } else {
-    (97 + n - 10).unsafe_to_char()
+fn seed_material(seed : Int64) -> Bytes {
+  let base = seed.reinterpret_as_uint64()
+  let bytes : FixedArray[Byte] = FixedArray::make(32, b'\x00')
+  for i in 0..<32 {
+    let shift = i % 8 * 8
+    let mixed = (((base >> shift) & 0xFFUL).to_int() ^ (i * 73 + 41)) & 0xFF
+    bytes[i] = mixed.to_byte()
   }
+  Bytes::from_array(bytes[:])
 }
