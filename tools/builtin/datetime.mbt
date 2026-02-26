@@ -66,21 +66,16 @@ pub fn execute_datetime_tool(args : Json) -> ToolExecutionResult {
 ///|
 /// タイムスタンプをISO8601形式にフォーマット
 fn format_iso8601(timestamp_ms : Int64) -> String {
-  // 簡易実装（実際にはJSのDate APIを使うべき）
   let seconds = timestamp_ms / 1000L
-  let ms = timestamp_ms % 1000L
-  // Unix epoch からの経過時間を日時に変換
-  let days_since_epoch = seconds / 86400L
-  let time_of_day = seconds % 86400L
-  let hours = time_of_day / 3600L
-  let minutes = time_of_day % 3600L / 60L
-  let secs = time_of_day % 60L
-  // 年月日の計算（簡易版、うるう年は未考慮）
-  let year = 1970L + days_since_epoch / 365L
-  let day_of_year = days_since_epoch % 365L + 1L
-  let month = day_of_year / 30L + 1L
-  let day = day_of_year % 30L + 1L
-  "\{year}-\{pad_zero(month.to_int())}-\{pad_zero(day.to_int())}T\{pad_zero(hours.to_int())}:\{pad_zero(minutes.to_int())}:\{pad_zero(secs.to_int())}.\{ms}Z"
+  let millis = (timestamp_ms % 1000L + 1000L) % 1000L
+  let datetime = @xtime.unix(
+    seconds,
+    nanosecond=(millis * 1000000L).to_int(),
+    zone=@xtime.utc_zone,
+  ) catch {
+    _ => return timestamp_ms.to_string()
+  }
+  "\{datetime.year()}-\{pad_zero(datetime.month())}-\{pad_zero(datetime.day())}T\{pad_zero(datetime.hour())}:\{pad_zero(datetime.minute())}:\{pad_zero(datetime.second())}.\{pad_millis(millis.to_int())}Z"
 }
 
 ///|
@@ -94,9 +89,19 @@ fn pad_zero(n : Int) -> String {
 }
 
 ///|
+fn pad_millis(n : Int) -> String {
+  if n < 10 {
+    "00\{n}"
+  } else if n < 100 {
+    "0\{n}"
+  } else {
+    n.to_string()
+  }
+}
+
+///|
 /// タイムスタンプをフォーマット
 fn format_timestamp(timestamp_ms : Int64, format : String) -> String {
-  // 簡易実装
   match format {
     "ISO8601" => format_iso8601(timestamp_ms)
     "UNIX" => (timestamp_ms / 1000L).to_string()

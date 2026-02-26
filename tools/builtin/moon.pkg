@@ -6,6 +6,7 @@ import {
   "trkbt10/mukuro/core/agent" @agent,
   "moonbitlang/core/json",
   "moonbitlang/async" @async,
+  "moonbitlang/x/time" @xtime,
 }
 
 import {

@@ -132,14 +132,9 @@ fn parse_bearer_token(headers : Map[String, String]) -> String {
         None => ""
       }
   }
-  if raw.length() == 0 {
-    return ""
-  }
-  let lowered = raw.to_lower()
-  if lowered.has_prefix("bearer ") {
-    raw.view(start_offset=7).to_string()
-  } else {
-    raw
+  match @interfaces.extract_bearer_token(raw) {
+    Some(token) => token
+    None => ""
   }
 }
 

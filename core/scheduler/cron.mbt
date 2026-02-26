@@ -160,12 +160,30 @@ fn parse_int_or_error(
   s : String,
   field_index : Int,
 ) -> Int raise CronParseError {
-  let result : Json = @json.parse(s) catch {
+  @strconv.parse_int64(s, base=10).to_int() catch {
     _ => raise CronParseError::InvalidValue(s, field_index)
   }
-  match result {
-    Number(n, ..) => n.to_int()
-    _ => raise CronParseError::InvalidValue(s, field_index)
+}
+
+///|
+fn weekday_to_cron_value(weekday : String) -> Int {
+  let lowered = weekday.to_lower()
+  if lowered.has_prefix("sun") {
+    0
+  } else if lowered.has_prefix("mon") {
+    1
+  } else if lowered.has_prefix("tue") {
+    2
+  } else if lowered.has_prefix("wed") {
+    3
+  } else if lowered.has_prefix("thu") {
+    4
+  } else if lowered.has_prefix("fri") {
+    5
+  } else if lowered.has_prefix("sat") {
+    6
+  } else {
+    0
   }
 }
 
@@ -187,22 +205,22 @@ pub fn CronExpression::matches(
 }
 
 ///|
-/// Unix時刻がCron式にマッチするか確認（簡易版）
+/// Unix時刻がCron式にマッチするか確認
 pub fn CronExpression::matches_timestamp(
   self : CronExpression,
   timestamp_seconds : Int64,
 ) -> Bool {
-  // Unix時刻から日時を取得（簡易実装）
-  let seconds_per_minute = 60L
-  let seconds_per_hour = 3600L
-  let seconds_per_day = 86400L
-  // UTC時刻を計算
-  let time_of_day = timestamp_seconds % seconds_per_day
-  let minute = (time_of_day % seconds_per_hour / seconds_per_minute).to_int()
-  let hour = (time_of_day / seconds_per_hour).to_int()
-  // 日付の計算は複雑なので、この簡易版では分と時のみチェック
-  // 完全な実装には追加のロジックが必要
-  self.minute.contains(minute) && self.hour.contains(hour)
+  let datetime = @xtime.unix(timestamp_seconds, zone=@xtime.utc_zone) catch {
+    _ => return false
+  }
+  let day_of_week = weekday_to_cron_value(datetime.weekday().to_string())
+  self.matches(
+    datetime.minute(),
+    datetime.hour(),
+    datetime.day(),
+    datetime.month(),
+    day_of_week,
+  )
 }
 
 ///|

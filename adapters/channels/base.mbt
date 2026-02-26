@@ -15,20 +15,7 @@ pub(all) suberror ChannelError {
 pub fn pop_inbound_envelope(
   queue : Array[@types.InboundEnvelope],
 ) -> @types.InboundEnvelope? {
-  if queue.length() == 0 {
-    None
-  } else {
-    let msg = queue[0]
-    let rest : Array[@types.InboundEnvelope] = []
-    for i in 1..<queue.length() {
-      rest.push(queue[i])
-    }
-    queue.clear()
-    for item in rest {
-      queue.push(item)
-    }
-    Some(msg)
-  }
+  @util.pop_first(queue)
 }
 
 ///|

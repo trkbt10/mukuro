@@ -2,6 +2,7 @@ import {
   "moonbitlang/async",
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/core/session",
+  "trkbt10/mukuro/lib/util" @util,
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/adapters/js",
   "trkbt10/mukuro/adapters/native" @native,

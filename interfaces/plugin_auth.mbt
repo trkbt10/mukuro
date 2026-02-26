@@ -311,17 +311,16 @@ pub impl PluginAuthenticator for SimpleTokenAuthenticator with requires_auth(
 /// Extract token from Authorization header
 pub fn extract_bearer_token(header_value : String) -> String? {
   let trimmed = header_value.trim().to_string()
-  if trimmed.has_prefix("Bearer ") {
-    // Skip "Bearer " prefix (7 characters)
-    let chars = trimmed.to_array()
-    if chars.length() > 7 {
-      let result = StringBuilder::new()
-      for i = 7; i < chars.length(); i = i + 1 {
-        result.write_char(chars[i])
-      }
-      Some(result.to_string())
-    } else {
+  if trimmed.length() == 0 {
+    None
+  } else if trimmed.to_lower() == "bearer" {
+    None
+  } else if trimmed.to_lower().has_prefix("bearer ") {
+    let token = trimmed.view(start_offset=7).to_string()
+    if token.length() == 0 {
       None
+    } else {
+      Some(token)
     }
   } else {
     Some(trimmed)
