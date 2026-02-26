@@ -50,7 +50,7 @@ fn parse_request(json : Json) -> @interfaces.JsonRpcRequest? {
 /// Main entry point
 fn main {
   // Create plugin instance
-  let plugin = @hello_world.HelloWorldPlugin::with_defaults(name="Hello World")
+  let plugin = HelloWorldPlugin::with_defaults(name="Hello World")
 
   // Main loop: read JSON-RPC from stdin, write responses to stdout
   while true {

@@ -85,25 +85,17 @@ pub fn HelloWorldPlugin::handle_request(
 
 ///|
 /// Handle greet method
-/// Parameters:
-///   - name: String (required) - Name to greet
-/// Returns:
-///   - message: String - Greeting message
-///   - count: Int - Total greeting count
 fn HelloWorldPlugin::handle_greet(
   self : HelloWorldPlugin,
   request : @interfaces.JsonRpcRequest,
 ) -> @interfaces.JsonRpcResponse {
-  // Extract required 'name' parameter
   let name = match @interfaces.rpc_require_string(request, "name") {
     Ok(n) => n
     Err(response) => return response
   }
-  // Validate name is not empty
   if name.is_empty() {
     return @interfaces.rpc_invalid_params("Name cannot be empty", request.id)
   }
-  // Build greeting
   self.greeting_count = self.greeting_count + 1
   let message = "\{self.config.greeting_prefix}, \{name}!"
   let final_message = if self.config.uppercase {
@@ -111,7 +103,6 @@ fn HelloWorldPlugin::handle_greet(
   } else {
     message
   }
-  // Return success response
   @interfaces.JsonRpcResponse::success(
     result={
       "message": Json::string(final_message),
@@ -123,10 +114,6 @@ fn HelloWorldPlugin::handle_greet(
 
 ///|
 /// Handle echo method
-/// Parameters:
-///   - message: String (required) - Message to echo
-/// Returns:
-///   - echoed: String - The same message
 fn HelloWorldPlugin::handle_echo(
   self : HelloWorldPlugin,
   request : @interfaces.JsonRpcRequest,
@@ -148,10 +135,6 @@ fn HelloWorldPlugin::handle_echo(
 
 ///|
 /// Handle reverse method
-/// Parameters:
-///   - text: String (required) - Text to reverse
-/// Returns:
-///   - reversed: String - Reversed text
 fn HelloWorldPlugin::handle_reverse(
   self : HelloWorldPlugin,
   request : @interfaces.JsonRpcRequest,
@@ -160,7 +143,6 @@ fn HelloWorldPlugin::handle_reverse(
     Ok(t) => t
     Err(response) => return response
   }
-  // Reverse the string
   let chars = text.to_array()
   let reversed_chars : Array[Char] = []
   for i = chars.length() - 1; i >= 0; i = i - 1 {
@@ -183,12 +165,6 @@ fn HelloWorldPlugin::handle_reverse(
 
 ///|
 /// Handle status method
-/// Parameters: none
-/// Returns:
-///   - name: String - Plugin name
-///   - version: String - Plugin version
-///   - greeting_count: Int - Total greetings issued
-///   - uppercase: Bool - Whether uppercase mode is enabled
 fn HelloWorldPlugin::handle_status(
   self : HelloWorldPlugin,
   request : @interfaces.JsonRpcRequest,
