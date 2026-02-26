@@ -1428,3 +1428,55 @@ int moonbit_fputs(const char* s_utf16, FILE* stream) {
 
     return fputs(s, stream);
 }
+
+/*
+ * stdinを取得する
+ */
+FILE* moonbit_get_stdin(void) {
+    return stdin;
+}
+
+/*
+ * stdoutを取得する
+ */
+FILE* moonbit_get_stdout(void) {
+    return stdout;
+}
+
+/*
+ * stdinから1行読み取る（改行含む）
+ * buffer: 出力バッファ
+ * buffer_len: バッファサイズ
+ * returns: 読み取ったバイト数（0=EOF、-1=エラー）
+ */
+int moonbit_read_stdin_line(unsigned char* buffer, int buffer_len) {
+    if (!buffer || buffer_len <= 0) return -1;
+
+    if (fgets((char*)buffer, buffer_len, stdin) == NULL) {
+        if (feof(stdin)) return 0;
+        return -1;
+    }
+
+    return (int)strlen((const char*)buffer);
+}
+
+/*
+ * stdoutに書き込む（改行なし）
+ * data: 出力データ
+ * len: データ長
+ * returns: 書き込んだバイト数、エラー時-1
+ */
+int moonbit_write_stdout(const unsigned char* data, int len) {
+    if (!data || len <= 0) return -1;
+
+    size_t written = fwrite(data, 1, (size_t)len, stdout);
+    fflush(stdout);
+    return (int)written;
+}
+
+/*
+ * fflush wrapper
+ */
+int moonbit_fflush_stdout(void) {
+    return fflush(stdout);
+}

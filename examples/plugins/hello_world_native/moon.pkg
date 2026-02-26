@@ -1,0 +1,15 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/json",
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/adapters/native" @native,
+  "trkbt10/mukuro/examples/plugins/hello_world" @hello_world,
+}
+
+options(
+  link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
+  "is-main": true,
+  targets: {
+    "main.mbt": [ "native" ],
+  },
+)

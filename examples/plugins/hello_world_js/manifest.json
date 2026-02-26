@@ -1,0 +1,96 @@
+{
+  "id": "hello-world-js",
+  "name": "Hello World Plugin (JS)",
+  "version": "1.0.0",
+  "type": "tool",
+  "transport": "stdio",
+  "capabilities": ["greet", "echo", "reverse", "status"],
+  "stdio": {
+    "command": "node",
+    "args": ["examples/plugins/hello_world_js/index.js"],
+    "framing": "newline_delimited",
+    "startupTimeoutMs": 5000,
+    "restartPolicy": {
+      "type": "onFailure",
+      "maxRetries": 3,
+      "delayMs": 1000
+    }
+  },
+  "capabilitySchemas": {
+    "greet": {
+      "description": "Generate a greeting message",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name to greet"
+          }
+        },
+        "required": ["name"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "count": { "type": "integer" }
+        }
+      }
+    },
+    "echo": {
+      "description": "Echo back a message",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Message to echo"
+          }
+        },
+        "required": ["message"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "echoed": { "type": "string" }
+        }
+      }
+    },
+    "reverse": {
+      "description": "Reverse a text string",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text to reverse"
+          }
+        },
+        "required": ["text"]
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "reversed": { "type": "string" }
+        }
+      }
+    },
+    "status": {
+      "description": "Get plugin status",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "returns": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "greeting_count": { "type": "integer" },
+          "uppercase": { "type": "boolean" },
+          "runtime": { "type": "string" }
+        }
+      }
+    }
+  }
+}

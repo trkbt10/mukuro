@@ -33,6 +33,30 @@ pub extern "C" fn c_fputs(s : CString, stream : CFile) -> Int = "moonbit_fputs"
 /// stderr を取得（ヘルパー関数が必要）
 pub extern "C" fn c_get_stderr() -> CFile = "moonbit_get_stderr"
 
+///|
+/// stdin を取得
+pub extern "C" fn c_get_stdin() -> CFile = "moonbit_get_stdin"
+
+///|
+/// stdout を取得
+pub extern "C" fn c_get_stdout() -> CFile = "moonbit_get_stdout"
+
+///|
+/// stdinから1行読み取る
+/// returns: 読み取ったバイト数（0=EOF、-1=エラー）
+#borrow(buffer)
+pub extern "C" fn c_read_stdin_line(buffer : Bytes, buffer_len : Int) -> Int = "moonbit_read_stdin_line"
+
+///|
+/// stdoutに書き込む（改行なし）
+/// returns: 書き込んだバイト数、エラー時-1
+#borrow(data)
+pub extern "C" fn c_write_stdout(data : Bytes, len : Int) -> Int = "moonbit_write_stdout"
+
+///|
+/// stdout をフラッシュ
+pub extern "C" fn c_fflush_stdout() -> Int = "moonbit_fflush_stdout"
+
 // ============================================================
 // ファイルシステム
 // ============================================================
@@ -48,6 +72,7 @@ pub extern "C" fn c_fclose(file : CFile) -> Int = "fclose"
 
 ///|
 /// ファイルから読み込み
+#borrow(ptr)
 pub extern "C" fn c_fread(
   ptr : Bytes,
   size : Int,
@@ -57,6 +82,7 @@ pub extern "C" fn c_fread(
 
 ///|
 /// ファイルに書き込み
+#borrow(ptr)
 pub extern "C" fn c_fwrite(
   ptr : Bytes,
   size : Int,
