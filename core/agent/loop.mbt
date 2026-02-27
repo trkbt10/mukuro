@@ -149,6 +149,7 @@ priv struct ContextOverrides {
   bootstrap : String
   memory_context : Array[String]
   skills : Array[@interfaces.SkillDefinition]
+  context_files : @interfaces.ContextFiles
 }
 
 ///|
@@ -212,6 +213,32 @@ fn parse_skills(value : Json?) -> Array[@interfaces.SkillDefinition] {
 }
 
 ///|
+/// メタデータからコンテキストファイルをパース
+fn parse_context_files(
+  metadata : Map[String, Json],
+) -> @interfaces.ContextFiles {
+  fn get_string_or_none(key : String) -> String? {
+    match metadata.get(key) {
+      Some(String(s)) =>
+        if s.trim(chars=" \t\n\r").length() > 0 {
+          Some(s)
+        } else {
+          None
+        }
+      _ => None
+    }
+  }
+
+  {
+    soul: get_string_or_none("soul"),
+    agents_handbook: get_string_or_none("agents_handbook"),
+    tools_config: get_string_or_none("tools_config"),
+    identity: get_string_or_none("identity"),
+    user_context: get_string_or_none("user_context"),
+  }
+}
+
+///|
 fn extract_context_overrides(
   envelope : @types.InboundEnvelope,
 ) -> ContextOverrides {
@@ -223,7 +250,8 @@ fn extract_context_overrides(
     envelope.metadata.get("memory_context"),
   )
   let skills = parse_skills(envelope.metadata.get("skills"))
-  { bootstrap, memory_context, skills }
+  let context_files = parse_context_files(envelope.metadata)
+  { bootstrap, memory_context, skills, context_files }
 }
 
 ///|
@@ -256,6 +284,9 @@ pub async fn run_agent_loop(
     skills: overrides.skills,
     bootstrap: overrides.bootstrap,
     current_message: envelope,
+    system_prompt_config: None,
+    is_first_message: session.history.is_empty(),
+    context_files: overrides.context_files,
   }
   ctx.messages = deps.context_builder.build(context_input)
   // 5. ツール定義取得
@@ -535,6 +566,9 @@ pub async fn run_agent_loop_async(
     skills: overrides.skills,
     bootstrap: overrides.bootstrap,
     current_message: envelope,
+    system_prompt_config: None,
+    is_first_message: session.history.is_empty(),
+    context_files: overrides.context_files,
   }
   ctx.messages = deps.context_builder.build(context_input)
   // 5. ツール定義取得

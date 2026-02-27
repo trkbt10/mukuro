@@ -10,6 +10,36 @@ pub(all) struct SkillDefinition {
 }
 
 ///|
+/// ワークスペースコンテキストファイル（OpenClaw互換）
+pub(all) struct ContextFiles {
+  /// SOUL.md - AIの性格・価値観定義
+  soul : String?
+  /// AGENTS.md - ワークスペースハンドブック/行動指針
+  agents_handbook : String?
+  /// TOOLS.md - ローカル環境・ツール設定
+  tools_config : String?
+  /// IDENTITY.md - AIの名前・アイデンティティ
+  identity : String?
+  /// USER.md - ユーザー情報・好み
+  user_context : String?
+}
+
+///|
+/// 空のContextFilesを作成
+pub fn ContextFiles::empty() -> ContextFiles {
+  { soul: None, agents_handbook: None, tools_config: None, identity: None, user_context: None }
+}
+
+///|
+/// SOUL.mdが設定されているかどうか
+pub fn ContextFiles::has_soul(self : ContextFiles) -> Bool {
+  match self.soul {
+    Some(s) => s.trim(chars=" \t\n\r").length() > 0
+    None => false
+  }
+}
+
+///|
 /// コンテキスト構築入力
 pub(all) struct ContextInput {
   /// セッション履歴
@@ -22,6 +52,12 @@ pub(all) struct ContextInput {
   bootstrap : String
   /// 現在の入力メッセージ
   current_message : @types.InboundEnvelope
+  /// システムプロンプト設定（OpenClaw互換）
+  system_prompt_config : @types.SystemPromptConfig?
+  /// 会話中の最初のメッセージかどうか（SystemPromptWhen::First用）
+  is_first_message : Bool
+  /// ワークスペースコンテキストファイル（OpenClaw互換）
+  context_files : ContextFiles
 }
 
 ///|

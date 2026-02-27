@@ -6,6 +6,11 @@ import {
   "moonbitlang/core/json",
   "mizchi/x/http" @xhttp,
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/api/v1" @api,
+  "trkbt10/mukuro/api/v1/settings" @api_settings,
+  "trkbt10/mukuro/api/v1/plugins" @api_plugins,
+  "trkbt10/mukuro/api/v1/context" @api_context,
+  "trkbt10/mukuro/api/v1/providers" @api_providers,
   "trkbt10/mukuro/core/config" @config,
   "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
   "trkbt10/mukuro/core/agent" @agent,
@@ -26,6 +31,7 @@ options(
   "is-main": true,
   link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
   targets: {
+    "api_v1_e2e_native_test.mbt": [ "native" ],
     "config_file_native.mbt": [ "native" ],
     "control_api_native.mbt": [ "native" ],
     "control_api_native_test.mbt": [ "native" ],
@@ -58,5 +64,8 @@ options(
     "runtime_context_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "runtime_model_native.mbt": [ "native" ],
     "runtime_model_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "service_commands_native.mbt": [ "native" ],
+    "service_commands_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "service_e2e_native_test.mbt": [ "native" ],
   },
 )

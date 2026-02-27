@@ -21,15 +21,47 @@ let api_v1_settings_state : @api_settings.SettingsState = @api_settings.Settings
 let api_v1_plugins_state : @api_plugins.PluginManagerState = @api_plugins.PluginManagerState::new()
 
 ///|
-let api_v1_prompts_state : @api_prompts.PromptState = @api_prompts.PromptState::new()
 let api_v1_providers_state : @api_providers.ProviderManagerState = @api_providers.ProviderManagerState::new()
+
+///|
+/// Create context file I/O interface
+fn create_context_file_io() -> @api_context.ContextFileIO {
+  {
+    read: fn(path) {
+      match read_text_file_optional(path) {
+        Some(content) =>
+          if content.trim(chars=" \t\n\r").length() > 0 {
+            Some(content)
+          } else {
+            None
+          }
+        None => None
+      }
+    },
+    write: fn(path, content) {
+      @native.c_write_text_file(
+        @native.string_to_cstring(path),
+        @native.string_to_cstring(content),
+      ) ==
+      0
+    },
+    delete: fn(path) { @native.c_remove_file(@native.string_to_cstring(path)) == 0 },
+    get_dir: fn() { get_workspace_context_dir() },
+  }
+}
+
+///|
+/// Global context state
+let api_v1_context_state : @api_context.ContextState = @api_context.ContextState::new(
+  create_context_file_io(),
+)
 
 ///|
 /// Get API v1 router with handlers configured
 fn get_api_v1_router() -> @api.ApiRouter {
   {
     plugin_handlers: Some(@api_plugins.create_plugin_handlers(api_v1_plugins_state)),
-    prompt_handlers: Some(@api_prompts.create_prompt_handlers(api_v1_prompts_state)),
+    context_handlers: Some(@api_context.create_context_handlers(api_v1_context_state)),
     settings_handlers: Some(@api_settings.create_settings_handlers(api_v1_settings_state)),
     config_handlers: None,
     provider_handlers: Some(@api_providers.create_provider_handlers(api_v1_providers_state)),
@@ -41,7 +73,6 @@ fn get_api_v1_router() -> @api.ApiRouter {
 pub fn init_api_v1_state(config : @types.MukuroConfig, config_path : String) -> Unit {
   api_v1_settings_state.init(config, config_path)
   api_v1_settings_state.set_persister(persist_config_to_file)
-  api_v1_prompts_state.from_config(config)
   api_v1_plugins_state.init_builtins()
 }
 

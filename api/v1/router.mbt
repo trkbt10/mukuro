@@ -11,8 +11,8 @@ pub(all) struct RouteHandler((ApiRequestContext) -> ApiResponse)
 pub(all) struct ApiRouter {
   /// Plugin handlers
   plugin_handlers : PluginApiHandlers?
-  /// Prompt handlers
-  prompt_handlers : PromptApiHandlers?
+  /// Context handlers (file-based context management)
+  context_handlers : ContextApiHandlers?
   /// Settings handlers
   settings_handlers : SettingsApiHandlers?
   /// Config handlers
@@ -47,26 +47,16 @@ pub(all) struct PluginApiHandlers {
 }
 
 ///|
-/// Prompt API handlers interface
-pub(all) struct PromptApiHandlers {
-  /// GET /prompts/system - get system prompt
-  get_system : RouteHandler
-  /// PUT /prompts/system - update system prompt
-  update_system : RouteHandler
-  /// GET /prompts/bootstrap - get bootstrap prompt
-  get_bootstrap : RouteHandler
-  /// PUT /prompts/bootstrap - update bootstrap prompt
-  update_bootstrap : RouteHandler
-  /// POST /prompts/bootstrap/append - append to bootstrap
-  append_bootstrap : RouteHandler
-  /// GET /prompts/channels/{name} - get channel prompt
-  get_channel : RouteHandler
-  /// PUT /prompts/channels/{name} - set channel prompt
-  update_channel : RouteHandler
-  /// POST /prompts/channels - create channel prompt
-  create_channel : RouteHandler
-  /// DELETE /prompts/channels/{name} - delete channel prompt
-  delete_channel : RouteHandler
+/// Context API handlers interface
+pub(all) struct ContextApiHandlers {
+  /// GET /context - list all context files
+  list : RouteHandler
+  /// GET /context/{name} - get context file
+  get : RouteHandler
+  /// PUT /context/{name} - update context file
+  update : RouteHandler
+  /// DELETE /context/{name} - delete context file
+  delete : RouteHandler
 }
 
 ///|
@@ -145,7 +135,7 @@ pub(all) struct ProviderApiHandlers {
 pub fn ApiRouter::new() -> ApiRouter {
   {
     plugin_handlers: None,
-    prompt_handlers: None,
+    context_handlers: None,
     settings_handlers: None,
     config_handlers: None,
     provider_handlers: None,
@@ -167,7 +157,7 @@ pub fn ApiRouter::route(self : ApiRouter, ctx : ApiRequestContext) -> ApiRespons
   let resource = ctx.segments[0]
   match resource {
     "plugins" => self.route_plugins(ctx)
-    "prompts" => self.route_prompts(ctx)
+    "context" => self.route_context(ctx)
     "settings" => self.route_settings(ctx)
     "config" => self.route_config(ctx)
     "providers" => self.route_providers(ctx)
@@ -185,7 +175,7 @@ fn api_index_handler(_ctx : ApiRequestContext) -> ApiResponse {
       "endpoints": Json::array(
         [
           "/api/v1/plugins",
-          "/api/v1/prompts",
+          "/api/v1/context",
           "/api/v1/settings",
           "/api/v1/config",
           "/api/v1/providers",
@@ -254,69 +244,40 @@ fn route_plugin_endpoint(
 }
 
 ///|
-/// Route prompt API requests
-fn ApiRouter::route_prompts(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
-  match self.prompt_handlers {
-    None => error_response(501, "not_implemented", "Prompt API not configured")
-    Some(handlers) => route_prompt_endpoint(handlers, ctx)
+/// Route context API requests
+fn ApiRouter::route_context(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  match self.context_handlers {
+    None => error_response(501, "not_implemented", "Context API not configured")
+    Some(handlers) => route_context_endpoint(handlers, ctx)
   }
 }
 
 ///|
-/// Route prompt endpoint
-fn route_prompt_endpoint(
-  handlers : PromptApiHandlers,
+/// Route context endpoint
+fn route_context_endpoint(
+  handlers : ContextApiHandlers,
   ctx : ApiRequestContext,
 ) -> ApiResponse {
   let meth = ctx.http_method.to_upper()
   let segments = ctx.segments
-  // /prompts
+  // /context - list all
   if segments.length() == 1 {
-    return error_response(400, "bad_request", "Specify a prompt type")
-  }
-  // /prompts/system
-  if segments.length() == 2 && segments[1] == "system" {
-    match meth {
-      "GET" => return (handlers.get_system.0)(ctx)
-      "PUT" => return (handlers.update_system.0)(ctx)
-      _ =>
-        return error_response(405, "method_not_allowed", "Method not allowed")
-    }
-  }
-  // /prompts/bootstrap
-  if segments.length() == 2 && segments[1] == "bootstrap" {
-    match meth {
-      "GET" => return (handlers.get_bootstrap.0)(ctx)
-      "PUT" => return (handlers.update_bootstrap.0)(ctx)
-      _ =>
-        return error_response(405, "method_not_allowed", "Method not allowed")
-    }
-  }
-  // /prompts/bootstrap/append
-  if segments.length() == 3 && segments[1] == "bootstrap" && segments[2] == "append" {
-    if meth == "POST" {
-      return (handlers.append_bootstrap.0)(ctx)
+    if meth == "GET" {
+      return (handlers.list.0)(ctx)
     }
     return error_response(405, "method_not_allowed", "Method not allowed")
   }
-  // /prompts/channels (POST - create)
-  if segments.length() == 2 && segments[1] == "channels" {
-    if meth == "POST" {
-      return (handlers.create_channel.0)(ctx)
-    }
-    return error_response(405, "method_not_allowed", "Method not allowed")
-  }
-  // /prompts/channels/{name}
-  if segments.length() == 3 && segments[1] == "channels" {
+  // /context/{name}
+  if segments.length() == 2 {
     match meth {
-      "GET" => return (handlers.get_channel.0)(ctx)
-      "PUT" => return (handlers.update_channel.0)(ctx)
-      "DELETE" => return (handlers.delete_channel.0)(ctx)
+      "GET" => return (handlers.get.0)(ctx)
+      "PUT" => return (handlers.update.0)(ctx)
+      "DELETE" => return (handlers.delete.0)(ctx)
       _ =>
         return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
-  error_response(404, "not_found", "Unknown prompt endpoint")
+  error_response(404, "not_found", "Unknown context endpoint")
 }
 
 ///|

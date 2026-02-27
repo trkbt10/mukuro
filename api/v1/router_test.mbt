@@ -32,16 +32,11 @@ fn make_router_with_handlers() -> ApiRouter {
     get_settings: RouteHandler(dummy_handler),
     update_settings: RouteHandler(dummy_handler),
   }
-  let prompt_handlers : PromptApiHandlers = {
-    get_system: RouteHandler(dummy_handler),
-    update_system: RouteHandler(dummy_handler),
-    get_bootstrap: RouteHandler(dummy_handler),
-    update_bootstrap: RouteHandler(dummy_handler),
-    append_bootstrap: RouteHandler(dummy_handler),
-    get_channel: RouteHandler(dummy_handler),
-    update_channel: RouteHandler(dummy_handler),
-    create_channel: RouteHandler(dummy_handler),
-    delete_channel: RouteHandler(dummy_handler),
+  let context_handlers : ContextApiHandlers = {
+    list: RouteHandler(dummy_handler),
+    get: RouteHandler(dummy_handler),
+    update: RouteHandler(dummy_handler),
+    delete: RouteHandler(dummy_handler),
   }
   let settings_handlers : SettingsApiHandlers = {
     get_all: RouteHandler(dummy_handler),
@@ -59,7 +54,7 @@ fn make_router_with_handlers() -> ApiRouter {
   }
   {
     plugin_handlers: Some(plugin_handlers),
-    prompt_handlers: Some(prompt_handlers),
+    context_handlers: Some(context_handlers),
     settings_handlers: Some(settings_handlers),
     config_handlers: None,
     provider_handlers: None,
@@ -163,53 +158,37 @@ test "router routes POST /api/v1/plugins/{id}/reload" {
 }
 
 // =============================================================================
-// Prompt Routes
+// Context Routes
 // =============================================================================
 
 ///|
-test "router routes GET /api/v1/prompts/system" {
+test "router routes GET /api/v1/context" {
   let router = make_router_with_handlers()
-  let ctx = make_ctx("GET", "/api/v1/prompts/system", "viewer", "")
+  let ctx = make_ctx("GET", "/api/v1/context", "viewer", "")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
 }
 
 ///|
-test "router routes PUT /api/v1/prompts/system" {
+test "router routes GET /api/v1/context/{name}" {
   let router = make_router_with_handlers()
-  let ctx = make_ctx("PUT", "/api/v1/prompts/system", "admin", "{}")
+  let ctx = make_ctx("GET", "/api/v1/context/soul", "viewer", "")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
 }
 
 ///|
-test "router routes GET /api/v1/prompts/bootstrap" {
+test "router routes PUT /api/v1/context/{name}" {
   let router = make_router_with_handlers()
-  let ctx = make_ctx("GET", "/api/v1/prompts/bootstrap", "viewer", "")
+  let ctx = make_ctx("PUT", "/api/v1/context/soul", "operator", "{}")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
 }
 
 ///|
-test "router routes POST /api/v1/prompts/bootstrap/append" {
+test "router routes DELETE /api/v1/context/{name}" {
   let router = make_router_with_handlers()
-  let ctx = make_ctx("POST", "/api/v1/prompts/bootstrap/append", "admin", "{}")
-  let resp = router.route(ctx)
-  assert_eq(resp.status, 200)
-}
-
-///|
-test "router routes GET /api/v1/prompts/channels/{name}" {
-  let router = make_router_with_handlers()
-  let ctx = make_ctx("GET", "/api/v1/prompts/channels/default", "viewer", "")
-  let resp = router.route(ctx)
-  assert_eq(resp.status, 200)
-}
-
-///|
-test "router routes PUT /api/v1/prompts/channels/{name}" {
-  let router = make_router_with_handlers()
-  let ctx = make_ctx("PUT", "/api/v1/prompts/channels/default", "operator", "{}")
+  let ctx = make_ctx("DELETE", "/api/v1/context/soul", "admin", "")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
 }

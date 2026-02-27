@@ -1,0 +1,3 @@
+import {
+  "trkbt10/mukuro/api/v1" @api,
+}

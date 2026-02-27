@@ -15,6 +15,12 @@ pub fn set_workspace_context_dir_for_process(path : String) -> Unit {
 }
 
 ///|
+/// Get current workspace context directory
+pub fn get_workspace_context_dir() -> String {
+  workspace_context_dir_cell.path
+}
+
+///|
 fn context_path(file : String) -> String {
   workspace_context_dir_cell.path + "/" + file
 }
@@ -47,6 +53,51 @@ fn memory_json_from_lines(content : String) -> Json {
     }
   }
   Json::array(values)
+}
+
+///|
+/// 空でないファイルを読み込むヘルパー
+fn read_non_empty_file(path : String) -> String? {
+  match read_text_file_optional(path) {
+    Some(content) => {
+      if content.trim(chars=" \t\n\r").length() > 0 {
+        Some(content)
+      } else {
+        None
+      }
+    }
+    None => None
+  }
+}
+
+///|
+/// コンテキストファイル（SOUL.md等）を読み込む
+fn load_context_files(metadata : Map[String, Json]) -> Unit {
+  // SOUL.md - AIの性格・価値観定義
+  match read_non_empty_file(context_path("SOUL.md")) {
+    Some(content) => metadata["soul"] = Json::string(content)
+    None => ()
+  }
+  // AGENTS.md - ワークスペースハンドブック/行動指針
+  match read_non_empty_file(context_path("AGENTS.md")) {
+    Some(content) => metadata["agents_handbook"] = Json::string(content)
+    None => ()
+  }
+  // TOOLS.md - ローカル環境・ツール設定
+  match read_non_empty_file(context_path("TOOLS.md")) {
+    Some(content) => metadata["tools_config"] = Json::string(content)
+    None => ()
+  }
+  // IDENTITY.md - AIの名前・アイデンティティ
+  match read_non_empty_file(context_path("IDENTITY.md")) {
+    Some(content) => metadata["identity"] = Json::string(content)
+    None => ()
+  }
+  // USER.md - ユーザー情報・好み
+  match read_non_empty_file(context_path("USER.md")) {
+    Some(content) => metadata["user_context"] = Json::string(content)
+    None => ()
+  }
 }
 
 ///|
@@ -97,6 +148,8 @@ fn build_workspace_context_metadata() -> Map[String, Json] {
     }
     None => ()
   }
+  // コンテキストファイル（SOUL.md, AGENTS.md等）を読み込み
+  load_context_files(metadata)
   metadata
 }
 
