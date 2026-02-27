@@ -1,0 +1,22 @@
+.spinner {
+  animation: spin 1s linear infinite;
+  color: var(--mk-accent);
+}
+
+.sm { width: 16px; height: 16px; }
+.md { width: 24px; height: 24px; }
+.lg { width: 32px; height: 32px; }
+
+.loadingWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.loadingMessage {
+  margin-top: var(--mk-space-xl);
+  font-size: var(--mk-font-size-md);
+  color: var(--mk-text-secondary);
+}

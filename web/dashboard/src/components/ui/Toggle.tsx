@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import styles from './Toggle.module.css';
 
 export interface ToggleProps {
   checked: boolean;
@@ -18,27 +18,39 @@ export function Toggle({
   size = 'md',
 }: ToggleProps) {
   const handleClick = () => {
-    if (!disabled) {
-      onChange(!checked);
-    }
+    if (!disabled) onChange(!checked);
   };
 
+  const wrapperCls = [
+    styles.wrapper,
+    label ? styles.withLabel : '',
+    disabled ? styles.disabled : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const trackCls = [
+    styles.track,
+    size === 'sm' ? styles.trackSm : styles.trackMd,
+    checked ? styles.trackOn : styles.trackOff,
+  ].join(' ');
+
+  const thumbCls = [
+    styles.thumb,
+    size === 'sm' ? styles.thumbSm : styles.thumbMd,
+    checked
+      ? size === 'sm'
+        ? styles.thumbOnSm
+        : styles.thumbOnMd
+      : styles.thumbOff,
+  ].join(' ');
+
   return (
-    <div
-      className={cn(
-        'flex items-center',
-        label && 'justify-between',
-        disabled && 'opacity-50 cursor-not-allowed'
-      )}
-    >
+    <div className={wrapperCls}>
       {(label || description) && (
-        <div className="mr-4">
-          {label && (
-            <span className="text-sm font-medium text-text">{label}</span>
-          )}
-          {description && (
-            <p className="text-sm text-text-muted">{description}</p>
-          )}
+        <div className={styles.labelGroup}>
+          {label && <span className={styles.label}>{label}</span>}
+          {description && <p className={styles.description}>{description}</p>}
         </div>
       )}
       <button
@@ -47,28 +59,9 @@ export function Toggle({
         aria-checked={checked}
         disabled={disabled}
         onClick={handleClick}
-        className={cn(
-          'relative inline-flex shrink-0 cursor-pointer rounded-full border-2 border-transparent',
-          'transition-colors duration-200 ease-in-out',
-          'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-          checked ? 'bg-primary' : 'bg-surface-tertiary',
-          disabled && 'cursor-not-allowed',
-          size === 'sm' ? 'h-5 w-9' : 'h-6 w-11'
-        )}
+        className={trackCls}
       >
-        <span
-          aria-hidden="true"
-          className={cn(
-            'pointer-events-none inline-block transform rounded-full bg-white shadow-lg ring-0',
-            'transition duration-200 ease-in-out',
-            size === 'sm' ? 'h-4 w-4' : 'h-5 w-5',
-            checked
-              ? size === 'sm'
-                ? 'translate-x-4'
-                : 'translate-x-5'
-              : 'translate-x-0'
-          )}
-        />
+        <span aria-hidden="true" className={thumbCls} />
       </button>
     </div>
   );

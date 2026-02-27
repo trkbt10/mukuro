@@ -1,0 +1,12 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  background: var(--mk-bg-base);
+}

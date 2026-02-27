@@ -1,0 +1,91 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  animation: fadeIn 150ms ease-out;
+}
+
+.dialog {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  background: var(--mk-bg-surface);
+  border: 1px solid var(--mk-border-default);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 150ms ease-out;
+}
+
+.dialogSm { max-width: 360px; }
+.dialogMd { max-width: 480px; }
+.dialogLg { max-width: 600px; }
+.dialogXl { max-width: 720px; }
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--mk-border-default);
+  padding: var(--mk-space-lg) var(--mk-space-xl);
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  font-size: var(--mk-font-size-xl);
+  font-weight: 600;
+  color: var(--mk-text-primary);
+}
+
+.description {
+  font-size: var(--mk-font-size-md);
+  color: var(--mk-text-secondary);
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  color: var(--mk-text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.closeButton:hover {
+  background: var(--mk-bg-surface-hover);
+  color: var(--mk-text-primary);
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--mk-space-xl);
+}
+
+.footer {
+  border-top: 1px solid var(--mk-border-default);
+  padding: var(--mk-space-lg) var(--mk-space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mk-space-md);
+}

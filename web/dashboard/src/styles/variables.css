@@ -1,0 +1,80 @@
+:root {
+  /* === Figma/Adobe Dark-Neutral Palette === */
+
+  /* Backgrounds */
+  --mk-bg-base: #1e1e1e;
+  --mk-bg-surface: #252526;
+  --mk-bg-surface-raised: #2d2d2d;
+  --mk-bg-surface-overlay: #333333;
+  --mk-bg-surface-hover: #383838;
+  --mk-bg-surface-active: #3e3e3e;
+
+  /* Borders */
+  --mk-border-default: #3e3e3e;
+  --mk-border-subtle: #333333;
+  --mk-border-strong: #555555;
+
+  /* Text */
+  --mk-text-primary: #cccccc;
+  --mk-text-secondary: #999999;
+  --mk-text-muted: #666666;
+  --mk-text-on-emphasis: #ffffff;
+
+  /* Accent (used sparingly) */
+  --mk-accent: #007acc;
+  --mk-accent-hover: #0098ff;
+  --mk-accent-active: #005a9e;
+  --mk-accent-subtle: rgba(0, 122, 204, 0.15);
+
+  /* Semantic */
+  --mk-success: #4ec9b0;
+  --mk-success-subtle: rgba(78, 201, 176, 0.15);
+  --mk-warning: #cca700;
+  --mk-warning-subtle: rgba(204, 167, 0, 0.15);
+  --mk-error: #f14c4c;
+  --mk-error-subtle: rgba(241, 76, 76, 0.15);
+  --mk-info: #3794ff;
+  --mk-info-subtle: rgba(55, 148, 255, 0.15);
+
+  /* Typography */
+  --mk-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --mk-font-mono: "SF Mono", Monaco, "Cascadia Code", "Fira Code",
+    "Courier New", monospace;
+  --mk-font-size-xs: 10px;
+  --mk-font-size-sm: 11px;
+  --mk-font-size-md: 12px;
+  --mk-font-size-lg: 13px;
+  --mk-font-size-xl: 14px;
+  --mk-font-size-2xl: 16px;
+  --mk-font-size-3xl: 20px;
+
+  /* Spacing */
+  --mk-space-xs: 2px;
+  --mk-space-sm: 4px;
+  --mk-space-md: 8px;
+  --mk-space-lg: 12px;
+  --mk-space-xl: 16px;
+  --mk-space-2xl: 24px;
+  --mk-space-3xl: 32px;
+
+  /* Layout */
+  --mk-sidebar-width: 200px;
+  --mk-header-height: 36px;
+  --mk-statusbar-height: 24px;
+
+  /* react-editor-ui token overrides */
+  --rei-size-toolbar-height: var(--mk-header-height);
+  --rei-size-statusbar-height: var(--mk-statusbar-height);
+
+  /* react-panel-layout token overrides */
+  --rpl-color-surface: var(--mk-bg-surface);
+  --rpl-color-surface-2: var(--mk-bg-surface-raised);
+  --rpl-color-border: var(--mk-border-default);
+  --rpl-color-muted-fg: var(--mk-text-muted);
+  --rpl-color-panel-bg: var(--mk-bg-base);
+  --rpl-color-panel-border: var(--mk-border-default);
+  --rpl-color-primary: var(--mk-accent);
+  --rpl-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --rpl-radius-floating-panel: 0px;
+}

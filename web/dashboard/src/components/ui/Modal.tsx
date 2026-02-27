@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import styles from './Modal.module.css';
 
 export interface ModalProps {
   open: boolean;
@@ -11,6 +11,13 @@ export interface ModalProps {
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
+
+const sizeClass: Record<string, string> = {
+  sm: styles.dialogSm,
+  md: styles.dialogMd,
+  lg: styles.dialogLg,
+  xl: styles.dialogXl,
+};
 
 export function Modal({
   open,
@@ -23,9 +30,7 @@ export function Modal({
 }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
 
     if (open) {
@@ -42,65 +47,46 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className={styles.overlay}>
       <div
-        className="fixed inset-0 bg-black/50 animate-fade-in"
+        className={styles.backdrop}
         onClick={onClose}
         aria-hidden="true"
       />
       <div
-        className={cn(
-          'relative z-10 w-full bg-surface rounded-lg shadow-modal animate-slide-up',
-          'max-h-[90vh] overflow-hidden flex flex-col',
-          {
-            'max-w-sm': size === 'sm',
-            'max-w-md': size === 'md',
-            'max-w-lg': size === 'lg',
-            'max-w-2xl': size === 'xl',
-          }
-        )}
+        className={`${styles.dialog} ${sizeClass[size]}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={description ? 'modal-description' : undefined}
       >
         {(title || description) && (
-          <div className="flex items-start justify-between border-b px-6 py-4">
-            <div>
+          <div className={styles.header}>
+            <div className={styles.headerText}>
               {title && (
-                <h2
-                  id="modal-title"
-                  className="text-lg font-semibold text-text"
-                >
+                <h2 id="modal-title" className={styles.title}>
                   {title}
                 </h2>
               )}
               {description && (
-                <p
-                  id="modal-description"
-                  className="mt-1 text-sm text-text-secondary"
-                >
+                <p id="modal-description" className={styles.description}>
                   {description}
                 </p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="rounded-md p-1 text-text-muted hover:bg-surface-secondary hover:text-text transition-colors"
+              className={styles.closeButton}
               aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X style={{ width: 18, height: 18 }} />
             </button>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+        <div className={styles.body}>{children}</div>
 
-        {footer && (
-          <div className="border-t px-6 py-4 flex items-center justify-end gap-3">
-            {footer}
-          </div>
-        )}
+        {footer && <div className={styles.footer}>{footer}</div>}
       </div>
     </div>
   );

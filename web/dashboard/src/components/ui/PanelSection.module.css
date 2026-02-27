@@ -1,0 +1,17 @@
+.panel {
+  background: var(--mk-bg-surface);
+  border: 1px solid var(--mk-border-default);
+}
+
+.content {
+  padding: var(--mk-space-xl);
+}
+
+.footer {
+  border-top: 1px solid var(--mk-border-default);
+  padding: var(--mk-space-lg) var(--mk-space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--mk-space-md);
+}

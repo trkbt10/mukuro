@@ -1,6 +1,7 @@
 {
   "name": "mukuro-web",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
   "workspaces": ["client", "dashboard"],
   "scripts": {
@@ -8,7 +9,12 @@
     "start": "bun run --cwd dashboard start",
     "build": "bun run --cwd client build && bun run --cwd dashboard build",
     "test": "bun run --cwd client test && bun run --cwd dashboard test",
-    "lint": "bun run --cwd client lint && bun run --cwd dashboard lint"
+    "lint": "eslint ."
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.2",
+    "globals": "^17.3.0",
+    "typescript-eslint": "^8.56.1"
+  }
 }

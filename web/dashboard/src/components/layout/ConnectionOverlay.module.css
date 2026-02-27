@@ -1,0 +1,68 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.card {
+  background: var(--mk-bg-surface);
+  border: 1px solid var(--mk-border-default);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  padding: var(--mk-space-3xl);
+  max-width: 400px;
+  margin: 0 var(--mk-space-xl);
+  text-align: center;
+  animation: fadeIn 150ms ease-out;
+}
+
+.iconWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--mk-space-xl);
+}
+
+.iconCircle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--mk-error-subtle);
+}
+
+.title {
+  font-size: var(--mk-font-size-2xl);
+  font-weight: 600;
+  color: var(--mk-text-primary);
+  margin-bottom: var(--mk-space-md);
+}
+
+.message {
+  color: var(--mk-text-secondary);
+  font-size: var(--mk-font-size-md);
+  margin-bottom: var(--mk-space-2xl);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-lg);
+}
+
+.hint {
+  font-size: var(--mk-font-size-xs);
+  color: var(--mk-text-muted);
+}
+
+.code {
+  background: var(--mk-bg-surface-raised);
+  padding: 1px 4px;
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-xs);
+}

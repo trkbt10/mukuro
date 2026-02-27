@@ -1,70 +1,50 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { forwardRef, type ChangeEvent, type ReactNode } from 'react';
+import { Input as ReuiInput } from 'react-editor-ui';
+import styles from './Input.module.css';
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps {
+  value?: string;
+  onChange?: (value: string, event: ChangeEvent<HTMLInputElement>) => void;
+  type?: 'text' | 'search' | 'number' | 'password';
+  placeholder?: string;
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
   label?: string;
   error?: string;
   helperText?: string;
-  leftElement?: ReactNode;
-  rightElement?: ReactNode;
+  iconStart?: ReactNode;
+  iconEnd?: ReactNode;
+  className?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
-      className,
       label,
       error,
       helperText,
-      leftElement,
-      rightElement,
-      id,
-      ...props
+      value,
+      onChange,
+      iconStart,
+      iconEnd,
+      ...rest
     },
     ref
   ) => {
-    const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
-
     return (
-      <div className="space-y-1.5">
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-text"
-          >
-            {label}
-          </label>
-        )}
-        <div className="relative">
-          {leftElement && (
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-text-muted">
-              {leftElement}
-            </div>
-          )}
-          <input
-            ref={ref}
-            id={inputId}
-            className={cn(
-              'w-full rounded-md border bg-surface px-3 py-2 text-sm text-text',
-              'placeholder:text-text-muted',
-              'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
-              error ? 'border-red-500 focus:ring-red-500' : null,
-              leftElement ? 'pl-10' : null,
-              rightElement ? 'pr-10' : null,
-              className
-            )}
-            {...props}
-          />
-          {rightElement && (
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-muted">
-              {rightElement}
-            </div>
-          )}
-        </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+      <div className={styles.fieldWrapper}>
+        {label && <label className={styles.label}>{label}</label>}
+        <ReuiInput
+          ref={ref}
+          value={value ?? ''}
+          onChange={(v, e) => onChange?.(v, e)}
+          iconStart={iconStart}
+          iconEnd={iconEnd}
+          {...rest}
+        />
+        {error && <span className={styles.error}>{error}</span>}
         {helperText && !error && (
-          <p className="text-sm text-text-muted">{helperText}</p>
+          <span className={styles.helper}>{helperText}</span>
         )}
       </div>
     );
@@ -81,36 +61,25 @@ export interface TextareaProps
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, label, error, helperText, id, ...props }, ref) => {
+  ({ label, error, helperText, id, className, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
-      <div className="space-y-1.5">
+      <div className={styles.fieldWrapper}>
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-text"
-          >
+          <label htmlFor={inputId} className={styles.label}>
             {label}
           </label>
         )}
         <textarea
           ref={ref}
           id={inputId}
-          className={cn(
-            'w-full rounded-md border bg-surface px-3 py-2 text-sm text-text',
-            'placeholder:text-text-muted',
-            'focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
-            'resize-none',
-            error && 'border-red-500 focus:ring-red-500',
-            className
-          )}
+          className={`${styles.textarea}${error ? ` ${styles.textareaError}` : ''}${className ? ` ${className}` : ''}`}
           {...props}
         />
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <span className={styles.error}>{error}</span>}
         {helperText && !error && (
-          <p className="text-sm text-text-muted">{helperText}</p>
+          <span className={styles.helper}>{helperText}</span>
         )}
       </div>
     );

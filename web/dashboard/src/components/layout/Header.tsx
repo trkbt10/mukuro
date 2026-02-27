@@ -1,81 +1,88 @@
 import { Moon, Sun, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useConnection, type ConnectionStatus } from '@/hooks/useConnection';
-import { cn } from '@/lib/utils';
+import {
+  Toolbar,
+  ToolbarGroup,
+  ToolbarDivider,
+  IconButton,
+  StatusBarItem,
+} from 'react-editor-ui';
 
 function ConnectionIndicator() {
   const { data, isLoading } = useConnection();
-  const status: ConnectionStatus = isLoading ? 'connecting' : (data?.status ?? 'disconnected');
+  const status: ConnectionStatus = isLoading
+    ? 'connecting'
+    : (data?.status ?? 'disconnected');
 
-  const statusConfig = {
+  const iconSize = { width: 14, height: 14 };
+
+  const configs: Record<ConnectionStatus, { icon: React.ReactNode; label: string }> = {
     connecting: {
-      icon: Loader2,
-      className: 'text-yellow-500 animate-spin',
+      icon: <Loader2 style={{ ...iconSize, animation: 'spin 1s linear infinite', color: 'var(--mk-warning)' }} />,
       label: 'Connecting...',
     },
     connected: {
-      icon: Wifi,
-      className: 'text-green-500',
+      icon: <Wifi style={{ ...iconSize, color: 'var(--mk-success)' }} />,
       label: 'Connected',
     },
     disconnected: {
-      icon: WifiOff,
-      className: 'text-red-500',
+      icon: <WifiOff style={{ ...iconSize, color: 'var(--mk-error)' }} />,
       label: 'Disconnected',
     },
     error: {
-      icon: WifiOff,
-      className: 'text-orange-500',
+      icon: <WifiOff style={{ ...iconSize, color: 'var(--mk-warning)' }} />,
       label: data?.error ?? 'Error',
     },
   };
 
-  const config = statusConfig[status];
-  const Icon = config.icon;
+  const config = configs[status];
 
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <Icon className={cn('h-4 w-4', config.className)} />
-      <span className="text-text-secondary hidden sm:inline">{config.label}</span>
-    </div>
+    <StatusBarItem>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {config.icon}
+        <span>{config.label}</span>
+      </span>
+    </StatusBarItem>
   );
 }
 
 export function Header() {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const shouldBeDark = stored === 'dark' || (!stored && prefersDark);
-    setIsDark(shouldBeDark);
-    document.documentElement.classList.toggle('dark', shouldBeDark);
+    setIsDark(stored === 'dark' || stored === null || (!stored && prefersDark));
   }, []);
 
   const toggleTheme = () => {
     const newValue = !isDark;
     setIsDark(newValue);
-    document.documentElement.classList.toggle('dark', newValue);
     localStorage.setItem('theme', newValue ? 'dark' : 'light');
   };
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-surface px-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold text-text">Dashboard</h1>
-      </div>
-
-      <div className="flex items-center gap-4">
+    <Toolbar>
+      <ToolbarGroup>
+        <StatusBarItem>
+          <span style={{ fontWeight: 600, fontSize: 'var(--mk-font-size-lg)' }}>
+            Dashboard
+          </span>
+        </StatusBarItem>
+      </ToolbarGroup>
+      <ToolbarDivider />
+      <ToolbarGroup>
         <ConnectionIndicator />
-
-        <button
-          onClick={toggleTheme}
-          className="flex h-9 w-9 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text"
+        <IconButton
+          icon={isDark ? <Sun style={{ width: 16, height: 16 }} /> : <Moon style={{ width: 16, height: 16 }} />}
           aria-label="Toggle theme"
-        >
-          {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
-      </div>
-    </header>
+          onClick={toggleTheme}
+          variant="ghost"
+          size="sm"
+        />
+      </ToolbarGroup>
+    </Toolbar>
   );
 }

@@ -1,44 +1,31 @@
-import { type HTMLAttributes, type ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { type ReactNode } from 'react';
+import { Badge as ReuiBadge } from 'react-editor-ui';
+import styles from './Badge.module.css';
 
-export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'secondary';
+export interface BadgeProps {
+  variant?:
+    | 'default'
+    | 'primary'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'secondary';
   size?: 'sm' | 'md';
   children: ReactNode;
+  className?: string;
 }
 
 export function Badge({
-  className,
   variant = 'default',
-  size = 'md',
+  size,
   children,
-  ...props
+  className,
 }: BadgeProps) {
+  const mapped = variant === 'secondary' ? 'default' : variant;
   return (
-    <span
-      className={cn(
-        'inline-flex items-center font-medium rounded-full',
-        {
-          'bg-surface-tertiary text-text-secondary': variant === 'default',
-          'bg-primary/10 text-primary': variant === 'primary',
-          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400':
-            variant === 'success',
-          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400':
-            variant === 'warning',
-          'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400':
-            variant === 'error',
-          'bg-surface-secondary text-text-muted border': variant === 'secondary',
-        },
-        {
-          'px-2 py-0.5 text-xs': size === 'sm',
-          'px-2.5 py-0.5 text-xs': size === 'md',
-        },
-        className
-      )}
-      {...props}
-    >
+    <ReuiBadge variant={mapped} size={size} className={className}>
       {children}
-    </span>
+    </ReuiBadge>
   );
 }
 
@@ -47,29 +34,38 @@ export interface StatusBadgeProps {
   label?: string;
 }
 
-export function StatusBadge({ status, label }: StatusBadgeProps) {
-  const variants: Record<
-    StatusBadgeProps['status'],
-    { variant: BadgeProps['variant']; defaultLabel: string }
-  > = {
-    active: { variant: 'success', defaultLabel: 'Active' },
-    inactive: { variant: 'secondary', defaultLabel: 'Inactive' },
-    loading: { variant: 'warning', defaultLabel: 'Loading' },
-    error: { variant: 'error', defaultLabel: 'Error' },
-  };
+const statusMap: Record<
+  StatusBadgeProps['status'],
+  { variant: BadgeProps['variant']; defaultLabel: string; dotClass: string }
+> = {
+  active: {
+    variant: 'success',
+    defaultLabel: 'Active',
+    dotClass: styles.dotActive,
+  },
+  inactive: {
+    variant: 'default',
+    defaultLabel: 'Inactive',
+    dotClass: styles.dotInactive,
+  },
+  loading: {
+    variant: 'warning',
+    defaultLabel: 'Loading',
+    dotClass: styles.dotLoading,
+  },
+  error: {
+    variant: 'error',
+    defaultLabel: 'Error',
+    dotClass: styles.dotError,
+  },
+};
 
-  const { variant, defaultLabel } = variants[status];
+export function StatusBadge({ status, label }: StatusBadgeProps) {
+  const { variant, defaultLabel, dotClass } = statusMap[status];
 
   return (
     <Badge variant={variant}>
-      <span
-        className={cn('mr-1.5 h-1.5 w-1.5 rounded-full', {
-          'bg-green-500': status === 'active',
-          'bg-gray-400': status === 'inactive',
-          'bg-yellow-500 animate-pulse': status === 'loading',
-          'bg-red-500': status === 'error',
-        })}
-      />
+      <span className={`${styles.dot} ${dotClass}`} />
       {label ?? defaultLabel}
     </Badge>
   );

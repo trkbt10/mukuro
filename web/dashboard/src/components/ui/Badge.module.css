@@ -1,0 +1,29 @@
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.dotActive {
+  background-color: var(--mk-success);
+}
+
+.dotInactive {
+  background-color: var(--mk-text-muted);
+}
+
+.dotLoading {
+  background-color: var(--mk-warning);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.dotError {
+  background-color: var(--mk-error);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

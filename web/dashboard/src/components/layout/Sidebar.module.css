@@ -1,0 +1,95 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--mk-bg-surface);
+  border-right: 1px solid var(--mk-border-default);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-md);
+  height: var(--mk-header-height);
+  padding: 0 var(--mk-space-lg);
+  border-bottom: 1px solid var(--mk-border-default);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--mk-accent);
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+}
+
+.brandName {
+  font-size: var(--mk-font-size-lg);
+  font-weight: 600;
+  color: var(--mk-text-primary);
+}
+
+.nav {
+  flex: 1;
+  padding: var(--mk-space-sm) 0;
+  overflow-y: auto;
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-xs);
+  padding: var(--mk-space-xs) var(--mk-space-md);
+  padding-left: calc(var(--mk-space-md) + 32px);
+}
+
+.userSection {
+  border-top: 1px solid var(--mk-border-default);
+  padding: var(--mk-space-md) var(--mk-space-lg);
+}
+
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-md);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--mk-bg-surface-active);
+  font-size: var(--mk-font-size-xs);
+  font-weight: 500;
+  color: var(--mk-text-secondary);
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  font-size: var(--mk-font-size-sm);
+  font-weight: 500;
+  color: var(--mk-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userEmail {
+  font-size: var(--mk-font-size-xs);
+  color: var(--mk-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

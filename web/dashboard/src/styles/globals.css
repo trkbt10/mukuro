@@ -1,119 +1,68 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "./variables.css";
 
-@layer base {
-  :root {
-    --color-primary: #10a37f;
-    --color-primary-hover: #0d8c6d;
-
-    --color-surface: #ffffff;
-    --color-surface-secondary: #f7f7f8;
-    --color-surface-tertiary: #ececf1;
-
-    --color-text: #202123;
-    --color-text-secondary: #6e6e80;
-    --color-text-muted: #8e8ea0;
-
-    --color-border: #e5e5e5;
-  }
-
-  .dark {
-    --color-surface: #343541;
-    --color-surface-secondary: #444654;
-    --color-surface-tertiary: #40414f;
-
-    --color-text: #ececf1;
-    --color-text-secondary: #c5c5d2;
-    --color-text-muted: #8e8ea0;
-
-    --color-border: #565869;
-  }
-
-  body {
-    @apply bg-surface text-text;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
-  }
-
-  * {
-    @apply border-border;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center font-medium transition-colors
-           rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
-           disabled:opacity-50 disabled:pointer-events-none;
-  }
-
-  .btn-primary {
-    @apply btn bg-primary text-white hover:bg-primary-hover;
-  }
-
-  .btn-secondary {
-    @apply btn bg-surface-secondary text-text hover:bg-surface-tertiary;
-  }
-
-  .btn-ghost {
-    @apply btn hover:bg-surface-secondary;
-  }
-
-  .btn-sm {
-    @apply px-3 py-1.5 text-sm;
-  }
-
-  .btn-md {
-    @apply px-4 py-2 text-sm;
-  }
-
-  .btn-lg {
-    @apply px-6 py-3 text-base;
-  }
-
-  .input {
-    @apply w-full rounded-md border bg-surface px-3 py-2 text-sm
-           placeholder:text-text-muted
-           focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
-           disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-
-  .card {
-    @apply bg-surface rounded-lg border shadow-card;
-  }
-
-  .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
-  }
-
-  .badge-primary {
-    @apply badge bg-primary/10 text-primary;
-  }
-
-  .badge-secondary {
-    @apply badge bg-surface-tertiary text-text-secondary;
-  }
-
-  .badge-success {
-    @apply badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
-  }
-
-  .badge-warning {
-    @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400;
-  }
-
-  .badge-error {
-    @apply badge bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
-  }
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
 }
 
-@layer utilities {
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+body {
+  background-color: var(--mk-bg-base);
+  color: var(--mk-text-primary);
+  font-family: var(--mk-font-family);
+  font-size: var(--mk-font-size-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
+a {
+  color: var(--mk-accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--mk-accent-hover);
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Scrollbar (Figma/Adobe style) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mk-border-default);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mk-border-strong);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

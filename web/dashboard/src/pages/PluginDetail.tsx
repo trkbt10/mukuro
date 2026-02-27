@@ -2,16 +2,14 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, Trash2, Settings } from 'lucide-react';
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Button,
   Badge,
   Toggle,
   Loading,
   Modal,
   Input,
+  PanelSection,
+  PropertyRow,
 } from '@/components/ui';
 import {
   usePlugin,
@@ -23,6 +21,7 @@ import {
   useUpdatePluginSettings,
 } from '@/hooks';
 import { formatDate } from '@/lib/utils';
+import styles from './PluginDetail.module.css';
 
 export function PluginDetail() {
   const { id } = useParams<{ id: string }>();
@@ -38,9 +37,7 @@ export function PluginDetail() {
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [editedSettings, setEditedSettings] = useState<Record<string, string>>(
-    {}
-  );
+  const [editedSettings, setEditedSettings] = useState<Record<string, string>>({});
 
   if (isLoading) {
     return <Loading message="Loading plugin..." />;
@@ -48,11 +45,9 @@ export function PluginDetail() {
 
   if (!plugin) {
     return (
-      <div className="text-center py-12">
-        <p className="text-text-secondary">Plugin not found</p>
-        <Link to="/plugins" className="text-primary hover:underline mt-2 block">
-          Back to plugins
-        </Link>
+      <div className={styles.emptyState}>
+        <p className={styles.notFoundText}>Plugin not found</p>
+        <Link to="/plugins">Back to plugins</Link>
       </div>
     );
   }
@@ -67,9 +62,7 @@ export function PluginDetail() {
 
   const handleDelete = () => {
     deletePlugin.mutate(plugin.id, {
-      onSuccess: () => {
-        navigate('/plugins');
-      },
+      onSuccess: () => navigate('/plugins'),
     });
   };
 
@@ -84,9 +77,7 @@ export function PluginDetail() {
     });
     updateSettings.mutate(
       { id: plugin.id, settings: settingsToSave },
-      {
-        onSuccess: () => setSettingsModalOpen(false),
-      }
+      { onSuccess: () => setSettingsModalOpen(false) }
     );
   };
 
@@ -102,142 +93,82 @@ export function PluginDetail() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          to="/plugins"
-          className="flex items-center gap-2 text-text-secondary hover:text-text transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Link>
-      </div>
+    <div className={styles.page}>
+      <Link to="/plugins" className={styles.backLink}>
+        <ArrowLeft style={{ width: 14, height: 14 }} />
+        Back
+      </Link>
 
-      <div className="flex items-start justify-between">
+      <div className={styles.titleRow}>
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-text">{plugin.name}</h1>
-            {plugin.is_builtin && (
-              <Badge variant="default" size="sm">
-                Builtin
-              </Badge>
-            )}
+          <div className={styles.titleGroup}>
+            <h1 className={styles.pageTitle}>{plugin.name}</h1>
+            {plugin.is_builtin && <Badge variant="default" size="sm">Builtin</Badge>}
           </div>
-          <p className="text-text-secondary">{plugin.id}</p>
+          <p className={styles.pluginId}>{plugin.id}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className={styles.actions}>
           {!plugin.is_builtin && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => reloadPlugin.mutate(plugin.id)}
-              loading={reloadPlugin.isPending}
-              leftIcon={<RefreshCw className="h-4 w-4" />}
-            >
+            <Button variant="secondary" size="sm" onClick={() => reloadPlugin.mutate(plugin.id)} loading={reloadPlugin.isPending} leftIcon={<RefreshCw style={{ width: 14, height: 14 }} />}>
               Reload
             </Button>
           )}
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={openSettingsModal}
-            leftIcon={<Settings className="h-4 w-4" />}
-          >
+          <Button variant="secondary" size="sm" onClick={openSettingsModal} leftIcon={<Settings style={{ width: 14, height: 14 }} />}>
             Settings
           </Button>
           {!plugin.is_builtin && (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setDeleteModalOpen(true)}
-              leftIcon={<Trash2 className="h-4 w-4" />}
-            >
+            <Button variant="danger" size="sm" onClick={() => setDeleteModalOpen(true)} leftIcon={<Trash2 style={{ width: 14, height: 14 }} />}>
               Delete
             </Button>
           )}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-text-secondary">Status</span>
-              <Badge variant={plugin.enabled ? 'success' : 'secondary'}>
+      <div className={styles.grid}>
+        <PanelSection title="Details">
+          <div className={styles.propList}>
+            <PropertyRow label="Status">
+              <Badge variant={plugin.enabled ? 'success' : 'default'}>
                 {plugin.enabled ? 'Active' : 'Inactive'}
               </Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-text-secondary">Version</span>
-              <span className="text-text">{plugin.version}</span>
-            </div>
-            {plugin.author && (
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Author</span>
-                <span className="text-text">{plugin.author}</span>
-              </div>
-            )}
-            {plugin.is_builtin && (
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Type</span>
-                <span className="text-text">Built-in Tool</span>
-              </div>
-            )}
+            </PropertyRow>
+            <PropertyRow label="Version">{plugin.version}</PropertyRow>
+            {plugin.author && <PropertyRow label="Author">{plugin.author}</PropertyRow>}
+            {plugin.is_builtin && <PropertyRow label="Type">Built-in Tool</PropertyRow>}
             {!plugin.is_builtin && (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-secondary">Loaded At</span>
-                  <span className="text-text">{formatDate(plugin.loaded_at)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-secondary">Modified At</span>
-                  <span className="text-text">{formatDate(plugin.modified_at)}</span>
-                </div>
+                <PropertyRow label="Loaded At">{formatDate(plugin.loaded_at)}</PropertyRow>
+                <PropertyRow label="Modified At">{formatDate(plugin.modified_at)}</PropertyRow>
               </>
             )}
-            <div className="flex items-center justify-between pt-4 border-t">
-              <span className="text-text">Enable Plugin</span>
+            <div className={styles.enableRow}>
+              <span className={styles.enableLabel}>Enable Plugin</span>
               <Toggle
                 checked={plugin.enabled}
                 onChange={handleToggle}
                 disabled={enablePlugin.isPending || disablePlugin.isPending}
               />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </PanelSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Description</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-text-secondary">
-              {plugin.description || 'No description available'}
-            </p>
-          </CardContent>
-        </Card>
+        <PanelSection title="Description">
+          <p className={styles.descriptionText}>
+            {plugin.description || 'No description available'}
+          </p>
+        </PanelSection>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Permissions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {plugin.permissions.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {plugin.permissions.map((perm) => (
-                  <Badge key={perm} variant="secondary">
-                    {perm}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-text-secondary">No special permissions</p>
-            )}
-          </CardContent>
-        </Card>
+        <PanelSection title="Permissions">
+          {plugin.permissions.length > 0 ? (
+            <div className={styles.permList}>
+              {plugin.permissions.map((perm) => (
+                <Badge key={perm} variant="default">{perm}</Badge>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.descriptionText}>No special permissions</p>
+          )}
+        </PanelSection>
       </div>
 
       <Modal
@@ -248,23 +179,12 @@ export function PluginDetail() {
         size="sm"
         footer={
           <>
-            <Button
-              variant="secondary"
-              onClick={() => setDeleteModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              loading={deletePlugin.isPending}
-            >
-              Delete
-            </Button>
+            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={handleDelete} loading={deletePlugin.isPending}>Delete</Button>
           </>
         }
       >
-        <p className="text-text-secondary">
+        <p className={styles.modalText}>
           Plugin <strong>{plugin.name}</strong> will be permanently removed.
         </p>
       </Modal>
@@ -276,39 +196,26 @@ export function PluginDetail() {
         size="md"
         footer={
           <>
-            <Button
-              variant="secondary"
-              onClick={() => setSettingsModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveSettings}
-              loading={updateSettings.isPending}
-            >
-              Save
-            </Button>
+            <Button variant="secondary" onClick={() => setSettingsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveSettings} loading={updateSettings.isPending}>Save</Button>
           </>
         }
       >
         {Object.keys(editedSettings).length > 0 ? (
-          <div className="space-y-4">
+          <div className={styles.settingsFields}>
             {Object.entries(editedSettings).map(([key, value]) => (
               <Input
                 key={key}
                 label={key}
                 value={value}
-                onChange={(e) =>
-                  setEditedSettings((prev) => ({
-                    ...prev,
-                    [key]: e.target.value,
-                  }))
+                onChange={(v) =>
+                  setEditedSettings((prev) => ({ ...prev, [key]: v }))
                 }
               />
             ))}
           </div>
         ) : (
-          <p className="text-text-secondary">No configurable settings</p>
+          <p className={styles.descriptionText}>No configurable settings</p>
         )}
       </Modal>
     </div>
