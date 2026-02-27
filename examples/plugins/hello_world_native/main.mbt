@@ -3,9 +3,11 @@
 /// Runs as a standalone process communicating via stdin/stdout JSON-RPC
 
 // FFI declarations for stdin/stdout (native only)
+#borrow(buffer)
 extern "C" fn c_read_stdin_line(buffer : Bytes, buffer_len : Int) -> Int = "moonbit_read_stdin_line"
 
 ///|
+#borrow(data)
 extern "C" fn c_write_stdout(data : Bytes, len : Int) -> Int = "moonbit_write_stdout"
 
 ///|

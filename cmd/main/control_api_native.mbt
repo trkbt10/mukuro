@@ -327,14 +327,8 @@ fn validate_control_api_access(
 }
 
 ///|
-fn read_gateway_status_sync(
-  gateway : @control.Gateway,
-) -> @interfaces.GatewayStatus {
-  let mut status = @interfaces.GatewayStatus::stopped(version="unknown")
-  @async.with_event_loop(fn(_group) { status = gateway.status() }) catch {
-    _ => ()
-  }
-  status
+fn read_gateway_status_sync(gateway : @control.Gateway) -> @interfaces.GatewayStatus {
+  gateway.status()
 }
 
 ///|
@@ -343,21 +337,7 @@ fn dispatch_outbound_sync(
   auth : @interfaces.AuthContext,
   message : @types.OutboundMessage,
 ) -> Unit raise @interfaces.ControlError {
-  let mut dispatch_error : @interfaces.ControlError? = None
-  @async.with_event_loop(fn(_group) {
-    gateway.dispatch_outbound(auth~, message~) catch {
-      e => dispatch_error = Some(e)
-    }
-  }) catch {
-    e =>
-      dispatch_error = Some(
-        @interfaces.ControlError::InternalError(e.to_string()),
-      )
-  }
-  match dispatch_error {
-    Some(e) => raise e
-    None => ()
-  }
+  gateway.dispatch_outbound(auth~, message~)
 }
 
 ///|
@@ -366,21 +346,32 @@ fn dispatch_inbound_sync(
   auth : @interfaces.AuthContext,
   envelope : @types.InboundEnvelope,
 ) -> Unit raise @interfaces.ControlError {
-  let mut dispatch_error : @interfaces.ControlError? = None
-  @async.with_event_loop(fn(_group) {
-    gateway.dispatch_inbound(auth~, envelope~) catch {
-      e => dispatch_error = Some(e)
-    }
-  }) catch {
-    e =>
-      dispatch_error = Some(
-        @interfaces.ControlError::InternalError(e.to_string()),
-      )
-  }
-  match dispatch_error {
-    Some(e) => raise e
-    None => ()
-  }
+  gateway.dispatch_inbound(auth~, envelope~)
+}
+
+///|
+async fn read_gateway_status_async(
+  gateway : @control.Gateway,
+) -> @interfaces.GatewayStatus {
+  gateway.status()
+}
+
+///|
+async fn dispatch_outbound_async(
+  gateway : @control.Gateway,
+  auth : @interfaces.AuthContext,
+  message : @types.OutboundMessage,
+) -> Unit raise @interfaces.ControlError {
+  gateway.dispatch_outbound(auth~, message~)
+}
+
+///|
+async fn dispatch_inbound_async(
+  gateway : @control.Gateway,
+  auth : @interfaces.AuthContext,
+  envelope : @types.InboundEnvelope,
+) -> Unit raise @interfaces.ControlError {
+  gateway.dispatch_inbound(auth~, envelope~)
 }
 
 ///|
@@ -547,13 +538,13 @@ pub fn run_control_api_server_blocking(
 }
 
 ///|
-pub fn run_control_api_server_with_tick_blocking(
+pub async fn run_control_api_server_with_tick_blocking(
   gateway : @control.Gateway,
   host : String,
   port : Int,
   on_tick : () -> Bool,
 ) -> Unit raise {
-  @async.with_event_loop(fn(group) {
+  @async.with_task_group((group) => {
     let server = @xhttp.Server::new(host~, port~) catch { e => raise e }
     defer server.close()
     group.spawn_bg(no_wait=true, allow_failure=true, () => {

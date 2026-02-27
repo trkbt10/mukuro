@@ -162,7 +162,7 @@ fn reconnect_delay_ms(base : ChannelBaseConfig, attempt : Int) -> Int {
 fn WebSocketChannelAdapter::connect_once(
   self : WebSocketChannelAdapter,
 ) -> Unit raise {
-  @async.with_event_loop(fn(_group) {
+  @async.with_event_loop((_group) => {
     let headers : Map[String, String] = {}
     match self.config.auth_token {
       Some(token) => headers["Authorization"] = "Bearer \{token}"
@@ -214,7 +214,7 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with send(
   let mut attempts = 0
   while attempts < 2 {
     let send_result : Result[Unit, ChannelError] = try {
-      @async.with_event_loop(fn(_group) {
+      @async.with_event_loop((_group) => {
         let conn = match self.conn {
           Some(c) => c
           None =>
@@ -256,7 +256,7 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with receive(
   } else {
     self.ensure_connected()
     let recv_result : Result[Unit, ChannelError] = try {
-      @async.with_event_loop(fn(_group) {
+      @async.with_event_loop((_group) => {
         let conn = match self.conn {
           Some(c) => c
           None =>

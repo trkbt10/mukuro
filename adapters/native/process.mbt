@@ -58,7 +58,7 @@ pub impl @interfaces.ProcessExecutor for NativeProcessExecutor with exec(
       let bytes_read = c_fread(buffer, 1, 65536, pipe)
       let exit_code = c_pclose(pipe)
       let stdout = if bytes_read > 0 {
-        Bytes::from_iter(buffer.sub(end=bytes_read).iter())
+        Bytes::from_iter(buffer[:bytes_read].iter())
       } else {
         Bytes::new(0)
       }
@@ -107,7 +107,7 @@ pub fn NativeProcessExecutor::shell(
       let bytes_read = c_fread(buffer, 1, 65536, pipe)
       let exit_code = c_pclose(pipe)
       let stdout = if bytes_read > 0 {
-        Bytes::from_iter(buffer.sub(end=bytes_read).iter())
+        Bytes::from_iter(buffer[:bytes_read].iter())
       } else {
         Bytes::new(0)
       }

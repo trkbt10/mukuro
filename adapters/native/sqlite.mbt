@@ -159,6 +159,7 @@ pub extern "C" fn c_sqlite_bind_double(
 /// Bind a blob value to a parameter
 /// idx: 1-based index
 /// Returns: SQLITE_OK on success
+#borrow(data)
 pub extern "C" fn c_sqlite_bind_blob(
   stmt : SqliteStmt,
   idx : Int,
@@ -214,6 +215,7 @@ pub extern "C" fn c_sqlite_column_bytes(stmt : SqliteStmt, idx : Int) -> Int = "
 ///|
 /// Copy blob data to buffer (0-based index)
 /// Returns: number of bytes copied
+#borrow(dest)
 pub extern "C" fn c_sqlite_column_blob_copy(
   stmt : SqliteStmt,
   idx : Int,

@@ -75,9 +75,7 @@ fn run_watcher_callback(
   callback : async (String) -> Unit,
   plugin_id : String,
 ) -> Unit {
-  @async.with_event_loop(fn(_group) { callback(plugin_id) }) catch {
-    _ => ()
-  }
+  callback(plugin_id)
 }
 
 ///|

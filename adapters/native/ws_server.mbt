@@ -16,34 +16,42 @@ extern "c" fn moonbit_ws_server_create(port : Int) -> WsServerPtr = "moonbit_ws_
 
 ///|
 /// Start the WebSocket server
+#borrow(server)
 extern "c" fn moonbit_ws_server_start(server : WsServerPtr) -> Int = "moonbit_ws_server_start"
 
 ///|
 /// Stop the WebSocket server
+#borrow(server)
 extern "c" fn moonbit_ws_server_stop(server : WsServerPtr) -> Int = "moonbit_ws_server_stop"
 
 ///|
 /// Destroy the WebSocket server
+#borrow(server)
 extern "c" fn moonbit_ws_server_destroy(server : WsServerPtr) -> Unit = "moonbit_ws_server_destroy"
 
 ///|
 /// Check if server is running
+#borrow(server)
 extern "c" fn moonbit_ws_server_is_running(server : WsServerPtr) -> Int = "moonbit_ws_server_is_running"
 
 ///|
 /// Get server port
+#borrow(server)
 extern "c" fn moonbit_ws_server_get_port(server : WsServerPtr) -> Int = "moonbit_ws_server_get_port"
 
 ///|
 /// Get client count
+#borrow(server)
 extern "c" fn moonbit_ws_server_client_count(server : WsServerPtr) -> Int = "moonbit_ws_server_client_count"
 
 ///|
 /// Accept a new client connection
+#borrow(server)
 extern "c" fn moonbit_ws_server_accept_client(server : WsServerPtr) -> Int = "moonbit_ws_server_accept_client"
 
 ///|
 /// Disconnect a client
+#borrow(server)
 extern "c" fn moonbit_ws_server_disconnect_client(
   server : WsServerPtr,
   client_id : Int,
@@ -51,6 +59,7 @@ extern "c" fn moonbit_ws_server_disconnect_client(
 
 ///|
 /// Send message to a client (requires CString)
+#borrow(server, message)
 extern "c" fn moonbit_ws_server_send_raw(
   server : WsServerPtr,
   client_id : Int,
@@ -59,6 +68,7 @@ extern "c" fn moonbit_ws_server_send_raw(
 
 ///|
 /// Broadcast message to all clients (requires CString)
+#borrow(server, message)
 extern "c" fn moonbit_ws_server_broadcast_raw(
   server : WsServerPtr,
   message : Bytes,
@@ -66,6 +76,7 @@ extern "c" fn moonbit_ws_server_broadcast_raw(
 
 ///|
 /// Poll for incoming messages
+#borrow(server)
 extern "c" fn moonbit_ws_server_poll(server : WsServerPtr) -> Int = "moonbit_ws_server_poll"
 
 // ============================================================

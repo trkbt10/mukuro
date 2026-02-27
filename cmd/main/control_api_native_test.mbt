@@ -1,11 +1,7 @@
 ///|
 fn test_gateway() -> @control.Gateway {
   let gateway = create_global_gateway("test")
-  @async.with_event_loop(fn(_group) {
-    gateway.start(config=@interfaces.GatewayConfig::default()) catch {
-      _ => ()
-    }
-  }) catch {
+  gateway.start(config=@interfaces.GatewayConfig::default()) catch {
     _ => ()
   }
   gateway
@@ -16,11 +12,7 @@ fn test_gateway_with_auth_token(token : String) -> @control.Gateway {
   let gateway = create_global_gateway("test")
   let base_cfg = @interfaces.GatewayConfig::default()
   let cfg : @interfaces.GatewayConfig = { ..base_cfg, auth_token: token }
-  @async.with_event_loop(fn(_group) {
-    gateway.start(config=cfg) catch {
-      _ => ()
-    }
-  }) catch {
+  gateway.start(config=cfg) catch {
     _ => ()
   }
   gateway

@@ -28,7 +28,7 @@ fn daemon_ipc_request(command : String) -> String? {
     return None
   }
   Some(
-    Bytes::from_iter(buffer.sub(end=read_len).iter())
+    Bytes::from_iter(buffer[:read_len].iter())
     .to_unchecked_string()
     .trim(chars=" \t\n\r")
     .to_string(),

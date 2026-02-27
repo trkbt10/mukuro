@@ -63,17 +63,10 @@ pub fn execute_daemon_child(pid_path : String) -> CliResult {
   let startup = load_daemon_startup_config()
   set_runtime_model_config_path_for_process(startup.runtime_model_config_path)
   bootstrap_runtime_channels_from_config(startup.runtime_model_config_path)
-  let mut start_ok = false
-  @async.with_event_loop(fn(_group) {
-    global_gateway.start(config=startup.gateway_config) catch {
-      _ => ()
-    }
-    if global_gateway.status().state.is_running() {
-      start_ok = true
-    }
-  }) catch {
+  global_gateway.start(config=startup.gateway_config) catch {
     _ => ()
   }
+  let start_ok = global_gateway.status().state.is_running()
   if !start_ok {
     @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
     @native.c_exit(1)
