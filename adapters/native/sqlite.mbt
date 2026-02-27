@@ -234,7 +234,6 @@ pub suberror SqliteError {
   QueryFailed(String)
   PrepareStatementFailed(String)
   BindFailed(String)
-  StepFailed(String)
 }
 
 ///|

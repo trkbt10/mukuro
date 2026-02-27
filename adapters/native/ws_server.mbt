@@ -175,21 +175,21 @@ pub fn WsServer::destroy(self : WsServer) -> Unit {
 }
 
 ///|
-/// Check if server is running
+/// Check if server is running (via FFI)
 pub fn WsServer::is_running(self : WsServer) -> Bool {
-  self.is_running
+  moonbit_ws_server_is_running(self.ptr) != 0
 }
 
 ///|
-/// Get server port
+/// Get server port (via FFI)
 pub fn WsServer::get_port(self : WsServer) -> Int {
-  self.port
+  moonbit_ws_server_get_port(self.ptr)
 }
 
 ///|
-/// Get connected client count
+/// Get connected client count (via FFI)
 pub fn WsServer::client_count(self : WsServer) -> Int {
-  self.clients.length()
+  moonbit_ws_server_client_count(self.ptr)
 }
 
 ///|

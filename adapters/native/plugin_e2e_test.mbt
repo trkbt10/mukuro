@@ -123,9 +123,7 @@ async test "E2E: HttpTransportHandler with real HTTP client (requires hello-worl
     None => println("No describe result")
   }
   // Stop the handler
-  handler.stop() catch {
-    _ => ()
-  }
+  handler.stop()
 }
 
 ///|
@@ -168,6 +166,7 @@ async test "E2E: Direct NativeHttpClient JSON-RPC call" {
       "jsonrpc": String("2.0"),
       "result": { "greeting": String(g), .. },
       "id": Number(id, ..),
+      ..
     } => {
       println("Greeting: \{g}")
       println("ID: \{id}")

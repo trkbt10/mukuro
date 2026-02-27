@@ -11,6 +11,22 @@ pub(all) suberror ChannelError {
 }
 
 ///|
+pub impl Show for ChannelError with output(self, logger) {
+  match self {
+    ChannelError::ConnectionFailed(msg) => logger.write_string(msg)
+    ChannelError::AuthenticationFailed(msg) => logger.write_string(msg)
+    ChannelError::RateLimited(retry_after~) =>
+      logger.write_string("rate limited: retry after \{retry_after}s")
+    ChannelError::MessageTooLong(max_length~) =>
+      logger.write_string("message too long: max=\{max_length}")
+    ChannelError::InvalidPayload(msg) => logger.write_string(msg)
+    ChannelError::NetworkError(msg) => logger.write_string(msg)
+    ChannelError::ChannelNotFound(name) =>
+      logger.write_string("channel not found: \{name}")
+  }
+}
+
+///|
 /// チャネルの状態
 pub(all) enum ChannelStatus {
   Connected

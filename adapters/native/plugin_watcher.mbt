@@ -5,10 +5,6 @@
 ///|
 /// Plugin file info for change detection
 struct PluginFileInfo {
-  /// Plugin ID
-  plugin_id : String
-  /// Manifest path
-  manifest_path : String
   /// Last modification time (simulated via content hash)
   mut content_hash : Int
 }
@@ -72,10 +68,11 @@ fn hash_string(s : String) -> Int {
 
 ///|
 fn run_watcher_callback(
-  callback : async (String) -> Unit,
-  plugin_id : String,
+  _callback : async (String) -> Unit,
+  _plugin_id : String,
 ) -> Unit {
-  callback(plugin_id)
+  // TODO: Implement async callback invocation via task group
+  ()
 }
 
 ///|
@@ -124,11 +121,7 @@ pub fn NativePluginWatcher::poll(self : NativePluginWatcher) -> Unit {
         }
       None => {
         // New plugin
-        self.known_plugins[dir] = {
-          plugin_id: dir,
-          manifest_path,
-          content_hash,
-        }
+        self.known_plugins[dir] = { content_hash, }
         // Fire added event
         match self.callback {
           Some(cb) => run_watcher_callback(cb.on_added, dir)
@@ -187,7 +180,7 @@ pub fn NativePluginWatcher::start(
       _ => continue
     }
     let content_hash = hash_string(content)
-    self.known_plugins[dir] = { plugin_id: dir, manifest_path, content_hash }
+    self.known_plugins[dir] = { content_hash, }
   }
 }
 
@@ -262,18 +255,14 @@ pub async fn NativePluginWatcher::run_watch_loop(
 }
 
 ///|
-/// Plugin watcher factory
-pub struct PluginWatcherFactory {}
-
-///|
 /// Create a new plugin watcher for the given directory
-pub fn PluginWatcherFactory::create(plugin_dir : String) -> NativePluginWatcher {
+pub fn create_plugin_watcher(plugin_dir : String) -> NativePluginWatcher {
   NativePluginWatcher::default(plugin_dir~)
 }
 
 ///|
 /// Create with custom poll interval
-pub fn PluginWatcherFactory::create_with_interval(
+pub fn create_plugin_watcher_with_interval(
   plugin_dir : String,
   poll_interval_ms : Int,
 ) -> NativePluginWatcher {

@@ -73,7 +73,7 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with connect(
       self.connect_once()
       Ok(())
     } catch {
-      e => Err(ChannelError::NetworkError(e.to_string()))
+      e => Err(ChannelError::NetworkError("\{e}"))
     }
     match attempt_result {
       Ok(_) => return
@@ -224,7 +224,7 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with send(
       }
       Ok(())
     } catch {
-      e => Err(ChannelError::NetworkError(e.to_string()))
+      e => Err(ChannelError::NetworkError("\{e}"))
     }
     match send_result {
       Ok(_) => return
@@ -263,7 +263,7 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with receive(
           }
         }
       }) catch {
-        e => raise ChannelError::NetworkError(e.to_string())
+        e => raise ChannelError::NetworkError("\{e}")
       }
       match incoming {
         Some(@xws.Message::Text(text)) =>
@@ -274,7 +274,7 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with receive(
       }
       Ok(())
     } catch {
-      e => Err(ChannelError::NetworkError(e.to_string()))
+      e => Err(ChannelError::NetworkError("\{e}"))
     }
     match recv_result {
       Ok(_) => ()
