@@ -70,6 +70,12 @@ pub fn parse_args(args : Array[String]) -> Command {
       } else {
         Command::Cron(CronCommand::Unknown(""))
       }
+    "service" =>
+      if args.length() > 1 {
+        parse_service_args(slice_from_1(args)[:])
+      } else {
+        Command::Service(ServiceCommand::Unknown(""))
+      }
     _ => Command::Unknown(cmd_name)
   }
 }
@@ -307,4 +313,117 @@ fn parse_cron_args(args : ArrayView[String]) -> Command {
     "list" => Command::Cron(CronCommand::List)
     _ => Command::Cron(CronCommand::Unknown(subcmd))
   }
+}
+
+///|
+/// serviceコマンドの引数をパース
+pub fn parse_service_args(args : ArrayView[String]) -> Command {
+  if args.is_empty() {
+    return Command::Service(ServiceCommand::Unknown(""))
+  }
+  let arr = array_view_to_array(args)
+  let subcmd = arr[0]
+  match subcmd {
+    "install" => {
+      let opts = parse_service_install_opts(slice_from_1(arr)[:])
+      Command::Service(ServiceCommand::Install(opts))
+    }
+    "uninstall" => Command::Service(ServiceCommand::Uninstall)
+    "start" => Command::Service(ServiceCommand::Start)
+    "stop" => Command::Service(ServiceCommand::Stop)
+    "restart" => Command::Service(ServiceCommand::Restart)
+    "status" => {
+      let opts = parse_service_status_opts(slice_from_1(arr)[:])
+      Command::Service(ServiceCommand::Status(opts))
+    }
+    "logs" => {
+      let opts = parse_service_logs_opts(slice_from_1(arr)[:])
+      Command::Service(ServiceCommand::Logs(opts))
+    }
+    _ => Command::Service(ServiceCommand::Unknown(subcmd))
+  }
+}
+
+///|
+/// service installオプションをパース
+fn parse_service_install_opts(args : ArrayView[String]) -> ServiceInstallOptions {
+  let opts : ServiceInstallOptions = {
+    user: true,
+    system: false,
+    config_path: None,
+    auto_start: false,
+  }
+  let arr = array_view_to_array(args)
+  let mut i = 0
+  while i < arr.length() {
+    let arg = arr[i]
+    match arg {
+      "--user" => {
+        opts.user = true
+        opts.system = false
+        i = i + 1
+      }
+      "--system" => {
+        opts.system = true
+        opts.user = false
+        i = i + 1
+      }
+      "--config" =>
+        if i + 1 < arr.length() {
+          opts.config_path = Some(arr[i + 1])
+          i = i + 2
+        } else {
+          i = i + 1
+        }
+      "--auto-start" => {
+        opts.auto_start = true
+        i = i + 1
+      }
+      _ => i = i + 1
+    }
+  }
+  opts
+}
+
+///|
+/// service statusオプションをパース
+fn parse_service_status_opts(args : ArrayView[String]) -> ServiceStatusOptions {
+  let opts : ServiceStatusOptions = { json: false }
+  let arr = array_view_to_array(args)
+  for arg in arr {
+    if arg == "--json" {
+      opts.json = true
+    }
+  }
+  opts
+}
+
+///|
+/// service logsオプションをパース
+fn parse_service_logs_opts(args : ArrayView[String]) -> ServiceLogsOptions {
+  let opts : ServiceLogsOptions = { follow: false, lines: 100 }
+  let arr = array_view_to_array(args)
+  let mut i = 0
+  while i < arr.length() {
+    let arg = arr[i]
+    match arg {
+      "-f" | "--follow" => {
+        opts.follow = true
+        i = i + 1
+      }
+      "-n" | "--lines" =>
+        if i + 1 < arr.length() {
+          let parsed : Json = @json.parse(arr[i + 1]) catch { _ => Json::null() }
+          match parsed {
+            Number(n, ..) => opts.lines = n.to_int()
+            _ => ()
+          }
+          i = i + 2
+        } else {
+          i = i + 1
+        }
+      _ => i = i + 1
+    }
+  }
+  opts
 }

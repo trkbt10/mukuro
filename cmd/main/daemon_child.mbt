@@ -49,7 +49,7 @@ fn append_auth_audit_detail(
 
 ///|
 /// --daemon-child 引数で起動された場合のデーモン子プロセス処理
-pub fn execute_daemon_child(pid_path : String) -> CliResult {
+pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   // デーモン子プロセスとして初期化（setsid, PIDファイル書き込み）
   let init_result = @native.c_daemon_child_init(
     @native.string_to_cstring(pid_path),

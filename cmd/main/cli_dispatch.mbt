@@ -15,6 +15,7 @@ pub async fn execute_command(cmd : Command) -> CliResult {
     Command::Onboard(opts) => execute_onboard(opts)
     Command::Gateway(gateway_cmd) => execute_gateway_command(gateway_cmd)
     Command::Cron(cron_cmd) => execute_cron_command(cron_cmd)
+    Command::Service(service_cmd) => execute_service_command(service_cmd)
     Command::DaemonChild(pid_path) => execute_daemon_child(pid_path)
     Command::Unknown(name) =>
       CliResult::Error("Unknown command: \{name}\n\n\{get_help_message()}")
@@ -135,8 +136,8 @@ pub fn run_cli_from_env() -> Unit {
 }
 
 ///|
-fn main {
-  run_cli_from_env()
+async fn main {
+  run_cli_from_env_async()
 }
 
 // get_command_line_args() は args.mbt で共通実装:

@@ -1,5 +1,6 @@
 ///|
 /// Config constants (all targets)
+/// Source of truth: @interfaces.gateway_default_port, @interfaces.gateway_default_host
 
 ///|
 /// デフォルト設定ファイルパスを取得
