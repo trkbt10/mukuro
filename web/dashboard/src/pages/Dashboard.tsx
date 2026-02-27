@@ -1,29 +1,13 @@
 import { Puzzle, MessageSquare, Settings as SettingsIcon, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Loading, Badge, PanelSection } from '@/components/ui';
+import { Loading, Badge, PanelSection, StatCard, type StatCardProps } from '@/components/ui';
 import { usePlugins, useAllSettings } from '@/hooks';
 import styles from './Dashboard.module.css';
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ComponentType<{ style?: React.CSSProperties }>;
-  href: string;
-  bg: string;
-}
-
-function StatCard({ title, value, icon: Icon, href, bg }: StatCardProps) {
+function LinkedStatCard({ href, ...props }: StatCardProps & { href: string }) {
   return (
     <Link to={href}>
-      <div className={styles.statCard}>
-        <div className={styles.statIcon} style={{ background: bg }}>
-          <Icon style={{ width: 20, height: 20, color: 'white' }} />
-        </div>
-        <div>
-          <p className={styles.statLabel}>{title}</p>
-          <p className={styles.statValue}>{value}</p>
-        </div>
-      </div>
+      <StatCard {...props} />
     </Link>
   );
 }
@@ -48,10 +32,10 @@ export function Dashboard() {
       </div>
 
       <div className={styles.statGrid}>
-        <StatCard title="Active Plugins" value={`${enabledPlugins}/${totalPlugins}`} icon={Puzzle} href="/plugins" bg="var(--mk-accent)" />
-        <StatCard title="Prompts" value="Configured" icon={MessageSquare} href="/prompts" bg="var(--mk-info)" />
-        <StatCard title="Providers" value={providerCount} icon={SettingsIcon} href="/settings" bg="#8b5cf6" />
-        <StatCard title="Status" value="Healthy" icon={Activity} href="/settings" bg="var(--mk-success)" />
+        <LinkedStatCard label="Active Plugins" value={`${enabledPlugins}/${totalPlugins}`} icon={Puzzle} href="/plugins" iconBg="var(--mk-accent)" />
+        <LinkedStatCard label="Prompts" value="Configured" icon={MessageSquare} href="/prompts" iconBg="var(--mk-info)" />
+        <LinkedStatCard label="Providers" value={providerCount} icon={SettingsIcon} href="/settings" iconBg="#8b5cf6" />
+        <LinkedStatCard label="Status" value="Healthy" icon={Activity} href="/settings" iconBg="var(--mk-success)" />
       </div>
 
       <div className={styles.contentGrid}>

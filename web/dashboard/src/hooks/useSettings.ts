@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getClient } from '@/lib/client';
 import type {
   UpdateRetrySettings,
@@ -7,7 +7,7 @@ import type {
   UpdateThinkingSettings,
   UpdateProviderSettings,
 } from '@mukuro/client';
-import { toast } from '@/components/ui';
+import { createMutation } from './mutation';
 
 const SETTINGS_KEY = ['settings'];
 
@@ -25,21 +25,12 @@ export function useRetrySettings() {
   });
 }
 
-export function useUpdateRetrySettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (update: UpdateRetrySettings) =>
-      getClient().settings.updateRetry(update),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
-      toast.success('Retry settings updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update retry settings', error.message);
-    },
-  });
-}
+export const useUpdateRetrySettings = createMutation<unknown, UpdateRetrySettings>({
+  mutationFn: (update) => getClient().settings.updateRetry(update),
+  invalidateKeys: () => [SETTINGS_KEY],
+  successMessage: 'Retry settings updated',
+  errorMessage: 'Failed to update retry settings',
+});
 
 export function useAgentSettings() {
   return useQuery({
@@ -48,21 +39,12 @@ export function useAgentSettings() {
   });
 }
 
-export function useUpdateAgentSettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (update: UpdateAgentSettings) =>
-      getClient().settings.updateAgent(update),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
-      toast.success('Agent settings updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update agent settings', error.message);
-    },
-  });
-}
+export const useUpdateAgentSettings = createMutation<unknown, UpdateAgentSettings>({
+  mutationFn: (update) => getClient().settings.updateAgent(update),
+  invalidateKeys: () => [SETTINGS_KEY],
+  successMessage: 'Agent settings updated',
+  errorMessage: 'Failed to update agent settings',
+});
 
 export function useModelSettings() {
   return useQuery({
@@ -71,21 +53,12 @@ export function useModelSettings() {
   });
 }
 
-export function useUpdateModelSettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (update: UpdateModelSettings) =>
-      getClient().settings.updateModel(update),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
-      toast.success('Model settings updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update model settings', error.message);
-    },
-  });
-}
+export const useUpdateModelSettings = createMutation<unknown, UpdateModelSettings>({
+  mutationFn: (update) => getClient().settings.updateModel(update),
+  invalidateKeys: () => [SETTINGS_KEY],
+  successMessage: 'Model settings updated',
+  errorMessage: 'Failed to update model settings',
+});
 
 export function useThinkingSettings() {
   return useQuery({
@@ -94,30 +67,21 @@ export function useThinkingSettings() {
   });
 }
 
-export function useUpdateThinkingSettings() {
-  const queryClient = useQueryClient();
+export const useUpdateThinkingSettings = createMutation<unknown, UpdateThinkingSettings>({
+  mutationFn: (update) => getClient().settings.updateThinking(update),
+  invalidateKeys: () => [SETTINGS_KEY],
+  successMessage: 'Thinking settings updated',
+  errorMessage: 'Failed to update thinking settings',
+});
 
-  return useMutation({
-    mutationFn: (update: UpdateThinkingSettings) =>
-      getClient().settings.updateThinking(update),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
-      toast.success('Thinking settings updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update thinking settings', error.message);
-    },
-  });
-}
-
-export function useProviders() {
+export function useAiProviders() {
   return useQuery({
     queryKey: [...SETTINGS_KEY, 'providers'],
     queryFn: () => getClient().settings.listProviders(),
   });
 }
 
-export function useProvider(name: string) {
+export function useAiProvider(name: string) {
   return useQuery({
     queryKey: [...SETTINGS_KEY, 'providers', name],
     queryFn: () => getClient().settings.getProvider(name),
@@ -125,26 +89,9 @@ export function useProvider(name: string) {
   });
 }
 
-export function useUpdateProvider() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      name,
-      update,
-    }: {
-      name: string;
-      update: UpdateProviderSettings;
-    }) => getClient().settings.updateProvider(name, update),
-    onSuccess: (_, { name }) => {
-      queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
-      queryClient.invalidateQueries({
-        queryKey: [...SETTINGS_KEY, 'providers', name],
-      });
-      toast.success('Provider settings updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update provider settings', error.message);
-    },
-  });
-}
+export const useUpdateAiProvider = createMutation<unknown, { name: string; update: UpdateProviderSettings }>({
+  mutationFn: ({ name, update }) => getClient().settings.updateProvider(name, update),
+  invalidateKeys: ({ name }) => [SETTINGS_KEY, [...SETTINGS_KEY, 'providers', name]],
+  successMessage: 'Provider settings updated',
+  errorMessage: 'Failed to update provider settings',
+});

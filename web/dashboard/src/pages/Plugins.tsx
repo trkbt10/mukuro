@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Puzzle, PackageCheck, Upload, Activity } from 'lucide-react';
-import { Button, Badge, Loading, Modal, toast } from '@/components/ui';
+import { Button, Badge, Loading, Modal, toast, StatCard } from '@/components/ui';
 import { usePlugins, useUploadPlugin } from '@/hooks';
 import styles from './Plugins.module.css';
 
@@ -48,33 +48,9 @@ export function Plugins() {
       </div>
 
       <div className={styles.statGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-accent-subtle)' }}>
-            <Puzzle style={{ width: 20, height: 20, color: 'var(--mk-accent)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Total</p>
-            <p className={styles.statValue}>{total}</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-success-subtle)' }}>
-            <Activity style={{ width: 20, height: 20, color: 'var(--mk-success)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Active</p>
-            <p className={styles.statValue}>{active}</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-info-subtle)' }}>
-            <PackageCheck style={{ width: 20, height: 20, color: 'var(--mk-info)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Built-in</p>
-            <p className={styles.statValue}>{builtin}</p>
-          </div>
-        </div>
+        <StatCard label="Total" value={total} icon={Puzzle} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
+        <StatCard label="Active" value={active} icon={Activity} iconBg="var(--mk-success-subtle)" iconColor="var(--mk-success)" />
+        <StatCard label="Built-in" value={builtin} icon={PackageCheck} iconBg="var(--mk-info-subtle)" iconColor="var(--mk-info)" />
       </div>
 
       {total > 0 && (

@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { GridLayout, type PanelLayoutConfig, type LayerDefinition } from 'react-panel-layout';
 import { Sidebar } from './Sidebar';
-import { Header } from './Header';
 import { AppStatusBar } from './AppStatusBar';
 import styles from './Layout.module.css';
 
@@ -33,7 +32,6 @@ export function Layout() {
       gridArea: 'main',
       component: (
         <div className={styles.main}>
-          <Header />
           <main className={styles.content}>
             <Outlet />
           </main>

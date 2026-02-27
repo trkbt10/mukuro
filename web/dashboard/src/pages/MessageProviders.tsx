@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
   toast,
+  StatCard,
 } from '@/components/ui';
 import {
   useMessageProviders,
@@ -83,33 +84,9 @@ export function MessageProviders() {
       </div>
 
       <div className={styles.statGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-accent-subtle)' }}>
-            <Radio style={{ width: 20, height: 20, color: 'var(--mk-accent)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Total</p>
-            <p className={styles.statValue}>{total}</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-success-subtle)' }}>
-            <PlugZap style={{ width: 20, height: 20, color: 'var(--mk-success)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Connected</p>
-            <p className={styles.statValue}>{connected}</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-info-subtle)' }}>
-            <Activity style={{ width: 20, height: 20, color: 'var(--mk-info)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Enabled</p>
-            <p className={styles.statValue}>{enabled}</p>
-          </div>
-        </div>
+        <StatCard label="Total" value={total} icon={Radio} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
+        <StatCard label="Connected" value={connected} icon={PlugZap} iconBg="var(--mk-success-subtle)" iconColor="var(--mk-success)" />
+        <StatCard label="Enabled" value={enabled} icon={Activity} iconBg="var(--mk-info-subtle)" iconColor="var(--mk-info)" />
       </div>
 
       {total > 0 && (

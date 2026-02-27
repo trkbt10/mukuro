@@ -1,22 +1,6 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-xl);
-  padding: var(--mk-space-xl);
-  overflow-y: auto;
-  height: 100%;
-}
-
-.pageTitle {
-  font-size: var(--mk-font-size-2xl);
-  font-weight: 600;
-  color: var(--mk-text-primary);
-}
-
-.pageDesc {
-  font-size: var(--mk-font-size-md);
-  color: var(--mk-text-secondary);
-}
+.page { composes: page from '@/styles/page.module.css'; }
+.pageTitle { composes: pageTitle from '@/styles/page.module.css'; }
+.pageDesc { composes: pageDesc from '@/styles/page.module.css'; }
 
 .statGrid {
   display: grid;
@@ -24,53 +8,8 @@
   grid-template-columns: repeat(2, 1fr);
 }
 
-.statCard {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-lg);
-  padding: var(--mk-space-xl);
-  background: var(--mk-bg-surface);
-  border: 1px solid var(--mk-border-default);
-}
-
-.statIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.statLabel {
-  font-size: var(--mk-font-size-sm);
-  color: var(--mk-text-secondary);
-}
-
-.statValue {
-  font-size: var(--mk-font-size-3xl);
-  font-weight: 600;
-  color: var(--mk-text-primary);
-}
-
-.fileList {
-  display: flex;
-  flex-direction: column;
-}
-
-.fileRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--mk-space-md) var(--mk-space-lg);
-  border: 1px solid var(--mk-border-subtle);
-  border-bottom: none;
-}
-
-.fileRow:last-child {
-  border-bottom: 1px solid var(--mk-border-subtle);
-}
+.fileList { composes: itemList from '@/styles/page.module.css'; }
+.fileRow { composes: itemRow from '@/styles/page.module.css'; }
 
 .fileInfo {
   display: flex;

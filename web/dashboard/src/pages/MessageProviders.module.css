@@ -1,28 +1,7 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-xl);
-  padding: var(--mk-space-xl);
-  overflow-y: auto;
-  height: 100%;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pageTitle {
-  font-size: var(--mk-font-size-2xl);
-  font-weight: 600;
-  color: var(--mk-text-primary);
-}
-
-.pageDesc {
-  font-size: var(--mk-font-size-md);
-  color: var(--mk-text-secondary);
-}
+.page { composes: page from '@/styles/page.module.css'; }
+.header { composes: pageHeader from '@/styles/page.module.css'; align-items: center; }
+.pageTitle { composes: pageTitle from '@/styles/page.module.css'; }
+.pageDesc { composes: pageDesc from '@/styles/page.module.css'; }
 
 .statGrid {
   display: grid;
@@ -30,53 +9,8 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
-.statCard {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-lg);
-  padding: var(--mk-space-xl);
-  background: var(--mk-bg-surface);
-  border: 1px solid var(--mk-border-default);
-}
-
-.statIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-
-.statLabel {
-  font-size: var(--mk-font-size-sm);
-  color: var(--mk-text-secondary);
-}
-
-.statValue {
-  font-size: var(--mk-font-size-3xl);
-  font-weight: 600;
-  color: var(--mk-text-primary);
-}
-
-.providerList {
-  display: flex;
-  flex-direction: column;
-}
-
-.providerRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--mk-space-md) var(--mk-space-lg);
-  border: 1px solid var(--mk-border-subtle);
-  border-bottom: none;
-}
-
-.providerRow:last-child {
-  border-bottom: 1px solid var(--mk-border-subtle);
-}
+.providerList { composes: itemList from '@/styles/page.module.css'; }
+.providerRow { composes: itemRow from '@/styles/page.module.css'; }
 
 .providerInfo {
   display: flex;
@@ -90,11 +24,7 @@
   color: var(--mk-text-primary);
 }
 
-.modalFields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-lg);
-}
+.modalFields { composes: fieldStack from '@/styles/page.module.css'; }
 
 .settingsSection {
   border-top: 1px solid var(--mk-border-default);
@@ -109,11 +39,7 @@
   margin-bottom: var(--mk-space-lg);
 }
 
-.settingsFields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-lg);
-}
+.settingsFields { composes: fieldStack from '@/styles/page.module.css'; }
 
 .toggleField {
   display: flex;

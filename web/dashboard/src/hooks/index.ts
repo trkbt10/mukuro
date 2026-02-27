@@ -28,9 +28,9 @@ export {
   useUpdateModelSettings,
   useThinkingSettings,
   useUpdateThinkingSettings,
-  useProviders,
-  useProvider,
-  useUpdateProvider,
+  useAiProviders,
+  useAiProvider,
+  useUpdateAiProvider,
 } from './useSettings';
 
 export { useConnection, type ConnectionStatus } from './useConnection';

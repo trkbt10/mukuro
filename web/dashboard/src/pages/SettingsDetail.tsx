@@ -14,6 +14,7 @@ import {
   useUpdateRetrySettings,
   useUpdateAgentSettings,
   useUpdateModelSettings,
+  useThinkingSettings,
   useUpdateThinkingSettings,
 } from '@/hooks';
 import type { ThinkingLevel } from '@mukuro/client';
@@ -186,11 +187,21 @@ function ModelSection({ settings }: { settings: { model_name: string; temperatur
 }
 
 function ThinkingSection() {
+  const { data: settings } = useThinkingSettings();
   const updateThinking = useUpdateThinkingSettings();
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevel>('medium');
   const [budgetTokens, setBudgetTokens] = useState('');
   const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (settings) {
+      setThinkingEnabled(settings.enabled);
+      setThinkingLevel(settings.level);
+      setBudgetTokens(settings.budget_tokens !== null ? String(settings.budget_tokens) : '');
+      setDirty(false);
+    }
+  }, [settings]);
 
   const handleSave = () => {
     updateThinking.mutate(

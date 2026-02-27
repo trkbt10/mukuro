@@ -2,5 +2,8 @@ export { Dashboard } from './Dashboard';
 export { Plugins } from './Plugins';
 export { PluginDetail } from './PluginDetail';
 export { Context } from './Context';
+export { ContextDetail } from './ContextDetail';
 export { Settings } from './Settings';
+export { SettingsDetail } from './SettingsDetail';
 export { MessageProviders } from './MessageProviders';
+export { ProviderDetail } from './ProviderDetail';

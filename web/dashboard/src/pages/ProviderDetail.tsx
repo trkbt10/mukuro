@@ -6,9 +6,9 @@ import {
   Badge,
   Toggle,
   Loading,
-  Modal,
   PanelSection,
   PropertyRow,
+  DeleteConfirmModal,
 } from '@/components/ui';
 import {
   useMessageProvider,
@@ -174,24 +174,19 @@ export function ProviderDetail() {
         )}
       </div>
 
-      <Modal
+      <DeleteConfirmModal
         open={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         title="Delete Provider"
         description="Are you sure you want to delete this provider? This action cannot be undone."
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</Button>
-            <Button variant="danger" onClick={handleDelete} loading={deleteProvider.isPending}>Delete</Button>
-          </>
-        }
+        onConfirm={handleDelete}
+        isPending={deleteProvider.isPending}
       >
         <p className={styles.modalText}>
           Provider <strong>{provider.name}</strong> will be permanently removed.
           Any active connections will be terminated.
         </p>
-      </Modal>
+      </DeleteConfirmModal>
     </div>
   );
 }

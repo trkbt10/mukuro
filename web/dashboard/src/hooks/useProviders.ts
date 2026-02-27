@@ -1,10 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { getClient } from '@/lib/client';
 import type {
   MessageProviderAddRequest,
   MessageProviderUpdateRequest,
 } from '@mukuro/client';
 import { toast } from '@/components/ui';
+import { createMutation } from './mutation';
 
 const PROVIDERS_KEY = ['providers'];
 
@@ -38,121 +39,56 @@ export function useProviderSchema(providerType: string) {
   });
 }
 
-export function useAddProvider() {
-  const queryClient = useQueryClient();
+export const useAddProvider = createMutation<unknown, MessageProviderAddRequest>({
+  mutationFn: (request) => getClient().providers.add(request),
+  invalidateKeys: () => [PROVIDERS_KEY],
+  successMessage: 'Provider added successfully',
+  errorMessage: 'Failed to add provider',
+});
 
-  return useMutation({
-    mutationFn: (request: MessageProviderAddRequest) =>
-      getClient().providers.add(request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PROVIDERS_KEY });
-      toast.success('Provider added successfully');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to add provider', error.message);
-    },
-  });
-}
+export const useUpdateProvider = createMutation<unknown, { id: string; request: MessageProviderUpdateRequest }>({
+  mutationFn: ({ id, request }) => getClient().providers.update(id, request),
+  invalidateKeys: ({ id }) => [PROVIDERS_KEY, [...PROVIDERS_KEY, id]],
+  successMessage: 'Provider updated',
+  errorMessage: 'Failed to update provider',
+});
 
-export function useUpdateProvider() {
-  const queryClient = useQueryClient();
+export const useDeleteProvider = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().providers.delete(id),
+  invalidateKeys: () => [PROVIDERS_KEY],
+  successMessage: 'Provider deleted',
+  errorMessage: 'Failed to delete provider',
+});
 
-  return useMutation({
-    mutationFn: ({
-      id,
-      request,
-    }: {
-      id: string;
-      request: MessageProviderUpdateRequest;
-    }) => getClient().providers.update(id, request),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: PROVIDERS_KEY });
-      queryClient.invalidateQueries({ queryKey: [...PROVIDERS_KEY, id] });
-      toast.success('Provider updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update provider', error.message);
-    },
-  });
-}
+export const useEnableProvider = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().providers.enable(id),
+  invalidateKeys: (id) => [PROVIDERS_KEY, [...PROVIDERS_KEY, id]],
+  successMessage: 'Provider enabled',
+  errorMessage: 'Failed to enable provider',
+});
 
-export function useDeleteProvider() {
-  const queryClient = useQueryClient();
+export const useDisableProvider = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().providers.disable(id),
+  invalidateKeys: (id) => [PROVIDERS_KEY, [...PROVIDERS_KEY, id]],
+  successMessage: 'Provider disabled',
+  errorMessage: 'Failed to disable provider',
+});
 
-  return useMutation({
-    mutationFn: (id: string) => getClient().providers.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PROVIDERS_KEY });
-      toast.success('Provider deleted');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to delete provider', error.message);
-    },
-  });
-}
+export const useConnectProvider = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().providers.connect(id),
+  invalidateKeys: (id) => [[...PROVIDERS_KEY, id]],
+  successMessage: 'Provider connecting...',
+  errorMessage: 'Failed to connect provider',
+});
 
-export function useEnableProvider() {
-  const queryClient = useQueryClient();
+export const useDisconnectProvider = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().providers.disconnect(id),
+  invalidateKeys: (id) => [[...PROVIDERS_KEY, id]],
+  successMessage: 'Provider disconnected',
+  errorMessage: 'Failed to disconnect provider',
+});
 
-  return useMutation({
-    mutationFn: (id: string) => getClient().providers.enable(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: PROVIDERS_KEY });
-      queryClient.invalidateQueries({ queryKey: [...PROVIDERS_KEY, id] });
-      toast.success('Provider enabled');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to enable provider', error.message);
-    },
-  });
-}
-
-export function useDisableProvider() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => getClient().providers.disable(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: PROVIDERS_KEY });
-      queryClient.invalidateQueries({ queryKey: [...PROVIDERS_KEY, id] });
-      toast.success('Provider disabled');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to disable provider', error.message);
-    },
-  });
-}
-
-export function useConnectProvider() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => getClient().providers.connect(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: [...PROVIDERS_KEY, id] });
-      toast.success('Provider connecting...');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to connect provider', error.message);
-    },
-  });
-}
-
-export function useDisconnectProvider() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => getClient().providers.disconnect(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: [...PROVIDERS_KEY, id] });
-      toast.success('Provider disconnected');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to disconnect provider', error.message);
-    },
-  });
-}
-
+// useTestProvider has conditional success logic — kept as manual useMutation
 export function useTestProvider() {
   return useMutation({
     mutationFn: (id: string) => getClient().providers.test(id),

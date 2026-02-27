@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getClient } from '@/lib/client';
-import { toast } from '@/components/ui';
+import { createMutation } from './mutation';
 
 const CONTEXT_KEY = ['context'];
 
@@ -19,34 +19,16 @@ export function useContextFile(name: string) {
   });
 }
 
-export function useUpdateContextFile() {
-  const queryClient = useQueryClient();
+export const useUpdateContextFile = createMutation<unknown, { name: string; content: string }>({
+  mutationFn: ({ name, content }) => getClient().context.update(name, content),
+  invalidateKeys: ({ name }) => [CONTEXT_KEY, [...CONTEXT_KEY, name]],
+  successMessage: 'Context file updated',
+  errorMessage: 'Failed to update context file',
+});
 
-  return useMutation({
-    mutationFn: ({ name, content }: { name: string; content: string }) =>
-      getClient().context.update(name, content),
-    onSuccess: (_, { name }) => {
-      queryClient.invalidateQueries({ queryKey: CONTEXT_KEY });
-      queryClient.invalidateQueries({ queryKey: [...CONTEXT_KEY, name] });
-      toast.success('Context file updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update context file', error.message);
-    },
-  });
-}
-
-export function useDeleteContextFile() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (name: string) => getClient().context.delete(name),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: CONTEXT_KEY });
-      toast.success('Context file deleted');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to delete context file', error.message);
-    },
-  });
-}
+export const useDeleteContextFile = createMutation<unknown, string>({
+  mutationFn: (name) => getClient().context.delete(name),
+  invalidateKeys: () => [CONTEXT_KEY],
+  successMessage: 'Context file deleted',
+  errorMessage: 'Failed to delete context file',
+});

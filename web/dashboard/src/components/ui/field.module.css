@@ -1,0 +1,23 @@
+/* Shared form field layout — used by Input and Select */
+
+.fieldWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: var(--mk-font-size-sm);
+  font-weight: 500;
+  color: var(--mk-text-primary);
+}
+
+.error {
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-error);
+}
+
+.helper {
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-text-muted);
+}

@@ -1,16 +1,8 @@
 import { FileText, CheckCircle, Circle } from 'lucide-react';
-import { Badge, Loading } from '@/components/ui';
+import { Badge, Loading, StatCard } from '@/components/ui';
 import { useContextFiles } from '@/hooks';
+import { fileDescriptions } from '@/lib/contextFiles';
 import styles from './Context.module.css';
-
-const fileDescriptions: Record<string, string> = {
-  soul: 'AI personality and core values',
-  identity: 'AI identity and name',
-  bootstrap: 'Base system instructions',
-  agents: 'Workspace handbook and guidelines',
-  tools: 'Local tools and environment configuration',
-  user: 'User preferences and context',
-};
 
 export function Context() {
   const { data: contextFiles, isLoading } = useContextFiles();
@@ -32,24 +24,8 @@ export function Context() {
       </div>
 
       <div className={styles.statGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-accent-subtle)' }}>
-            <FileText style={{ width: 20, height: 20, color: 'var(--mk-accent)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Total Files</p>
-            <p className={styles.statValue}>{total}</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-success-subtle)' }}>
-            <CheckCircle style={{ width: 20, height: 20, color: 'var(--mk-success)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Active</p>
-            <p className={styles.statValue}>{active}</p>
-          </div>
-        </div>
+        <StatCard label="Total Files" value={total} icon={FileText} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
+        <StatCard label="Active" value={active} icon={CheckCircle} iconBg="var(--mk-success-subtle)" iconColor="var(--mk-success)" />
       </div>
 
       {contextFiles && contextFiles.length > 0 && (

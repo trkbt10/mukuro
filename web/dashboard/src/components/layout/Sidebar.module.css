@@ -57,6 +57,7 @@
   display: flex;
   align-items: center;
   gap: var(--mk-space-md);
+  min-width: 0;
 }
 
 .avatar {
@@ -92,4 +93,20 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.connectionIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
 }

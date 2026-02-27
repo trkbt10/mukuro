@@ -1,11 +1,4 @@
-.page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-xl);
-  padding: var(--mk-space-xl);
-  overflow-y: auto;
-  height: 100%;
-}
+.page { composes: page from '@/styles/page.module.css'; }
 
 .backLink {
   display: flex;
@@ -20,34 +13,12 @@
   color: var(--mk-text-primary);
 }
 
-.titleRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
+.titleRow { composes: pageHeader from '@/styles/page.module.css'; }
+.titleGroup { composes: titleGroup from '@/styles/page.module.css'; }
+.pageTitle { composes: pageTitle from '@/styles/page.module.css'; }
+.actions { composes: actions from '@/styles/page.module.css'; }
 
-.titleGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-md);
-}
-
-.pageTitle {
-  font-size: var(--mk-font-size-2xl);
-  font-weight: 600;
-  color: var(--mk-text-primary);
-}
-
-.pluginId {
-  font-size: var(--mk-font-size-md);
-  color: var(--mk-text-secondary);
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-md);
-}
+.pluginId { composes: secondaryText from '@/styles/page.module.css'; }
 
 .grid {
   display: grid;
@@ -78,10 +49,7 @@
   color: var(--mk-text-primary);
 }
 
-.descriptionText {
-  font-size: var(--mk-font-size-md);
-  color: var(--mk-text-secondary);
-}
+.descriptionText { composes: secondaryText from '@/styles/page.module.css'; }
 
 .permList {
   display: flex;
@@ -89,24 +57,7 @@
   gap: var(--mk-space-md);
 }
 
-.emptyState {
-  text-align: center;
-  padding: var(--mk-space-3xl) 0;
-  color: var(--mk-text-secondary);
-}
-
-.settingsFields {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-lg);
-}
-
-.notFoundText {
-  font-size: var(--mk-font-size-md);
-  color: var(--mk-text-secondary);
-}
-
-.modalText {
-  font-size: var(--mk-font-size-md);
-  color: var(--mk-text-secondary);
-}
+.emptyState { composes: emptyStateInline from '@/styles/page.module.css'; }
+.settingsFields { composes: fieldStack from '@/styles/page.module.css'; }
+.notFoundText { composes: secondaryText from '@/styles/page.module.css'; }
+.modalText { composes: secondaryText from '@/styles/page.module.css'; }

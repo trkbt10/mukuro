@@ -3,25 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Save, Trash2 } from 'lucide-react';
 import { Button, Textarea, Badge, Loading, PanelSection } from '@/components/ui';
 import { useContextFile, useUpdateContextFile, useDeleteContextFile } from '@/hooks';
+import { fileDescriptions, filePlaceholders } from '@/lib/contextFiles';
 import styles from './ContextDetail.module.css';
-
-const fileDescriptions: Record<string, string> = {
-  soul: 'AI personality and core values',
-  identity: 'AI identity and name',
-  bootstrap: 'Base system instructions',
-  agents: 'Workspace handbook and guidelines',
-  tools: 'Local tools and environment configuration',
-  user: 'User preferences and context',
-};
-
-const filePlaceholders: Record<string, string> = {
-  soul: 'Define the AI personality, tone, and core values...',
-  identity: 'Define the AI identity and name...',
-  bootstrap: 'Base system instructions sent at the start of each session...',
-  agents: 'Workspace handbook and guidelines for agent behavior...',
-  tools: 'Local tools and environment configuration...',
-  user: 'User preferences and personal context...',
-};
 
 export function ContextDetail() {
   const { name } = useParams<{ name: string }>();

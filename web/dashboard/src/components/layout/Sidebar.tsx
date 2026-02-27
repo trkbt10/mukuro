@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -21,11 +21,17 @@ import {
   Cpu,
   Brain,
   Sliders,
+  Moon,
+  Sun,
+  Wifi,
+  WifiOff,
+  Loader2,
 } from 'lucide-react';
 import { TreeItem } from 'react-editor-ui';
 import { LayerItem } from 'react-editor-ui/LayerItem';
 import { Badge, IconButton } from '@/components/ui';
 import { usePlugins, useMessageProviders, useContextFiles } from '@/hooks';
+import { useConnection, type ConnectionStatus } from '@/hooks/useConnection';
 import styles from './Sidebar.module.css';
 
 const iconSize = { width: 16, height: 16 };
@@ -46,6 +52,77 @@ const settingSections = [
   { id: 'model', label: 'Model', icon: <Cpu style={smallIcon} /> },
   { id: 'thinking', label: 'Thinking', icon: <Brain style={smallIcon} /> },
 ] as const;
+
+function ConnectionIndicator() {
+  const { data, isLoading } = useConnection();
+  const status: ConnectionStatus = isLoading
+    ? 'connecting'
+    : (data?.status ?? 'disconnected');
+
+  const dotColors: Record<ConnectionStatus, string> = {
+    connecting: 'var(--mk-warning)',
+    connected: 'var(--mk-success)',
+    disconnected: 'var(--mk-error)',
+    error: 'var(--mk-warning)',
+  };
+
+  const labels: Record<ConnectionStatus, string> = {
+    connecting: 'Connecting...',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    error: data?.error ?? 'Error',
+  };
+
+  return (
+    <span className={styles.connectionIndicator} title={labels[status]}>
+      {status === 'connecting' ? (
+        <Loader2 style={{ width: 10, height: 10, animation: 'spin 1s linear infinite', color: dotColors[status] }} />
+      ) : status === 'connected' ? (
+        <Wifi style={{ width: 10, height: 10, color: dotColors[status] }} />
+      ) : (
+        <WifiOff style={{ width: 10, height: 10, color: dotColors[status] }} />
+      )}
+    </span>
+  );
+}
+
+function UserSection() {
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setIsDark(stored === 'dark' || stored === null || (!stored && prefersDark));
+  }, []);
+
+  const toggleTheme = () => {
+    const newValue = !isDark;
+    setIsDark(newValue);
+    localStorage.setItem('theme', newValue ? 'dark' : 'light');
+  };
+
+  return (
+    <div className={styles.userSection}>
+      <div className={styles.userCard}>
+        <div className={styles.avatar}>A</div>
+        <div className={styles.userInfo}>
+          <p className={styles.userName}>Admin</p>
+          <p className={styles.userEmail}>admin@local</p>
+        </div>
+        <div className={styles.userActions}>
+          <ConnectionIndicator />
+          <IconButton
+            icon={isDark ? <Sun style={{ width: 14, height: 14 }} /> : <Moon style={{ width: 14, height: 14 }} />}
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+            variant="ghost"
+            size="sm"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -236,15 +313,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className={styles.userSection}>
-        <div className={styles.userCard}>
-          <div className={styles.avatar}>A</div>
-          <div className={styles.userInfo}>
-            <p className={styles.userName}>Admin</p>
-            <p className={styles.userEmail}>admin@local</p>
-          </div>
-        </div>
-      </div>
+      <UserSection />
     </aside>
   );
 }

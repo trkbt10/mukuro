@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { getClient } from '@/lib/client';
 import type { PluginAddRequest } from '@mukuro/client';
-import { toast } from '@/components/ui';
+import { createMutation } from './mutation';
 
 const PLUGINS_KEY = ['plugins'];
 
@@ -28,116 +28,51 @@ export function usePluginSettings(id: string) {
   });
 }
 
-export function useAddPlugin() {
-  const queryClient = useQueryClient();
+export const useAddPlugin = createMutation<unknown, PluginAddRequest>({
+  mutationFn: (request) => getClient().plugins.add(request),
+  invalidateKeys: () => [PLUGINS_KEY],
+  successMessage: 'Plugin added successfully',
+  errorMessage: 'Failed to add plugin',
+});
 
-  return useMutation({
-    mutationFn: (request: PluginAddRequest) => getClient().plugins.add(request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PLUGINS_KEY });
-      toast.success('Plugin added successfully');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to add plugin', error.message);
-    },
-  });
-}
+export const useDeletePlugin = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().plugins.delete(id),
+  invalidateKeys: () => [PLUGINS_KEY],
+  successMessage: 'Plugin deleted successfully',
+  errorMessage: 'Failed to delete plugin',
+});
 
-export function useDeletePlugin() {
-  const queryClient = useQueryClient();
+export const useEnablePlugin = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().plugins.enable(id),
+  invalidateKeys: (id) => [PLUGINS_KEY, [...PLUGINS_KEY, id]],
+  successMessage: 'Plugin enabled',
+  errorMessage: 'Failed to enable plugin',
+});
 
-  return useMutation({
-    mutationFn: (id: string) => getClient().plugins.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PLUGINS_KEY });
-      toast.success('Plugin deleted successfully');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to delete plugin', error.message);
-    },
-  });
-}
+export const useDisablePlugin = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().plugins.disable(id),
+  invalidateKeys: (id) => [PLUGINS_KEY, [...PLUGINS_KEY, id]],
+  successMessage: 'Plugin disabled',
+  errorMessage: 'Failed to disable plugin',
+});
 
-export function useEnablePlugin() {
-  const queryClient = useQueryClient();
+export const useReloadPlugin = createMutation<unknown, string>({
+  mutationFn: (id) => getClient().plugins.reload(id),
+  invalidateKeys: (id) => [[...PLUGINS_KEY, id]],
+  successMessage: 'Plugin reloaded',
+  errorMessage: 'Failed to reload plugin',
+});
 
-  return useMutation({
-    mutationFn: (id: string) => getClient().plugins.enable(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: PLUGINS_KEY });
-      queryClient.invalidateQueries({ queryKey: [...PLUGINS_KEY, id] });
-      toast.success('Plugin enabled');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to enable plugin', error.message);
-    },
-  });
-}
+export const useUploadPlugin = createMutation<unknown, { file: File; filename?: string }>({
+  mutationFn: ({ file, filename }) => getClient().plugins.upload(file, filename),
+  invalidateKeys: () => [PLUGINS_KEY],
+  successMessage: 'Plugin uploaded successfully',
+  errorMessage: 'Failed to upload plugin',
+});
 
-export function useDisablePlugin() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => getClient().plugins.disable(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: PLUGINS_KEY });
-      queryClient.invalidateQueries({ queryKey: [...PLUGINS_KEY, id] });
-      toast.success('Plugin disabled');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to disable plugin', error.message);
-    },
-  });
-}
-
-export function useReloadPlugin() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => getClient().plugins.reload(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: [...PLUGINS_KEY, id] });
-      toast.success('Plugin reloaded');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to reload plugin', error.message);
-    },
-  });
-}
-
-export function useUploadPlugin() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ file, filename }: { file: File; filename?: string }) =>
-      getClient().plugins.upload(file, filename),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PLUGINS_KEY });
-      toast.success('Plugin uploaded successfully');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to upload plugin', error.message);
-    },
-  });
-}
-
-export function useUpdatePluginSettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      id,
-      settings,
-    }: {
-      id: string;
-      settings: Record<string, unknown>;
-    }) => getClient().plugins.updateSettings(id, settings),
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: [...PLUGINS_KEY, id, 'settings'] });
-      toast.success('Settings updated');
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to update settings', error.message);
-    },
-  });
-}
+export const useUpdatePluginSettings = createMutation<unknown, { id: string; settings: Record<string, unknown> }>({
+  mutationFn: ({ id, settings }) => getClient().plugins.updateSettings(id, settings),
+  invalidateKeys: ({ id }) => [[...PLUGINS_KEY, id, 'settings']],
+  successMessage: 'Settings updated',
+  errorMessage: 'Failed to update settings',
+});

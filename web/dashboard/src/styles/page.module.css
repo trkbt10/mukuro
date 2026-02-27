@@ -1,0 +1,124 @@
+/* Shared page-level CSS patterns — extracted from 9 page modules */
+
+/* Page shell — used by all pages */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-xl);
+  padding: var(--mk-space-xl);
+  overflow-y: auto;
+  height: 100%;
+}
+
+/* Title block */
+.pageTitle {
+  font-size: var(--mk-font-size-2xl);
+  font-weight: 600;
+  color: var(--mk-text-primary);
+}
+
+.pageDesc {
+  font-size: var(--mk-font-size-md);
+  color: var(--mk-text-secondary);
+}
+
+/* Header row: title left, actions right */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+/* Actions cluster */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-md);
+}
+
+/* Title + badge inline group */
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-md);
+}
+
+/* Stat card */
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-lg);
+  padding: var(--mk-space-xl);
+  background: var(--mk-bg-surface);
+  border: 1px solid var(--mk-border-default);
+}
+
+.statIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.statLabel {
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-text-secondary);
+}
+
+.statValue {
+  font-size: var(--mk-font-size-3xl);
+  font-weight: 600;
+  color: var(--mk-text-primary);
+}
+
+/* Bordered item list with collapsed borders */
+.itemList {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mk-space-md) var(--mk-space-lg);
+  border: 1px solid var(--mk-border-subtle);
+  border-bottom: none;
+}
+
+.itemRow:last-child {
+  border-bottom: 1px solid var(--mk-border-subtle);
+}
+
+/* Empty state — centered full-height variant */
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--mk-text-secondary);
+  font-size: var(--mk-font-size-md);
+}
+
+/* Empty state — inline padded variant */
+.emptyStateInline {
+  text-align: center;
+  padding: var(--mk-space-3xl) 0;
+  color: var(--mk-text-secondary);
+}
+
+/* Flex field stack for forms */
+.fieldStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-lg);
+}
+
+/* Secondary text (modal body, descriptions, etc.) */
+.secondaryText {
+  font-size: var(--mk-font-size-md);
+  color: var(--mk-text-secondary);
+}

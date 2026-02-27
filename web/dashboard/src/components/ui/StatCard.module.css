@@ -1,0 +1,4 @@
+.statCard { composes: statCard from '@/styles/page.module.css'; }
+.statIcon { composes: statIcon from '@/styles/page.module.css'; }
+.statLabel { composes: statLabel from '@/styles/page.module.css'; }
+.statValue { composes: statValue from '@/styles/page.module.css'; }

@@ -1,5 +1,5 @@
 import { Settings as SettingsIcon, RotateCcw, Bot, Cpu, Brain } from 'lucide-react';
-import { Badge, Loading } from '@/components/ui';
+import { Badge, Loading, StatCard } from '@/components/ui';
 import { useAllSettings } from '@/hooks';
 import styles from './Settings.module.css';
 
@@ -25,24 +25,8 @@ export function Settings() {
       </div>
 
       <div className={styles.statGrid}>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-accent-subtle)' }}>
-            <SettingsIcon style={{ width: 20, height: 20, color: 'var(--mk-accent)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Sections</p>
-            <p className={styles.statValue}>{sections.length}</p>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: 'var(--mk-info-subtle)' }}>
-            <Cpu style={{ width: 20, height: 20, color: 'var(--mk-info)' }} />
-          </div>
-          <div>
-            <p className={styles.statLabel}>Model</p>
-            <p className={styles.statValue}>{settings?.model.model_name ?? '—'}</p>
-          </div>
-        </div>
+        <StatCard label="Sections" value={sections.length} icon={SettingsIcon} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
+        <StatCard label="Model" value={settings?.model.model_name ?? '—'} icon={Cpu} iconBg="var(--mk-info-subtle)" iconColor="var(--mk-info)" />
       </div>
 
       <div className={styles.sectionList}>

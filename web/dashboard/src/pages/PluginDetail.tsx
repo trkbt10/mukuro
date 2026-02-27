@@ -10,6 +10,7 @@ import {
   Input,
   PanelSection,
   PropertyRow,
+  DeleteConfirmModal,
 } from '@/components/ui';
 import {
   usePlugin,
@@ -171,23 +172,18 @@ export function PluginDetail() {
         </PanelSection>
       </div>
 
-      <Modal
+      <DeleteConfirmModal
         open={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         title="Delete Plugin"
         description="Are you sure you want to delete this plugin? This action cannot be undone."
-        size="sm"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setDeleteModalOpen(false)}>Cancel</Button>
-            <Button variant="danger" onClick={handleDelete} loading={deletePlugin.isPending}>Delete</Button>
-          </>
-        }
+        onConfirm={handleDelete}
+        isPending={deletePlugin.isPending}
       >
         <p className={styles.modalText}>
           Plugin <strong>{plugin.name}</strong> will be permanently removed.
         </p>
-      </Modal>
+      </DeleteConfirmModal>
 
       <Modal
         open={settingsModalOpen}
