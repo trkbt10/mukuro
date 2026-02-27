@@ -4,10 +4,7 @@
 /// Run the WebSocket test plugin manually before running these tests:
 ///   cd .mukuro/plugins/ws_test && node plugin.js
 ///
-/// NOTE: These tests use async test because WebSocket connections
-/// don't work well with @async.with_event_loop (sync bridging).
-/// The sync NativeWebSocketTransportHandler is designed for use in
-/// async fn main context at the application level.
+/// NOTE: These tests use async test for WebSocket connections.
 
 ///|
 /// Async test: connect and greet via WebSocket

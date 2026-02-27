@@ -81,7 +81,9 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with connect(
         last_error = channel_error_message(err)
         self.reset_connection()
         if attempt < max_attempts {
-          @native.c_sleep_ms(reconnect_delay_ms(self.config.base, attempt))
+          @async.sleep(reconnect_delay_ms(self.config.base, attempt)) catch {
+            _ => ()
+          }
         }
       }
     }
@@ -159,25 +161,21 @@ fn reconnect_delay_ms(base : ChannelBaseConfig, attempt : Int) -> Int {
 }
 
 ///|
-fn WebSocketChannelAdapter::connect_once(
+async fn WebSocketChannelAdapter::connect_once(
   self : WebSocketChannelAdapter,
 ) -> Unit raise {
-  @async.with_event_loop((_group) => {
-    let headers : Map[String, String] = {}
-    match self.config.auth_token {
-      Some(token) => headers["Authorization"] = "Bearer \{token}"
-      None => ()
-    }
-    let conn = @xws.Conn::connect(self.config.url, headers~) catch {
-      e => raise map_ws_error(e)
-    }
-    self.conn = Some(conn)
-  }) catch {
+  let headers : Map[String, String] = {}
+  match self.config.auth_token {
+    Some(token) => headers["Authorization"] = "Bearer \{token}"
+    None => ()
+  }
+  let conn = @xws.Conn::connect(self.config.url, headers~) catch {
     e => {
       self.status = ChannelStatus::Error(e.to_string())
-      raise ChannelError::NetworkError(e.to_string())
+      raise map_ws_error(e)
     }
   }
+  self.conn = Some(conn)
   self.status = ChannelStatus::Connected
 }
 
@@ -214,19 +212,16 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with send(
   let mut attempts = 0
   while attempts < 2 {
     let send_result : Result[Unit, ChannelError] = try {
-      @async.with_event_loop((_group) => {
-        let conn = match self.conn {
-          Some(c) => c
-          None =>
-            raise ChannelError::ConnectionFailed("WebSocket not connected")
+      let conn = match self.conn {
+        Some(c) => c
+        None => raise ChannelError::ConnectionFailed("WebSocket not connected")
+      }
+      conn.send_text(payload) catch {
+        e => {
+          self.reset_connection()
+          raise map_ws_error(e)
         }
-        conn.send_text(payload) catch {
-          e => {
-            self.reset_connection()
-            raise map_ws_error(e)
-          }
-        }
-      })
+      }
       Ok(())
     } catch {
       e => Err(ChannelError::NetworkError(e.to_string()))
@@ -256,30 +251,27 @@ pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter with receive(
   } else {
     self.ensure_connected()
     let recv_result : Result[Unit, ChannelError] = try {
-      @async.with_event_loop((_group) => {
-        let conn = match self.conn {
-          Some(c) => c
-          None =>
-            raise ChannelError::ConnectionFailed("WebSocket not connected")
-        }
-        let incoming = @async.with_timeout_opt(self.config.receive_timeout_ms, () => {
-          conn.recv() catch {
-            e => {
-              self.reset_connection()
-              raise map_ws_error(e)
-            }
+      let conn = match self.conn {
+        Some(c) => c
+        None => raise ChannelError::ConnectionFailed("WebSocket not connected")
+      }
+      let incoming = @async.with_timeout_opt(self.config.receive_timeout_ms, () => {
+        conn.recv() catch {
+          e => {
+            self.reset_connection()
+            raise map_ws_error(e)
           }
-        }) catch {
-          e => raise ChannelError::NetworkError(e.to_string())
         }
-        match incoming {
-          Some(@xws.Message::Text(text)) =>
-            self.handle_incoming_text(text, None, None)
-          Some(@xws.Message::Binary(bin)) =>
-            self.handle_incoming_text("<binary:\{bin.length()}>", None, None)
-          None => ()
-        }
-      })
+      }) catch {
+        e => raise ChannelError::NetworkError(e.to_string())
+      }
+      match incoming {
+        Some(@xws.Message::Text(text)) =>
+          self.handle_incoming_text(text, None, None)
+        Some(@xws.Message::Binary(bin)) =>
+          self.handle_incoming_text("<binary:\{bin.length()}>", None, None)
+        None => ()
+      }
       Ok(())
     } catch {
       e => Err(ChannelError::NetworkError(e.to_string()))

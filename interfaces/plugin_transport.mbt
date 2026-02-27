@@ -1,10 +1,6 @@
 ///|
 /// Unified transport handler trait for plugin communication
 /// All transport implementations (HTTP, Stdio, WebSocket) implement this trait
-///
-/// Note: For WebSocket, the trait methods are synchronous but internally
-/// may use async operations. In production, call from async fn main context.
-/// For testing WebSocket, use async tests with the async client directly.
 pub(open) trait PluginTransportHandler {
   /// Start the transport connection (async)
   async start(Self) -> Unit

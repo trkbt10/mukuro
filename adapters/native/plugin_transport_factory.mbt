@@ -62,7 +62,7 @@ pub fn NativeTransportFactory::create_handler(
       adapter
     }
     @interfaces.PluginTransport::WebSocket =>
-      // Use NativeWebSocketTransportHandler with @async.with_event_loop
+      // Use NativeWebSocketTransportHandler with async trait methods
       match manifest.http {
         Some(http) => {
           let url = match http.base_url {

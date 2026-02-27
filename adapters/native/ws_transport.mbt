@@ -1,9 +1,6 @@
 ///|
 /// Native WebSocket Transport Handler
-/// Implements PluginTransportHandler trait for sync contexts
-///
-/// IMPORTANT: The sync trait methods use @async.with_event_loop which
-/// only works correctly when called from async fn main context.
+/// Implements PluginTransportHandler trait
 /// For testing, use async tests with NativeWebSocketClient directly.
 
 ///|
@@ -176,86 +173,22 @@ pub fn NativeWebSocketTransportHandler::on_message(
 }
 
 // ============================================================================
-// PluginTransportHandler trait implementation (sync wrapper)
-// NOTE: These use @async.with_event_loop and only work in async fn main context
+// PluginTransportHandler trait implementation
 // ============================================================================
-
-///|
-/// Sync start - wraps async with event loop
-/// Only use from async fn main context
-pub fn NativeWebSocketTransportHandler::start(
-  self : NativeWebSocketTransportHandler,
-) -> Unit raise @interfaces.TransportError {
-  let handler = self
-  @async.with_event_loop(_group => handler.start_async()) catch {
-    @interfaces.TransportError::ConnectionFailed(msg) =>
-      raise @interfaces.TransportError::ConnectionFailed(msg)
-    @interfaces.TransportError::AlreadyStarted =>
-      raise @interfaces.TransportError::AlreadyStarted
-    _ => raise @interfaces.TransportError::ConnectionFailed("Unknown error")
-  }
-}
-
-///|
-/// Sync stop - wraps async with event loop
-pub fn NativeWebSocketTransportHandler::stop(
-  self : NativeWebSocketTransportHandler,
-) -> Unit raise @interfaces.TransportError {
-  let handler = self
-  @async.with_event_loop(_group => handler.stop_async()) catch {
-    _ => ()
-  }
-}
-
-///|
-/// Sync send request - wraps async with event loop
-pub fn NativeWebSocketTransportHandler::send_request(
-  self : NativeWebSocketTransportHandler,
-  request : @interfaces.JsonRpcRequest,
-) -> @interfaces.JsonRpcResponse raise @interfaces.TransportError {
-  let handler = self
-  let mut result : @interfaces.JsonRpcResponse? = None
-  @async.with_event_loop(_group => {
-    let response = handler.send_request_async(request)
-    result = Some(response)
-  }) catch {
-    @interfaces.TransportError::SendFailed(msg) =>
-      raise @interfaces.TransportError::SendFailed(msg)
-    @interfaces.TransportError::NotStarted =>
-      raise @interfaces.TransportError::NotStarted
-    _ => raise @interfaces.TransportError::SendFailed("Unknown error")
-  }
-  match result {
-    Some(r) => r
-    None => raise @interfaces.TransportError::SendFailed("No response")
-  }
-}
-
-///|
-/// Sync send notification - wraps async with event loop
-pub fn NativeWebSocketTransportHandler::send_notification(
-  self : NativeWebSocketTransportHandler,
-  request : @interfaces.JsonRpcRequest,
-) -> Unit raise @interfaces.TransportError {
-  let handler = self
-  @async.with_event_loop(_group => handler.send_notification_async(request)) catch {
-    _ => ()
-  }
-}
 
 ///|
 /// Implementation of PluginTransportHandler trait
 pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with start(
   self,
 ) {
-  NativeWebSocketTransportHandler::start(self)
+  self.start_async()
 }
 
 ///|
 pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with stop(
   self,
 ) {
-  NativeWebSocketTransportHandler::stop(self)
+  self.stop_async()
 }
 
 ///|
@@ -270,7 +203,7 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
   self,
   request,
 ) {
-  NativeWebSocketTransportHandler::send_request(self, request)
+  self.send_request_async(request)
 }
 
 ///|
@@ -278,7 +211,7 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
   self,
   request,
 ) {
-  NativeWebSocketTransportHandler::send_notification(self, request)
+  self.send_notification_async(request)
 }
 
 ///|
