@@ -326,53 +326,6 @@ fn validate_control_api_access(
   }
 }
 
-///|
-fn read_gateway_status_sync(gateway : @control.Gateway) -> @interfaces.GatewayStatus {
-  gateway.status()
-}
-
-///|
-fn dispatch_outbound_sync(
-  gateway : @control.Gateway,
-  auth : @interfaces.AuthContext,
-  message : @types.OutboundMessage,
-) -> Unit raise @interfaces.ControlError {
-  gateway.dispatch_outbound(auth~, message~)
-}
-
-///|
-fn dispatch_inbound_sync(
-  gateway : @control.Gateway,
-  auth : @interfaces.AuthContext,
-  envelope : @types.InboundEnvelope,
-) -> Unit raise @interfaces.ControlError {
-  gateway.dispatch_inbound(auth~, envelope~)
-}
-
-///|
-async fn read_gateway_status_async(
-  gateway : @control.Gateway,
-) -> @interfaces.GatewayStatus {
-  gateway.status()
-}
-
-///|
-async fn dispatch_outbound_async(
-  gateway : @control.Gateway,
-  auth : @interfaces.AuthContext,
-  message : @types.OutboundMessage,
-) -> Unit raise @interfaces.ControlError {
-  gateway.dispatch_outbound(auth~, message~)
-}
-
-///|
-async fn dispatch_inbound_async(
-  gateway : @control.Gateway,
-  auth : @interfaces.AuthContext,
-  envelope : @types.InboundEnvelope,
-) -> Unit raise @interfaces.ControlError {
-  gateway.dispatch_inbound(auth~, envelope~)
-}
 
 ///|
 pub fn handle_control_api_request(
@@ -396,7 +349,7 @@ pub fn handle_control_api_request(
         }
         return json_response(
           200,
-          status_json(read_gateway_status_sync(gateway)),
+          status_json(gateway.status()),
         )
       } else if path == "/health" {
         match
@@ -410,7 +363,7 @@ pub fn handle_control_api_request(
         }
         return json_response(
           200,
-          health_summary_json(read_gateway_status_sync(gateway)),
+          health_summary_json(gateway.status()),
         )
       } else if path == "/health/live" {
         match
@@ -424,7 +377,7 @@ pub fn handle_control_api_request(
         }
         return json_response(
           200,
-          health_live_json(read_gateway_status_sync(gateway)),
+          health_live_json(gateway.status()),
         )
       } else if path == "/health/ready" {
         match
@@ -438,7 +391,7 @@ pub fn handle_control_api_request(
         }
         return json_response(
           200,
-          health_ready_json(read_gateway_status_sync(gateway)),
+          health_ready_json(gateway.status()),
         )
       } else {
         return error_response(404, "not_found", "Unknown endpoint")
@@ -461,7 +414,7 @@ pub fn handle_control_api_request(
     let outbound = parse_outbound_message(body)
     match outbound {
       Some(msg) =>
-        dispatch_outbound_sync(gateway, auth, msg) catch {
+        gateway.dispatch_outbound(auth~, message=msg) catch {
           e => return control_error_to_response(e)
         }
       None =>
@@ -473,7 +426,7 @@ pub fn handle_control_api_request(
     let envelope = parse_dispatch_envelope(body)
     match envelope {
       Some(env) =>
-        dispatch_inbound_sync(gateway, auth, env) catch {
+        gateway.dispatch_inbound(auth~, envelope=env) catch {
           e => return control_error_to_response(e)
         }
       None =>

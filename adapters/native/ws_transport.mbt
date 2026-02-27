@@ -65,10 +65,23 @@ fn NativeWebSocketTransportHandler::next_request_id(
 }
 
 ///|
-/// Async start - use this directly in async contexts
-pub async fn NativeWebSocketTransportHandler::start_async(
+fn NativeWebSocketTransportHandler::is_active_impl(
   self : NativeWebSocketTransportHandler,
-) -> Unit raise @interfaces.TransportError {
+) -> Bool {
+  match self.state {
+    @plugin_transport.WebSocketState::Connected => self.client.is_connected()
+    _ => false
+  }
+}
+
+// ============================================================================
+// PluginTransportHandler trait implementation
+// ============================================================================
+
+///|
+pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with start(
+  self,
+) {
   match self.state {
     @plugin_transport.WebSocketState::Connected
     | @plugin_transport.WebSocketState::Connecting =>
@@ -92,10 +105,9 @@ pub async fn NativeWebSocketTransportHandler::start_async(
 }
 
 ///|
-/// Async stop - use this directly in async contexts
-pub async fn NativeWebSocketTransportHandler::stop_async(
-  self : NativeWebSocketTransportHandler,
-) -> Unit {
+pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with stop(
+  self,
+) {
   match self.state {
     @plugin_transport.WebSocketState::Connected
     | @plugin_transport.WebSocketState::Connecting => {
@@ -107,23 +119,18 @@ pub async fn NativeWebSocketTransportHandler::stop_async(
 }
 
 ///|
-/// Check if transport is active
-pub fn NativeWebSocketTransportHandler::is_active(
-  self : NativeWebSocketTransportHandler,
-) -> Bool {
-  match self.state {
-    @plugin_transport.WebSocketState::Connected => self.client.is_connected()
-    _ => false
-  }
+pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with is_active(
+  self,
+) {
+  self.is_active_impl()
 }
 
 ///|
-/// Async send request - use this directly in async contexts
-pub async fn NativeWebSocketTransportHandler::send_request_async(
-  self : NativeWebSocketTransportHandler,
-  request : @interfaces.JsonRpcRequest,
-) -> @interfaces.JsonRpcResponse raise @interfaces.TransportError {
-  if not(self.is_active()) {
+pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with send_request(
+  self,
+  request,
+) {
+  if not(self.is_active_impl()) {
     raise @interfaces.TransportError::NotStarted
   }
   let actual_request = match request.id {
@@ -141,12 +148,11 @@ pub async fn NativeWebSocketTransportHandler::send_request_async(
 }
 
 ///|
-/// Async send notification - use this directly in async contexts
-pub async fn NativeWebSocketTransportHandler::send_notification_async(
-  self : NativeWebSocketTransportHandler,
-  request : @interfaces.JsonRpcRequest,
-) -> Unit raise @interfaces.TransportError {
-  if not(self.is_active()) {
+pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with send_notification(
+  self,
+  request,
+) {
+  if not(self.is_active_impl()) {
     raise @interfaces.TransportError::NotStarted
   }
   let request_json = request.to_json().stringify()
@@ -156,69 +162,10 @@ pub async fn NativeWebSocketTransportHandler::send_notification_async(
 }
 
 ///|
-/// Try to receive incoming message (non-blocking)
-pub fn NativeWebSocketTransportHandler::try_receive(
-  self : NativeWebSocketTransportHandler,
-) -> @interfaces.JsonRpcRequest? {
-  self.message_queue.pop()
-}
-
-///|
-/// Register message callback
-pub fn NativeWebSocketTransportHandler::on_message(
-  self : NativeWebSocketTransportHandler,
-  callback : (@interfaces.JsonRpcRequest) -> Unit,
-) -> Unit {
-  self.message_queue.set_callback(callback)
-}
-
-// ============================================================================
-// PluginTransportHandler trait implementation
-// ============================================================================
-
-///|
-/// Implementation of PluginTransportHandler trait
-pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with start(
-  self,
-) {
-  self.start_async()
-}
-
-///|
-pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with stop(
-  self,
-) {
-  self.stop_async()
-}
-
-///|
-pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with is_active(
-  self,
-) {
-  NativeWebSocketTransportHandler::is_active(self)
-}
-
-///|
-pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with send_request(
-  self,
-  request,
-) {
-  self.send_request_async(request)
-}
-
-///|
-pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with send_notification(
-  self,
-  request,
-) {
-  self.send_notification_async(request)
-}
-
-///|
 pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler with try_receive(
   self,
 ) {
-  NativeWebSocketTransportHandler::try_receive(self)
+  self.message_queue.pop()
 }
 
 ///|
@@ -226,5 +173,5 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
   self,
   callback,
 ) {
-  NativeWebSocketTransportHandler::on_message(self, callback)
+  self.message_queue.set_callback(callback)
 }
