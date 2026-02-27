@@ -1,0 +1,487 @@
+///|
+/// REST API Router
+/// Main routing logic for /api/v1/* endpoints
+
+///|
+/// Route handler function type
+pub(all) struct RouteHandler((ApiRequestContext) -> ApiResponse)
+
+///|
+/// Registered routes
+pub(all) struct ApiRouter {
+  /// Plugin handlers
+  plugin_handlers : PluginApiHandlers?
+  /// Prompt handlers
+  prompt_handlers : PromptApiHandlers?
+  /// Settings handlers
+  settings_handlers : SettingsApiHandlers?
+  /// Config handlers
+  config_handlers : ConfigApiHandlers?
+  /// Message provider handlers
+  provider_handlers : ProviderApiHandlers?
+}
+
+///|
+/// Plugin API handlers interface
+pub(all) struct PluginApiHandlers {
+  /// GET /plugins - list all plugins
+  list : RouteHandler
+  /// GET /plugins/{id} - get plugin details
+  get : RouteHandler
+  /// POST /plugins - add plugin from manifest
+  add : RouteHandler
+  /// DELETE /plugins/{id} - remove plugin
+  remove : RouteHandler
+  /// PUT /plugins/{id}/enable - enable plugin
+  enable : RouteHandler
+  /// PUT /plugins/{id}/disable - disable plugin
+  disable : RouteHandler
+  /// POST /plugins/{id}/reload - reload plugin
+  reload : RouteHandler
+  /// POST /plugins/upload - upload plugin ZIP
+  upload : RouteHandler
+  /// GET /plugins/{id}/settings - get plugin settings
+  get_settings : RouteHandler
+  /// PUT /plugins/{id}/settings - update plugin settings
+  update_settings : RouteHandler
+}
+
+///|
+/// Prompt API handlers interface
+pub(all) struct PromptApiHandlers {
+  /// GET /prompts/system - get system prompt
+  get_system : RouteHandler
+  /// PUT /prompts/system - update system prompt
+  update_system : RouteHandler
+  /// GET /prompts/bootstrap - get bootstrap prompt
+  get_bootstrap : RouteHandler
+  /// PUT /prompts/bootstrap - update bootstrap prompt
+  update_bootstrap : RouteHandler
+  /// POST /prompts/bootstrap/append - append to bootstrap
+  append_bootstrap : RouteHandler
+  /// GET /prompts/channels/{name} - get channel prompt
+  get_channel : RouteHandler
+  /// PUT /prompts/channels/{name} - set channel prompt
+  update_channel : RouteHandler
+  /// POST /prompts/channels - create channel prompt
+  create_channel : RouteHandler
+  /// DELETE /prompts/channels/{name} - delete channel prompt
+  delete_channel : RouteHandler
+}
+
+///|
+/// Settings API handlers interface
+pub(all) struct SettingsApiHandlers {
+  /// GET /settings - get all settings
+  get_all : RouteHandler
+  /// PUT /settings - update multiple settings
+  update_all : RouteHandler
+  /// GET /settings/retry - get retry settings
+  get_retry : RouteHandler
+  /// PUT /settings/retry - update retry settings
+  update_retry : RouteHandler
+  /// GET /settings/agent - get agent settings
+  get_agent : RouteHandler
+  /// PUT /settings/agent - update agent settings
+  update_agent : RouteHandler
+  /// GET /settings/model - get model options
+  get_model : RouteHandler
+  /// PUT /settings/model - update model options
+  update_model : RouteHandler
+  /// GET /settings/thinking - get thinking settings
+  get_thinking : RouteHandler
+  /// PUT /settings/thinking - update thinking settings
+  update_thinking : RouteHandler
+  /// GET /settings/providers - list providers
+  list_providers : RouteHandler
+  /// PUT /settings/providers/{name} - update provider
+  update_provider : RouteHandler
+}
+
+///|
+/// Config API handlers interface
+pub(all) struct ConfigApiHandlers {
+  /// GET /config - get current config
+  get : RouteHandler
+  /// PUT /config - update config
+  update : RouteHandler
+  /// POST /config/reload - reload config from file
+  reload : RouteHandler
+  /// GET /config/file - get config file path
+  get_file : RouteHandler
+}
+
+///|
+/// Message Provider API handlers interface
+pub(all) struct ProviderApiHandlers {
+  /// GET /providers - list all providers
+  list : RouteHandler
+  /// GET /providers/{id} - get provider details
+  get : RouteHandler
+  /// POST /providers - add new provider
+  add : RouteHandler
+  /// PUT /providers/{id} - update provider
+  update : RouteHandler
+  /// DELETE /providers/{id} - remove provider
+  remove : RouteHandler
+  /// PUT /providers/{id}/enable - enable provider
+  enable : RouteHandler
+  /// PUT /providers/{id}/disable - disable provider
+  disable : RouteHandler
+  /// POST /providers/{id}/connect - connect provider
+  connect : RouteHandler
+  /// POST /providers/{id}/disconnect - disconnect provider
+  disconnect : RouteHandler
+  /// POST /providers/{id}/test - test provider connection
+  test_connection : RouteHandler
+  /// GET /providers/types - get available provider types
+  get_types : RouteHandler
+  /// GET /providers/schema/{type} - get settings schema for provider type
+  get_schema : RouteHandler
+}
+
+///|
+/// Create empty router
+pub fn ApiRouter::new() -> ApiRouter {
+  {
+    plugin_handlers: None,
+    prompt_handlers: None,
+    settings_handlers: None,
+    config_handlers: None,
+    provider_handlers: None,
+  }
+}
+
+///|
+/// Route an API request
+pub fn ApiRouter::route(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  // Check authorization first
+  match validate_authorization(ctx) {
+    Some(resp) => return resp
+    None => ()
+  }
+  // Route based on first segment
+  if ctx.segments.is_empty() {
+    return api_index_handler(ctx)
+  }
+  let resource = ctx.segments[0]
+  match resource {
+    "plugins" => self.route_plugins(ctx)
+    "prompts" => self.route_prompts(ctx)
+    "settings" => self.route_settings(ctx)
+    "config" => self.route_config(ctx)
+    "providers" => self.route_providers(ctx)
+    _ => error_response(404, "not_found", "Unknown API endpoint: /api/v1/\{resource}")
+  }
+}
+
+///|
+/// API index handler - returns API info
+fn api_index_handler(_ctx : ApiRequestContext) -> ApiResponse {
+  json_response(
+    200,
+    {
+      "version": "v1",
+      "endpoints": Json::array(
+        [
+          "/api/v1/plugins",
+          "/api/v1/prompts",
+          "/api/v1/settings",
+          "/api/v1/config",
+          "/api/v1/providers",
+        ].map(fn(s) { Json::string(s) }),
+      ),
+    },
+  )
+}
+
+///|
+/// Route plugin API requests
+fn ApiRouter::route_plugins(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  match self.plugin_handlers {
+    None => error_response(501, "not_implemented", "Plugin API not configured")
+    Some(handlers) => route_plugin_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route plugin endpoint
+fn route_plugin_endpoint(
+  handlers : PluginApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /plugins
+  if segments.length() == 1 {
+    match meth {
+      "GET" => return (handlers.list.0)(ctx)
+      "POST" => return (handlers.add.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /plugins/upload
+  if segments.length() == 2 && segments[1] == "upload" {
+    if meth == "POST" {
+      return (handlers.upload.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /plugins/{id}
+  if segments.length() == 2 {
+    match meth {
+      "GET" => return (handlers.get.0)(ctx)
+      "DELETE" => return (handlers.remove.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /plugins/{id}/enable, /plugins/{id}/disable, /plugins/{id}/reload
+  if segments.length() == 3 {
+    let action = segments[2]
+    match (meth, action) {
+      ("PUT", "enable") => return (handlers.enable.0)(ctx)
+      ("PUT", "disable") => return (handlers.disable.0)(ctx)
+      ("POST", "reload") => return (handlers.reload.0)(ctx)
+      ("GET", "settings") => return (handlers.get_settings.0)(ctx)
+      ("PUT", "settings") => return (handlers.update_settings.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  error_response(404, "not_found", "Unknown plugin endpoint")
+}
+
+///|
+/// Route prompt API requests
+fn ApiRouter::route_prompts(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  match self.prompt_handlers {
+    None => error_response(501, "not_implemented", "Prompt API not configured")
+    Some(handlers) => route_prompt_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route prompt endpoint
+fn route_prompt_endpoint(
+  handlers : PromptApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /prompts
+  if segments.length() == 1 {
+    return error_response(400, "bad_request", "Specify a prompt type")
+  }
+  // /prompts/system
+  if segments.length() == 2 && segments[1] == "system" {
+    match meth {
+      "GET" => return (handlers.get_system.0)(ctx)
+      "PUT" => return (handlers.update_system.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /prompts/bootstrap
+  if segments.length() == 2 && segments[1] == "bootstrap" {
+    match meth {
+      "GET" => return (handlers.get_bootstrap.0)(ctx)
+      "PUT" => return (handlers.update_bootstrap.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /prompts/bootstrap/append
+  if segments.length() == 3 && segments[1] == "bootstrap" && segments[2] == "append" {
+    if meth == "POST" {
+      return (handlers.append_bootstrap.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /prompts/channels (POST - create)
+  if segments.length() == 2 && segments[1] == "channels" {
+    if meth == "POST" {
+      return (handlers.create_channel.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /prompts/channels/{name}
+  if segments.length() == 3 && segments[1] == "channels" {
+    match meth {
+      "GET" => return (handlers.get_channel.0)(ctx)
+      "PUT" => return (handlers.update_channel.0)(ctx)
+      "DELETE" => return (handlers.delete_channel.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  error_response(404, "not_found", "Unknown prompt endpoint")
+}
+
+///|
+/// Route settings API requests
+fn ApiRouter::route_settings(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  match self.settings_handlers {
+    None =>
+      error_response(501, "not_implemented", "Settings API not configured")
+    Some(handlers) => route_settings_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route settings endpoint
+fn route_settings_endpoint(
+  handlers : SettingsApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /settings
+  if segments.length() == 1 {
+    match meth {
+      "GET" => return (handlers.get_all.0)(ctx)
+      "PUT" => return (handlers.update_all.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /settings/retry, /settings/agent, /settings/model, /settings/thinking
+  if segments.length() == 2 {
+    let setting_type = segments[1]
+    match (meth, setting_type) {
+      ("GET", "retry") => return (handlers.get_retry.0)(ctx)
+      ("PUT", "retry") => return (handlers.update_retry.0)(ctx)
+      ("GET", "agent") => return (handlers.get_agent.0)(ctx)
+      ("PUT", "agent") => return (handlers.update_agent.0)(ctx)
+      ("GET", "model") => return (handlers.get_model.0)(ctx)
+      ("PUT", "model") => return (handlers.update_model.0)(ctx)
+      ("GET", "thinking") => return (handlers.get_thinking.0)(ctx)
+      ("PUT", "thinking") => return (handlers.update_thinking.0)(ctx)
+      ("GET", "providers") => return (handlers.list_providers.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /settings/providers/{name}
+  if segments.length() == 3 && segments[1] == "providers" {
+    if meth == "PUT" {
+      return (handlers.update_provider.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  error_response(404, "not_found", "Unknown settings endpoint")
+}
+
+///|
+/// Route config API requests
+fn ApiRouter::route_config(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  match self.config_handlers {
+    None => error_response(501, "not_implemented", "Config API not configured")
+    Some(handlers) => route_config_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route config endpoint
+fn route_config_endpoint(
+  handlers : ConfigApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /config
+  if segments.length() == 1 {
+    match meth {
+      "GET" => return (handlers.get.0)(ctx)
+      "PUT" => return (handlers.update.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /config/reload
+  if segments.length() == 2 && segments[1] == "reload" {
+    if meth == "POST" {
+      return (handlers.reload.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /config/file
+  if segments.length() == 2 && segments[1] == "file" {
+    if meth == "GET" {
+      return (handlers.get_file.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  error_response(404, "not_found", "Unknown config endpoint")
+}
+
+///|
+/// Route provider API requests
+fn ApiRouter::route_providers(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  match self.provider_handlers {
+    None =>
+      error_response(501, "not_implemented", "Provider API not configured")
+    Some(handlers) => route_provider_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route provider endpoint
+fn route_provider_endpoint(
+  handlers : ProviderApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /providers
+  if segments.length() == 1 {
+    match meth {
+      "GET" => return (handlers.list.0)(ctx)
+      "POST" => return (handlers.add.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /providers/types
+  if segments.length() == 2 && segments[1] == "types" {
+    if meth == "GET" {
+      return (handlers.get_types.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /providers/schema/{type}
+  if segments.length() == 3 && segments[1] == "schema" {
+    if meth == "GET" {
+      return (handlers.get_schema.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /providers/{id}
+  if segments.length() == 2 {
+    match meth {
+      "GET" => return (handlers.get.0)(ctx)
+      "PUT" => return (handlers.update.0)(ctx)
+      "DELETE" => return (handlers.remove.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /providers/{id}/enable, /providers/{id}/disable, etc.
+  if segments.length() == 3 {
+    let action = segments[2]
+    match (meth, action) {
+      ("PUT", "enable") => return (handlers.enable.0)(ctx)
+      ("PUT", "disable") => return (handlers.disable.0)(ctx)
+      ("POST", "connect") => return (handlers.connect.0)(ctx)
+      ("POST", "disconnect") => return (handlers.disconnect.0)(ctx)
+      ("POST", "test") => return (handlers.test_connection.0)(ctx)
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  error_response(404, "not_found", "Unknown provider endpoint")
+}
