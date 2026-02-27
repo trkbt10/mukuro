@@ -13,6 +13,8 @@ warnings = "-29"
 
 options(
   targets: {
+    "alias.mbt": [ "js" ],
+    "alias_test.mbt": [ "js" ],
     "anthropic.mbt": [ "js" ],
     "base.mbt": [ "js" ],
     "fallback.mbt": [ "js" ],

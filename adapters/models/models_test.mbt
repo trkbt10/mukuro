@@ -508,6 +508,59 @@ test "AnthropicProvider::build_request includes temperature" {
   }
 }
 
+///|
+test "AnthropicProvider::with_thinking includes thinking config" {
+  let thinking_config : @types.ThinkingConfig = {
+    enabled: true,
+    level: @types.ThinkingLevel::Medium,
+    budget_tokens: Some(10000),
+  }
+  let provider = AnthropicProvider::new({
+    api_key: "test_key",
+    base_url: "https://api.anthropic.com",
+    api_version: "2023-06-01",
+    timeout_ms: 60000,
+    thinking: Some(thinking_config),
+  })
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::User(content="Think about this", name=None),
+  ]
+  let options = @types.ModelOptions::default()
+  let request = provider.build_request(messages, [], options)
+  match request {
+    { "thinking": Object(thinking_obj), .. } => {
+      match thinking_obj.get("type") {
+        Some(String(t)) => inspect(t, content="enabled")
+        _ => fail("Expected thinking type")
+      }
+      match thinking_obj.get("budget_tokens") {
+        Some(Number(budget, ..)) =>
+          assert_true(budget > 9999.0 && budget < 10001.0)
+        _ => fail("Expected budget_tokens")
+      }
+    }
+    _ => fail("Expected thinking in request")
+  }
+}
+
+///|
+test "AnthropicProvider::build_request without thinking has no thinking field" {
+  let provider = AnthropicProvider::from_api_key("test_key")
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::User(content="Hi", name=None),
+  ]
+  let options = @types.ModelOptions::default()
+  let request = provider.build_request(messages, [], options)
+  match request {
+    Object(obj) =>
+      match obj.get("thinking") {
+        Some(_) => fail("Expected no thinking field")
+        None => ()
+      }
+    _ => fail("Expected object")
+  }
+}
+
 // =============================================================================
 // OpenAI Request Building Tests
 // =============================================================================

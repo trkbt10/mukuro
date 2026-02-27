@@ -9,6 +9,8 @@ pub(all) struct AnthropicConfig {
   api_version : String
   /// タイムアウト（ミリ秒）
   timeout_ms : Int
+  /// Thinking設定（OpenClaw互換）
+  thinking : @types.ThinkingConfig?
 }
 
 ///|
@@ -19,6 +21,22 @@ pub fn AnthropicConfig::default(api_key~ : String) -> AnthropicConfig {
     base_url: "https://api.anthropic.com",
     api_version: "2023-06-01",
     timeout_ms: 60000,
+    thinking: None,
+  }
+}
+
+///|
+/// Create config with thinking enabled
+pub fn AnthropicConfig::with_thinking(
+  api_key~ : String,
+  thinking~ : @types.ThinkingConfig,
+) -> AnthropicConfig {
+  {
+    api_key,
+    base_url: "https://api.anthropic.com",
+    api_version: "2023-06-01",
+    timeout_ms: 60000,
+    thinking: Some(thinking),
   }
 }
 
@@ -106,7 +124,23 @@ pub fn AnthropicProvider::build_request(
   if tools.length() > 0 {
     body = body.set_field("tools", Json::array(tools_json))
   }
-  ignore(self.config)
+  // Thinking設定を追加 (Claude 3.5+)
+  match self.config.thinking {
+    Some(thinking_config) =>
+      if thinking_config.enabled {
+        // Add thinking configuration
+        let thinking_json : Map[String, Json] = {
+          "type": Json::string("enabled"),
+        }
+        match thinking_config.budget_tokens {
+          Some(budget) =>
+            thinking_json["budget_tokens"] = Json::number(budget.to_double())
+          None => ()
+        }
+        body = body.set_field("thinking", Json::object(thinking_json))
+      }
+    None => ()
+  }
   body
 }
 
