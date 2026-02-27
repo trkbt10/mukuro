@@ -132,6 +132,7 @@ test "ConfigValidatorImpl::validate passes valid config" {
     ],
     fallback: @types.FallbackConfig::new(),
     channels: [],
+    thinking: @types.ThinkingConfig::default(),
   }
   validator.validate(config~)
 }
@@ -149,6 +150,7 @@ test "ConfigValidatorImpl::validate rejects negative max_iterations" {
     providers: [],
     fallback: @types.FallbackConfig::new(),
     channels: [],
+    thinking: @types.ThinkingConfig::default(),
   }
   try {
     @interfaces.ConfigValidator::validate(validator, config~)

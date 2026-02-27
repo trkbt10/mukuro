@@ -91,7 +91,7 @@ fn parse_config_json(
     Ok(None) => []
     Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
-  { agent, providers, fallback, channels }
+  { agent, providers, fallback, channels, thinking: @types.ThinkingConfig::default() }
 }
 
 ///|
@@ -313,6 +313,7 @@ fn merge_config_with_env(
     providers: merged_providers,
     fallback: config.fallback,
     channels: config.channels,
+    thinking: config.thinking,
   }
 }
 
@@ -366,7 +367,7 @@ pub impl @interfaces.ConfigLoader for ConfigLoaderImpl with default_config(self)
   ]
   let fallback : @types.FallbackConfig = @types.FallbackConfig::new()
   let channels : Array[@types.ChannelConfig] = []
-  { agent, providers, fallback, channels }
+  { agent, providers, fallback, channels, thinking: @types.ThinkingConfig::default() }
 }
 
 ///|
@@ -562,7 +563,7 @@ pub impl @interfaces.ConfigLoader for FileStoreConfigLoader with default_config(
   ]
   let fallback : @types.FallbackConfig = @types.FallbackConfig::new()
   let channels : Array[@types.ChannelConfig] = []
-  { agent, providers, fallback, channels }
+  { agent, providers, fallback, channels, thinking: @types.ThinkingConfig::default() }
 }
 
 ///|

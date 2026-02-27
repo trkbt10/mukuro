@@ -9,6 +9,72 @@ pub(all) struct ControlApiResponse {
   headers : Map[String, String]
 }
 
+// =============================================================================
+// API v1 State Management
+// =============================================================================
+
+///|
+/// Global API v1 state
+let api_v1_settings_state : @api_settings.SettingsState = @api_settings.SettingsState::new()
+
+///|
+let api_v1_plugins_state : @api_plugins.PluginManagerState = @api_plugins.PluginManagerState::new()
+
+///|
+let api_v1_prompts_state : @api_prompts.PromptState = @api_prompts.PromptState::new()
+let api_v1_providers_state : @api_providers.ProviderManagerState = @api_providers.ProviderManagerState::new()
+
+///|
+/// Get API v1 router with handlers configured
+fn get_api_v1_router() -> @api.ApiRouter {
+  {
+    plugin_handlers: Some(@api_plugins.create_plugin_handlers(api_v1_plugins_state)),
+    prompt_handlers: Some(@api_prompts.create_prompt_handlers(api_v1_prompts_state)),
+    settings_handlers: Some(@api_settings.create_settings_handlers(api_v1_settings_state)),
+    config_handlers: None,
+    provider_handlers: Some(@api_providers.create_provider_handlers(api_v1_providers_state)),
+  }
+}
+
+///|
+/// Initialize API v1 state from config
+pub fn init_api_v1_state(config : @types.MukuroConfig, config_path : String) -> Unit {
+  api_v1_settings_state.init(config, config_path)
+  api_v1_settings_state.set_persister(persist_config_to_file)
+  api_v1_prompts_state.from_config(config)
+  api_v1_plugins_state.init_builtins()
+}
+
+///|
+/// Persist config to file
+fn persist_config_to_file(config : @types.MukuroConfig, path : String) -> Unit {
+  let json = config.to_json()
+  let content = json.stringify(indent=2)
+  write_config_file(path, content)
+}
+
+///|
+/// Write config content to file
+fn write_config_file(path : String, content : String) -> Unit {
+  let cpath = @native.string_to_cstring(path)
+  let mode = @native.string_to_cstring("w")
+  let file = @native.c_fopen(cpath, mode)
+  match file {
+    Some(f) => {
+      let bytes = content.to_bytes()
+      ignore(@native.c_fwrite(bytes, 1, bytes.length(), f))
+      ignore(@native.c_fclose(f))
+    }
+    None => () // Failed to open file, silently ignore
+  }
+}
+
+///|
+/// Convert ApiResponse to ControlApiResponse
+fn api_response_to_control(resp : @api.ApiResponse) -> ControlApiResponse {
+  { status: resp.status, body: resp.body, headers: resp.headers }
+}
+
 ///|
 enum ControlAction {
   ReadStatus
@@ -328,13 +394,33 @@ fn validate_control_api_access(
 
 
 ///|
-pub fn handle_control_api_request(
+pub async fn handle_control_api_request(
   gateway : @control.Gateway,
   meth : @xhttp.RequestMethod,
   path : String,
   headers : Map[String, String],
   body : String,
 ) -> ControlApiResponse {
+  // Route /api/v1/* to API v1 router
+  if path.has_prefix("/api/v1") {
+    // Validate auth first
+    match validate_control_api_auth(gateway, headers) {
+      Some(resp) => return resp
+      None => ()
+    }
+    // Create API context
+    let meth_str = match meth {
+      @xhttp.RequestMethod::Get => "GET"
+      @xhttp.RequestMethod::Post => "POST"
+      @xhttp.RequestMethod::Put => "PUT"
+      @xhttp.RequestMethod::Delete => "DELETE"
+      _ => "GET"
+    }
+    let ctx = @api.ApiRequestContext::new(meth=meth_str, path~, headers~, body~)
+    let router = get_api_v1_router()
+    let resp = router.route(ctx)
+    return api_response_to_control(resp)
+  }
   match meth {
     @xhttp.RequestMethod::Get =>
       if path == "/status" {
@@ -482,7 +568,7 @@ pub fn control_api_healthcheck_message() -> String {
 }
 
 ///|
-pub fn run_control_api_server_blocking(
+pub async fn run_control_api_server_blocking(
   gateway : @control.Gateway,
   host : String,
   port : Int,

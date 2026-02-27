@@ -19,6 +19,7 @@ fn make_test_config() -> @types.MukuroConfig {
     providers: [],
     fallback: @types.FallbackConfig::new(),
     channels: [],
+    thinking: @types.ThinkingConfig::default(),
   }
 }
 

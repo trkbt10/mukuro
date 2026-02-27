@@ -73,19 +73,37 @@ async fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
     _ => return CliResult::Error("Failed to start gateway: unknown error")
   }
   let status = global_gateway.status()
-  if opts.control_api {
-    // Note: Channel pumping disabled in async migration - would need async callback support
-    run_control_api_server_with_tick_blocking(global_gateway, host, port, fn() {
-      true // Just tick without pumping channels for now
-    }) catch {
-      e =>
-        return CliResult::Error("Control API server failed: \{e.to_string()}")
-    }
-    return CliResult::Ok("Control API server stopped")
+
+  // API v1 state を初期化（設定読み込み）
+  let mukuro_config = @config.ConfigLoaderImpl::default().load_from_string(
+    read_config_text_impl(config_path) catch { _ => "{}" },
+  ) catch {
+    _ =>
+      {
+        agent: @types.AgentConfig::default(),
+        providers: [],
+        fallback: @types.FallbackConfig::new(),
+        channels: [],
+        thinking: @types.ThinkingConfig::default(),
+      }
   }
-  CliResult::Ok(
-    "Gateway started (in-process mode):\n  Host: \{host}\n  Port: \{port}\n  Config: \{config_path}\n  State: \{status.state.to_string()}\n  Debug: \{opts.debug}\n\nNote: Gateway runs in-process. Use --daemon for background execution.",
+  init_api_v1_state(mukuro_config, config_path)
+
+  // フォアグラウンドモード: 常にHTTPサーバーを起動してリクエストを受け付ける
+  println(
+    "Gateway started (in-process mode):\n  Host: \{host}\n  Port: \{port}\n  Config: \{config_path}\n  State: \{status.state.to_string()}\n  Debug: \{opts.debug}\n\nPress Ctrl+C to stop.",
   )
+  run_control_api_server_with_tick_blocking(global_gateway, host, port, fn() {
+    // シグナルチェック
+    if @native.has_received_signal() {
+      false
+    } else {
+      true
+    }
+  }) catch {
+    e => return CliResult::Error("Control API server failed: \{e}")
+  }
+  CliResult::Ok("Gateway stopped")
 }
 
 ///|
