@@ -234,11 +234,12 @@ async test "execute_onboard missing api_key" {
 
 ///|
 async test "execute_onboard success with interpolated config" {
+  // Use test-specific output path to avoid polluting user config
   let opts : OnboardOptions = {
     provider: Some("anthropic"),
     api_key: Some("sk-test123"),
     default_model: Some("claude-3"),
-    output_path: None,
+    output_path: Some("/tmp/mukuro-test/onboard-test-config.json"),
   }
   let result = execute_onboard(opts)
   assert_true(
@@ -249,6 +250,12 @@ async test "execute_onboard success with interpolated config" {
         msg.contains("claude-3")
       _ => false
     },
+  )
+  // Cleanup test file
+  ignore(
+    @native.c_remove_file(
+      @native.string_to_cstring("/tmp/mukuro-test/onboard-test-config.json"),
+    ),
   )
 }
 
