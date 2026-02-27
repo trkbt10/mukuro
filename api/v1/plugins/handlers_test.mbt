@@ -7,9 +7,13 @@ fn make_ctx(
   path : String,
   body : String,
 ) -> @api.ApiRequestContext {
-  let headers : Map[String, String] = {}
-  headers["x-mukuro-role"] = "admin"
-  @api.ApiRequestContext::new(meth~, path~, headers~, body~)
+  @api.ApiRequestContext::new(
+    meth~,
+    path~,
+    headers={},
+    body~,
+    role=@api.ApiRole::Admin,
+  )
 }
 
 ///|

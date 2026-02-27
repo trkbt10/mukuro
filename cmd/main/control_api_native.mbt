@@ -92,7 +92,7 @@ fn write_config_file(path : String, content : String) -> Unit {
   let file = @native.c_fopen(cpath, mode)
   match file {
     Some(f) => {
-      let bytes = content.to_bytes()
+      let bytes = @utf8.encode(content)
       ignore(@native.c_fwrite(bytes, 1, bytes.length(), f))
       ignore(@native.c_fclose(f))
     }
@@ -103,21 +103,14 @@ fn write_config_file(path : String, content : String) -> Unit {
 ///|
 /// Convert ApiResponse to ControlApiResponse
 fn api_response_to_control(resp : @api.ApiResponse) -> ControlApiResponse {
-  { status: resp.status, body: resp.body, headers: resp.headers }
-}
-
-///|
-enum ControlAction {
-  ReadStatus
-  ReadHealth
-  Dispatch
+  add_cors_headers({ status: resp.status, body: resp.body, headers: resp.headers })
 }
 
 ///|
 fn json_response(status : Int, body : Json) -> ControlApiResponse {
   let headers : Map[String, String] = {}
   headers["content-type"] = "application/json"
-  { status, body: body.stringify(), headers }
+  add_cors_headers({ status, body: body.stringify(), headers })
 }
 
 ///|
@@ -127,18 +120,6 @@ fn error_response(
   message : String,
 ) -> ControlApiResponse {
   json_response(status, { "error": code, "message": message })
-}
-
-///|
-fn parse_role(headers : Map[String, String]) -> String? {
-  match headers.get("x-mukuro-role") {
-    Some(v) => Some(v.trim(chars=" \t\n\r").to_string().to_lower())
-    None =>
-      match headers.get("X-Mukuro-Role") {
-        Some(v) => Some(v.trim(chars=" \t\n\r").to_string().to_lower())
-        None => None
-      }
-  }
 }
 
 ///|
@@ -182,41 +163,10 @@ fn append_control_api_auth_audit(
 }
 
 ///|
-fn is_action_allowed(role : String, action : ControlAction) -> Bool {
-  match role {
-    "admin" => true
-    "operator" =>
-      match action {
-        ControlAction::ReadStatus => true
-        ControlAction::ReadHealth => true
-        ControlAction::Dispatch => true
-      }
-    "viewer" =>
-      match action {
-        ControlAction::ReadStatus => true
-        ControlAction::ReadHealth => true
-        ControlAction::Dispatch => false
-      }
-    _ => false
-  }
-}
-
-///|
-fn validate_control_api_authorization(
-  headers : Map[String, String],
-  action : ControlAction,
-) -> ControlApiResponse? {
-  let client_id = parse_client_id(headers)
-  match parse_role(headers) {
-    None => None
-    Some(role) =>
-      if is_action_allowed(role, action) {
-        None
-      } else {
-        append_control_api_auth_audit(4, 1, client_id, "forbidden")
-        Some(error_response(403, "forbidden", "Role is not allowed"))
-      }
-  }
+/// All authenticated requests are treated as admin.
+/// Role is NOT read from client headers to prevent role spoofing.
+fn validate_control_api_authorization() -> ControlApiResponse? {
+  None
 }
 
 ///|
@@ -415,14 +365,23 @@ fn validate_control_api_auth(
 fn validate_control_api_access(
   gateway : @control.Gateway,
   headers : Map[String, String],
-  action : ControlAction,
 ) -> ControlApiResponse? {
   match validate_control_api_auth(gateway, headers) {
     Some(resp) => Some(resp)
-    None => validate_control_api_authorization(headers, action)
+    None => validate_control_api_authorization()
   }
 }
 
+
+///|
+/// Add CORS headers to a response
+fn add_cors_headers(resp : ControlApiResponse) -> ControlApiResponse {
+  resp.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
+  resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+  resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Mukuro-Client-Id"
+  resp.headers["Access-Control-Max-Age"] = "3600"
+  resp
+}
 
 ///|
 pub async fn handle_control_api_request(
@@ -432,6 +391,10 @@ pub async fn handle_control_api_request(
   headers : Map[String, String],
   body : String,
 ) -> ControlApiResponse {
+  // Handle CORS preflight
+  if meth is @xhttp.RequestMethod::Options {
+    return add_cors_headers(json_response(204, Json::null()))
+  }
   // Route /api/v1/* to API v1 router
   if path.has_prefix("/api/v1") {
     // Validate auth first
@@ -447,7 +410,13 @@ pub async fn handle_control_api_request(
       @xhttp.RequestMethod::Delete => "DELETE"
       _ => "GET"
     }
-    let ctx = @api.ApiRequestContext::new(meth=meth_str, path~, headers~, body~)
+    let ctx = @api.ApiRequestContext::new(
+      meth=meth_str,
+      path~,
+      headers~,
+      body~,
+      role=@api.ApiRole::Admin,
+    )
     let router = get_api_v1_router()
     let resp = router.route(ctx)
     return api_response_to_control(resp)
@@ -459,7 +428,6 @@ pub async fn handle_control_api_request(
           validate_control_api_access(
             gateway,
             headers,
-            ControlAction::ReadStatus,
           ) {
           Some(resp) => return resp
           None => ()
@@ -473,7 +441,6 @@ pub async fn handle_control_api_request(
           validate_control_api_access(
             gateway,
             headers,
-            ControlAction::ReadHealth,
           ) {
           Some(resp) => return resp
           None => ()
@@ -487,7 +454,6 @@ pub async fn handle_control_api_request(
           validate_control_api_access(
             gateway,
             headers,
-            ControlAction::ReadHealth,
           ) {
           Some(resp) => return resp
           None => ()
@@ -501,7 +467,6 @@ pub async fn handle_control_api_request(
           validate_control_api_access(
             gateway,
             headers,
-            ControlAction::ReadHealth,
           ) {
           Some(resp) => return resp
           None => ()
@@ -520,7 +485,7 @@ pub async fn handle_control_api_request(
     _ => return error_response(405, "method_not_allowed", "Unsupported method")
   }
 
-  match validate_control_api_access(gateway, headers, ControlAction::Dispatch) {
+  match validate_control_api_access(gateway, headers) {
     Some(resp) => return resp
     None => ()
   }
@@ -559,7 +524,7 @@ async fn handle_control_api_dispatch_async(
   headers : Map[String, String],
   body : String,
 ) -> ControlApiResponse {
-  match validate_control_api_access(gateway, headers, ControlAction::Dispatch) {
+  match validate_control_api_access(gateway, headers) {
     Some(resp) => return resp
     None => ()
   }

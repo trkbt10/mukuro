@@ -16,6 +16,7 @@
 #include <time.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <dirent.h>
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -1460,6 +1461,51 @@ int moonbit_write_stdout(const unsigned char* data, int len) {
  */
 int moonbit_fflush_stdout(void) {
     return fflush(stdout);
+}
+
+/*
+ * List directory entries without using shell
+ * Uses opendir/readdir/closedir (POSIX)
+ * path: UTF-16LE encoded directory path
+ * buffer: output buffer for entry names, separated by newlines (UTF-16LE)
+ * buffer_len: buffer size in bytes
+ * returns: number of bytes written, -1 on error
+ */
+int moonbit_list_dir(const char* path_utf16, char* buffer, int buffer_len) {
+    if (!path_utf16 || !buffer || buffer_len <= 0) return -1;
+
+    char path[1024];
+    if (utf16le_to_utf8(path_utf16, path, sizeof(path)) < 0) {
+        return -1;
+    }
+
+    DIR* dir = opendir(path);
+    if (!dir) return -1;
+
+    int written = 0;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        // Skip . and ..
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        int name_len = (int)strlen(entry->d_name);
+        // Each char needs 2 bytes (UTF-16LE) + 2 bytes for newline
+        int needed = (name_len + 1) * 2;
+        if (written + needed >= buffer_len) break;
+
+        // Convert name to UTF-16LE
+        for (int i = 0; i < name_len; i++) {
+            buffer[written++] = (unsigned char)entry->d_name[i];
+            buffer[written++] = 0;
+        }
+        // Add newline
+        buffer[written++] = '\n';
+        buffer[written++] = 0;
+    }
+    closedir(dir);
+    return written;
 }
 
 /* Note: moonbit_get_home_dir, moonbit_get_os_name, moonbit_getenv_safe

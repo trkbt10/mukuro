@@ -73,7 +73,7 @@ pub fn DynamicPluginManagerImpl::scan(
       let dirs = list_fn(self.plugin_dir)
       let plugins : Array[String] = []
       for dir in dirs {
-        if not(dir.has_prefix(".")) {
+        if not(dir.has_prefix(".")) && not(dir.contains("..")) {
           // Check if manifest exists
           let manifest_path = "\{self.plugin_dir}/\{dir}/\{self.manifest_filename}"
           match self.file_exists {
@@ -115,6 +115,8 @@ pub fn DynamicPluginManagerImpl::load_plugin(
             status: @interfaces.PluginStatus::Stopped,
             loaded_at: 0L,
             modified_at: 0L,
+            is_builtin: false,
+            description: manifest.name,
           }
           self.states[manifest.id] = state
         }
@@ -137,14 +139,7 @@ pub fn DynamicPluginManagerImpl::enable(
 ) -> Unit raise {
   match self.states.get(id) {
     Some(state) => {
-      let new_state : @interfaces.PluginState = {
-        id: state.id,
-        enabled: true,
-        auto_start: state.auto_start,
-        status: state.status,
-        loaded_at: state.loaded_at,
-        modified_at: state.modified_at,
-      }
+      let new_state : @interfaces.PluginState = { ..state, enabled: true }
       self.states[id] = new_state
     }
     None => raise @interfaces.PluginManagerError::NotFound(id)
@@ -168,12 +163,9 @@ pub async fn DynamicPluginManagerImpl::disable(
         _ => ()
       }
       let new_state : @interfaces.PluginState = {
-        id: state.id,
+        ..state,
         enabled: false,
-        auto_start: state.auto_start,
         status: @interfaces.PluginStatus::Stopped,
-        loaded_at: state.loaded_at,
-        modified_at: state.modified_at,
       }
       self.states[id] = new_state
     }

@@ -8,9 +8,13 @@ fn make_ctx(
   role : String,
   body : String,
 ) -> ApiRequestContext {
-  let headers : Map[String, String] = {}
-  headers["x-mukuro-role"] = role
-  ApiRequestContext::new(meth~, path~, headers~, body~)
+  ApiRequestContext::new(
+    meth~,
+    path~,
+    headers={},
+    body~,
+    role=ApiRole::from_string(role),
+  )
 }
 
 ///|

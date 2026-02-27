@@ -58,8 +58,42 @@ fn NativeStdioClient::next_request_id(self : NativeStdioClient) -> Int {
 }
 
 ///|
+/// Validate environment variable key - only allow alphanumeric and underscore
+pub fn validate_env_key(
+  key : String,
+) -> Unit raise StdioClientError {
+  if key.length() == 0 {
+    raise StdioClientError::ProcessFailed("Empty environment variable key")
+  }
+  let chars = key.to_array()
+  // First character must be letter or underscore
+  let first = chars[0]
+  if not(
+    (first >= 'a' && first <= 'z') ||
+    (first >= 'A' && first <= 'Z') ||
+    first == '_',
+  ) {
+    raise StdioClientError::ProcessFailed(
+      "Invalid environment variable key: \{key}",
+    )
+  }
+  for c in chars {
+    if not(
+      (c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9') ||
+      c == '_',
+    ) {
+      raise StdioClientError::ProcessFailed(
+        "Invalid character '\{c}' in environment variable key: \{key}",
+      )
+    }
+  }
+}
+
+///|
 /// Escape single quotes for shell
-fn escape_shell_single_quote(s : String) -> String {
+pub fn escape_shell_single_quote(s : String) -> String {
   let parts : Array[String] = s
     .split("'")
     .map(fn(sv) { sv.to_string() })
@@ -72,7 +106,13 @@ fn escape_shell_single_quote(s : String) -> String {
 fn NativeStdioClient::build_pipe_command(
   self : NativeStdioClient,
   input : String,
-) -> String {
+) -> String raise StdioClientError {
+  // Validate command name
+  validate_command_name(self.command) catch {
+    ProcessError::ExecutionFailed(msg) =>
+      raise StdioClientError::ProcessFailed(msg)
+    _ => raise StdioClientError::ProcessFailed("Invalid command")
+  }
   // Escape single quotes in input
   let escaped_input = escape_shell_single_quote(input)
   // Build command with args
@@ -84,12 +124,18 @@ fn NativeStdioClient::build_pipe_command(
   // Add environment variables prefix
   let mut env_prefix = ""
   for key, value in self.env {
+    validate_env_key(key) catch {
+      e => raise e
+    }
     let escaped_value = escape_shell_single_quote(value)
     env_prefix = env_prefix + key + "='" + escaped_value + "' "
   }
   // Add working directory prefix
   let cwd_prefix = match self.cwd {
-    Some(dir) => "cd '" + dir + "' && "
+    Some(dir) => {
+      let escaped_dir = escape_shell_single_quote(dir)
+      "cd '" + escaped_dir + "' && "
+    }
     None => ""
   }
   // Final command: echo 'input' | env command args
@@ -115,7 +161,9 @@ pub fn NativeStdioClient::send_request(
   // Serialize request to JSON
   let request_json = actual_request.to_json().stringify()
   // Build pipe command
-  let cmd = self.build_pipe_command(request_json)
+  let cmd = self.build_pipe_command(request_json) catch {
+    e => raise e
+  }
   // Execute using popen with UTF-8 bytes
   let cmd_bytes = string_to_utf8_cstring(cmd)
   let mode_bytes = string_to_utf8_cstring("r")

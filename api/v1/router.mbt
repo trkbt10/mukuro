@@ -145,6 +145,11 @@ pub fn ApiRouter::new() -> ApiRouter {
 ///|
 /// Route an API request
 pub fn ApiRouter::route(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  // Check body size limit
+  match validate_body_size(ctx.body) {
+    Some(resp) => return resp
+    None => ()
+  }
   // Check authorization first
   match validate_authorization(ctx) {
     Some(resp) => return resp

@@ -174,7 +174,7 @@ fn Gateway::validate_token(
         @interfaces.AuthResult::Authenticated(
           @interfaces.AuthContext::token_only(token),
         )
-      } else if token == cfg.auth_token {
+      } else if @interfaces.constant_time_compare(token, cfg.auth_token) {
         @interfaces.AuthResult::Authenticated(
           @interfaces.AuthContext::token_only(token),
         )

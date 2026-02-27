@@ -268,7 +268,7 @@ pub fn SimpleTokenAuthenticator::validate(
 ) -> PluginAuthResult {
   match self.plugin_tokens.get(plugin_id) {
     Some(expected) =>
-      if token == expected {
+      if constant_time_compare(token, expected) {
         PluginAuthResult::Authenticated
       } else {
         PluginAuthResult::Failed("Invalid token")

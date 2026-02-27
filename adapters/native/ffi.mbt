@@ -105,6 +105,17 @@ pub extern "C" fn c_remove(path : CString) -> Int = "moonbit_remove"
 #borrow(path)
 pub extern "C" fn c_mkdir(path : CString, mode : Int) -> Int = "moonbit_mkdir"
 
+///|
+/// ディレクトリ一覧を取得（シェル不使用、opendir/readdir使用）
+/// buffer: UTF-16LE出力バッファ（エントリ名が改行区切り）
+/// returns: 書き込んだバイト数、エラー時-1
+#borrow(path, buffer)
+pub extern "C" fn c_list_dir(
+  path : CString,
+  buffer : Bytes,
+  buffer_len : Int,
+) -> Int = "moonbit_list_dir"
+
 // ============================================================
 // プロセス実行
 // ============================================================

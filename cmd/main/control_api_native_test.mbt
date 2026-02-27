@@ -1,5 +1,5 @@
 ///|
-fn test_gateway() -> @control.Gateway {
+async fn test_gateway() -> @control.Gateway {
   let gateway = create_global_gateway("test")
   gateway.start(config=@interfaces.GatewayConfig::default()) catch {
     _ => ()
@@ -8,7 +8,7 @@ fn test_gateway() -> @control.Gateway {
 }
 
 ///|
-fn test_gateway_with_auth_token(token : String) -> @control.Gateway {
+async fn test_gateway_with_auth_token(token : String) -> @control.Gateway {
   let gateway = create_global_gateway("test")
   let base_cfg = @interfaces.GatewayConfig::default()
   let cfg : @interfaces.GatewayConfig = { ..base_cfg, auth_token: token }
@@ -19,7 +19,7 @@ fn test_gateway_with_auth_token(token : String) -> @control.Gateway {
 }
 
 ///|
-test "control api status returns running state" {
+async test "control api status returns running state" {
   let gateway = test_gateway()
   let response = handle_control_api_request(
     gateway,
@@ -33,7 +33,7 @@ test "control api status returns running state" {
 }
 
 ///|
-test "control api dispatch validates payload" {
+async test "control api dispatch validates payload" {
   let gateway = test_gateway()
   let response = handle_control_api_request(
     gateway,
@@ -47,7 +47,7 @@ test "control api dispatch validates payload" {
 }
 
 ///|
-test "control api dispatch accepts valid payload without auth token config" {
+async test "control api dispatch accepts valid payload without auth token config" {
   let gateway = test_gateway()
   set_forced_response_for_test(Some("ok"))
   let response = handle_control_api_request(
@@ -63,7 +63,7 @@ test "control api dispatch accepts valid payload without auth token config" {
 }
 
 ///|
-test "control api dispatch outbound validates payload" {
+async test "control api dispatch outbound validates payload" {
   let gateway = test_gateway()
   let response = handle_control_api_request(
     gateway,
@@ -77,7 +77,7 @@ test "control api dispatch outbound validates payload" {
 }
 
 ///|
-test "control api dispatch outbound accepts valid payload" {
+async test "control api dispatch outbound accepts valid payload" {
   let gateway = test_gateway()
   let response = handle_control_api_request(
     gateway,
@@ -91,7 +91,7 @@ test "control api dispatch outbound accepts valid payload" {
 }
 
 ///|
-test "control api unknown path returns 404" {
+async test "control api unknown path returns 404" {
   let gateway = test_gateway()
   let response = handle_control_api_request(
     gateway,
@@ -104,7 +104,7 @@ test "control api unknown path returns 404" {
 }
 
 ///|
-test "control api health live returns status" {
+async test "control api health live returns status" {
   let gateway = test_gateway()
   let response = handle_control_api_request(
     gateway,
@@ -118,7 +118,7 @@ test "control api health live returns status" {
 }
 
 ///|
-test "control api health ready returns status" {
+async test "control api health ready returns status" {
   let gateway = test_gateway()
   let response = handle_control_api_request(
     gateway,
@@ -132,7 +132,7 @@ test "control api health ready returns status" {
 }
 
 ///|
-test "control api status requires auth when token configured" {
+async test "control api status requires auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let response = handle_control_api_request(
     gateway,
@@ -146,7 +146,7 @@ test "control api status requires auth when token configured" {
 }
 
 ///|
-test "control api status accepts bearer auth when token configured" {
+async test "control api status accepts bearer auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
@@ -162,7 +162,7 @@ test "control api status accepts bearer auth when token configured" {
 }
 
 ///|
-test "control api health requires auth when token configured" {
+async test "control api health requires auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let response = handle_control_api_request(
     gateway,
@@ -176,7 +176,7 @@ test "control api health requires auth when token configured" {
 }
 
 ///|
-test "control api health live requires auth when token configured" {
+async test "control api health live requires auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let response = handle_control_api_request(
     gateway,
@@ -190,7 +190,7 @@ test "control api health live requires auth when token configured" {
 }
 
 ///|
-test "control api health ready accepts bearer auth when token configured" {
+async test "control api health ready accepts bearer auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
@@ -206,7 +206,7 @@ test "control api health ready accepts bearer auth when token configured" {
 }
 
 ///|
-test "control api dispatch requires auth when token configured" {
+async test "control api dispatch requires auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let response = handle_control_api_request(
     gateway,
@@ -220,7 +220,7 @@ test "control api dispatch requires auth when token configured" {
 }
 
 ///|
-test "control api dispatch accepts bearer auth when token configured" {
+async test "control api dispatch accepts bearer auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
@@ -238,7 +238,7 @@ test "control api dispatch accepts bearer auth when token configured" {
 }
 
 ///|
-test "control api dispatch outbound requires auth when token configured" {
+async test "control api dispatch outbound requires auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let response = handle_control_api_request(
     gateway,
@@ -252,7 +252,7 @@ test "control api dispatch outbound requires auth when token configured" {
 }
 
 ///|
-test "control api dispatch outbound accepts bearer auth when token configured" {
+async test "control api dispatch outbound accepts bearer auth when token configured" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
@@ -268,7 +268,7 @@ test "control api dispatch outbound accepts bearer auth when token configured" {
 }
 
 ///|
-test "control api viewer role can read status" {
+async test "control api viewer role can read status" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
@@ -284,11 +284,14 @@ test "control api viewer role can read status" {
 }
 
 ///|
-test "control api viewer role cannot dispatch" {
+/// Role header is ignored — all authenticated requests are treated as admin
+/// to prevent role spoofing via client headers.
+async test "control api ignores viewer role header for dispatch" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
   headers["x-mukuro-role"] = "viewer"
+  set_forced_response_for_test(Some("ok"))
   let response = handle_control_api_request(
     gateway,
     @xhttp.RequestMethod::Post,
@@ -296,16 +299,18 @@ test "control api viewer role cannot dispatch" {
     headers,
     "{\"channel\":\"test\",\"chat_id\":\"chat-1\",\"sender_id\":\"u-1\",\"content\":\"hello\"}",
   )
-  assert_eq(response.status, 403)
-  assert_true(response.body.contains("forbidden"))
+  set_forced_response_for_test(None)
+  // Viewer header is ignored — authenticated request succeeds
+  assert_eq(response.status, 200)
 }
 
 ///|
-test "control api viewer role cannot dispatch outbound" {
+async test "control api ignores viewer role header for dispatch outbound" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
   headers["x-mukuro-role"] = "viewer"
+  set_forced_response_for_test(Some("ok"))
   let response = handle_control_api_request(
     gateway,
     @xhttp.RequestMethod::Post,
@@ -313,12 +318,13 @@ test "control api viewer role cannot dispatch outbound" {
     headers,
     "{\"channel\":\"test\",\"chat_id\":\"chat-1\",\"content\":\"hello\"}",
   )
-  assert_eq(response.status, 403)
-  assert_true(response.body.contains("forbidden"))
+  set_forced_response_for_test(None)
+  // Viewer header is ignored — authenticated request succeeds
+  assert_eq(response.status, 200)
 }
 
 ///|
-test "control api operator role can dispatch" {
+async test "control api operator role can dispatch" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
@@ -336,7 +342,8 @@ test "control api operator role can dispatch" {
 }
 
 ///|
-test "control api unknown role is forbidden" {
+/// Unknown role header is ignored — all authenticated requests succeed
+async test "control api ignores unknown role header" {
   let gateway = test_gateway_with_auth_token("secret-token")
   let headers : Map[String, String] = {}
   headers["authorization"] = "Bearer secret-token"
@@ -348,6 +355,6 @@ test "control api unknown role is forbidden" {
     headers,
     "",
   )
-  assert_eq(response.status, 403)
-  assert_true(response.body.contains("forbidden"))
+  // Guest header is ignored — authenticated request succeeds
+  assert_eq(response.status, 200)
 }

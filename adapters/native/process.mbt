@@ -26,18 +26,49 @@ pub fn NativeProcessExecutor::default() -> NativeProcessExecutor {
 }
 
 ///|
+/// Validate command name - reject shell metacharacters and path traversal
+pub fn validate_command_name(
+  command : String,
+) -> Unit raise ProcessError {
+  if command.length() == 0 {
+    raise ProcessError::ExecutionFailed("Empty command name")
+  }
+  let chars = command.to_array()
+  for c in chars {
+    match c {
+      ';' | '&' | '|' | '$' | '`' | '(' | ')' | '{' | '}' | '<' | '>' |
+      '\n' | '\r' | '\'' | '"' | '\\' | '!' | '~' | '*' | '?' | '[' | ']' |
+      '#' => raise ProcessError::ExecutionFailed(
+          "Invalid character '\{c}' in command name: \{command}",
+        )
+      _ => ()
+    }
+  }
+  // Reject path traversal
+  if command.contains("..") {
+    raise ProcessError::ExecutionFailed(
+      "Path traversal not allowed in command name: \{command}",
+    )
+  }
+}
+
+///|
 fn build_command(
   command : String,
   args : Array[String],
   options : @interfaces.ProcessOptions,
-) -> String {
+) -> String raise ProcessError {
+  validate_command_name(command)
   let mut cmd = command
   for arg in args {
-    let escaped = arg.split("'").collect().join("'\\''")
+    let escaped = escape_shell_single_quote(arg)
     cmd = cmd + " '" + escaped + "'"
   }
   match options.cwd {
-    Some(cwd) => cmd = "cd '\{cwd}' && \{cmd}"
+    Some(cwd) => {
+      let escaped_cwd = escape_shell_single_quote(cwd)
+      cmd = "cd '" + escaped_cwd + "' && " + cmd
+    }
     None => ()
   }
   cmd
@@ -51,7 +82,11 @@ pub impl @interfaces.ProcessExecutor for NativeProcessExecutor with exec(
   options~,
 ) {
   ignore(self)
-  let cmd = build_command(command, args, options)
+  let cmd = build_command(command, args, options) catch {
+    ProcessError::ExecutionFailed(msg) =>
+      raise ProcessError::ExecutionFailed(msg)
+    e => raise e
+  }
   match c_popen(string_to_cstring(cmd), string_to_cstring("r")) {
     Some(pipe) => {
       let buffer = Bytes::new(65536)
@@ -100,7 +135,9 @@ pub fn NativeProcessExecutor::shell(
     "sh",
     ["-c", command],
     @interfaces.ProcessOptions::default(),
-  )
+  ) catch {
+    e => raise e
+  }
   match c_popen(string_to_cstring(cmd), string_to_cstring("r")) {
     Some(pipe) => {
       let buffer = Bytes::new(65536)
@@ -126,7 +163,9 @@ pub fn NativeProcessExecutor::command_exists(
   command : String,
 ) -> Bool {
   try {
-    let result = self.shell("command -v '\{command}'")
+    validate_command_name(command)
+    let escaped = escape_shell_single_quote(command)
+    let result = self.shell("command -v '" + escaped + "'")
     result.exit_code == 0
   } catch {
     _ => false

@@ -29,7 +29,13 @@ pub fn NativeFileStore::default() -> NativeFileStore {
 fn NativeFileStore::resolve_path(
   self : NativeFileStore,
   path : String,
-) -> String {
+) -> String raise FileSystemError {
+  // Reject path traversal attempts
+  if path.contains("..") {
+    raise FileSystemError::InvalidPath(
+      "Path traversal not allowed: \{path}",
+    )
+  }
   match self.base_dir {
     Some(base) => if path.has_prefix("/") { path } else { "\{base}/\{path}" }
     None => path
@@ -38,7 +44,11 @@ fn NativeFileStore::resolve_path(
 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with read_file(self, path~) {
-  let resolved = self.resolve_path(path)
+  let resolved = self.resolve_path(path) catch {
+    FileSystemError::InvalidPath(msg) =>
+      raise FileSystemError::InvalidPath(msg)
+    e => raise e
+  }
   let cpath = string_to_cstring(resolved)
   match c_fopen(cpath, string_to_cstring("rb")) {
     Some(file) => {
@@ -66,7 +76,11 @@ pub impl @interfaces.FileStore for NativeFileStore with write_file(
   path~,
   data~,
 ) {
-  let resolved = self.resolve_path(path)
+  let resolved = self.resolve_path(path) catch {
+    FileSystemError::InvalidPath(msg) =>
+      raise FileSystemError::InvalidPath(msg)
+    e => raise e
+  }
   let cpath = string_to_cstring(resolved)
   match c_fopen(cpath, string_to_cstring("wb")) {
     Some(file) => {
@@ -85,13 +99,17 @@ pub impl @interfaces.FileStore for NativeFileStore with write_file(
 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with exists(self, path~) {
-  let resolved = self.resolve_path(path)
+  let resolved = try { self.resolve_path(path) } catch { _ => return false }
   c_access(string_to_cstring(resolved), f_ok) == 0
 }
 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with remove_file(self, path~) {
-  let resolved = self.resolve_path(path)
+  let resolved = self.resolve_path(path) catch {
+    FileSystemError::InvalidPath(msg) =>
+      raise FileSystemError::InvalidPath(msg)
+    e => raise e
+  }
   let result = c_remove(string_to_cstring(resolved))
   if result != 0 {
     raise FileSystemError::IoError("Cannot remove file: \{resolved}")
@@ -100,7 +118,11 @@ pub impl @interfaces.FileStore for NativeFileStore with remove_file(self, path~)
 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with create_dir(self, path~) {
-  let resolved = self.resolve_path(path)
+  let resolved = self.resolve_path(path) catch {
+    FileSystemError::InvalidPath(msg) =>
+      raise FileSystemError::InvalidPath(msg)
+    e => raise e
+  }
   let result = c_mkdir(string_to_cstring(resolved), 493)
   if result != 0 {
     raise FileSystemError::IoError("Cannot create directory: \{resolved}")
@@ -109,29 +131,34 @@ pub impl @interfaces.FileStore for NativeFileStore with create_dir(self, path~) 
 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with list_dir(self, path~) {
-  let resolved = self.resolve_path(path)
-  let command = "ls -1 '\{resolved}' 2>/dev/null"
-  match c_popen(string_to_cstring(command), string_to_cstring("r")) {
-    Some(pipe) => {
-      let buffer = Bytes::new(4096)
-      let bytes_read = c_fread(buffer, 1, 4096, pipe)
-      let _ = c_pclose(pipe)
-      if bytes_read <= 0 {
-        return []
-      }
-      let output_bytes = Bytes::from_iter(buffer[:bytes_read].iter())
-      let output = output_bytes.to_unchecked_string()
-      let result : Array[String] = []
-      for line in output.split("\n") {
-        let s = line.to_string()
-        if s.length() > 0 {
-          result.push(s)
-        }
-      }
-      result
-    }
-    None => raise FileSystemError::IoError("Cannot list directory: \{resolved}")
+  let resolved = self.resolve_path(path) catch {
+    FileSystemError::InvalidPath(msg) =>
+      raise FileSystemError::InvalidPath(msg)
+    e => raise e
   }
+  let buffer = Bytes::new(8192)
+  let bytes_written = c_list_dir(
+    string_to_cstring(resolved),
+    buffer,
+    8192,
+  )
+  if bytes_written < 0 {
+    raise FileSystemError::IoError("Cannot list directory: \{resolved}")
+  }
+  if bytes_written == 0 {
+    return []
+  }
+  // Parse UTF-16LE output separated by newlines
+  let output = Bytes::from_iter(buffer[:bytes_written].iter())
+    .to_unchecked_string()
+  let result : Array[String] = []
+  for line in output.split("\n") {
+    let s = line.to_string()
+    if s.length() > 0 {
+      result.push(s)
+    }
+  }
+  result
 }
 
 ///|
@@ -140,7 +167,9 @@ pub fn NativeFileStore::read_text(
   path : String,
 ) -> String raise FileSystemError {
   // Re-call the implementation directly to get correct error type
-  let resolved = self.resolve_path(path)
+  let resolved = self.resolve_path(path) catch {
+    e => raise e
+  }
   let cpath = string_to_cstring(resolved)
   match c_fopen(cpath, string_to_cstring("rb")) {
     Some(file) => {

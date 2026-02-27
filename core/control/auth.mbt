@@ -27,12 +27,12 @@ pub impl @interfaces.Authenticator for SimpleTokenAuthenticator with validate(
 ) {
   // 無効化済みトークンのチェック
   for revoked in self.revoked_tokens {
-    if token == revoked {
+    if @interfaces.constant_time_compare(token, revoked) {
       return @interfaces.AuthResult::Denied("Token has been revoked")
     }
   }
   // トークンの検証
-  if token == self.valid_token {
+  if @interfaces.constant_time_compare(token, self.valid_token) {
     @interfaces.AuthResult::Authenticated(
       @interfaces.AuthContext::token_only(token),
     )

@@ -35,5 +35,8 @@ options(
     "ws_e2e_test.mbt": [ "native" ],
     "ws_server.mbt": [ "native" ],
     "ws_transport.mbt": [ "native" ],
+    "process_security_test.mbt": [ "native" ],
+    "stdio_security_test.mbt": [ "native" ],
+    "filesystem_security_test.mbt": [ "native" ],
   },
 )
