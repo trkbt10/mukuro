@@ -1,0 +1,14 @@
+{
+  "name": "mukuro-web",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["client", "dashboard"],
+  "scripts": {
+    "dev": "bun run --cwd dashboard dev",
+    "start": "bun run --cwd dashboard start",
+    "build": "bun run --cwd client build && bun run --cwd dashboard build",
+    "test": "bun run --cwd client test && bun run --cwd dashboard test",
+    "lint": "bun run --cwd client lint && bun run --cwd dashboard lint"
+  },
+  "devDependencies": {}
+}

@@ -18,3 +18,9 @@ reference
 *.p12
 *.crt
 *.cer
+
+# Node / Web
+node_modules/
+dist/
+bun.lock
+*.tsbuildinfo
