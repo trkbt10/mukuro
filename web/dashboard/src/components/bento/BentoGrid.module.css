@@ -1,0 +1,244 @@
+/* ============================================
+   BentoGrid — CSS Grid Layout Container
+   ============================================ */
+
+.grid {
+  display: grid;
+  gap: var(--bento-gap, var(--mk-space-xl));
+}
+
+.grid[data-square-cells="true"] {
+  grid-auto-rows: var(--bento-cell-size, 140px);
+}
+
+/* ============================================
+   BentoBlock — Positioning wrapper only
+   No visual styling — SvgCardShell manages appearance.
+   ============================================ */
+
+.block {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+/* Size variants via data attribute */
+.block[data-size="1x1"] { grid-column: span 1; grid-row: span 1; }
+.block[data-size="2x1"] { grid-column: span 2; grid-row: span 1; }
+.block[data-size="1x2"] { grid-column: span 1; grid-row: span 2; }
+.block[data-size="2x2"] { grid-column: span 2; grid-row: span 2; }
+.block[data-size="3x1"] { grid-column: span 3; grid-row: span 1; }
+.block[data-size="4x1"] { grid-column: span 4; grid-row: span 1; }
+
+/* ============================================
+   Entrance animation — spring-like feel
+   ============================================ */
+
+@keyframes block-enter {
+  0%  { opacity: 0; transform: scale(0.92); }
+  60% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.block[data-entering="true"] {
+  animation: block-enter 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ============================================
+   Jiggle animation — iOS home screen edit mode
+   ============================================ */
+
+@keyframes jiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-0.7deg); }
+  75%      { transform: rotate(0.7deg); }
+}
+
+.block[data-jiggle="true"] {
+  animation: jiggle 0.3s ease-in-out infinite;
+}
+
+.block[data-jiggle="true"]:nth-child(2n) {
+  animation-duration: 0.35s;
+  animation-delay: 0.05s;
+}
+
+.block[data-jiggle="true"]:nth-child(3n) {
+  animation-duration: 0.28s;
+  animation-delay: 0.1s;
+}
+
+.block[data-dragging="true"] {
+  animation: none;
+  opacity: 0.5;
+}
+
+/* ============================================
+   Droppable cell (edit mode grid overlay)
+   Radius matches SvgCardShell (--mk-radius-xl)
+   ============================================ */
+
+.droppableCell {
+  border-radius: var(--mk-radius-xl, 24px);
+  border: 1.5px dashed rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.015);
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.droppableCell[data-empty="true"] {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.droppableCell[data-over="true"] {
+  background: rgba(108, 138, 255, 0.18);
+  border-color: rgba(108, 138, 255, 0.5);
+}
+
+.emptyCellHint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.18);
+  transition: color 200ms ease;
+}
+
+.droppableCell:hover .emptyCellHint {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.droppableCell[data-over="true"] .emptyCellHint {
+  color: rgba(108, 138, 255, 0.6);
+}
+
+/* ============================================
+   Resize handle (edit mode, bottom-right)
+   ============================================ */
+
+.resizeHandle {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: nwse-resize;
+  z-index: 5;
+  transition: background 150ms ease, color 150ms ease;
+  touch-action: none;
+}
+
+.resizeHandle:hover {
+  background: rgba(108, 138, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================
+   Remove button (edit mode, top-left)
+   ============================================ */
+
+.removeButton {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: var(--mk-bg-surface-overlay, #31323b);
+  color: var(--mk-text-secondary, #9d9da8);
+  cursor: pointer;
+  z-index: 5;
+  font-size: 11px;
+  line-height: 1;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.removeButton:hover {
+  background: var(--mk-error, #ff7070);
+  color: white;
+}
+
+/* ============================================
+   Block picker popover
+   ============================================ */
+
+.blockPicker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  background: var(--mk-bg-surface-overlay, #31323b);
+  border: 1px solid var(--mk-border-strong, rgba(255, 255, 255, 0.14));
+  border-radius: var(--mk-radius-md, 14px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.blockPickerItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--mk-radius-sm, 8px);
+  background: transparent;
+  color: var(--mk-text-primary, #e4e4e8);
+  font-size: var(--mk-font-size-sm, 11px);
+  cursor: pointer;
+  text-align: left;
+  transition: background 150ms ease;
+}
+
+.blockPickerItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.blockPickerIcon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(108, 138, 255, 0.12);
+  color: var(--mk-accent, #6c8aff);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.blockPickerEmpty {
+  padding: 12px 10px;
+  color: var(--mk-text-muted, #64646e);
+  font-size: var(--mk-font-size-sm, 11px);
+  text-align: center;
+}
+
+/* ============================================
+   Responsive: 2-column on narrow screens
+   ============================================ */
+
+@media (max-width: 640px) {
+  .block[data-size="2x1"],
+  .block[data-size="2x2"] { grid-column: span 2; }
+  .block[data-size="3x1"],
+  .block[data-size="4x1"] { grid-column: span 2; }
+}

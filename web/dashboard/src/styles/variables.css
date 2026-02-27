@@ -1,44 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&display=swap');
+
 :root {
-  /* === Figma/Adobe Dark-Neutral Palette === */
+  /* === Warm Dark Bento Palette === */
 
-  /* Backgrounds */
-  --mk-bg-base: #1e1e1e;
-  --mk-bg-surface: #252526;
-  --mk-bg-surface-raised: #2d2d2d;
-  --mk-bg-surface-overlay: #333333;
-  --mk-bg-surface-hover: #383838;
-  --mk-bg-surface-active: #3e3e3e;
+  /* Backgrounds — slightly warm undertone */
+  --mk-bg-base: #191a1f;
+  --mk-bg-surface: #22232a;
+  --mk-bg-surface-raised: #2a2b33;
+  --mk-bg-surface-overlay: #31323b;
+  --mk-bg-surface-hover: #363742;
+  --mk-bg-surface-active: #3d3e4a;
 
-  /* Borders */
-  --mk-border-default: #3e3e3e;
-  --mk-border-subtle: #333333;
-  --mk-border-strong: #555555;
+  /* Borders — softer, warmer */
+  --mk-border-default: rgba(255, 255, 255, 0.08);
+  --mk-border-subtle: rgba(255, 255, 255, 0.05);
+  --mk-border-strong: rgba(255, 255, 255, 0.14);
 
   /* Text */
-  --mk-text-primary: #cccccc;
-  --mk-text-secondary: #999999;
-  --mk-text-muted: #666666;
+  --mk-text-primary: #e4e4e8;
+  --mk-text-secondary: #9d9da8;
+  --mk-text-muted: #64646e;
   --mk-text-on-emphasis: #ffffff;
 
-  /* Accent (used sparingly) */
-  --mk-accent: #007acc;
-  --mk-accent-hover: #0098ff;
-  --mk-accent-active: #005a9e;
-  --mk-accent-subtle: rgba(0, 122, 204, 0.15);
+  /* Accent — warm blue-violet */
+  --mk-accent: #6c8aff;
+  --mk-accent-hover: #8ba3ff;
+  --mk-accent-active: #5470e0;
+  --mk-accent-subtle: rgba(108, 138, 255, 0.12);
 
-  /* Semantic */
-  --mk-success: #4ec9b0;
-  --mk-success-subtle: rgba(78, 201, 176, 0.15);
-  --mk-warning: #cca700;
-  --mk-warning-subtle: rgba(204, 167, 0, 0.15);
-  --mk-error: #f14c4c;
-  --mk-error-subtle: rgba(241, 76, 76, 0.15);
-  --mk-info: #3794ff;
-  --mk-info-subtle: rgba(55, 148, 255, 0.15);
+  /* Semantic — softer, friendlier palette */
+  --mk-success: #5ddeb0;
+  --mk-success-subtle: rgba(93, 222, 176, 0.12);
+  --mk-warning: #f0c245;
+  --mk-warning-subtle: rgba(240, 194, 69, 0.12);
+  --mk-error: #ff7070;
+  --mk-error-subtle: rgba(255, 112, 112, 0.12);
+  --mk-info: #64b5f6;
+  --mk-info-subtle: rgba(100, 181, 246, 0.12);
 
   /* Typography */
-  --mk-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  --mk-font-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --mk-font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mk-font-mono: "SF Mono", Monaco, "Cascadia Code", "Fira Code",
     "Courier New", monospace;
   --mk-font-size-xs: 10px;
@@ -48,6 +52,7 @@
   --mk-font-size-xl: 14px;
   --mk-font-size-2xl: 16px;
   --mk-font-size-3xl: 20px;
+  --mk-font-size-4xl: 28px;
 
   /* Spacing */
   --mk-space-xs: 2px;
@@ -57,6 +62,20 @@
   --mk-space-xl: 16px;
   --mk-space-2xl: 24px;
   --mk-space-3xl: 32px;
+
+  /* Bento radii */
+  --mk-radius-sm: 8px;
+  --mk-radius-md: 14px;
+  --mk-radius-lg: 20px;
+  --mk-radius-xl: 24px;
+
+  /* Bento shadows — matches reference card shell */
+  --mk-shadow-bento:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  --mk-shadow-bento-hover:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.06);
 
   /* Layout */
   --mk-sidebar-width: 200px;

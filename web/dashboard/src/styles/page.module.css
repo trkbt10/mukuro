@@ -51,15 +51,16 @@
   padding: var(--mk-space-xl);
   background: var(--mk-bg-surface);
   border: 1px solid var(--mk-border-default);
+  border-radius: var(--mk-radius-lg);
 }
 
 .statIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 3px;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--mk-radius-md);
   flex-shrink: 0;
 }
 

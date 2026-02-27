@@ -15,7 +15,7 @@ export function StatCard({ label, value, icon: Icon, iconBg, iconColor = 'white'
       <div className={styles.statIcon} style={{ background: iconBg }}>
         <Icon style={{ width: 20, height: 20, color: iconColor }} />
       </div>
-      <div>
+      <div className={styles.statBody}>
         <p className={styles.statLabel}>{label}</p>
         <p className={styles.statValue}>{value}</p>
       </div>

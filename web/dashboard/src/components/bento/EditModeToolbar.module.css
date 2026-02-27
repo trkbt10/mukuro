@@ -1,0 +1,50 @@
+.toolbar {
+  display: flex;
+  gap: var(--mk-space-sm);
+  position: absolute;
+  top: var(--mk-space-md);
+  right: var(--mk-space-md);
+  z-index: 20;
+}
+
+.toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--mk-radius-sm);
+  font-size: var(--mk-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+.editButton {
+  background: var(--mk-bg-elevated);
+  color: var(--mk-text-secondary);
+}
+
+.editButton:hover {
+  background: var(--mk-bg-hover);
+  color: var(--mk-text-primary);
+}
+
+.doneButton {
+  background: var(--mk-accent);
+  color: white;
+}
+
+.doneButton:hover {
+  background: var(--mk-accent-hover);
+}
+
+.resetButton {
+  background: var(--mk-bg-elevated);
+  color: var(--mk-text-secondary);
+}
+
+.resetButton:hover {
+  background: var(--mk-bg-hover);
+  color: var(--mk-text-primary);
+}

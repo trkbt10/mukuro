@@ -1,85 +1,120 @@
-.page { composes: page from '@/styles/page.module.css'; }
-.pageTitle { composes: pageTitle from '@/styles/page.module.css'; }
-.pageDesc { composes: pageDesc from '@/styles/page.module.css'; }
-
-.statGrid {
-  display: grid;
-  gap: var(--mk-space-lg);
-  grid-template-columns: repeat(4, 1fr);
+/* ── Dashboard bento page ── */
+.page {
+  composes: page from '@/styles/page.module.css';
+  /* Use consistent spacing: grid gap is derived from cell size (~12px).
+     Page padding should be slightly larger to frame the grid. */
+  padding: var(--mk-space-xl);
 }
 
-@media (max-width: 900px) {
-  .statGrid { grid-template-columns: repeat(2, 1fr); }
+.gridWrapper {
+  position: relative;
+  width: 100%;
 }
 
-.contentGrid {
-  display: grid;
-  gap: var(--mk-space-xl);
-  grid-template-columns: repeat(2, 1fr);
+/* ── HTML overlay layer (positioned over SVG) ── */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
 }
 
-@media (max-width: 900px) {
-  .contentGrid { grid-template-columns: 1fr; }
+.overlay > * {
+  pointer-events: auto;
+}
+
+/* ── Plugin list overlay ── */
+.pluginListOverlay {
+  position: absolute;
+  /* Offset to skip the title area rendered in SVG */
+  top: 22%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8%;
+  overflow-y: auto;
 }
 
 .pluginRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--mk-space-md) var(--mk-space-lg);
-  border: 1px solid var(--mk-border-subtle);
+  padding: 4% 3%;
+  border-radius: var(--mk-radius-sm);
   cursor: pointer;
-  transition: background-color 150ms;
+  transition: background-color 150ms ease;
+  text-decoration: none;
+  color: inherit;
 }
 
 .pluginRow:hover {
-  background: var(--mk-bg-surface-hover);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pluginInfo {
+  display: flex;
+  align-items: center;
+  gap: 6%;
+  min-width: 0;
+}
+
+.pluginDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pluginDotOn {
+  composes: pluginDot;
+  background: var(--mk-success);
+}
+
+.pluginDotOff {
+  composes: pluginDot;
+  background: var(--mk-text-muted);
 }
 
 .pluginName {
   font-size: var(--mk-font-size-lg);
   font-weight: 500;
   color: var(--mk-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pluginVersion {
   font-size: var(--mk-font-size-sm);
-  color: var(--mk-text-secondary);
+  color: var(--mk-text-muted);
+  font-family: var(--mk-font-mono);
+  flex-shrink: 0;
 }
 
-.pluginList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-sm);
+.linkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mk-font-size-md);
+  font-weight: 600;
+  color: var(--mk-accent);
+  padding: 3% 3%;
+  margin-top: auto;
 }
 
-.settingsItem {
+.linkRow:hover {
+  color: var(--mk-accent-hover);
+}
+
+/* ── Empty state ── */
+.emptyState {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.settingsLabel {
-  font-size: var(--mk-font-size-md);
-  font-weight: 500;
-  color: var(--mk-text-primary);
-}
-
-.settingsValue {
-  font-size: var(--mk-font-size-md);
-  color: var(--mk-text-secondary);
-}
-
-.settingsList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--mk-space-lg);
-}
-
-.emptyState { composes: emptyStateInline from '@/styles/page.module.css'; }
-
-.viewAllLink {
-  display: block;
-  text-align: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--mk-text-muted);
   font-size: var(--mk-font-size-md);
 }

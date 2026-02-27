@@ -1,4 +1,43 @@
-.statCard { composes: statCard from '@/styles/page.module.css'; }
-.statIcon { composes: statIcon from '@/styles/page.module.css'; }
-.statLabel { composes: statLabel from '@/styles/page.module.css'; }
-.statValue { composes: statValue from '@/styles/page.module.css'; }
+/* ── Bento-style StatCard ── */
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-lg);
+  height: 100%;
+}
+
+.statIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--mk-radius-md);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.statBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.statLabel {
+  font-family: var(--mk-font-display);
+  font-size: var(--mk-font-size-sm);
+  font-weight: 500;
+  color: var(--mk-text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.statValue {
+  font-family: var(--mk-font-display);
+  font-size: var(--mk-font-size-3xl);
+  font-weight: 700;
+  color: var(--mk-text-primary);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}

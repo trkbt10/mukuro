@@ -35,6 +35,12 @@ export {
 
 export { useConnection, type ConnectionStatus } from './useConnection';
 
+export { useResponsiveColumns } from './useResponsiveColumns';
+export { useDashboardLayout } from './useDashboardLayout';
+export { useEditMode } from './useEditMode';
+export { useLongPress } from './useLongPress';
+export { useEditDragAndDrop } from './useEditDragAndDrop';
+
 export {
   useProviders as useMessageProviders,
   useProvider as useMessageProvider,
