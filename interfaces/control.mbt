@@ -3,6 +3,14 @@
 /// GatewayServiceを中心とした統合制御を提供する
 
 ///|
+/// デフォルトポート: 6960 = むくろ
+pub let gateway_default_port : Int = 6960
+
+///|
+/// デフォルトホスト
+pub let gateway_default_host : String = "127.0.0.1"
+
+///|
 /// Gateway状態
 pub(all) enum GatewayState {
   /// 停止中
@@ -174,8 +182,8 @@ pub(all) struct GatewayConfig {
 /// デフォルトのGateway設定
 pub fn GatewayConfig::default() -> GatewayConfig {
   {
-    host: "127.0.0.1",
-    port: 8080,
+    host: gateway_default_host,
+    port: gateway_default_port,
     auth_token: "",
     health_endpoint: HealthEndpointConfig::default(),
     auto_connect_channels: true,

@@ -253,6 +253,17 @@ pub(all) enum PluginStatus {
 }
 
 ///|
+/// Convert PluginStatus to string
+pub fn PluginStatus::to_string(self : PluginStatus) -> String {
+  match self {
+    PluginStatus::Stopped => "stopped"
+    PluginStatus::Starting => "starting"
+    PluginStatus::Running => "running"
+    PluginStatus::Error(msg) => "error: \{msg}"
+  }
+}
+
+///|
 /// Plugin instance
 pub(all) struct PluginInstance {
   /// Plugin manifest

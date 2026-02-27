@@ -27,6 +27,10 @@ pub(all) struct PluginState {
   loaded_at : Int64
   /// Last modified timestamp
   modified_at : Int64
+  /// Whether this is a builtin tool (cannot be removed)
+  is_builtin : Bool
+  /// Description of the plugin/tool
+  description : String
 }
 
 ///|
@@ -39,6 +43,23 @@ pub fn PluginState::default(id~ : String) -> PluginState {
     status: PluginStatus::Stopped,
     loaded_at: 0L,
     modified_at: 0L,
+    is_builtin: false,
+    description: "",
+  }
+}
+
+///|
+/// Create builtin plugin state
+pub fn PluginState::builtin(id~ : String, description~ : String) -> PluginState {
+  {
+    id,
+    enabled: true,
+    auto_start: true,
+    status: PluginStatus::Running,
+    loaded_at: 0L,
+    modified_at: 0L,
+    is_builtin: true,
+    description,
   }
 }
 
