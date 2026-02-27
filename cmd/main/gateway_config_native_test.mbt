@@ -1,17 +1,26 @@
 ///|
 /// gateway --config (native) テスト
 ///
-/// NOTE: These tests are DISABLED because execute_gateway_start() calls
-/// run_control_api_server_with_tick_blocking() which blocks forever.
-/// Gateway start testing requires either:
-/// 1. Daemon mode (background process)
-/// 2. Non-blocking architecture for in-process mode
-/// 3. Integration tests with process management
+/// NOTE: execute_gateway_start() calls run_control_api_server_with_tick_blocking()
+/// which blocks forever. Unit tests should NOT call execute_gateway_start().
 ///
-/// The config loading itself is tested via load_gateway_config_impl() directly.
+/// For config loading, use load_gateway_config_impl() directly.
+/// For Gateway initialization, use global_gateway.start() directly.
+///
+/// IMPORTANT: Tests use /tmp/mukuro-test/ to avoid polluting user config.
+
+///|
+/// テスト用一時ディレクトリ（ユーザー設定を汚染しない）
+let test_config_dir : String = "/tmp/mukuro-test"
+
+///|
+fn ensure_test_dir() -> Unit {
+  ignore(@native.c_mkdir(@native.string_to_cstring(test_config_dir), 493))
+}
 
 ///|
 fn write_test_config(path : String, json : String) -> Bool {
+  ensure_test_dir()
   let result = @native.c_write_text_file(
     @native.string_to_cstring(path),
     @native.string_to_cstring(json),
@@ -26,7 +35,7 @@ fn cleanup_test_file(path : String) -> Unit {
 
 ///|
 test "load_gateway_config_impl loads config file correctly" {
-  let path = ".mukuro/test-gateway-config.json"
+  let path = "\{test_config_dir}/test-gateway-config.json"
   let json = "{\n  \"gateway\": {\n    \"host\": \"0.0.0.0\",\n    \"port\": 9123,\n    \"auth_token\": \"test-token\",\n    \"auto_connect_channels\": false\n  }\n}"
   assert_true(write_test_config(path, json))
   let config = load_gateway_config_impl(path) catch {
@@ -43,7 +52,7 @@ test "load_gateway_config_impl loads config file correctly" {
 ///|
 test "load_gateway_config_impl returns error for missing config file" {
   let result : Result[@interfaces.GatewayConfig, @interfaces.ControlError] = Ok(
-    load_gateway_config_impl(".mukuro/not-found-config.json"),
+    load_gateway_config_impl("\{test_config_dir}/not-found-config.json"),
   ) catch {
     e => Err(e)
   }
@@ -55,3 +64,4 @@ test "load_gateway_config_impl returns error for missing config file" {
     },
   )
 }
+

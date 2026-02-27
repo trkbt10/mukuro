@@ -56,8 +56,8 @@ test "AuthContext::new" {
 ///|
 test "GatewayConfig::default" {
   let cfg = @interfaces.GatewayConfig::default()
-  assert_eq(cfg.host, "127.0.0.1")
-  assert_eq(cfg.port, 8080)
+  assert_eq(cfg.host, @interfaces.gateway_default_host)
+  assert_eq(cfg.port, @interfaces.gateway_default_port)
   assert_eq(cfg.auth_token, "")
   assert_true(cfg.auto_connect_channels)
 }
