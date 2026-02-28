@@ -6,7 +6,7 @@ export interface ToggleProps {
   disabled?: boolean;
   label?: string;
   description?: string;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
 }
 
 export function Toggle({
@@ -29,21 +29,15 @@ export function Toggle({
     .filter(Boolean)
     .join(' ');
 
-  const trackCls = [
-    styles.track,
-    size === 'sm' ? styles.trackSm : styles.trackMd,
-    checked ? styles.trackOn : styles.trackOff,
-  ].join(' ');
+  const trackSizeClass =
+    size === 'xs' ? styles.trackXs : size === 'sm' ? styles.trackSm : styles.trackMd;
+  const thumbSizeClass =
+    size === 'xs' ? styles.thumbXs : size === 'sm' ? styles.thumbSm : styles.thumbMd;
+  const thumbOnClass =
+    size === 'xs' ? styles.thumbOnXs : size === 'sm' ? styles.thumbOnSm : styles.thumbOnMd;
 
-  const thumbCls = [
-    styles.thumb,
-    size === 'sm' ? styles.thumbSm : styles.thumbMd,
-    checked
-      ? size === 'sm'
-        ? styles.thumbOnSm
-        : styles.thumbOnMd
-      : styles.thumbOff,
-  ].join(' ');
+  const trackCls = [styles.track, trackSizeClass, checked ? styles.trackOn : styles.trackOff].join(' ');
+  const thumbCls = [styles.thumb, thumbSizeClass, checked ? thumbOnClass : styles.thumbOff].join(' ');
 
   return (
     <div className={wrapperCls}>

@@ -50,6 +50,12 @@
   padding-left: calc(var(--mk-space-md) + 32px);
 }
 
+.sectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .userSection {
   border-top: 1px solid var(--mk-border-default);
   padding: var(--mk-space-md) var(--mk-space-lg);

@@ -31,8 +31,8 @@ import {
 } from 'lucide-react';
 import { TreeItem } from 'react-editor-ui';
 import { LayerItem } from 'react-editor-ui/LayerItem';
-import { Badge, IconButton } from '@/components/ui';
-import { usePlugins, useMessageProviders, useContextFiles, useAiProviders } from '@/hooks';
+import { Badge, IconButton, Toggle } from '@/components/ui';
+import { usePlugins, useEnablePlugin, useDisablePlugin, useMessageProviders, useContextFiles, useAiProviders } from '@/hooks';
 import { useConnection, type ConnectionStatus } from '@/hooks/useConnection';
 import styles from './Sidebar.module.css';
 
@@ -129,6 +129,8 @@ export function Sidebar() {
   const { pathname } = useLocation();
 
   const { data: plugins, refetch: refetchPlugins } = usePlugins();
+  const enablePlugin = useEnablePlugin();
+  const disablePlugin = useDisablePlugin();
   const { data: providers, refetch: refetchProviders } = useMessageProviders();
   const { data: contextFiles } = useContextFiles();
   const { data: aiProviders } = useAiProviders();
@@ -196,34 +198,39 @@ export function Sidebar() {
           onPointerDown={() => navigate('/plugins')}
           showVisibilityToggle={false}
           showLockToggle={false}
-          badge={<Badge variant="default" size="sm">{plugins?.length ?? 0}</Badge>}
+          badge={
+            <span className={styles.sectionBadge}>
+              <Badge variant="default" size="sm">{plugins?.length ?? 0}</Badge>
+              <IconButton icon={<RefreshCw style={{ width: 11, height: 11 }} />} aria-label="Refresh plugins" onClick={(e) => { e.stopPropagation(); refetchPlugins(); }} variant="ghost" size="sm" />
+              <IconButton icon={<Upload style={{ width: 11, height: 11 }} />} aria-label="Upload plugin" onClick={(e) => { e.stopPropagation(); navigate('/plugins'); }} variant="ghost" size="sm" />
+            </span>
+          }
         />
-        {expanded.has('plugins') && (
-          <>
-            {plugins?.map((p) => (
-              <LayerItem
-                key={p.id}
-                id={`plugin-${p.id}`}
-                label={p.name}
-                icon={p.is_builtin ? <PackageCheck style={smallIcon} /> : <Puzzle style={smallIcon} />}
-                depth={1}
-                selected={pathname === `/plugins/${p.id}`}
-                onPointerDown={() => navigate(`/plugins/${p.id}`)}
-                showVisibilityToggle={false}
-                showLockToggle={false}
-                badge={
-                  <Badge variant={p.enabled ? 'success' : 'default'} size="sm">
-                    {p.enabled ? 'On' : 'Off'}
-                  </Badge>
-                }
-              />
-            ))}
-            <div className={styles.sectionActions}>
-              <IconButton icon={<RefreshCw style={{ width: 12, height: 12 }} />} aria-label="Refresh plugins" onClick={() => refetchPlugins()} variant="ghost" size="sm" />
-              <IconButton icon={<Upload style={{ width: 12, height: 12 }} />} aria-label="Upload plugin" onClick={() => navigate('/plugins')} variant="ghost" size="sm" />
-            </div>
-          </>
-        )}
+        {expanded.has('plugins') && plugins?.map((p) => (
+          <LayerItem
+            key={p.id}
+            id={`plugin-${p.id}`}
+            label={p.name}
+            icon={p.is_builtin ? <PackageCheck style={smallIcon} /> : <Puzzle style={smallIcon} />}
+            depth={1}
+            selected={pathname === `/plugins/${p.id}`}
+            onPointerDown={() => navigate(`/plugins/${p.id}`)}
+            showVisibilityToggle={false}
+            showLockToggle={false}
+            badge={
+              <span onPointerDown={(e) => e.stopPropagation()}>
+                <Toggle
+                  checked={p.enabled}
+                  onChange={(checked) => {
+                    if (checked) enablePlugin.mutate(p.id);
+                    else disablePlugin.mutate(p.id);
+                  }}
+                  size="xs"
+                />
+              </span>
+            }
+          />
+        ))}
 
         {/* Providers section */}
         <LayerItem
