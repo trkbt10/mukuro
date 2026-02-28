@@ -91,7 +91,7 @@ test "SubAgentConfig default values" {
 
 ///|
 test "spawn_tool_definition" {
-  let def = @builtin.spawn_tool_definition()
+  let def = @defs.spawn_tool_definition()
   inspect(def.name, content="spawn")
   assert_true(def.description.length() > 0)
 }

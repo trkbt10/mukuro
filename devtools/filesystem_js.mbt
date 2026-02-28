@@ -168,24 +168,24 @@ extern "js" fn js_file_stat(
 /// ファイルシステムツールを実行（コールバックベース）
 pub fn execute_filesystem_tool(
   args : Json,
-  on_result : (ToolExecutionResult) -> Unit,
+  on_result : (@defs.ToolExecutionResult) -> Unit,
 ) -> Unit {
-  let action = match get_string_arg(args, "action") {
+  let action = match @defs.get_string_arg(args, "action") {
     Some(a) => a
     None => {
-      on_result(ToolExecutionResult::error("Missing action argument"))
+      on_result(@defs.ToolExecutionResult::error("Missing action argument"))
       return
     }
   }
-  let path = match get_string_arg(args, "path") {
+  let path = match @defs.get_string_arg(args, "path") {
     Some(p) => p
     None => {
-      on_result(ToolExecutionResult::error("Missing path argument"))
+      on_result(@defs.ToolExecutionResult::error("Missing path argument"))
       return
     }
   }
-  let encoding = get_string_arg(args, "encoding").unwrap_or("utf8")
-  let recursive = get_bool_arg(args, "recursive").unwrap_or(false)
+  let encoding = @defs.get_string_arg(args, "encoding").unwrap_or("utf8")
+  let recursive = @defs.get_bool_arg(args, "recursive").unwrap_or(false)
   match action {
     "read" =>
       js_read_file(
@@ -193,16 +193,21 @@ pub fn execute_filesystem_tool(
         encoding,
         fn(content) {
           on_result(
-            ToolExecutionResult::success({ "path": path, "content": content }),
+            @defs.ToolExecutionResult::success({
+              "path": path,
+              "content": content,
+            }),
           )
         },
-        fn(error) { on_result(ToolExecutionResult::error(error)) },
+        fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
       )
     "write" => {
-      let content = match get_string_arg(args, "content") {
+      let content = match @defs.get_string_arg(args, "content") {
         Some(c) => c
         None => {
-          on_result(ToolExecutionResult::error("Missing content argument"))
+          on_result(
+            @defs.ToolExecutionResult::error("Missing content argument"),
+          )
           return
         }
       }
@@ -212,17 +217,22 @@ pub fn execute_filesystem_tool(
         encoding,
         fn() {
           on_result(
-            ToolExecutionResult::success({ "path": path, "written": true }),
+            @defs.ToolExecutionResult::success({
+              "path": path,
+              "written": true,
+            }),
           )
         },
-        fn(error) { on_result(ToolExecutionResult::error(error)) },
+        fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
       )
     }
     "append" => {
-      let content = match get_string_arg(args, "content") {
+      let content = match @defs.get_string_arg(args, "content") {
         Some(c) => c
         None => {
-          on_result(ToolExecutionResult::error("Missing content argument"))
+          on_result(
+            @defs.ToolExecutionResult::error("Missing content argument"),
+          )
           return
         }
       }
@@ -232,10 +242,13 @@ pub fn execute_filesystem_tool(
         encoding,
         fn() {
           on_result(
-            ToolExecutionResult::success({ "path": path, "appended": true }),
+            @defs.ToolExecutionResult::success({
+              "path": path,
+              "appended": true,
+            }),
           )
         },
-        fn(error) { on_result(ToolExecutionResult::error(error)) },
+        fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
       )
     }
     "delete" =>
@@ -244,15 +257,18 @@ pub fn execute_filesystem_tool(
         recursive,
         fn() {
           on_result(
-            ToolExecutionResult::success({ "path": path, "deleted": true }),
+            @defs.ToolExecutionResult::success({
+              "path": path,
+              "deleted": true,
+            }),
           )
         },
-        fn(error) { on_result(ToolExecutionResult::error(error)) },
+        fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
       )
     "exists" => {
       let exists = js_file_exists(path)
       on_result(
-        ToolExecutionResult::success({ "path": path, "exists": exists }),
+        @defs.ToolExecutionResult::success({ "path": path, "exists": exists }),
       )
     }
     "list" =>
@@ -261,14 +277,14 @@ pub fn execute_filesystem_tool(
         fn(files) {
           let files_json : Array[Json] = files.map(fn(f) { Json::string(f) })
           on_result(
-            ToolExecutionResult::success({
+            @defs.ToolExecutionResult::success({
               "path": path,
               "files": Json::array(files_json),
               "count": files.length(),
             }),
           )
         },
-        fn(error) { on_result(ToolExecutionResult::error(error)) },
+        fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
       )
     "mkdir" =>
       js_mkdir(
@@ -276,17 +292,21 @@ pub fn execute_filesystem_tool(
         recursive,
         fn() {
           on_result(
-            ToolExecutionResult::success({ "path": path, "created": true }),
+            @defs.ToolExecutionResult::success({
+              "path": path,
+              "created": true,
+            }),
           )
         },
-        fn(error) { on_result(ToolExecutionResult::error(error)) },
+        fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
       )
     "stat" =>
       js_file_stat(
         path,
-        fn(stat) { on_result(ToolExecutionResult::success(stat)) },
-        fn(error) { on_result(ToolExecutionResult::error(error)) },
+        fn(stat) { on_result(@defs.ToolExecutionResult::success(stat)) },
+        fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
       )
-    _ => on_result(ToolExecutionResult::error("Unknown action: \{action}"))
+    _ =>
+      on_result(@defs.ToolExecutionResult::error("Unknown action: \{action}"))
   }
 }

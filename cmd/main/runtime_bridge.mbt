@@ -113,20 +113,30 @@ pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
   context~,
 ) {
   ignore(context)
-  match @builtin.execute_sync_tool(self.tool_context, tool_name, arguments) {
-    Some(result) =>
-      match result.status {
-        @builtin.ToolResultStatus::Success =>
-          @types.ToolResult::Success(content=result.data.stringify())
-        @builtin.ToolResultStatus::Error =>
-          @types.ToolResult::Error(
-            message=result.error_message.unwrap_or("Tool execution failed"),
-          )
-        @builtin.ToolResultStatus::RequiresConfirmation =>
-          @types.ToolResult::Success(content=result.data.stringify())
-      }
+  let result = match @builtin.execute_builtin_tool(
+    self.tool_context,
+    tool_name,
+    arguments,
+  ) {
+    Some(r) => r
     None =>
-      @types.ToolResult::Error(message="Unknown builtin tool: \{tool_name}")
+      match @devtools.execute_devtool(tool_name, arguments) {
+        Some(r) => r
+        None =>
+          return @types.ToolResult::Error(
+            message="Unknown tool: \{tool_name}",
+          )
+      }
+  }
+  match result.status {
+    @defs.ToolResultStatus::Success =>
+      @types.ToolResult::Success(content=result.data.stringify())
+    @defs.ToolResultStatus::Error =>
+      @types.ToolResult::Error(
+        message=result.error_message.unwrap_or("Tool execution failed"),
+      )
+    @defs.ToolResultStatus::RequiresConfirmation =>
+      @types.ToolResult::Success(content=result.data.stringify())
   }
 }
 
@@ -138,7 +148,7 @@ pub fn register_builtin_tools() -> Unit {
     fn(msg) { global_outbound_dispatcher.sent_messages.push(msg) },
   )
   let executor : BuiltinToolExecutorAdapter = { tool_context: tool_ctx }
-  for definition in @builtin.get_all_tool_definitions() {
+  for definition in @defs.get_all_tool_definitions() {
     global_tool_registry.register(definition, executor)
   }
 }

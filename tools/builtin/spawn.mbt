@@ -51,43 +51,6 @@ pub(all) struct SpawnResult {
 }
 
 ///|
-/// スポーンツール定義
-pub fn spawn_tool_definition() -> @types.ToolDefinition {
-  make_tool_definition(
-    name="spawn",
-    description="Create a sub-agent to handle a specific task",
-    parameters=object_schema(
-      {
-        "action": {
-          "type": "string",
-          "enum": Json::array([
-            Json::string("create"),
-            Json::string("status"),
-            Json::string("cancel"),
-            Json::string("result"),
-          ]),
-          "description": "Action to perform",
-        },
-        "name": string_param("Sub-agent name (for create)", false),
-        "system_prompt": string_param("System prompt for sub-agent", false),
-        "message": string_param("Initial message/task for sub-agent", false),
-        "model": string_param(
-          "Model to use (default: inherit from parent)", false,
-        ),
-        "max_turns": integer_param("Maximum conversation turns"),
-        "tools": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Tools available to sub-agent",
-        },
-        "agent_id": string_param("Agent ID (for status/cancel/result)", false),
-      },
-      ["action"],
-    ),
-  )
-}
-
-///|
 /// サブエージェントマネージャ
 pub struct SubAgentManager {
   /// アクティブなサブエージェント
@@ -115,23 +78,24 @@ pub fn SubAgentManager::generate_id(self : SubAgentManager) -> String {
 pub fn execute_spawn_tool(
   manager : SubAgentManager,
   args : Json,
-) -> ToolExecutionResult {
-  let action = match get_string_arg(args, "action") {
+) -> @defs.ToolExecutionResult {
+  let action = match @defs.get_string_arg(args, "action") {
     Some(a) => a
-    None => return ToolExecutionResult::error("Missing action argument")
+    None => return @defs.ToolExecutionResult::error("Missing action argument")
   }
   match action {
     "create" => {
-      let name = get_string_arg(args, "name").unwrap_or("sub_agent")
-      let system_prompt = get_string_arg(args, "system_prompt").unwrap_or(
+      let name = @defs.get_string_arg(args, "name").unwrap_or("sub_agent")
+      let system_prompt = @defs.get_string_arg(args, "system_prompt").unwrap_or(
         "You are a helpful assistant.",
       )
-      let message = match get_string_arg(args, "message") {
+      let message = match @defs.get_string_arg(args, "message") {
         Some(m) => m
-        None => return ToolExecutionResult::error("Missing message argument")
+        None =>
+          return @defs.ToolExecutionResult::error("Missing message argument")
       }
-      let model = get_string_arg(args, "model").unwrap_or("default")
-      let max_turns = get_int_arg(args, "max_turns").unwrap_or(10)
+      let model = @defs.get_string_arg(args, "model").unwrap_or("default")
+      let max_turns = @defs.get_int_arg(args, "max_turns").unwrap_or(10)
       let agent_id = manager.generate_id()
       // サブエージェントを登録
       let result : SpawnResult = { agent_id, status: "created", response: None }
@@ -142,30 +106,33 @@ pub fn execute_spawn_tool(
       ignore(message)
       ignore(model)
       ignore(max_turns)
-      ToolExecutionResult::success({
+      @defs.ToolExecutionResult::success({
         "agent_id": agent_id,
         "status": "created",
         "message": "Sub-agent created. Actual execution requires async implementation.",
       })
     }
     "status" => {
-      let agent_id = match get_string_arg(args, "agent_id") {
+      let agent_id = match @defs.get_string_arg(args, "agent_id") {
         Some(id) => id
-        None => return ToolExecutionResult::error("Missing agent_id argument")
+        None =>
+          return @defs.ToolExecutionResult::error("Missing agent_id argument")
       }
       match manager.agents.get(agent_id) {
         Some(result) =>
-          ToolExecutionResult::success({
+          @defs.ToolExecutionResult::success({
             "agent_id": result.agent_id,
             "status": result.status,
           })
-        None => ToolExecutionResult::error("Agent not found: \{agent_id}")
+        None =>
+          @defs.ToolExecutionResult::error("Agent not found: \{agent_id}")
       }
     }
     "cancel" => {
-      let agent_id = match get_string_arg(args, "agent_id") {
+      let agent_id = match @defs.get_string_arg(args, "agent_id") {
         Some(id) => id
-        None => return ToolExecutionResult::error("Missing agent_id argument")
+        None =>
+          return @defs.ToolExecutionResult::error("Missing agent_id argument")
       }
       match manager.agents.get(agent_id) {
         Some(_) => {
@@ -174,22 +141,24 @@ pub fn execute_spawn_tool(
             status: "cancelled",
             response: None,
           }
-          ToolExecutionResult::success({
+          @defs.ToolExecutionResult::success({
             "agent_id": agent_id,
             "status": "cancelled",
           })
         }
-        None => ToolExecutionResult::error("Agent not found: \{agent_id}")
+        None =>
+          @defs.ToolExecutionResult::error("Agent not found: \{agent_id}")
       }
     }
     "result" => {
-      let agent_id = match get_string_arg(args, "agent_id") {
+      let agent_id = match @defs.get_string_arg(args, "agent_id") {
         Some(id) => id
-        None => return ToolExecutionResult::error("Missing agent_id argument")
+        None =>
+          return @defs.ToolExecutionResult::error("Missing agent_id argument")
       }
       match manager.agents.get(agent_id) {
         Some(result) =>
-          ToolExecutionResult::success({
+          @defs.ToolExecutionResult::success({
             "agent_id": result.agent_id,
             "status": result.status,
             "response": match result.response {
@@ -197,10 +166,11 @@ pub fn execute_spawn_tool(
               None => Json::null()
             },
           })
-        None => ToolExecutionResult::error("Agent not found: \{agent_id}")
+        None =>
+          @defs.ToolExecutionResult::error("Agent not found: \{agent_id}")
       }
     }
-    _ => ToolExecutionResult::error("Unknown action: \{action}")
+    _ => @defs.ToolExecutionResult::error("Unknown action: \{action}")
   }
 }
 

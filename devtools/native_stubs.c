@@ -1,5 +1,5 @@
 /**
- * Native FFI stubs for tools/builtin package tests
+ * Native FFI stubs for tools/devtools package
  * Minimal implementations for linking test executables
  */
 

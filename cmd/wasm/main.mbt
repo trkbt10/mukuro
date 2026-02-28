@@ -78,7 +78,7 @@ pub fn process_message(
     messages.push(msg)
   }
   // ツール定義を取得
-  let tools = @builtin.get_all_tool_definitions()
+  let tools = @defs.get_all_tool_definitions()
   let tools_json : Array[Json] = tools.map(fn(tool) {
     {
       "name": tool.name,
@@ -287,7 +287,7 @@ pub fn clear_session(channel : String, chat_id : String) -> Bool {
 ///|
 /// ツール一覧を取得
 pub fn get_available_tools() -> String {
-  let tools = @builtin.get_all_tool_definitions()
+  let tools = @defs.get_all_tool_definitions()
   let tool_list : Array[Json] = tools.map(fn(tool) {
     { "name": tool.name, "description": tool.description }
   })

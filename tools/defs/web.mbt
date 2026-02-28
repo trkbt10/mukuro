@@ -1,7 +1,4 @@
 ///|
-/// Webツール定義（全ターゲット共通）
-
-///|
 /// Webツール定義
 pub fn web_tool_definition() -> @types.ToolDefinition {
   make_tool_definition(

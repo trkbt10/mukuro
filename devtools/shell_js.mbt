@@ -36,21 +36,21 @@ extern "js" fn js_exec_command(
 /// シェルツールを実行（コールバックベース）
 pub fn execute_shell_tool(
   args : Json,
-  on_result : (ToolExecutionResult) -> Unit,
+  on_result : (@defs.ToolExecutionResult) -> Unit,
 ) -> Unit {
-  let command = match get_string_arg(args, "command") {
+  let command = match @defs.get_string_arg(args, "command") {
     Some(c) => c
     None => {
-      on_result(ToolExecutionResult::error("Missing command argument"))
+      on_result(@defs.ToolExecutionResult::error("Missing command argument"))
       return
     }
   }
-  let cwd = get_string_arg(args, "cwd")
-  let timeout = get_int_arg(args, "timeout").unwrap_or(30000)
+  let cwd = @defs.get_string_arg(args, "cwd")
+  let timeout = @defs.get_int_arg(args, "timeout").unwrap_or(30000)
   // 危険なコマンドをチェック
   if is_dangerous_command(command) {
     on_result(
-      ToolExecutionResult::requires_confirmation({
+      @defs.ToolExecutionResult::requires_confirmation({
         "command": command,
         "warning": "This command may be destructive. Please confirm execution.",
       }),
@@ -63,13 +63,13 @@ pub fn execute_shell_tool(
     timeout,
     fn(stdout, stderr) {
       on_result(
-        ToolExecutionResult::success({
+        @defs.ToolExecutionResult::success({
           "stdout": stdout,
           "stderr": stderr,
           "exit_code": 0,
         }),
       )
     },
-    fn(error) { on_result(ToolExecutionResult::error(error)) },
+    fn(error) { on_result(@defs.ToolExecutionResult::error(error)) },
   )
 }

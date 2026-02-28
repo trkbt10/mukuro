@@ -120,7 +120,7 @@ pub fn init_api_v1_state(
   api_v1_settings_state.init(config, config_path)
   api_v1_settings_state.set_persister(persist_config_to_file)
   // ビルトインツール定義からプラグイン状態を自動導出（source of truth: get_all_tool_definitions）
-  for def in @builtin.get_all_tool_definitions() {
+  for def in @defs.get_all_tool_definitions() {
     api_v1_plugins_state.set_plugin(
       def.name,
       @interfaces.PluginState::builtin(id=def.name, description=def.description),

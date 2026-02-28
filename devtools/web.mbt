@@ -3,18 +3,18 @@
 
 ///|
 /// Webツールを実行（Native同期版）
-pub fn execute_web_tool_native(args : Json) -> ToolExecutionResult {
-  let action = match get_string_arg(args, "action") {
+pub fn execute_web_tool_native(args : Json) -> @defs.ToolExecutionResult {
+  let action = match @defs.get_string_arg(args, "action") {
     Some(a) => a
-    None => return ToolExecutionResult::error("Missing action argument")
+    None => return @defs.ToolExecutionResult::error("Missing action argument")
   }
   match action {
     "fetch" => {
-      let url = match get_string_arg(args, "url") {
+      let url = match @defs.get_string_arg(args, "url") {
         Some(u) => u
-        None => return ToolExecutionResult::error("Missing url argument")
+        None => return @defs.ToolExecutionResult::error("Missing url argument")
       }
-      let http_method = get_string_arg(args, "method").unwrap_or("GET")
+      let http_method = @defs.get_string_arg(args, "method").unwrap_or("GET")
       // curlコマンドを構築
       let escaped_url = escape_single_quote(url)
       let mut cmd = "curl -s -w '\\n%{http_code}' -X '\{http_method}'"
@@ -34,7 +34,7 @@ pub fn execute_web_tool_native(args : Json) -> ToolExecutionResult {
         _ => ()
       }
       // ボディを追加
-      match get_string_arg(args, "body") {
+      match @defs.get_string_arg(args, "body") {
         Some(body) => {
           let escaped_body = escape_single_quote(body)
           cmd = cmd + " -d '\{escaped_body}'"
@@ -44,7 +44,7 @@ pub fn execute_web_tool_native(args : Json) -> ToolExecutionResult {
       cmd = cmd + " '\{escaped_url}'"
       let (stdout, exit_code) = exec_popen(cmd)
       if exit_code != 0 {
-        return ToolExecutionResult::error(
+        return @defs.ToolExecutionResult::error(
           "curl failed with exit code \{exit_code}",
         )
       }
@@ -66,22 +66,22 @@ pub fn execute_web_tool_native(args : Json) -> ToolExecutionResult {
         }
         body_buf.write_string(lines[i].to_string())
       }
-      ToolExecutionResult::success({
+      @defs.ToolExecutionResult::success({
         "status": status_code,
         "body": body_buf.to_string(),
         "url": url,
       })
     }
     "search" => {
-      let _query = match get_string_arg(args, "query") {
+      let _query = match @defs.get_string_arg(args, "query") {
         Some(q) => q
-        None => return ToolExecutionResult::error("Missing query argument")
+        None => return @defs.ToolExecutionResult::error("Missing query argument")
       }
-      ToolExecutionResult::error(
+      @defs.ToolExecutionResult::error(
         "Web search requires external API integration",
       )
     }
-    _ => ToolExecutionResult::error("Unknown action: \{action}")
+    _ => @defs.ToolExecutionResult::error("Unknown action: \{action}")
   }
 }
 

@@ -1,16 +1,5 @@
 ///|
-/// ビルトインツールレジストリ - 共通コード
-
-///|
-/// ツール名で定義を取得
-pub fn get_tool_definition(name : String) -> @types.ToolDefinition? {
-  for tool in get_all_tool_definitions() {
-    if tool.name == name {
-      return Some(tool)
-    }
-  }
-  None
-}
+/// ビルトインツール実行コンテキスト
 
 ///|
 /// ビルトインツール実行コンテキスト
@@ -43,4 +32,3 @@ pub fn BuiltinToolContext::with_memory(
 ) -> BuiltinToolContext {
   { memory, agent_manager: SubAgentManager::new(), send_message }
 }
-

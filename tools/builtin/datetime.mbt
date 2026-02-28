@@ -8,41 +8,16 @@ pub fn get_current_time_seconds() -> Int64 {
 }
 
 ///|
-/// DateTimeツール定義
-pub fn datetime_tool_definition() -> @types.ToolDefinition {
-  make_tool_definition(
-    name="datetime",
-    description="Get current date and time information",
-    parameters=object_schema(
-      {
-        "action": {
-          "type": "string",
-          "enum": Json::array([
-            Json::string("now"),
-            Json::string("timestamp"),
-            Json::string("format"),
-          ]),
-          "description": "Action to perform: now (current datetime), timestamp (unix timestamp), format (formatted string)",
-        },
-        "format": string_param("Date format pattern (for format action)", false),
-        "timezone": string_param("Timezone (e.g., UTC, JST)", false),
-      },
-      ["action"],
-    ),
-  )
-}
-
-///|
 /// DateTimeツールを実行
-pub fn execute_datetime_tool(args : Json) -> ToolExecutionResult {
-  let action = match get_string_arg(args, "action") {
+pub fn execute_datetime_tool(args : Json) -> @defs.ToolExecutionResult {
+  let action = match @defs.get_string_arg(args, "action") {
     Some(a) => a
-    None => return ToolExecutionResult::error("Missing action argument")
+    None => return @defs.ToolExecutionResult::error("Missing action argument")
   }
   match action {
     "now" => {
       let timestamp = get_current_time_ms()
-      ToolExecutionResult::success({
+      @defs.ToolExecutionResult::success({
         "timestamp_ms": Json::number(timestamp.to_double()),
         "timestamp_seconds": Json::number((timestamp / 1000L).to_double()),
         "iso8601": format_iso8601(timestamp),
@@ -50,18 +25,18 @@ pub fn execute_datetime_tool(args : Json) -> ToolExecutionResult {
     }
     "timestamp" => {
       let timestamp = get_current_time_ms()
-      ToolExecutionResult::success({
+      @defs.ToolExecutionResult::success({
         "timestamp": Json::number(timestamp.to_double()),
       })
     }
     "format" => {
       let timestamp = get_current_time_ms()
-      let format_str = get_string_arg(args, "format").unwrap_or("ISO8601")
-      ToolExecutionResult::success({
+      let format_str = @defs.get_string_arg(args, "format").unwrap_or("ISO8601")
+      @defs.ToolExecutionResult::success({
         "formatted": format_timestamp(timestamp, format_str),
       })
     }
-    _ => ToolExecutionResult::error("Unknown action: \{action}")
+    _ => @defs.ToolExecutionResult::error("Unknown action: \{action}")
   }
 }
 

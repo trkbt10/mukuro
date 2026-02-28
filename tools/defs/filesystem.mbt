@@ -1,7 +1,4 @@
 ///|
-/// ファイルシステムツール定義（全ターゲット共通）
-
-///|
 /// ファイルシステムツール定義
 pub fn filesystem_tool_definition() -> @types.ToolDefinition {
   make_tool_definition(
