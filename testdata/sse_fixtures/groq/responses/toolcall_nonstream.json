@@ -1,0 +1,85 @@
+{
+    "id": "resp_01kjh1gfhgfgat0sq7nwxa6fzg",
+    "object": "response",
+    "status": "completed",
+    "created_at": 1772246023,
+    "output": [
+        {
+            "type": "reasoning",
+            "id": "resp_01kjh1gfhgfgb9b8w2s8cdx24x",
+            "status": "completed",
+            "content": [
+                {
+                    "type": "reasoning_text",
+                    "text": "User asks: \"What is the weather in Tokyo?\" We should use get_weather tool."
+                }
+            ],
+            "summary": []
+        },
+        {
+            "type": "function_call",
+            "id": "fc_349411e2-424e-4539-b555-300f8e26af86",
+            "status": "completed",
+            "call_id": "fc_349411e2-424e-4539-b555-300f8e26af86",
+            "name": "get_weather",
+            "arguments": "{\"location\":\"Tokyo\"}"
+        }
+    ],
+    "previous_response_id": null,
+    "model": "openai/gpt-oss-20b",
+    "reasoning": {
+        "effort": "medium"
+    },
+    "max_output_tokens": null,
+    "text": {
+        "format": {
+            "type": "text"
+        }
+    },
+    "tools": [
+        {
+            "type": "function",
+            "name": "get_weather",
+            "description": "Get the current weather for a location",
+            "parameters": {
+                "properties": {
+                    "location": {
+                        "description": "City name",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "location"
+                ],
+                "type": "object"
+            },
+            "strict": null
+        }
+    ],
+    "tool_choice": "auto",
+    "truncation": "disabled",
+    "metadata": {},
+    "groq": null,
+    "temperature": 1,
+    "top_p": 1,
+    "user": null,
+    "service_tier": "default",
+    "background": false,
+    "error": null,
+    "incomplete_details": null,
+    "usage": {
+        "input_tokens": 154,
+        "input_tokens_details": {
+            "cached_tokens": 0
+        },
+        "output_tokens": 42,
+        "output_tokens_details": {
+            "reasoning_tokens": 19
+        },
+        "total_tokens": 196
+    },
+    "parallel_tool_calls": true,
+    "store": false,
+    "top_logprobs": null,
+    "max_tool_calls": null
+}

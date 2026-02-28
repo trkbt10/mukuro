@@ -1,0 +1,90 @@
+event: response.created
+data: {"type":"response.created","response":{"id":"resp_004114faa239fb020069a257b65600819d9a89352727863eb6","object":"response","created_at":1772246966,"status":"in_progress","background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-4o-mini-2024-07-18","output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":null,"summary":null},"safety_identifier":null,"service_tier":"auto","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[{"type":"function","description":"Get the current weather for a location","name":"get_weather","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City name"}},"required":["location"],"additionalProperties":false},"strict":true}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":0}
+
+event: response.in_progress
+data: {"type":"response.in_progress","response":{"id":"resp_004114faa239fb020069a257b65600819d9a89352727863eb6","object":"response","created_at":1772246966,"status":"in_progress","background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-4o-mini-2024-07-18","output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":null,"summary":null},"safety_identifier":null,"service_tier":"auto","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[{"type":"function","description":"Get the current weather for a location","name":"get_weather","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City name"}},"required":["location"],"additionalProperties":false},"strict":true}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":1}
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","item":{"id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","type":"message","status":"in_progress","content":[],"role":"assistant"},"output_index":0,"sequence_number":2}
+
+event: response.content_part.added
+data: {"type":"response.content_part.added","content_index":0,"item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""},"sequence_number":3}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"The","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"YdNwhfXuSVRik","output_index":0,"sequence_number":4}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" current","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"QJePl92s","output_index":0,"sequence_number":5}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" weather","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"zTqFzK4e","output_index":0,"sequence_number":6}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" in","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"jSWrvcC0tEz6I","output_index":0,"sequence_number":7}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" Tokyo","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"vTe7ZZzURk","output_index":0,"sequence_number":8}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" is","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"g0V1cPmo0eaAf","output_index":0,"sequence_number":9}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" partly","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"E03Kq9PF4","output_index":0,"sequence_number":10}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" cloudy","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"NusisfHyE","output_index":0,"sequence_number":11}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":",","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"cFOtrqXeUFANHdu","output_index":0,"sequence_number":12}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" with","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"vOZFh1mc3mt","output_index":0,"sequence_number":13}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" a","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"oGnzNzPKvOJzna","output_index":0,"sequence_number":14}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" temperature","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"OvF0","output_index":0,"sequence_number":15}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" of","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"IgZzrp3XhDnoB","output_index":0,"sequence_number":16}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" ","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"bGNN5Iqa4kwov7n","output_index":0,"sequence_number":17}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"22","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"ZWgXJd7JTGelZ2","output_index":0,"sequence_number":18}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"°C","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"Hhe5is33EXVpgZ","output_index":0,"sequence_number":19}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" and","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"RzPI4AqL2V9F","output_index":0,"sequence_number":20}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" humidity","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"AW7a5cO","output_index":0,"sequence_number":21}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" at","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"5hzQt2OOa9Gjj","output_index":0,"sequence_number":22}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":" ","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"yqo3DT3IdGqlXbB","output_index":0,"sequence_number":23}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"65","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"JTa64nzq9Q83Pq","output_index":0,"sequence_number":24}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","content_index":0,"delta":"%.","item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"obfuscation":"mMNlHQ1rtGRpUc","output_index":0,"sequence_number":25}
+
+event: response.output_text.done
+data: {"type":"response.output_text.done","content_index":0,"item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","logprobs":[],"output_index":0,"sequence_number":26,"text":"The current weather in Tokyo is partly cloudy, with a temperature of 22°C and humidity at 65%."}
+
+event: response.content_part.done
+data: {"type":"response.content_part.done","content_index":0,"item_id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":"The current weather in Tokyo is partly cloudy, with a temperature of 22°C and humidity at 65%."},"sequence_number":27}
+
+event: response.output_item.done
+data: {"type":"response.output_item.done","item":{"id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"The current weather in Tokyo is partly cloudy, with a temperature of 22°C and humidity at 65%."}],"role":"assistant"},"output_index":0,"sequence_number":28}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_004114faa239fb020069a257b65600819d9a89352727863eb6","object":"response","created_at":1772246966,"status":"completed","background":false,"completed_at":1772246967,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":null,"max_output_tokens":null,"max_tool_calls":null,"model":"gpt-4o-mini-2024-07-18","output":[{"id":"msg_004114faa239fb020069a257b74fb4819dabee6b72221b1ad7","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"The current weather in Tokyo is partly cloudy, with a temperature of 22°C and humidity at 65%."}],"role":"assistant"}],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":null,"reasoning":{"effort":null,"summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":1.0,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tools":[{"type":"function","description":"Get the current weather for a location","name":"get_weather","parameters":{"type":"object","properties":{"location":{"type":"string","description":"City name"}},"required":["location"],"additionalProperties":false},"strict":true}],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":109,"input_tokens_details":{"cached_tokens":0},"output_tokens":24,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":133},"user":null,"metadata":{}},"sequence_number":29}
+

@@ -1,0 +1,37 @@
+{
+    "id": "chatcmpl-5186dd2d-8f09-4200-bd14-20171b9b27ed",
+    "object": "chat.completion",
+    "created": 1772245060,
+    "model": "openai/gpt-oss-20b",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "four",
+                "reasoning": "The user asks: \"What is 2+2? Reply in one word.\" The answer: \"four\". That is one word. It's correct. Just one word. The policy: no issues. So output: four."
+            },
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "queue_time": 0.026069939,
+        "prompt_tokens": 95,
+        "prompt_time": 0.006328641,
+        "completion_tokens": 57,
+        "completion_time": 0.072961709,
+        "total_tokens": 152,
+        "total_time": 0.07929035,
+        "completion_tokens_details": {
+            "reasoning_tokens": 47
+        }
+    },
+    "usage_breakdown": null,
+    "system_fingerprint": "fp_5f5faae469",
+    "x_groq": {
+        "id": "req_01kjh0k2btecgb0sa5pgdj91aq",
+        "seed": 772910848
+    },
+    "service_tier": "on_demand"
+}

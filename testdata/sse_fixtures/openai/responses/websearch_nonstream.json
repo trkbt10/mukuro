@@ -1,0 +1,95 @@
+{
+  "id": "resp_02993e1d0b1b93d80069a25773cdd0819f9303de4ac9f9b74a",
+  "object": "response",
+  "created_at": 1772246899,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "openai"
+  },
+  "completed_at": 1772246902,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "model": "gpt-4o-mini-2024-07-18",
+  "output": [
+    {
+      "id": "ws_02993e1d0b1b93d80069a2577505c0819fbc4364ee47a098d6",
+      "type": "web_search_call",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "queries": [
+          "current weather in Tokyo"
+        ],
+        "query": "current weather in Tokyo"
+      }
+    },
+    {
+      "id": "msg_02993e1d0b1b93d80069a25775c6d4819fb01b422c46b88760",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "As of 11:48\u202fAM Japan Standard Time (JST) on Saturday, February 28, 2026, the weather in Tokyo is mostly sunny with a temperature of 66\u00b0F (19\u00b0C).\n\n## Weather for Tokyo, Japan:\nCurrent Conditions: Mostly sunny, 66\u00b0F (19\u00b0C)\n\nDaily Forecast:\n* Saturday, February 28: Low: 46\u00b0F (8\u00b0C), High: 68\u00b0F (20\u00b0C), Description: Warm with clouds yielding to sun; windy this afternoon\n* Sunday, March 1: Low: 49\u00b0F (10\u00b0C), High: 63\u00b0F (17\u00b0C), Description: Partly sunny\n* Monday, March 2: Low: 47\u00b0F (8\u00b0C), High: 56\u00b0F (14\u00b0C), Description: Cooler with low clouds\n* Tuesday, March 3: Low: 44\u00b0F (6\u00b0C), High: 50\u00b0F (10\u00b0C), Description: Periods of rain\n* Wednesday, March 4: Low: 42\u00b0F (5\u00b0C), High: 55\u00b0F (13\u00b0C), Description: Mostly sunny\n* Thursday, March 5: Low: 42\u00b0F (6\u00b0C), High: 58\u00b0F (14\u00b0C), Description: Partly sunny\n* Friday, March 6: Low: 43\u00b0F (6\u00b0C), High: 55\u00b0F (13\u00b0C), Description: Cloudy\n\nSevere Weather Alerts:\n* Shinjuku-ku: Gale Advisory in effect from 12:00 PM JST until Sunday, 12:00 AM JST.  Source: Japan Meteorological Agency, , start time: Saturday, February 28, 12:00:00 UTC, end time: Sunday, March 1, 00:00:00 UTC\n\n\nPlease note that weather conditions can change rapidly. For the most current information, consider checking local weather services or official meteorological agencies. "
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "reasoning": {
+    "effort": null,
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "text"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "web_search_preview",
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": null,
+        "country": "US",
+        "region": null,
+        "timezone": null
+      }
+    }
+  ],
+  "top_logprobs": 0,
+  "top_p": 1.0,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 311,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 409,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 720
+  },
+  "user": null,
+  "metadata": {}
+}

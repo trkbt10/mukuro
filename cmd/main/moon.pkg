@@ -71,5 +71,6 @@ options(
     "service_commands_native.mbt": [ "native" ],
     "service_commands_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "service_e2e_native_test.mbt": [ "native" ],
+    "protocol_fixture_native_test.mbt": [ "native" ],
   },
 )

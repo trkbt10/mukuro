@@ -1,0 +1,46 @@
+{
+    "id": "chatcmpl-ea96e130-6ecf-4b89-b45f-21d621671f26",
+    "object": "chat.completion",
+    "created": 1772246017,
+    "model": "openai/gpt-oss-20b",
+    "choices": [
+        {
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "reasoning": "We should call get_weather tool with location \"Tokyo\".",
+                "tool_calls": [
+                    {
+                        "id": "fc_3e3787b9-5497-405e-9a72-be4651d00e3b",
+                        "type": "function",
+                        "function": {
+                            "name": "get_weather",
+                            "arguments": "{\"location\":\"Tokyo\"}"
+                        }
+                    }
+                ]
+            },
+            "logprobs": null,
+            "finish_reason": "tool_calls"
+        }
+    ],
+    "usage": {
+        "queue_time": 0.158038328,
+        "prompt_tokens": 154,
+        "prompt_time": 0.013567216,
+        "completion_tokens": 35,
+        "completion_time": 0.039065594,
+        "total_tokens": 189,
+        "total_time": 0.05263281,
+        "completion_tokens_details": {
+            "reasoning_tokens": 12
+        }
+    },
+    "usage_breakdown": null,
+    "system_fingerprint": "fp_d23c14756c",
+    "x_groq": {
+        "id": "req_01kjh1g8wnfzwaajkpryj4wb7y",
+        "seed": 1160726645
+    },
+    "service_tier": "on_demand"
+}
