@@ -10,10 +10,10 @@
   height: 100%;
   border-radius: var(--mk-radius-xl);
   overflow: hidden;
-  border: none;
+  border: 1px solid var(--mk-border-subtle);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.06),
-    0 4px 12px rgba(0, 0, 0, 0.04);
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease,
@@ -25,13 +25,21 @@
   --tone-text-secondary: var(--mk-text-secondary);
   --tone-surface: var(--mk-bg-surface-raised);
 
-  /* Default: transparent bg (page bg shows through) */
-  background: transparent;
+  /* Elevated surface with subtle gradient for depth */
+  background: linear-gradient(
+    135deg,
+    var(--mk-bg-surface-raised) 0%,
+    color-mix(in srgb, var(--mk-bg-surface-raised), var(--mk-bg-surface-overlay) 30%) 100%
+  );
 }
 
 /* When theme is applied via inline style, use the themed surface */
 .shell[data-themed] {
-  background: var(--tone-surface);
+  background: linear-gradient(
+    135deg,
+    var(--tone-surface) 0%,
+    color-mix(in srgb, var(--tone-surface), var(--mk-bg-surface-overlay) 25%) 100%
+  );
 }
 
 /* ── Interactive (link / clickable) ── */
@@ -42,9 +50,10 @@ a.shell {
 }
 
 .shell[data-interactive]:hover {
+  border-color: var(--mk-border-default);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.12);
   cursor: pointer;
 }
 
