@@ -65,6 +65,9 @@ fn get_api_v1_router() -> @api.ApiRouter {
     settings_handlers: Some(@api_settings.create_settings_handlers(api_v1_settings_state)),
     config_handlers: None,
     provider_handlers: Some(@api_providers.create_provider_handlers(api_v1_providers_state)),
+    chat_handlers: Some(@api_chat.create_chat_handlers(
+      @api_chat.ChatState::new(global_session_store),
+    )),
   }
 }
 
@@ -552,7 +555,17 @@ async fn handle_control_api_dispatch_async(
       gateway.dispatch_outbound(auth~, message=outbound) catch {
         e => return control_error_to_response(e)
       }
-      json_response(200, { "ok": true })
+      json_response(
+        200,
+        {
+          "ok": true,
+          "response": {
+            "channel": outbound.channel.to_json(),
+            "chat_id": outbound.chat_id.to_json(),
+            "content": outbound.content.to_json(),
+          },
+        },
+      )
     }
     None => error_response(400, "bad_request", "Invalid dispatch payload")
   }

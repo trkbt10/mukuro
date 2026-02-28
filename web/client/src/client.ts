@@ -7,6 +7,8 @@ import { PluginsApi } from './endpoints/plugins.js';
 import { ContextApi } from './endpoints/context.js';
 import { SettingsApi } from './endpoints/settings.js';
 import { ProvidersApi } from './endpoints/providers.js';
+import { GatewayApi } from './endpoints/gateway.js';
+import { ChatApi } from './endpoints/chat.js';
 import type { ApiRole } from './types.js';
 
 export interface MukuroClientOptions {
@@ -36,6 +38,8 @@ export class MukuroClient implements HttpClient {
   readonly context: ContextApi;
   readonly settings: SettingsApi;
   readonly providers: ProvidersApi;
+  readonly gateway: GatewayApi;
+  readonly chat: ChatApi;
 
   constructor(options: MukuroClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
@@ -48,6 +52,8 @@ export class MukuroClient implements HttpClient {
     this.context = new ContextApi(this);
     this.settings = new SettingsApi(this);
     this.providers = new ProvidersApi(this);
+    this.gateway = new GatewayApi(this);
+    this.chat = new ChatApi(this);
   }
 
   private getHeaders(): Record<string, string> {
@@ -64,6 +70,56 @@ export class MukuroClient implements HttpClient {
       headers['X-Mukuro-Client-Id'] = this.clientId;
     }
     return headers;
+  }
+
+  private async requestRaw<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    customHeaders?: Record<string, string>
+  ): Promise<T> {
+    const url = `${this.baseUrl}${path}`;
+    const headers = { ...this.getHeaders(), ...customHeaders };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw MukuroApiError.fromResponse(response.status, errorBody);
+      }
+
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
+      return (await response.json()) as T;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof MukuroApiError) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new MukuroTimeoutError(this.timeout);
+        }
+        throw new MukuroNetworkError(error.message, error);
+      }
+
+      throw new MukuroNetworkError('Unknown error occurred');
+    }
   }
 
   private async request<T>(
@@ -118,6 +174,10 @@ export class MukuroClient implements HttpClient {
 
   async get<T>(path: string): Promise<T> {
     return this.request<T>('GET', path);
+  }
+
+  async getRaw<T>(path: string): Promise<T> {
+    return this.requestRaw<T>('GET', path);
   }
 
   async post<T>(path: string, body: unknown): Promise<T> {

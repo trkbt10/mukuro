@@ -92,6 +92,7 @@ export interface ContextFileResponse {
   description: string;
   content: string;
   exists: boolean;
+  is_default: boolean;
 }
 
 export interface ContextFilesListResponse {
@@ -150,6 +151,7 @@ export interface AllSettings {
   retry: RetrySettings;
   agent: AgentSettings;
   model: ModelSettings;
+  thinking: ThinkingSettings;
   providers: ProviderSettings[];
 }
 
@@ -299,4 +301,61 @@ export interface ProviderTestResult {
   error?: string;
   message?: string;
   missing_fields?: string;
+}
+
+// ============================================================================
+// Gateway Types
+// ============================================================================
+
+export type GatewayState =
+  | 'starting'
+  | 'running'
+  | 'stopping'
+  | 'stopped'
+  | string;
+
+export interface GatewayStatus {
+  state: GatewayState;
+  version: string;
+  active_sessions: number;
+  connected_channels: string[];
+  started_at: number | null;
+}
+
+export interface HealthSummary {
+  status: string;
+}
+
+export interface HealthLive {
+  status: string;
+  live: boolean;
+}
+
+export interface HealthReady {
+  status: string;
+  ready: boolean;
+}
+
+// ============================================================================
+// Chat Types
+// ============================================================================
+
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system' | 'tool';
+  content: string;
+  name?: string;
+  tool_call_id?: string;
+  timestamp?: number;
+}
+
+export interface ChatSession {
+  chat_id: string;
+  message_count: number;
+  created_at: number;
+  last_active_at: number;
+}
+
+export interface ChatSessionHistory {
+  chat_id: string;
+  messages: ChatMessage[];
 }

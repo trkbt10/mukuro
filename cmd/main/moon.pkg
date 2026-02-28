@@ -11,6 +11,7 @@ import {
   "trkbt10/mukuro/api/v1/plugins" @api_plugins,
   "trkbt10/mukuro/api/v1/context" @api_context,
   "trkbt10/mukuro/api/v1/providers" @api_providers,
+  "trkbt10/mukuro/api/v1/chat" @api_chat,
   "trkbt10/mukuro/core/config" @config,
   "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
   "trkbt10/mukuro/core/agent" @agent,
@@ -19,8 +20,10 @@ import {
   "trkbt10/mukuro/core/plugin" @plugin,
   "trkbt10/mukuro/core/session" @session,
   "trkbt10/mukuro/core/scheduler",
+  "trkbt10/mukuro/core/sse" @sse,
   "trkbt10/mukuro/core/tool" @tool,
   "trkbt10/mukuro/core/types" @types,
+  "trkbt10/mukuro/tools/builtin" @builtin,
   "trkbt10/mukuro/adapters/channels" @channels,
   "trkbt10/mukuro/adapters/native" @native,
 }

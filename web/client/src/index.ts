@@ -10,6 +10,8 @@ export { PluginsApi } from './endpoints/plugins.js';
 export { ContextApi } from './endpoints/context.js';
 export { SettingsApi } from './endpoints/settings.js';
 export { ProvidersApi } from './endpoints/providers.js';
+export { GatewayApi } from './endpoints/gateway.js';
+export { ChatApi } from './endpoints/chat.js';
 
 export {
   MukuroApiError,
@@ -55,4 +57,14 @@ export type {
   ProviderSettingField,
   ProviderSettingsSchema,
   ProviderTestResult,
+  // Gateway types
+  GatewayState,
+  GatewayStatus,
+  HealthSummary,
+  HealthLive,
+  HealthReady,
+  // Chat types
+  ChatMessage,
+  ChatSession,
+  ChatSessionHistory,
 } from './types.js';

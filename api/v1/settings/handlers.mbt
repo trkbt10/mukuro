@@ -120,6 +120,7 @@ fn handle_get_all(
         retry: RetrySettingsResponse::from_config(state.retry_config),
         agent: AgentSettingsResponse::from_config(config.agent),
         model: ModelSettingsResponse::from_config(config.agent.model_options),
+        thinking: ThinkingSettingsResponse::from_config(state.thinking_config),
         providers,
       }
       @api.json_response(200, { "data": response.to_json() })

@@ -35,6 +35,13 @@ export {
 
 export { useConnection, type ConnectionStatus } from './useConnection';
 
+export {
+  useGatewayStatus,
+  useGatewayHealth,
+  useGatewayHealthLive,
+  useGatewayHealthReady,
+} from './useGateway';
+
 export { useResponsiveColumns } from './useResponsiveColumns';
 export { useDashboardLayout } from './useDashboardLayout';
 export { useEditMode } from './useEditMode';
@@ -55,3 +62,11 @@ export {
   useDisconnectProvider as useDisconnectMessageProvider,
   useTestProvider as useTestMessageProvider,
 } from './useProviders';
+
+export {
+  useChat,
+  getChatId,
+  resetChatId,
+  type ChatMessage,
+  type ChatStatus,
+} from './useChat';

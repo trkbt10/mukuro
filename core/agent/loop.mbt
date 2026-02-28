@@ -333,6 +333,10 @@ pub async fn run_agent_loop(
         return outbound
       }
       @types.ModelResponse::ToolCalls(calls) => {
+        // アシスタントのツール呼び出しメッセージを会話履歴に追加
+        ctx.add_message(
+          @types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
+        )
         // ツール呼び出し - 実行して結果を追加
         for call in calls {
           ctx.set_state(
@@ -612,6 +616,10 @@ pub async fn run_agent_loop_async(
         return outbound
       }
       @types.ModelResponse::ToolCalls(calls) => {
+        // アシスタントのツール呼び出しメッセージを会話履歴に追加
+        ctx.add_message(
+          @types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
+        )
         // ツール呼び出し - 実行して結果を追加
         for call in calls {
           ctx.set_state(

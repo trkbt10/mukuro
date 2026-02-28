@@ -19,6 +19,8 @@ pub(all) struct ApiRouter {
   config_handlers : ConfigApiHandlers?
   /// Message provider handlers
   provider_handlers : ProviderApiHandlers?
+  /// Chat handlers
+  chat_handlers : ChatApiHandlers?
 }
 
 ///|
@@ -102,6 +104,17 @@ pub(all) struct ConfigApiHandlers {
 }
 
 ///|
+/// Chat API handlers interface
+pub(all) struct ChatApiHandlers {
+  /// GET /chat/sessions - list web chat sessions
+  list_sessions : RouteHandler
+  /// GET /chat/sessions/{chat_id}/history - get session history
+  get_history : RouteHandler
+  /// DELETE /chat/sessions/{chat_id} - delete a chat session
+  delete_session : RouteHandler
+}
+
+///|
 /// Message Provider API handlers interface
 pub(all) struct ProviderApiHandlers {
   /// GET /providers - list all providers
@@ -139,6 +152,7 @@ pub fn ApiRouter::new() -> ApiRouter {
     settings_handlers: None,
     config_handlers: None,
     provider_handlers: None,
+    chat_handlers: None,
   }
 }
 
@@ -166,6 +180,7 @@ pub fn ApiRouter::route(self : ApiRouter, ctx : ApiRequestContext) -> ApiRespons
     "settings" => self.route_settings(ctx)
     "config" => self.route_config(ctx)
     "providers" => self.route_providers(ctx)
+    "chat" => self.route_chat(ctx)
     _ => error_response(404, "not_found", "Unknown API endpoint: /api/v1/\{resource}")
   }
 }
@@ -184,6 +199,7 @@ fn api_index_handler(_ctx : ApiRequestContext) -> ApiResponse {
           "/api/v1/settings",
           "/api/v1/config",
           "/api/v1/providers",
+          "/api/v1/chat",
         ].map(fn(s) { Json::string(s) }),
       ),
     },
@@ -450,4 +466,45 @@ fn route_provider_endpoint(
     }
   }
   error_response(404, "not_found", "Unknown provider endpoint")
+}
+
+///|
+/// Route chat API requests
+fn ApiRouter::route_chat(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+  match self.chat_handlers {
+    None => error_response(501, "not_implemented", "Chat API not configured")
+    Some(handlers) => route_chat_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route chat endpoint
+fn route_chat_endpoint(
+  handlers : ChatApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /chat/sessions
+  if segments.length() == 2 && segments[1] == "sessions" {
+    if meth == "GET" {
+      return (handlers.list_sessions.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /chat/sessions/{chat_id}
+  if segments.length() == 3 && segments[1] == "sessions" {
+    if meth == "DELETE" {
+      return (handlers.delete_session.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /chat/sessions/{chat_id}/history
+  if segments.length() == 4 && segments[1] == "sessions" && segments[3] == "history" {
+    if meth == "GET" {
+      return (handlers.get_history.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  error_response(404, "not_found", "Unknown chat endpoint")
 }

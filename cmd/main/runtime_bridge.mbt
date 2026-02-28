@@ -92,6 +92,49 @@ let global_outbound_dispatcher : LocalOutboundDispatcher = LocalOutboundDispatch
 )
 
 ///|
+/// ビルトインツール用のToolExecutorアダプタ
+struct BuiltinToolExecutorAdapter {
+  tool_context : @builtin.BuiltinToolContext
+}
+
+///|
+pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
+  self,
+  tool_name~,
+  arguments~,
+  context~,
+) {
+  ignore(context)
+  match @builtin.execute_sync_tool(self.tool_context, tool_name, arguments) {
+    Some(result) =>
+      match result.status {
+        @builtin.ToolResultStatus::Success =>
+          @types.ToolResult::Success(content=result.data.stringify())
+        @builtin.ToolResultStatus::Error =>
+          @types.ToolResult::Error(
+            message=result.error_message.unwrap_or("Tool execution failed"),
+          )
+        @builtin.ToolResultStatus::RequiresConfirmation =>
+          @types.ToolResult::Success(content=result.data.stringify())
+      }
+    None =>
+      @types.ToolResult::Error(message="Unknown builtin tool: \{tool_name}")
+  }
+}
+
+///|
+/// ビルトインツールをグローバルレジストリに登録
+pub fn register_builtin_tools() -> Unit {
+  let tool_ctx = @builtin.BuiltinToolContext::new(fn(msg) {
+    global_outbound_dispatcher.sent_messages.push(msg)
+  })
+  let executor : BuiltinToolExecutorAdapter = { tool_context: tool_ctx }
+  for definition in @builtin.get_all_tool_definitions() {
+    global_tool_registry.register(definition, executor)
+  }
+}
+
+///|
 let global_model_orchestrator : RuntimeModelOrchestrator = RuntimeModelOrchestrator::default()
 
 ///|
@@ -130,6 +173,7 @@ pub async fn handle_inbound_with_agent_loop_async(
 
 ///|
 pub fn create_global_gateway(version : String) -> @control.Gateway {
+  register_builtin_tools()
   @control.Gateway::with_components(
     channel_manager=Some(global_channel_manager),
     session_resolver=Some(global_session_resolver),

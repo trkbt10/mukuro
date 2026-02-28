@@ -16,7 +16,7 @@ import { EditModeToolbar } from '@/components/bento/EditModeToolbar';
 import type { DashboardBlockId, DashboardBlock } from '@/components/bento/layout-types';
 import { ALL_BLOCK_IDS } from '@/components/bento/layout-types';
 import { gridRows, isCellEmpty } from '@/components/bento/layout-engine';
-import { usePlugins, useAllSettings } from '@/hooks';
+import { usePlugins, useAllSettings, useGatewayStatus, useGatewayHealth, useGatewayHealthLive } from '@/hooks';
 import { useResponsiveColumns } from '@/hooks/useResponsiveColumns';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { useEditMode } from '@/hooks/useEditMode';
@@ -95,7 +95,13 @@ const PluginListTitle: FC<{ size: BentoSize; count: number }> = ({ size, count }
   );
 };
 
-const HealthCard: FC<{ size: BentoSize }> = ({ size }) => {
+type HealthCardProps = {
+  size: BentoSize;
+  healthStatus: string;
+  isLive: boolean;
+};
+
+const HealthCard: FC<HealthCardProps> = ({ size, healthStatus, isLive }) => {
   const cr = contentArea(size);
   const hSplit = splitH(cr, 3);
   const left = hSplit.cells[0]!;
@@ -109,18 +115,25 @@ const HealthCard: FC<{ size: BentoSize }> = ({ size }) => {
   const row1 = statusSplit.cells[0]!;
   const row2 = statusSplit.cells[1]!;
 
+  const coreOk = healthStatus !== 'unhealthy';
+  const apiOk = isLive;
+  const coreColor = coreOk ? '#22c55e' : '#ef4444';
+  const apiColor = apiOk ? '#22c55e' : '#ef4444';
+  const coreLabel = coreOk ? 'Healthy' : 'Unhealthy';
+  const apiLabel = apiOk ? 'Healthy' : 'Down';
+
   return (
     <>
       <SvgH4 x={left.x} y={left.y}>{'Health'}</SvgH4>
       <SvgBody x={left.x} y={left.y + 24}>{'System'}</SvgBody>
 
-      <circle cx={row1.x + 6} cy={row1.y + row1.h / 2} r={4} fill="#22c55e" />
+      <circle cx={row1.x + 6} cy={row1.y + row1.h / 2} r={4} fill={coreColor} />
       <SvgLabel x={row1.x + 18} y={row1.y + row1.h / 2 - 7}>{'Core'}</SvgLabel>
-      <SvgBody x={row1.x + row1.w - 50} y={row1.y + row1.h / 2 - 7}>{'Healthy'}</SvgBody>
+      <SvgBody x={row1.x + row1.w - 50} y={row1.y + row1.h / 2 - 7}>{coreLabel}</SvgBody>
 
-      <circle cx={row2.x + 6} cy={row2.y + row2.h / 2} r={4} fill="#22c55e" />
+      <circle cx={row2.x + 6} cy={row2.y + row2.h / 2} r={4} fill={apiColor} />
       <SvgLabel x={row2.x + 18} y={row2.y + row2.h / 2 - 7}>{'API'}</SvgLabel>
-      <SvgBody x={row2.x + row2.w - 50} y={row2.y + row2.h / 2 - 7}>{'Healthy'}</SvgBody>
+      <SvgBody x={row2.x + row2.w - 50} y={row2.y + row2.h / 2 - 7}>{apiLabel}</SvgBody>
     </>
   );
 };
@@ -133,6 +146,9 @@ export function Dashboard() {
   const navigate = useNavigate();
   const { data: plugins, isLoading: pluginsLoading } = usePlugins();
   const { data: settings, isLoading: settingsLoading } = useAllSettings();
+  const { data: gatewayStatus } = useGatewayStatus();
+  const { data: gatewayHealth } = useGatewayHealth();
+  const { data: gatewayLive } = useGatewayHealthLive();
 
   const { columns, ref: gridRef } = useResponsiveColumns();
   const {
@@ -181,6 +197,14 @@ export function Dashboard() {
   const enabledPlugins = plugins?.filter((p) => p.enabled).length ?? 0;
   const totalPlugins = plugins?.length ?? 0;
   const providerCount = settings?.providers.length ?? 0;
+
+  // Gateway-derived status values
+  const statusValue = gatewayStatus
+    ? gatewayStatus.state === 'running' ? 'Running' : gatewayStatus.state.charAt(0).toUpperCase() + gatewayStatus.state.slice(1)
+    : 'Offline';
+  const statusIcon = gatewayStatus?.state === 'running' ? '✓' : '!';
+  const healthStatus = gatewayHealth?.status ?? 'unknown';
+  const isLive = gatewayLive?.live ?? false;
 
   const settingsEntries: SettingsEntry[] = [
     { label: 'Model', value: settings?.model.model_name ?? 'N/A' },
@@ -264,10 +288,10 @@ export function Dashboard() {
             <StatCard
               size={size}
               label="Status"
-              value="OK"
-              fallbackChar="✓"
-              iconBg="rgba(93,222,176,0.15)"
-              iconText="#5ddeb0"
+              value={statusValue}
+              fallbackChar={statusIcon}
+              iconBg={gatewayStatus?.state === 'running' ? 'rgba(93,222,176,0.15)' : 'rgba(239,68,68,0.15)'}
+              iconText={gatewayStatus?.state === 'running' ? '#5ddeb0' : '#ef4444'}
               clipId="stat-health"
             />
           </SvgCardShell>
@@ -285,7 +309,7 @@ export function Dashboard() {
       case 'health':
         return (
           <SvgCardShell size={size}>
-            <HealthCard size={size} />
+            <HealthCard size={size} healthStatus={healthStatus} isLive={isLive} />
           </SvgCardShell>
         );
     }

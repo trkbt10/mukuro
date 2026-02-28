@@ -183,10 +183,34 @@ fn to_basic_chat_messages(messages : Array[@types.ModelMessage]) -> Array[Json] 
         result.push({ "role": "system", "content": content })
       @types.ModelMessage::User(content~, ..) =>
         result.push({ "role": "user", "content": content })
-      @types.ModelMessage::Assistant(content~, ..) =>
-        result.push({ "role": "assistant", "content": content })
-      @types.ModelMessage::ToolResult(content~, ..) =>
-        result.push({ "role": "user", "content": content })
+      @types.ModelMessage::Assistant(content~, tool_calls~) =>
+        match tool_calls {
+          Some(calls) if calls.length() > 0 => {
+            let tc_json : Array[Json] = []
+            for call in calls {
+              tc_json.push({
+                "id": call.id,
+                "type": "function",
+                "function": {
+                  "name": call.name,
+                  "arguments": call.arguments.stringify(),
+                },
+              })
+            }
+            result.push({
+              "role": "assistant",
+              "content": content,
+              "tool_calls": Json::array(tc_json),
+            })
+          }
+          _ => result.push({ "role": "assistant", "content": content })
+        }
+      @types.ModelMessage::ToolResult(tool_call_id~, content~) =>
+        result.push({
+          "role": "tool",
+          "tool_call_id": tool_call_id,
+          "content": content,
+        })
     }
   }
   result
@@ -197,10 +221,20 @@ fn build_openai_body_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
+  tools : Array[@types.ToolDefinition],
 ) -> Json {
-  {
-    "model": select_model_name(orchestrator, options),
-    "messages": Json::array(to_basic_chat_messages(messages)),
+  if tools.length() > 0 {
+    {
+      "model": select_model_name(orchestrator, options),
+      "messages": Json::array(to_basic_chat_messages(messages)),
+      "tools": Json::array(tools_to_openai_chat_json(tools)),
+      "tool_choice": "auto",
+    }
+  } else {
+    {
+      "model": select_model_name(orchestrator, options),
+      "messages": Json::array(to_basic_chat_messages(messages)),
+    }
   }
 }
 
@@ -209,35 +243,56 @@ fn build_openai_responses_body_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
+  tools : Array[@types.ToolDefinition],
 ) -> Json {
   let input_items : Array[Json] = []
   for msg in messages {
     match msg {
       @types.ModelMessage::System(content) =>
-        input_items.push({
-          "role": "system",
-          "content": Json::array([{ "type": "input_text", "text": content }]),
-        })
+        input_items.push({ "role": "system", "content": content })
       @types.ModelMessage::User(content~, ..) =>
+        input_items.push({ "role": "user", "content": content })
+      @types.ModelMessage::Assistant(content~, tool_calls~) =>
+        match tool_calls {
+          Some(calls) if calls.length() > 0 => {
+            // Assistant message with tool calls: emit function_call items
+            if content.length() > 0 {
+              input_items.push({ "role": "assistant", "content": content })
+            }
+            for call in calls {
+              input_items.push({
+                "type": "function_call",
+                "call_id": call.id,
+                "name": call.name,
+                "arguments": call.arguments.stringify(),
+                "status": "completed",
+              })
+            }
+          }
+          _ =>
+            // Plain text assistant message
+            input_items.push({ "role": "assistant", "content": content })
+        }
+      @types.ModelMessage::ToolResult(tool_call_id~, content~) =>
         input_items.push({
-          "role": "user",
-          "content": Json::array([{ "type": "input_text", "text": content }]),
-        })
-      @types.ModelMessage::Assistant(content~, ..) =>
-        input_items.push({
-          "role": "assistant",
-          "content": Json::array([{ "type": "output_text", "text": content }]),
-        })
-      @types.ModelMessage::ToolResult(content~, ..) =>
-        input_items.push({
-          "role": "user",
-          "content": Json::array([{ "type": "input_text", "text": content }]),
+          "type": "function_call_output",
+          "call_id": tool_call_id,
+          "output": content,
         })
     }
   }
-  {
-    "model": select_model_name(orchestrator, options),
-    "input": Json::array(input_items),
+  if tools.length() > 0 {
+    {
+      "model": select_model_name(orchestrator, options),
+      "input": Json::array(input_items),
+      "tools": Json::array(tools_to_responses_api_json(tools)),
+      "tool_choice": "auto",
+    }
+  } else {
+    {
+      "model": select_model_name(orchestrator, options),
+      "input": Json::array(input_items),
+    }
   }
 }
 
@@ -261,11 +316,89 @@ fn to_anthropic_messages(messages : Array[@types.ModelMessage]) -> Array[Json] {
       @types.ModelMessage::System(_) => ()
       @types.ModelMessage::User(content~, ..) =>
         result.push({ "role": "user", "content": content })
-      @types.ModelMessage::Assistant(content~, ..) =>
-        result.push({ "role": "assistant", "content": content })
-      @types.ModelMessage::ToolResult(content~, ..) =>
-        result.push({ "role": "user", "content": content })
+      @types.ModelMessage::Assistant(content~, tool_calls~) =>
+        match tool_calls {
+          Some(calls) if calls.length() > 0 => {
+            let content_blocks : Array[Json] = []
+            if content.length() > 0 {
+              content_blocks.push({ "type": "text", "text": content })
+            }
+            for call in calls {
+              content_blocks.push({
+                "type": "tool_use",
+                "id": call.id,
+                "name": call.name,
+                "input": call.arguments,
+              })
+            }
+            result.push({
+              "role": "assistant",
+              "content": Json::array(content_blocks),
+            })
+          }
+          _ => result.push({ "role": "assistant", "content": content })
+        }
+      @types.ModelMessage::ToolResult(tool_call_id~, content~) =>
+        result.push({
+          "role": "user",
+          "content": Json::array([
+            {
+              "type": "tool_result",
+              "tool_use_id": tool_call_id,
+              "content": content,
+            },
+          ]),
+        })
     }
+  }
+  result
+}
+
+///|
+fn tools_to_openai_chat_json(
+  tools : Array[@types.ToolDefinition],
+) -> Array[Json] {
+  let result : Array[Json] = []
+  for tool in tools {
+    result.push({
+      "type": "function",
+      "function": {
+        "name": tool.name,
+        "description": tool.description,
+        "parameters": tool.parameters,
+      },
+    })
+  }
+  result
+}
+
+///|
+fn tools_to_responses_api_json(
+  tools : Array[@types.ToolDefinition],
+) -> Array[Json] {
+  let result : Array[Json] = []
+  for tool in tools {
+    result.push({
+      "type": "function",
+      "name": tool.name,
+      "description": tool.description,
+      "parameters": tool.parameters,
+    })
+  }
+  result
+}
+
+///|
+fn tools_to_anthropic_json(
+  tools : Array[@types.ToolDefinition],
+) -> Array[Json] {
+  let result : Array[Json] = []
+  for tool in tools {
+    result.push({
+      "name": tool.name,
+      "description": tool.description,
+      "input_schema": tool.parameters,
+    })
   }
   result
 }
@@ -275,13 +408,24 @@ fn build_anthropic_body_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
+  tools : Array[@types.ToolDefinition],
 ) -> Json {
   let system = extract_anthropic_system(messages)
-  {
-    "model": select_model_name(orchestrator, options),
-    "max_tokens": 1024,
-    "system": system,
-    "messages": Json::array(to_anthropic_messages(messages)),
+  if tools.length() > 0 {
+    {
+      "model": select_model_name(orchestrator, options),
+      "max_tokens": 4096,
+      "system": system,
+      "messages": Json::array(to_anthropic_messages(messages)),
+      "tools": Json::array(tools_to_anthropic_json(tools)),
+    }
+  } else {
+    {
+      "model": select_model_name(orchestrator, options),
+      "max_tokens": 4096,
+      "system": system,
+      "messages": Json::array(to_anthropic_messages(messages)),
+    }
   }
 }
 
@@ -295,11 +439,49 @@ fn parse_openai_response(body : String) -> @types.ModelResponse {
       if choices.length() == 0 {
         @types.ModelResponse::ModelError("OpenAI response has no choices")
       } else {
-        match choices[0] {
-          { "message": { "content": String(content), .. }, .. } =>
-            @types.ModelResponse::Text(content)
-          _ =>
-            @types.ModelResponse::ModelError("OpenAI response missing content")
+        let choice = choices[0]
+        // Check for tool calls first
+        let tool_calls : Array[@types.ToolCallRequest] = match choice {
+          { "message": { "tool_calls": Array(tcs), .. }, .. } => {
+            let calls : Array[@types.ToolCallRequest] = []
+            for tc in tcs {
+              match tc {
+                {
+                  "id": String(id),
+                  "function": {
+                    "name": String(name),
+                    "arguments": String(args_str),
+                    ..
+                  },
+                  ..
+                } => {
+                  let arguments : Json = @json.parse(args_str) catch { _ => {} }
+                  calls.push(
+                    @types.ToolCallRequest::new(id~, name~, arguments~),
+                  )
+                }
+                _ => ()
+              }
+            }
+            calls
+          }
+          _ => []
+        }
+        let finish_reason = match choice {
+          { "finish_reason": String(fr), .. } => fr
+          _ => ""
+        }
+        if finish_reason == "tool_calls" && tool_calls.length() > 0 {
+          @types.ModelResponse::ToolCalls(tool_calls)
+        } else {
+          match choice {
+            { "message": { "content": String(content), .. }, .. } =>
+              @types.ModelResponse::Text(content)
+            _ =>
+              @types.ModelResponse::ModelError(
+                "OpenAI response missing content",
+              )
+          }
         }
       }
     _ => @types.ModelResponse::ModelError("OpenAI response shape is invalid")
@@ -314,52 +496,7 @@ fn parse_openai_responses_response(body : String) -> @types.ModelResponse {
         "Invalid OpenAI Responses response JSON",
       )
   }
-  match json {
-    { "output_text": String(text), .. } =>
-      if text.length() == 0 {
-        @types.ModelResponse::ModelError(
-          "OpenAI Responses response missing output_text",
-        )
-      } else {
-        @types.ModelResponse::Text(text)
-      }
-    { "output": Array(items), .. } => {
-      let mut found_text = ""
-      let mut i = 0
-      while i < items.length() && found_text.length() == 0 {
-        match items[i] {
-          { "content": Array(contents), .. } => {
-            let mut j = 0
-            while j < contents.length() && found_text.length() == 0 {
-              match contents[j] {
-                { "text": String(t), .. } =>
-                  if t.length() > 0 {
-                    found_text = t
-                  } else {
-                    ()
-                  }
-                _ => ()
-              }
-              j = j + 1
-            }
-          }
-          _ => ()
-        }
-        i = i + 1
-      }
-      if found_text.length() == 0 {
-        @types.ModelResponse::ModelError(
-          "OpenAI Responses response has no textual output",
-        )
-      } else {
-        @types.ModelResponse::Text(found_text)
-      }
-    }
-    _ =>
-      @types.ModelResponse::ModelError(
-        "OpenAI Responses response shape is invalid",
-      )
-  }
+  @sse.parse_responses_api_response(json)
 }
 
 ///|
@@ -381,6 +518,7 @@ fn parse_anthropic_response(body : String) -> @types.ModelResponse {
   match json {
     { "content": Array(contents), .. } => {
       let text = StringBuilder::new()
+      let tool_calls : Array[@types.ToolCallRequest] = []
       for item in contents {
         match item {
           { "type": String("text"), "text": String(t), .. } => {
@@ -389,11 +527,29 @@ fn parse_anthropic_response(body : String) -> @types.ModelResponse {
             }
             text.write_string(t)
           }
+          {
+            "type": String("tool_use"),
+            "id": String(id),
+            "name": String(name),
+            "input": input,
+            ..
+          } =>
+            tool_calls.push(@types.ToolCallRequest::new(id~, name~, arguments=input))
           _ => ()
         }
       }
-      @types.ModelResponse::Text(text.to_string())
+      let stop_reason = match json {
+        { "stop_reason": String(sr), .. } => sr
+        _ => ""
+      }
+      if stop_reason == "tool_use" && tool_calls.length() > 0 {
+        @types.ModelResponse::ToolCalls(tool_calls)
+      } else {
+        @types.ModelResponse::Text(text.to_string())
+      }
     }
+    { "error": { "message": String(msg), .. }, .. } =>
+      @types.ModelResponse::ModelError(msg)
     _ => @types.ModelResponse::ModelError("Anthropic response shape is invalid")
   }
 }
@@ -403,15 +559,16 @@ async fn call_openai_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
+  tools : Array[@types.ToolDefinition],
 ) -> @types.ModelResponse {
   let headers : Map[String, String] = { "Content-Type": "application/json" }
   if orchestrator.api_key.length() > 0 {
     headers["Authorization"] = "Bearer \{orchestrator.api_key}"
   }
   let body = (if orchestrator.use_responses_api {
-    build_openai_responses_body_impl(orchestrator, messages, options)
+    build_openai_responses_body_impl(orchestrator, messages, options, tools)
   } else {
-    build_openai_body_impl(orchestrator, messages, options)
+    build_openai_body_impl(orchestrator, messages, options, tools)
   }).stringify()
   let base = normalize_base_url(orchestrator.base_url)
   let path = if orchestrator.use_responses_api {
@@ -449,13 +606,14 @@ async fn call_anthropic_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
+  tools : Array[@types.ToolDefinition],
 ) -> @types.ModelResponse {
   let headers : Map[String, String] = {
     "Content-Type": "application/json",
     "x-api-key": orchestrator.api_key,
     "anthropic-version": "2023-06-01",
   }
-  let body = build_anthropic_body_impl(orchestrator, messages, options).stringify()
+  let body = build_anthropic_body_impl(orchestrator, messages, options, tools).stringify()
   let req : @interfaces.HttpRequest = {
     url: "https://api.anthropic.com/v1/messages",
     http_method: @interfaces.HttpMethod::Post,
@@ -481,15 +639,16 @@ async fn call_openai_async_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
+  tools : Array[@types.ToolDefinition],
 ) -> @types.ModelResponse {
   let headers : Map[String, String] = { "Content-Type": "application/json" }
   if orchestrator.api_key.length() > 0 {
     headers["Authorization"] = "Bearer \{orchestrator.api_key}"
   }
   let body = (if orchestrator.use_responses_api {
-    build_openai_responses_body_impl(orchestrator, messages, options)
+    build_openai_responses_body_impl(orchestrator, messages, options, tools)
   } else {
-    build_openai_body_impl(orchestrator, messages, options)
+    build_openai_body_impl(orchestrator, messages, options, tools)
   }).stringify()
   let base = normalize_base_url(orchestrator.base_url)
   let path = if orchestrator.use_responses_api {
@@ -521,13 +680,14 @@ async fn call_anthropic_async_impl(
   orchestrator : RuntimeModelOrchestrator,
   messages : Array[@types.ModelMessage],
   options : @types.ModelOptions,
+  tools : Array[@types.ToolDefinition],
 ) -> @types.ModelResponse {
   let headers : Map[String, String] = {
     "Content-Type": "application/json",
     "x-api-key": orchestrator.api_key,
     "anthropic-version": "2023-06-01",
   }
-  let body = build_anthropic_body_impl(orchestrator, messages, options).stringify()
+  let body = build_anthropic_body_impl(orchestrator, messages, options, tools).stringify()
   let (response, body_data) = @xhttp.post(
     "https://api.anthropic.com/v1/messages",
     body,
@@ -553,7 +713,6 @@ pub async fn runtime_model_invoke_async(
   tools : Array[@types.ToolDefinition],
   options : @types.ModelOptions,
 ) -> @types.ModelResponse {
-  ignore(tools)
   let cfg = load_runtime_model_config()
   let runtime : RuntimeModelOrchestrator = {
     provider: cfg.provider,
@@ -568,9 +727,9 @@ pub async fn runtime_model_invoke_async(
     None => ()
   }
   if is_openai_compatible_provider(runtime.provider) {
-    call_openai_async_impl(runtime, messages, options)
+    call_openai_async_impl(runtime, messages, options, tools)
   } else {
-    call_anthropic_async_impl(runtime, messages, options)
+    call_anthropic_async_impl(runtime, messages, options, tools)
   }
 }
 
@@ -581,7 +740,6 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
   tools~,
   options~,
 ) {
-  ignore(tools)
   let cfg = load_runtime_model_config()
   let runtime : RuntimeModelOrchestrator = {
     provider: cfg.provider,
@@ -600,8 +758,8 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
     None => ()
   }
   if is_openai_compatible_provider(runtime.provider) {
-    call_openai_impl(runtime, messages, options)
+    call_openai_impl(runtime, messages, options, tools)
   } else {
-    call_anthropic_impl(runtime, messages, options)
+    call_anthropic_impl(runtime, messages, options, tools)
   }
 }

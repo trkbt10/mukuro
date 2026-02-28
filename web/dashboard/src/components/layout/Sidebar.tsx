@@ -20,6 +20,7 @@ import {
   RotateCcw,
   Cpu,
   Brain,
+  MessageCircle,
   Sliders,
   Moon,
   Sun,
@@ -164,6 +165,14 @@ export function Sidebar() {
           icon={<LayoutDashboard style={iconSize} />}
           selected={pathname === '/dashboard' || pathname === '/'}
           onClick={() => navigate('/dashboard')}
+        />
+
+        {/* Chat */}
+        <TreeItem
+          label="Chat"
+          icon={<MessageCircle style={iconSize} />}
+          selected={pathname === '/chat'}
+          onClick={() => navigate('/chat')}
         />
 
         {/* Plugins section */}

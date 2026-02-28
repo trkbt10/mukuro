@@ -164,6 +164,7 @@ pub(all) struct AllSettingsResponse {
   retry : RetrySettingsResponse
   agent : AgentSettingsResponse
   model : ModelSettingsResponse
+  thinking : ThinkingSettingsResponse
   providers : Array[ProviderSettingsResponse]
 }
 
@@ -178,6 +179,7 @@ pub fn AllSettingsResponse::to_json(self : AllSettingsResponse) -> Json {
     "retry": self.retry.to_json(),
     "agent": self.agent.to_json(),
     "model": self.model.to_json(),
+    "thinking": self.thinking.to_json(),
     "providers": Json::array(providers),
   }
 }

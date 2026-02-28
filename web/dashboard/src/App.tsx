@@ -8,6 +8,7 @@ import { Context } from './pages/Context';
 import { ContextDetail } from './pages/ContextDetail';
 import { Settings } from './pages/Settings';
 import { SettingsDetail } from './pages/SettingsDetail';
+import { Chat } from './pages/Chat';
 import { MessageProviders } from './pages/MessageProviders';
 import { ProviderDetail } from './pages/ProviderDetail';
 import { Toaster } from './components/ui';
@@ -19,6 +20,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="chat" element={<Chat />} />
           <Route path="plugins" element={<Plugins />} />
           <Route path="plugins/:id" element={<PluginDetail />} />
           <Route path="context" element={<Context />} />

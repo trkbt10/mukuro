@@ -62,6 +62,7 @@ fn make_router_with_handlers() -> ApiRouter {
     settings_handlers: Some(settings_handlers),
     config_handlers: None,
     provider_handlers: None,
+    chat_handlers: None,
   }
 }
 
