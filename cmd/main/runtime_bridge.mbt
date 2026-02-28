@@ -157,6 +157,25 @@ pub fn register_builtin_tools() -> Unit {
 let global_model_orchestrator : RuntimeModelOrchestrator = RuntimeModelOrchestrator::default()
 
 ///|
+/// RuntimeModelConfig から AgentLoopOptions を構築する
+/// config の model 値を反映し、デフォルト値との乖離を防ぐ
+fn build_agent_loop_options_from_config() -> @agent.AgentLoopOptions {
+  let cfg = load_runtime_model_config()
+  let defaults = @agent.AgentLoopOptions::default()
+  {
+    max_iterations: defaults.max_iterations,
+    model_options: {
+      model_name: cfg.model,
+      temperature: defaults.model_options.temperature,
+      max_tokens: defaults.model_options.max_tokens,
+      stop_sequences: defaults.model_options.stop_sequences,
+    },
+    timeout_ms: defaults.timeout_ms,
+    retry_config: defaults.retry_config,
+  }
+}
+
+///|
 /// セッションごとに独立した履歴レコーダーを生成する
 /// グローバル共有レコーダーでは並行セッションでファイルハンドルが衝突するため、
 /// 各ディスパッチ呼び出しで新しいインスタンスを作る
@@ -169,7 +188,7 @@ async fn handle_inbound_with_agent_loop(
   envelope : @types.InboundEnvelope,
 ) -> @types.OutboundMessage {
   let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
-  let options = @agent.AgentLoopOptions::default()
+  let options = build_agent_loop_options_from_config()
   let deps : @agent.AgentDependencies = {
     session_resolver: global_session_resolver,
     session_store: global_session_store,
@@ -188,7 +207,7 @@ pub async fn handle_inbound_with_agent_loop_async(
   envelope : @types.InboundEnvelope,
 ) -> @types.OutboundMessage {
   let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
-  let options = @agent.AgentLoopOptions::default()
+  let options = build_agent_loop_options_from_config()
   let deps : @agent.AsyncAgentDependencies = {
     session_resolver: global_session_resolver,
     session_store: global_session_store,
