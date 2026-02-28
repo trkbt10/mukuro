@@ -24,10 +24,6 @@ export {
   useUpdateRetrySettings,
   useAgentSettings,
   useUpdateAgentSettings,
-  useModelSettings,
-  useUpdateModelSettings,
-  useThinkingSettings,
-  useUpdateThinkingSettings,
   useModelInferenceSettings,
   useUpdateModelInferenceSettings,
   useAiProviders,
@@ -73,3 +69,10 @@ export {
   type ChatMessage,
   type ChatStatus,
 } from './useChat';
+
+export {
+  useHistoryDates,
+  useHistorySessions,
+  useHistorySession,
+  useResumeSession,
+} from './useHistory';

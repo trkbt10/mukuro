@@ -9,6 +9,7 @@ import { ContextDetail } from './pages/ContextDetail';
 import { Settings } from './pages/Settings';
 import { SettingsDetail } from './pages/SettingsDetail';
 import { Chat } from './pages/Chat';
+import { History } from './pages/History';
 import { MessageProviders } from './pages/MessageProviders';
 import { ProviderDetail } from './pages/ProviderDetail';
 import { Toaster } from './components/ui';
@@ -21,6 +22,7 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="chat" element={<Chat />} />
+          <Route path="history" element={<History />} />
           <Route path="plugins" element={<Plugins />} />
           <Route path="plugins/:id" element={<PluginDetail />} />
           <Route path="context" element={<Context />} />
@@ -28,6 +30,7 @@ export default function App() {
           <Route path="providers" element={<MessageProviders />} />
           <Route path="providers/:id" element={<ProviderDetail />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="settings/ai-providers/:providerName" element={<SettingsDetail />} />
           <Route path="settings/:section" element={<SettingsDetail />} />
         </Route>
       </Routes>

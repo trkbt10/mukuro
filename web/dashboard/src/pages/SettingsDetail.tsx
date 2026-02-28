@@ -19,7 +19,7 @@ import {
   useUpdateAiProvider,
   useProviderModels,
 } from '@/hooks';
-import type { ThinkingLevel, ProviderSettings } from '@mukuro/client';
+import type { ThinkingLevel } from '@mukuro/client';
 import styles from './SettingsDetail.module.css';
 
 const thinkingLevelOptions = [
@@ -34,13 +34,16 @@ const thinkingLevelOptions = [
 const sectionMeta: Record<string, { title: string; desc: string }> = {
   retry: { title: 'Retry Settings', desc: 'Configure retry behavior for failed API calls' },
   agent: { title: 'Agent Settings', desc: 'Configure agent loop parameters' },
-  'model-inference': { title: 'Model & Inference', desc: 'Configure the AI model and extended thinking behavior' },
-  'ai-providers': { title: 'AI Providers', desc: 'Configure provider API keys, base URLs, and model selection' },
 };
 
 export function SettingsDetail() {
-  const { section } = useParams<{ section: string }>();
+  const { section, providerName } = useParams<{ section?: string; providerName?: string }>();
   const { data: settings, isLoading } = useAllSettings();
+
+  // Provider detail page: /settings/ai-providers/:providerName
+  if (providerName) {
+    return <ProviderDetailPage providerName={providerName} />;
+  }
 
   if (isLoading) {
     return <Loading message="Loading settings..." />;
@@ -65,8 +68,6 @@ export function SettingsDetail() {
 
       {section === 'retry' && settings && <RetrySection settings={settings.retry} />}
       {section === 'agent' && settings && <AgentSection settings={settings.agent} />}
-      {section === 'model-inference' && <ModelInferenceSection />}
-      {section === 'ai-providers' && <AiProvidersSection />}
     </div>
   );
 }
@@ -149,117 +150,43 @@ function AgentSection({ settings }: { settings: { max_iterations: number; timeou
   );
 }
 
-function ModelInferenceSection() {
-  const { data: settings } = useModelInferenceSettings();
-  const updateModelInference = useUpdateModelInferenceSettings();
-  const [modelName, setModelName] = useState('');
-  const [temperature, setTemperature] = useState('');
-  const [maxTokens, setMaxTokens] = useState('');
-  const [thinkingEnabled, setThinkingEnabled] = useState(false);
-  const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevel>('medium');
-  const [budgetTokens, setBudgetTokens] = useState('');
-  const [dirty, setDirty] = useState(false);
+function ProviderDetailPage({ providerName }: { providerName: string }) {
+  const { data: providers, isLoading: providerLoading } = useAiProviders();
+  const { data: inferenceSettings, isLoading: inferenceLoading } = useModelInferenceSettings();
 
-  useEffect(() => {
-    if (settings) {
-      setModelName(settings.model_name);
-      setTemperature(settings.temperature !== null ? String(settings.temperature) : '');
-      setMaxTokens(settings.max_tokens !== null ? String(settings.max_tokens) : '');
-      setThinkingEnabled(settings.thinking_enabled);
-      setThinkingLevel(settings.thinking_level);
-      setBudgetTokens(settings.thinking_budget_tokens !== null ? String(settings.thinking_budget_tokens) : '');
-      setDirty(false);
-    }
-  }, [settings]);
-
-  const handleSave = () => {
-    updateModelInference.mutate(
-      {
-        model_name: modelName,
-        temperature: temperature ? parseFloat(temperature) : null,
-        max_tokens: maxTokens ? parseInt(maxTokens, 10) : null,
-        thinking_enabled: thinkingEnabled,
-        thinking_level: thinkingLevel,
-        thinking_budget_tokens: budgetTokens ? parseInt(budgetTokens, 10) : null,
-      },
-      { onSuccess: () => setDirty(false) }
-    );
-  };
-
-  return (
-    <>
-      <PanelSection
-        title="Model"
-        action={
-          <Button size="sm" onClick={handleSave} loading={updateModelInference.isPending} disabled={!dirty} leftIcon={<Save style={{ width: 12, height: 12 }} />}>
-            Save
-          </Button>
-        }
-      >
-        <div className={styles.fields}>
-          <Input label="Model Name" value={modelName} onChange={(v) => { setModelName(v); setDirty(true); }} placeholder="e.g., claude-sonnet-4-20250514" />
-          <Input label="Temperature" type="number" value={temperature} onChange={(v) => { setTemperature(v); setDirty(true); }} placeholder="API default (leave empty)" />
-          <Input label="Max Tokens" type="number" value={maxTokens} onChange={(v) => { setMaxTokens(v); setDirty(true); }} placeholder="API default (leave empty)" />
-        </div>
-      </PanelSection>
-      <PanelSection title="Extended Thinking">
-        <div className={styles.fields}>
-          <Toggle
-            checked={thinkingEnabled}
-            onChange={(checked) => { setThinkingEnabled(checked); setDirty(true); }}
-            label="Enable Thinking"
-            description="Allow the model to think before responding"
-          />
-          <Select
-            label="Thinking Level"
-            options={thinkingLevelOptions}
-            value={thinkingLevel}
-            onChange={(value) => { setThinkingLevel(value as ThinkingLevel); setDirty(true); }}
-            disabled={!thinkingEnabled}
-          />
-          <Input
-            label="Budget Tokens"
-            type="number"
-            value={budgetTokens}
-            onChange={(v) => { setBudgetTokens(v); setDirty(true); }}
-            placeholder="Optional token budget"
-            disabled={!thinkingEnabled}
-          />
-        </div>
-      </PanelSection>
-    </>
-  );
-}
-
-function AiProvidersSection() {
-  const { data: providers, isLoading } = useAiProviders();
-
-  if (isLoading) {
-    return <Loading message="Loading providers..." />;
+  if (providerLoading || inferenceLoading) {
+    return <Loading message={`Loading ${providerName} settings...`} />;
   }
 
-  if (!providers || providers.length === 0) {
+  const provider = providers?.find((p) => p.name === providerName);
+
+  if (!provider) {
     return (
-      <PanelSection title="Providers">
-        <p style={{ color: 'var(--mk-text-muted)', fontSize: '0.8125rem' }}>
-          No providers configured. Add a provider in your config file.
-        </p>
-      </PanelSection>
+      <div className={styles.emptyState}>
+        <p>Provider "{providerName}" not found</p>
+      </div>
     );
   }
 
   return (
-    <>
-      {providers.map((p) => (
-        <ProviderCard key={p.name} provider={p} />
-      ))}
-    </>
+    <div className={styles.page}>
+      <div>
+        <h1 className={styles.pageTitle}>{providerName}</h1>
+        <p className={styles.pageDesc}>Provider connection, model selection, and inference settings</p>
+      </div>
+
+      <ProviderConnectionSection providerName={providerName} provider={provider} />
+      <ModelInferenceSection inferenceSettings={inferenceSettings ?? null} />
+    </div>
   );
 }
 
-function ProviderCard({ provider }: { provider: ProviderSettings }) {
+function ProviderConnectionSection({ providerName, provider }: {
+  providerName: string;
+  provider: { base_url: string | null; has_api_key: boolean; default_model: string; use_responses_api: boolean };
+}) {
   const updateProvider = useUpdateAiProvider();
-  const { data: knownModels } = useProviderModels(provider.name);
+  const { data: knownModels } = useProviderModels(providerName);
   const [baseUrl, setBaseUrl] = useState(provider.base_url ?? '');
   const [apiKey, setApiKey] = useState('');
   const [apiKeyDirty, setApiKeyDirty] = useState(false);
@@ -279,9 +206,8 @@ function ProviderCard({ provider }: { provider: ProviderSettings }) {
   }, [provider]);
 
   const modelOptions = useMemo(() => {
-    const opts = (knownModels ?? []).map((m) => ({ value: m, label: m }));
-    // Ensure current model is in the list
-    if (defaultModel && !opts.some((o) => o.value === defaultModel)) {
+    const opts = (knownModels ?? []).map((m: string) => ({ value: m, label: m }));
+    if (defaultModel && !opts.some((o: { value: string }) => o.value === defaultModel)) {
       opts.unshift({ value: defaultModel, label: defaultModel });
     }
     return opts;
@@ -297,7 +223,7 @@ function ProviderCard({ provider }: { provider: ProviderSettings }) {
       update.api_key = apiKey;
     }
     updateProvider.mutate(
-      { name: provider.name, update },
+      { name: providerName, update },
       { onSuccess: () => { setDirty(false); setApiKeyDirty(false); } }
     );
   };
@@ -306,7 +232,7 @@ function ProviderCard({ provider }: { provider: ProviderSettings }) {
 
   return (
     <PanelSection
-      title={provider.name}
+      title="Provider Connection"
       action={
         <Button size="sm" onClick={handleSave} loading={updateProvider.isPending} disabled={!dirty} leftIcon={<Save style={{ width: 12, height: 12 }} />}>
           Save
@@ -371,5 +297,85 @@ function ProviderCard({ provider }: { provider: ProviderSettings }) {
         />
       </div>
     </PanelSection>
+  );
+}
+
+function ModelInferenceSection({ inferenceSettings }: {
+  inferenceSettings: { model_name: string; temperature: number | null; max_tokens: number | null; thinking_enabled: boolean; thinking_level: ThinkingLevel; thinking_budget_tokens: number | null } | null;
+}) {
+  const updateModelInference = useUpdateModelInferenceSettings();
+  const [temperature, setTemperature] = useState('');
+  const [maxTokens, setMaxTokens] = useState('');
+  const [thinkingEnabled, setThinkingEnabled] = useState(false);
+  const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevel>('medium');
+  const [budgetTokens, setBudgetTokens] = useState('');
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (inferenceSettings) {
+      setTemperature(inferenceSettings.temperature !== null ? String(inferenceSettings.temperature) : '');
+      setMaxTokens(inferenceSettings.max_tokens !== null ? String(inferenceSettings.max_tokens) : '');
+      setThinkingEnabled(inferenceSettings.thinking_enabled);
+      setThinkingLevel(inferenceSettings.thinking_level);
+      setBudgetTokens(inferenceSettings.thinking_budget_tokens !== null ? String(inferenceSettings.thinking_budget_tokens) : '');
+      setDirty(false);
+    }
+  }, [inferenceSettings]);
+
+  const handleSave = () => {
+    updateModelInference.mutate(
+      {
+        model_name: inferenceSettings?.model_name ?? '',
+        temperature: temperature ? parseFloat(temperature) : null,
+        max_tokens: maxTokens ? parseInt(maxTokens, 10) : null,
+        thinking_enabled: thinkingEnabled,
+        thinking_level: thinkingLevel,
+        thinking_budget_tokens: budgetTokens ? parseInt(budgetTokens, 10) : null,
+      },
+      { onSuccess: () => setDirty(false) }
+    );
+  };
+
+  return (
+    <>
+      <PanelSection
+        title="Inference Parameters"
+        action={
+          <Button size="sm" onClick={handleSave} loading={updateModelInference.isPending} disabled={!dirty} leftIcon={<Save style={{ width: 12, height: 12 }} />}>
+            Save
+          </Button>
+        }
+      >
+        <div className={styles.fields}>
+          <Input label="Temperature" type="number" value={temperature} onChange={(v) => { setTemperature(v); setDirty(true); }} placeholder="API default (leave empty)" />
+          <Input label="Max Tokens" type="number" value={maxTokens} onChange={(v) => { setMaxTokens(v); setDirty(true); }} placeholder="API default (leave empty)" />
+        </div>
+      </PanelSection>
+      <PanelSection title="Extended Thinking">
+        <div className={styles.fields}>
+          <Toggle
+            checked={thinkingEnabled}
+            onChange={(checked) => { setThinkingEnabled(checked); setDirty(true); }}
+            label="Enable Thinking"
+            description="Allow the model to think before responding"
+          />
+          <Select
+            label="Thinking Level"
+            options={thinkingLevelOptions}
+            value={thinkingLevel}
+            onChange={(value) => { setThinkingLevel(value as ThinkingLevel); setDirty(true); }}
+            disabled={!thinkingEnabled}
+          />
+          <Input
+            label="Budget Tokens"
+            type="number"
+            value={budgetTokens}
+            onChange={(v) => { setBudgetTokens(v); setDirty(true); }}
+            placeholder="Optional token budget"
+            disabled={!thinkingEnabled}
+          />
+        </div>
+      </PanelSection>
+    </>
   );
 }

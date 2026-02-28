@@ -154,34 +154,6 @@ test "handle_get_agent returns agent config when initialized" {
 }
 
 // =============================================================================
-// GET /settings/model Tests
-// =============================================================================
-
-///|
-test "handle_get_model returns 503 when not initialized" {
-  let state = SettingsState::new()
-  let handlers = create_settings_handlers(state)
-  let ctx = make_ctx("GET", "/api/v1/settings/model", "")
-  let resp = (handlers.get_model.0)(ctx)
-  assert_eq(resp.status, 503)
-}
-
-///|
-test "handle_get_model returns model config when initialized" {
-  let state = SettingsState::new()
-  state.init(make_test_config(), "/tmp/config.json")
-  let handlers = create_settings_handlers(state)
-  let ctx = make_ctx("GET", "/api/v1/settings/model", "")
-  let resp = (handlers.get_model.0)(ctx)
-  assert_eq(resp.status, 200)
-  assert_true(resp.body.contains("model_name"))
-}
-
-// =============================================================================
-// GET /settings/providers Tests
-// =============================================================================
-
-// =============================================================================
 // GET /settings/model-inference Tests
 // =============================================================================
 
@@ -226,9 +198,14 @@ test "handle_update_model_inference updates both model and thinking" {
     Some(c) => assert_eq(c.agent.model_options.model_name, "gpt-4o")
     None => assert_true(false)
   }
-  // Verify thinking was updated
-  assert_true(state.thinking_config.enabled)
-  assert_eq(state.thinking_config.level.to_string(), "high")
+  // Verify thinking was updated (stored in config.thinking)
+  match state.get_config() {
+    Some(c2) => {
+      assert_true(c2.thinking.enabled)
+      assert_eq(c2.thinking.level.to_string(), "high")
+    }
+    None => assert_true(false)
+  }
 }
 
 ///|

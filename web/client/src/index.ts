@@ -12,6 +12,7 @@ export { SettingsApi } from './endpoints/settings.js';
 export { ProvidersApi } from './endpoints/providers.js';
 export { GatewayApi } from './endpoints/gateway.js';
 export { ChatApi } from './endpoints/chat.js';
+export { HistoryApi } from './endpoints/history.js';
 
 export {
   MukuroApiError,
@@ -41,10 +42,8 @@ export type {
   AllSettings,
   UpdateRetrySettings,
   UpdateAgentSettings,
-  UpdateModelSettings,
   ModelInferenceSettings,
   UpdateModelInferenceSettings,
-  UpdateThinkingSettings,
   UpdateProviderSettings,
   // Message Provider types
   MessageProviderType,
@@ -69,4 +68,10 @@ export type {
   ChatMessage,
   ChatSession,
   ChatSessionHistory,
+  // History types
+  HistoryDateEntry,
+  HistorySessionSummary,
+  HistoryRecord,
+  HistorySessionDetail,
+  ResumeSessionResponse,
 } from './types.js';

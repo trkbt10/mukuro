@@ -174,19 +174,6 @@ export interface UpdateAgentSettings {
   bootstrap?: string;
 }
 
-export interface UpdateModelSettings {
-  model_name?: string;
-  temperature?: number | null;
-  max_tokens?: number | null;
-  stop_sequences?: string[] | null;
-}
-
-export interface UpdateThinkingSettings {
-  enabled?: boolean;
-  level?: ThinkingLevel;
-  budget_tokens?: number | null;
-}
-
 export interface UpdateProviderSettings {
   base_url?: string | null;
   default_model?: string;
@@ -380,4 +367,39 @@ export interface ChatSession {
 export interface ChatSessionHistory {
   chat_id: string;
   messages: ChatMessage[];
+}
+
+// ============================================================================
+// History Types
+// ============================================================================
+
+export interface HistoryDateEntry {
+  year: number;
+  month: number;
+  day: number;
+  session_count: number;
+}
+
+export interface HistorySessionSummary {
+  session_id: string;
+  channel: string;
+  chat_id: string;
+  filename: string;
+  started_at: number;
+  record_count: number;
+}
+
+export interface HistoryRecord {
+  timestamp: number;
+  record_type: string;
+  payload: Record<string, unknown>;
+}
+
+export interface HistorySessionDetail {
+  session_id: string;
+  records: HistoryRecord[];
+}
+
+export interface ResumeSessionResponse {
+  chat_id: string;
 }

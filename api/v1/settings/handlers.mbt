@@ -7,7 +7,6 @@
 pub(all) struct SettingsState {
   mut config : @types.MukuroConfig?
   mut retry_config : @types.RetryConfig
-  mut thinking_config : @types.ThinkingConfig
   mut config_path : String
   /// Callback for persisting config changes
   mut persister : ((@types.MukuroConfig, String) -> Unit)?
@@ -19,7 +18,6 @@ pub fn SettingsState::new() -> SettingsState {
   {
     config: None,
     retry_config: @types.RetryConfig::default(),
-    thinking_config: @types.ThinkingConfig::default(),
     config_path: "",
     persister: None,
   }
@@ -34,8 +32,6 @@ pub fn SettingsState::init(
 ) -> Unit {
   self.config = Some(config)
   self.config_path = path
-  // Load thinking config from MukuroConfig
-  self.thinking_config = config.thinking
 }
 
 ///|
@@ -83,12 +79,6 @@ pub fn create_settings_handlers(
     update_retry: @api.RouteHandler(fn(ctx) { handle_update_retry(state, ctx) }),
     get_agent: @api.RouteHandler(fn(ctx) { handle_get_agent(state, ctx) }),
     update_agent: @api.RouteHandler(fn(ctx) { handle_update_agent(state, ctx) }),
-    get_model: @api.RouteHandler(fn(ctx) { handle_get_model(state, ctx) }),
-    update_model: @api.RouteHandler(fn(ctx) { handle_update_model(state, ctx) }),
-    get_thinking: @api.RouteHandler(fn(ctx) { handle_get_thinking(state, ctx) }),
-    update_thinking: @api.RouteHandler(fn(ctx) {
-      handle_update_thinking(state, ctx)
-    }),
     get_model_inference: @api.RouteHandler(fn(ctx) {
       handle_get_model_inference(state, ctx)
     }),
@@ -127,7 +117,7 @@ fn handle_get_all(
         retry: RetrySettingsResponse::from_config(state.retry_config),
         agent: AgentSettingsResponse::from_config(config.agent),
         model: ModelSettingsResponse::from_config(config.agent.model_options),
-        thinking: ThinkingSettingsResponse::from_config(state.thinking_config),
+        thinking: ThinkingSettingsResponse::from_config(config.thinking),
         providers,
       }
       @api.json_response(200, { "data": response.to_json() })
@@ -170,32 +160,6 @@ fn handle_update_all(
                 _ => ()
               }
               new_config = { ..new_config, agent, }
-            }
-            _ => ()
-          }
-          // Update model settings if provided
-          match obj.get("model") {
-            Some(Object(model_obj)) => {
-              let mut model = config.agent.model_options
-              match model_obj.get("model_name") {
-                Some(String(s)) => model = { ..model, model_name: s }
-                _ => ()
-              }
-              match model_obj.get("temperature") {
-                Some(Number(n, ..)) => model = { ..model, temperature: Some(n) }
-                Some(Null) => model = { ..model, temperature: None }
-                _ => ()
-              }
-              match model_obj.get("max_tokens") {
-                Some(Number(n, ..)) =>
-                  model = { ..model, max_tokens: Some(n.to_int()) }
-                Some(Null) => model = { ..model, max_tokens: None }
-                _ => ()
-              }
-              new_config = {
-                ..new_config,
-                agent: { ..new_config.agent, model_options: model },
-              }
             }
             _ => ()
           }
@@ -353,142 +317,6 @@ fn handle_update_agent(
 }
 
 ///|
-/// GET /settings/model - Get model settings
-fn handle_get_model(
-  state : SettingsState,
-  _ctx : @api.ApiRequestContext,
-) -> @api.ApiResponse {
-  match state.config {
-    None =>
-      @api.error_response(
-        503, "service_unavailable", "Configuration not initialized",
-      )
-    Some(config) => {
-      let response = ModelSettingsResponse::from_config(
-        config.agent.model_options,
-      )
-      @api.json_response(200, { "data": response.to_json() })
-    }
-  }
-}
-
-///|
-/// PUT /settings/model - Update model settings
-fn handle_update_model(
-  state : SettingsState,
-  ctx : @api.ApiRequestContext,
-) -> @api.ApiResponse {
-  match @api.require_json_object(ctx.body) {
-    Err(resp) => resp
-    Ok(obj) =>
-      match state.config {
-        None =>
-          @api.error_response(
-            503, "service_unavailable", "Configuration not initialized",
-          )
-        Some(config) => {
-          let mut model = config.agent.model_options
-          match obj.get("model_name") {
-            Some(String(s)) => model = { ..model, model_name: s }
-            _ => ()
-          }
-          match obj.get("temperature") {
-            Some(Number(n, ..)) => model = { ..model, temperature: Some(n) }
-            Some(Null) => model = { ..model, temperature: None }
-            _ => ()
-          }
-          match obj.get("max_tokens") {
-            Some(Number(n, ..)) =>
-              model = { ..model, max_tokens: Some(n.to_int()) }
-            Some(Null) => model = { ..model, max_tokens: None }
-            _ => ()
-          }
-          match obj.get("stop_sequences") {
-            Some(Array(arr)) => {
-              let seqs : Array[String] = []
-              for item in arr {
-                match item {
-                  String(s) => seqs.push(s)
-                  _ => ()
-                }
-              }
-              model = {
-                ..model,
-                stop_sequences: if seqs.length() > 0 {
-                  Some(seqs)
-                } else {
-                  None
-                },
-              }
-            }
-            Some(Null) => model = { ..model, stop_sequences: None }
-            _ => ()
-          }
-          let new_agent = { ..config.agent, model_options: model }
-          state.config = Some({ ..config, agent: new_agent })
-          @api.json_response(200, {
-            "ok": true,
-            "data": ModelSettingsResponse::from_config(model).to_json(),
-          })
-        }
-      }
-  }
-}
-
-///|
-/// GET /settings/thinking - Get thinking settings
-fn handle_get_thinking(
-  state : SettingsState,
-  _ctx : @api.ApiRequestContext,
-) -> @api.ApiResponse {
-  let response = ThinkingSettingsResponse::from_config(state.thinking_config)
-  @api.json_response(200, { "data": response.to_json() })
-}
-
-///|
-/// PUT /settings/thinking - Update thinking settings
-fn handle_update_thinking(
-  state : SettingsState,
-  ctx : @api.ApiRequestContext,
-) -> @api.ApiResponse {
-  match @api.require_json_object(ctx.body) {
-    Err(resp) => resp
-    Ok(obj) => {
-      let mut thinking = state.thinking_config
-      match obj.get("enabled") {
-        Some(True) => thinking = { ..thinking, enabled: true }
-        Some(False) => thinking = { ..thinking, enabled: false }
-        _ => ()
-      }
-      match obj.get("level") {
-        Some(String(s)) =>
-          thinking = { ..thinking, level: @types.ThinkingLevel::from_string(s) }
-        _ => ()
-      }
-      match obj.get("budget_tokens") {
-        Some(Number(n, ..)) =>
-          thinking = { ..thinking, budget_tokens: Some(n.to_int()) }
-        Some(Null) => thinking = { ..thinking, budget_tokens: None }
-        _ => ()
-      }
-      state.thinking_config = thinking
-      // Sync to MukuroConfig and persist
-      match state.config {
-        Some(config) => {
-          state.config = Some({ ..config, thinking, })
-          state.persist()
-        }
-        None => ()
-      }
-      @api.json_response(200, {
-        "ok": true,
-        "data": ThinkingSettingsResponse::from_config(thinking).to_json(),
-      })
-    }
-  }
-}
-
-///|
 /// GET /settings/providers - List all providers
 fn handle_list_providers(
   state : SettingsState,
@@ -597,7 +425,7 @@ fn handle_get_model_inference(
     Some(config) => {
       let response = ModelInferenceSettingsResponse::from_configs(
         config.agent.model_options,
-        state.thinking_config,
+        config.thinking,
       )
       @api.json_response(200, { "data": response.to_json() })
     }
@@ -658,7 +486,7 @@ fn handle_update_model_inference(
             _ => ()
           }
           // Update thinking config
-          let mut thinking = state.thinking_config
+          let mut thinking = config.thinking
           match obj.get("thinking_enabled") {
             Some(True) => thinking = { ..thinking, enabled: true }
             Some(False) => thinking = { ..thinking, enabled: false }
@@ -681,7 +509,6 @@ fn handle_update_model_inference(
           // Persist both
           let new_agent = { ..config.agent, model_options: model }
           state.config = Some({ ..config, agent: new_agent, thinking })
-          state.thinking_config = thinking
           state.persist()
           let response = ModelInferenceSettingsResponse::from_configs(
             model, thinking,

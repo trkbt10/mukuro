@@ -21,6 +21,8 @@ pub(all) struct ApiRouter {
   provider_handlers : ProviderApiHandlers?
   /// Chat handlers
   chat_handlers : ChatApiHandlers?
+  /// History handlers
+  history_handlers : HistoryApiHandlers?
 }
 
 ///|
@@ -76,14 +78,6 @@ pub(all) struct SettingsApiHandlers {
   get_agent : RouteHandler
   /// PUT /settings/agent - update agent settings
   update_agent : RouteHandler
-  /// GET /settings/model - get model options
-  get_model : RouteHandler
-  /// PUT /settings/model - update model options
-  update_model : RouteHandler
-  /// GET /settings/thinking - get thinking settings
-  get_thinking : RouteHandler
-  /// PUT /settings/thinking - update thinking settings
-  update_thinking : RouteHandler
   /// GET /settings/model-inference - get merged model + thinking
   get_model_inference : RouteHandler
   /// PUT /settings/model-inference - update merged model + thinking
@@ -118,6 +112,19 @@ pub(all) struct ChatApiHandlers {
   get_history : RouteHandler
   /// DELETE /chat/sessions/{chat_id} - delete a chat session
   delete_session : RouteHandler
+  /// POST /chat/resume - resume from history session
+  resume_session : RouteHandler
+}
+
+///|
+/// History API handlers interface
+pub(all) struct HistoryApiHandlers {
+  /// GET /history/dates - list dates with history
+  list_dates : RouteHandler
+  /// GET /history/sessions?year=&month=&day= - list sessions for date
+  list_sessions : RouteHandler
+  /// GET /history/sessions/{session_id} - get session detail
+  get_session : RouteHandler
 }
 
 ///|
@@ -159,6 +166,7 @@ pub fn ApiRouter::new() -> ApiRouter {
     config_handlers: None,
     provider_handlers: None,
     chat_handlers: None,
+    history_handlers: None,
   }
 }
 
@@ -190,6 +198,7 @@ pub fn ApiRouter::route(
     "config" => self.route_config(ctx)
     "providers" => self.route_providers(ctx)
     "chat" => self.route_chat(ctx)
+    "history" => self.route_history(ctx)
     _ =>
       error_response(
         404,
@@ -207,7 +216,7 @@ fn api_index_handler(_ctx : ApiRequestContext) -> ApiResponse {
     "endpoints": Json::array(
       [
         "/api/v1/plugins", "/api/v1/context", "/api/v1/settings", "/api/v1/config",
-        "/api/v1/providers", "/api/v1/chat",
+        "/api/v1/providers", "/api/v1/chat", "/api/v1/history",
       ].map(fn(s) { Json::string(s) }),
     ),
   })
@@ -344,7 +353,7 @@ fn route_settings_endpoint(
         return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
-  // /settings/retry, /settings/agent, /settings/model, /settings/thinking
+  // /settings/retry, /settings/agent, /settings/model-inference, /settings/providers
   if segments.length() == 2 {
     let setting_type = segments[1]
     match (meth, setting_type) {
@@ -352,10 +361,6 @@ fn route_settings_endpoint(
       ("PUT", "retry") => return (handlers.update_retry.0)(ctx)
       ("GET", "agent") => return (handlers.get_agent.0)(ctx)
       ("PUT", "agent") => return (handlers.update_agent.0)(ctx)
-      ("GET", "model") => return (handlers.get_model.0)(ctx)
-      ("PUT", "model") => return (handlers.update_model.0)(ctx)
-      ("GET", "thinking") => return (handlers.get_thinking.0)(ctx)
-      ("PUT", "thinking") => return (handlers.update_thinking.0)(ctx)
       ("GET", "model-inference") => return (handlers.get_model_inference.0)(ctx)
       ("PUT", "model-inference") =>
         return (handlers.update_model_inference.0)(ctx)
@@ -526,6 +531,13 @@ fn route_chat_endpoint(
     }
     return error_response(405, "method_not_allowed", "Method not allowed")
   }
+  // /chat/resume
+  if segments.length() == 2 && segments[1] == "resume" {
+    if meth == "POST" {
+      return (handlers.resume_session.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
   // /chat/sessions/{chat_id}
   if segments.length() == 3 && segments[1] == "sessions" {
     if meth == "DELETE" {
@@ -543,4 +555,49 @@ fn route_chat_endpoint(
     return error_response(405, "method_not_allowed", "Method not allowed")
   }
   error_response(404, "not_found", "Unknown chat endpoint")
+}
+
+///|
+/// Route history API requests
+fn ApiRouter::route_history(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  match self.history_handlers {
+    None =>
+      error_response(501, "not_implemented", "History API not configured")
+    Some(handlers) => route_history_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route history endpoint
+fn route_history_endpoint(
+  handlers : HistoryApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /history/dates
+  if segments.length() == 2 && segments[1] == "dates" {
+    if meth == "GET" {
+      return (handlers.list_dates.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /history/sessions (with query params)
+  if segments.length() == 2 && segments[1] == "sessions" {
+    if meth == "GET" {
+      return (handlers.list_sessions.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /history/sessions/{session_id}
+  if segments.length() == 3 && segments[1] == "sessions" {
+    if meth == "GET" {
+      return (handlers.get_session.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  error_response(404, "not_found", "Unknown history endpoint")
 }

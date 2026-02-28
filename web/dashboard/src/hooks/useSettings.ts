@@ -3,9 +3,7 @@ import { getClient } from '@/lib/client';
 import type {
   UpdateRetrySettings,
   UpdateAgentSettings,
-  UpdateModelSettings,
   UpdateModelInferenceSettings,
-  UpdateThinkingSettings,
   UpdateProviderSettings,
 } from '@mukuro/client';
 import { createMutation } from './mutation';
@@ -45,34 +43,6 @@ export const useUpdateAgentSettings = createMutation<unknown, UpdateAgentSetting
   invalidateKeys: () => [SETTINGS_KEY],
   successMessage: 'Agent settings updated',
   errorMessage: 'Failed to update agent settings',
-});
-
-export function useModelSettings() {
-  return useQuery({
-    queryKey: [...SETTINGS_KEY, 'model'],
-    queryFn: () => getClient().settings.getModel(),
-  });
-}
-
-export const useUpdateModelSettings = createMutation<unknown, UpdateModelSettings>({
-  mutationFn: (update) => getClient().settings.updateModel(update),
-  invalidateKeys: () => [SETTINGS_KEY],
-  successMessage: 'Model settings updated',
-  errorMessage: 'Failed to update model settings',
-});
-
-export function useThinkingSettings() {
-  return useQuery({
-    queryKey: [...SETTINGS_KEY, 'thinking'],
-    queryFn: () => getClient().settings.getThinking(),
-  });
-}
-
-export const useUpdateThinkingSettings = createMutation<unknown, UpdateThinkingSettings>({
-  mutationFn: (update) => getClient().settings.updateThinking(update),
-  invalidateKeys: () => [SETTINGS_KEY],
-  successMessage: 'Thinking settings updated',
-  errorMessage: 'Failed to update thinking settings',
 });
 
 export function useAiProviders() {

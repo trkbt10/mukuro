@@ -49,10 +49,6 @@ fn make_router_with_handlers() -> ApiRouter {
     update_retry: RouteHandler(dummy_handler),
     get_agent: RouteHandler(dummy_handler),
     update_agent: RouteHandler(dummy_handler),
-    get_model: RouteHandler(dummy_handler),
-    update_model: RouteHandler(dummy_handler),
-    get_thinking: RouteHandler(dummy_handler),
-    update_thinking: RouteHandler(dummy_handler),
     get_model_inference: RouteHandler(dummy_handler),
     update_model_inference: RouteHandler(dummy_handler),
     list_providers: RouteHandler(dummy_handler),
@@ -66,6 +62,7 @@ fn make_router_with_handlers() -> ApiRouter {
     config_handlers: None,
     provider_handlers: None,
     chat_handlers: None,
+    history_handlers: None,
   }
 }
 

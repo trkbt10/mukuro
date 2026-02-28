@@ -7,15 +7,11 @@ import type {
   AllSettings,
   RetrySettings,
   AgentSettings,
-  ModelSettings,
   ModelInferenceSettings,
-  ThinkingSettings,
   ProviderSettings,
   UpdateRetrySettings,
   UpdateAgentSettings,
-  UpdateModelSettings,
   UpdateModelInferenceSettings,
-  UpdateThinkingSettings,
   UpdateProviderSettings,
 } from '../types.js';
 import type { HttpClient } from '../client.js';
@@ -82,60 +78,6 @@ export class SettingsApi {
     );
     if (!res.data) {
       throw new Error('Failed to update agent settings');
-    }
-    return res.data;
-  }
-
-  /**
-   * Get model settings
-   */
-  async getModel(): Promise<ModelSettings> {
-    const res =
-      await this.http.get<ApiResponse<ModelSettings>>('/settings/model');
-    if (!res.data) {
-      throw new Error('Failed to get model settings');
-    }
-    return res.data;
-  }
-
-  /**
-   * Update model settings
-   */
-  async updateModel(update: UpdateModelSettings): Promise<ModelSettings> {
-    const res = await this.http.put<ApiResponse<ModelSettings>>(
-      '/settings/model',
-      update
-    );
-    if (!res.data) {
-      throw new Error('Failed to update model settings');
-    }
-    return res.data;
-  }
-
-  /**
-   * Get thinking settings
-   */
-  async getThinking(): Promise<ThinkingSettings> {
-    const res =
-      await this.http.get<ApiResponse<ThinkingSettings>>('/settings/thinking');
-    if (!res.data) {
-      throw new Error('Failed to get thinking settings');
-    }
-    return res.data;
-  }
-
-  /**
-   * Update thinking settings
-   */
-  async updateThinking(
-    update: UpdateThinkingSettings
-  ): Promise<ThinkingSettings> {
-    const res = await this.http.put<ApiResponse<ThinkingSettings>>(
-      '/settings/thinking',
-      update
-    );
-    if (!res.data) {
-      throw new Error('Failed to update thinking settings');
     }
     return res.data;
   }

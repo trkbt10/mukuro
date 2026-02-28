@@ -21,6 +21,7 @@ import {
   Cpu,
   KeyRound,
   MessageCircle,
+  History,
   Sliders,
   Moon,
   Sun,
@@ -31,7 +32,7 @@ import {
 import { TreeItem } from 'react-editor-ui';
 import { LayerItem } from 'react-editor-ui/LayerItem';
 import { Badge, IconButton } from '@/components/ui';
-import { usePlugins, useMessageProviders, useContextFiles } from '@/hooks';
+import { usePlugins, useMessageProviders, useContextFiles, useAiProviders } from '@/hooks';
 import { useConnection, type ConnectionStatus } from '@/hooks/useConnection';
 import styles from './Sidebar.module.css';
 
@@ -50,8 +51,6 @@ const contextFileIcons: Record<string, React.ReactNode> = {
 const settingSections = [
   { id: 'retry', label: 'Retry', icon: <RotateCcw style={smallIcon} /> },
   { id: 'agent', label: 'Agent', icon: <Bot style={smallIcon} /> },
-  { id: 'model-inference', label: 'Model & Inference', icon: <Cpu style={smallIcon} /> },
-  { id: 'ai-providers', label: 'AI Providers', icon: <KeyRound style={smallIcon} /> },
 ] as const;
 
 function ConnectionIndicator() {
@@ -132,6 +131,7 @@ export function Sidebar() {
   const { data: plugins, refetch: refetchPlugins } = usePlugins();
   const { data: providers, refetch: refetchProviders } = useMessageProviders();
   const { data: contextFiles } = useContextFiles();
+  const { data: aiProviders } = useAiProviders();
 
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const init = new Set<string>();
@@ -139,6 +139,7 @@ export function Sidebar() {
     if (pathname.startsWith('/providers')) init.add('providers');
     if (pathname.startsWith('/context')) init.add('context');
     if (pathname.startsWith('/settings')) init.add('settings');
+    if (pathname.startsWith('/settings/ai-providers')) init.add('settings-providers');
     return init;
   });
 
@@ -173,6 +174,14 @@ export function Sidebar() {
           icon={<MessageCircle style={iconSize} />}
           selected={pathname === '/chat'}
           onClick={() => navigate('/chat')}
+        />
+
+        {/* History */}
+        <TreeItem
+          label="History"
+          icon={<History style={iconSize} />}
+          selected={pathname === '/history'}
+          onClick={() => navigate('/history')}
         />
 
         {/* Plugins section */}
@@ -307,19 +316,49 @@ export function Sidebar() {
           showVisibilityToggle={false}
           showLockToggle={false}
         />
-        {expanded.has('settings') && settingSections.map((s) => (
-          <LayerItem
-            key={s.id}
-            id={`settings-${s.id}`}
-            label={s.label}
-            icon={s.icon}
-            depth={1}
-            selected={pathname === `/settings/${s.id}`}
-            onPointerDown={() => navigate(`/settings/${s.id}`)}
-            showVisibilityToggle={false}
-            showLockToggle={false}
-          />
-        ))}
+        {expanded.has('settings') && (
+          <>
+            {settingSections.map((s) => (
+              <LayerItem
+                key={s.id}
+                id={`settings-${s.id}`}
+                label={s.label}
+                icon={s.icon}
+                depth={1}
+                selected={pathname === `/settings/${s.id}`}
+                onPointerDown={() => navigate(`/settings/${s.id}`)}
+                showVisibilityToggle={false}
+                showLockToggle={false}
+              />
+            ))}
+            <LayerItem
+              id="settings-ai-providers"
+              label="AI Providers"
+              icon={<KeyRound style={smallIcon} />}
+              hasChildren
+              depth={1}
+              expanded={expanded.has('settings-providers')}
+              onToggle={() => toggle('settings-providers')}
+              selected={false}
+              showVisibilityToggle={false}
+              showLockToggle={false}
+              badge={<Badge variant="default" size="sm">{aiProviders?.length ?? 0}</Badge>}
+            />
+            {expanded.has('settings-providers') && aiProviders?.map((p) => (
+              <LayerItem
+                key={p.name}
+                id={`settings-provider-${p.name}`}
+                label={p.name}
+                icon={<Cpu style={smallIcon} />}
+                depth={2}
+                selected={pathname === `/settings/ai-providers/${p.name}`}
+                onPointerDown={() => navigate(`/settings/ai-providers/${p.name}`)}
+                showVisibilityToggle={false}
+                showLockToggle={false}
+              />
+            ))}
+          </>
+        )}
       </nav>
 
       <UserSection />
