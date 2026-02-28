@@ -92,6 +92,16 @@ let global_outbound_dispatcher : LocalOutboundDispatcher = LocalOutboundDispatch
 )
 
 ///|
+/// 履歴レコーダー（初期値None、create_global_gatewayで初期化）
+let global_history_recorder : Ref[&@interfaces.HistoryRecorder?] = Ref::new(
+  None,
+)
+
+///|
+/// グローバルClock
+let global_clock : @native.NativeClock = @native.NativeClock::new()
+
+///|
 /// ビルトインツール用のToolExecutorアダプタ
 struct BuiltinToolExecutorAdapter {
   tool_context : @builtin.BuiltinToolContext
@@ -150,6 +160,8 @@ async fn handle_inbound_with_agent_loop(
     model_orchestrator: global_model_orchestrator,
     tool_registry: global_tool_registry,
     outbound_dispatcher: global_outbound_dispatcher,
+    history_recorder: global_history_recorder.val,
+    clock: Some(global_clock),
   }
   @agent.run_agent_loop(enriched_envelope, options, deps)
 }
@@ -167,6 +179,8 @@ pub async fn handle_inbound_with_agent_loop_async(
     tool_registry: global_tool_registry,
     outbound_dispatcher: global_outbound_dispatcher,
     model_invoke: runtime_model_invoke_async,
+    history_recorder: global_history_recorder.val,
+    clock: Some(global_clock),
   }
   @agent.run_agent_loop_async(enriched_envelope, options, deps)
 }
@@ -174,6 +188,9 @@ pub async fn handle_inbound_with_agent_loop_async(
 ///|
 pub fn create_global_gateway(version : String) -> @control.Gateway {
   register_builtin_tools()
+  // 履歴レコーダーを初期化
+  let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
+  global_history_recorder.val = Some(recorder)
   @control.Gateway::with_components(
     channel_manager=Some(global_channel_manager),
     session_resolver=Some(global_session_resolver),

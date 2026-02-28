@@ -301,6 +301,8 @@ async fn main {
     model_orchestrator,
     tool_registry,
     outbound_dispatcher,
+    history_recorder: None,
+    clock: None,
   }
   let options = @agent.AgentLoopOptions::default()
 

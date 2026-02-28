@@ -1508,5 +1508,84 @@ int moonbit_list_dir(const char* path_utf16, char* buffer, int buffer_len) {
     return written;
 }
 
+/*
+ * ディレクトリを再帰的に作成（mkdir -p 相当）
+ * path_utf16: MoonBit UTF-16LE文字列
+ * mode: ディレクトリ権限（例: 0755 = 493）
+ * returns: 0 on success, -1 on error
+ */
+int moonbit_mkdir_recursive(const char* path_utf16, int mode) {
+    char path[1024];
+    if (utf16le_to_utf8(path_utf16, path, sizeof(path)) < 0) {
+        return -1;
+    }
+
+    char tmp[1024];
+    strncpy(tmp, path, sizeof(tmp) - 1);
+    tmp[sizeof(tmp) - 1] = '\0';
+
+    for (char* p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if (mkdir(tmp, (mode_t)mode) != 0 && errno != EEXIST) {
+                /* Check if it already exists as a directory */
+                struct stat st;
+                if (stat(tmp, &st) != 0 || !S_ISDIR(st.st_mode)) {
+                    return -1;
+                }
+            }
+            *p = '/';
+        }
+    }
+    if (mkdir(tmp, (mode_t)mode) != 0 && errno != EEXIST) {
+        struct stat st;
+        if (stat(tmp, &st) != 0 || !S_ISDIR(st.st_mode)) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * Unix epoch秒から年月日を取得（gmtime_r ラッパー）
+ * epoch_secs: Unix epoch秒
+ * out_buf: 12バイト出力バッファ
+ *   [0..3] = year (little-endian int32)
+ *   [4..7] = month (1-12, little-endian int32)
+ *   [8..11] = day (1-31, little-endian int32)
+ * returns: 0 on success, -1 on error
+ */
+int moonbit_gmtime(int64_t epoch_secs, unsigned char* out_buf) {
+    if (!out_buf) return -1;
+
+    time_t t = (time_t)epoch_secs;
+    struct tm result;
+    if (gmtime_r(&t, &result) == NULL) {
+        return -1;
+    }
+
+    int year = result.tm_year + 1900;
+    int month = result.tm_mon + 1;
+    int day = result.tm_mday;
+
+    /* Write as little-endian int32 values */
+    out_buf[0] = (unsigned char)(year & 0xFF);
+    out_buf[1] = (unsigned char)((year >> 8) & 0xFF);
+    out_buf[2] = (unsigned char)((year >> 16) & 0xFF);
+    out_buf[3] = (unsigned char)((year >> 24) & 0xFF);
+
+    out_buf[4] = (unsigned char)(month & 0xFF);
+    out_buf[5] = (unsigned char)((month >> 8) & 0xFF);
+    out_buf[6] = (unsigned char)((month >> 16) & 0xFF);
+    out_buf[7] = (unsigned char)((month >> 24) & 0xFF);
+
+    out_buf[8] = (unsigned char)(day & 0xFF);
+    out_buf[9] = (unsigned char)((day >> 8) & 0xFF);
+    out_buf[10] = (unsigned char)((day >> 16) & 0xFF);
+    out_buf[11] = (unsigned char)((day >> 24) & 0xFF);
+
+    return 0;
+}
+
 /* Note: moonbit_get_home_dir, moonbit_get_os_name, moonbit_getenv_safe
  * are now defined in core/dirs/dirs_native_stub.c to avoid symbol duplication */

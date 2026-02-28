@@ -136,6 +136,10 @@ pub(all) struct AgentDependencies {
   model_orchestrator : &@interfaces.ModelOrchestrator
   tool_registry : &@interfaces.ToolRegistry
   outbound_dispatcher : &@interfaces.OutboundDispatcher
+  /// 履歴レコーダー（None=記録しない）
+  history_recorder : &@interfaces.HistoryRecorder?
+  /// イベント時刻取得用（None=envelope.timestamp にフォールバック）
+  clock : &@interfaces.Clock?
 }
 
 ///|
@@ -262,8 +266,12 @@ pub async fn run_agent_loop(
   options : AgentLoopOptions,
   deps : AgentDependencies,
 ) -> @types.OutboundMessage raise AgentLoopError {
+  let hr = deps.history_recorder
+  let clk = deps.clock
+  let ts = envelope.timestamp
   // 1. セッション解決
   let session_key = deps.session_resolver.resolve(envelope)
+  let sid = session_key.to_string()
   // 2. セッション取得または作成
   let session = try {
     match deps.session_store.get(session_key) {
@@ -273,6 +281,10 @@ pub async fn run_agent_loop(
   } catch {
     e => raise AgentLoopError::SessionError(e.to_string())
   }
+  // 履歴: 初期化 + SessionStart + UserMessage
+  safe_init_session(hr, sid, ts)
+  record_session_start(hr, clk, ts, sid, envelope.channel, envelope.chat_id)
+  record_user_message(hr, clk, ts, sid, envelope.content)
   // 3. ループコンテキスト初期化
   let ctx = AgentLoopContext::new()
   ctx.set_state(AgentState::Processing(envelope))
@@ -308,8 +320,8 @@ pub async fn run_agent_loop(
     )
     match response {
       @types.ModelResponse::Text(content) => {
-        // テキスト応答 - ループ完了
         ctx.set_state(AgentState::SendingResponse)
+        record_assistant_message(hr, clk, ts, sid, content)
         // セッション更新
         session.add_message(
           @types.ModelMessage::User(content=envelope.content, name=None),
@@ -320,8 +332,8 @@ pub async fn run_agent_loop(
         deps.session_store.save(session) catch {
           e => raise AgentLoopError::SessionError(e.to_string())
         }
-        // 出力メッセージを構築して返す
         ctx.set_state(AgentState::Completed)
+        record_session_end(hr, clk, ts, sid, "completed", ctx.iteration)
         let outbound : @types.OutboundMessage = {
           channel: envelope.channel,
           chat_id: envelope.chat_id,
@@ -333,40 +345,41 @@ pub async fn run_agent_loop(
         return outbound
       }
       @types.ModelResponse::ToolCalls(calls) => {
-        // アシスタントのツール呼び出しメッセージを会話履歴に追加
         ctx.add_message(
           @types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
         )
-        // ツール呼び出し - 実行して結果を追加
         for call in calls {
           ctx.set_state(
             AgentState::ExecutingTool(tool_name=call.name, call_id=call.id),
           )
           ctx.record_tool_call(call)
-          // ツール実行 (asyncエラーをキャッチ)
+          record_tool_call(hr, clk, ts, sid, call.id, call.name, call.arguments)
           let tool_result = execute_tool_call(call, session, envelope, deps) catch {
             e =>
               @types.ToolResult::Error(
                 message="Tool execution failed: \{e.to_string()}",
               )
           }
-          // 結果をメッセージに追加
+          record_tool_result(hr, clk, ts, sid, call.id, tool_result)
           ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
         }
-        // ループ継続
         continue
       }
-      @types.ModelResponse::ModelError(msg) =>
+      @types.ModelResponse::ModelError(msg) => {
+        record_error(hr, clk, ts, sid, msg)
         raise AgentLoopError::ModelCallFailed(msg)
-      @types.ModelResponse::RateLimited(retry_after~) =>
-        // リトライが有効でリトライ上限に達した場合
+      }
+      @types.ModelResponse::RateLimited(retry_after~) => {
+        record_rate_limit_error(hr, clk, ts, sid, retry_after)
         raise AgentLoopError::RateLimitExceeded(
           retry_count=retry_state.attempt,
           last_retry_after=retry_after,
         )
+      }
     }
   }
   // 最大反復回数に達した
+  record_session_end(hr, clk, ts, sid, "max_iterations", options.max_iterations)
   raise AgentLoopError::MaxIterationsReached(options.max_iterations)
 }
 
@@ -481,6 +494,10 @@ pub(all) struct AsyncAgentDependencies {
     Array[@types.ToolDefinition],
     @types.ModelOptions,
   ) -> @types.ModelResponse
+  /// 履歴レコーダー（None=記録しない）
+  history_recorder : &@interfaces.HistoryRecorder?
+  /// イベント時刻取得用（None=envelope.timestamp にフォールバック）
+  clock : &@interfaces.Clock?
 }
 
 ///|
@@ -548,8 +565,12 @@ pub async fn run_agent_loop_async(
   options : AgentLoopOptions,
   deps : AsyncAgentDependencies,
 ) -> @types.OutboundMessage raise AgentLoopError {
+  let hr = deps.history_recorder
+  let clk = deps.clock
+  let ts = envelope.timestamp
   // 1. セッション解決
   let session_key = deps.session_resolver.resolve(envelope)
+  let sid = session_key.to_string()
   // 2. セッション取得または作成
   let session = try {
     match deps.session_store.get(session_key) {
@@ -559,6 +580,10 @@ pub async fn run_agent_loop_async(
   } catch {
     e => raise AgentLoopError::SessionError(e.to_string())
   }
+  // 履歴: 初期化 + SessionStart + UserMessage
+  safe_init_session(hr, sid, ts)
+  record_session_start(hr, clk, ts, sid, envelope.channel, envelope.chat_id)
+  record_user_message(hr, clk, ts, sid, envelope.content)
   // 3. ループコンテキスト初期化
   let ctx = AgentLoopContext::new()
   ctx.set_state(AgentState::Processing(envelope))
@@ -591,8 +616,8 @@ pub async fn run_agent_loop_async(
     )
     match response {
       @types.ModelResponse::Text(content) => {
-        // テキスト応答 - ループ完了
         ctx.set_state(AgentState::SendingResponse)
+        record_assistant_message(hr, clk, ts, sid, content)
         // セッション更新
         session.add_message(
           @types.ModelMessage::User(content=envelope.content, name=None),
@@ -603,8 +628,8 @@ pub async fn run_agent_loop_async(
         deps.session_store.save(session) catch {
           e => raise AgentLoopError::SessionError(e.to_string())
         }
-        // 出力メッセージを構築して返す
         ctx.set_state(AgentState::Completed)
+        record_session_end(hr, clk, ts, sid, "completed", ctx.iteration)
         let outbound : @types.OutboundMessage = {
           channel: envelope.channel,
           chat_id: envelope.chat_id,
@@ -616,17 +641,15 @@ pub async fn run_agent_loop_async(
         return outbound
       }
       @types.ModelResponse::ToolCalls(calls) => {
-        // アシスタントのツール呼び出しメッセージを会話履歴に追加
         ctx.add_message(
           @types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
         )
-        // ツール呼び出し - 実行して結果を追加
         for call in calls {
           ctx.set_state(
             AgentState::ExecutingTool(tool_name=call.name, call_id=call.id),
           )
           ctx.record_tool_call(call)
-          // ツール実行 (asyncエラーをキャッチ)
+          record_tool_call(hr, clk, ts, sid, call.id, call.name, call.arguments)
           let tool_result = execute_tool_call_async(
             call, session, envelope, deps,
           ) catch {
@@ -635,23 +658,26 @@ pub async fn run_agent_loop_async(
                 message="Tool execution failed: \{e.to_string()}",
               )
           }
-          // 結果をメッセージに追加
+          record_tool_result(hr, clk, ts, sid, call.id, tool_result)
           ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
         }
-        // ループ継続
         continue
       }
-      @types.ModelResponse::ModelError(msg) =>
+      @types.ModelResponse::ModelError(msg) => {
+        record_error(hr, clk, ts, sid, msg)
         raise AgentLoopError::ModelCallFailed(msg)
-      @types.ModelResponse::RateLimited(retry_after~) =>
-        // リトライが有効でリトライ上限に達した場合
+      }
+      @types.ModelResponse::RateLimited(retry_after~) => {
+        record_rate_limit_error(hr, clk, ts, sid, retry_after)
         raise AgentLoopError::RateLimitExceeded(
           retry_count=options.retry_config.max_retries,
           last_retry_after=retry_after,
         )
+      }
     }
   }
   // 最大反復回数に達した
+  record_session_end(hr, clk, ts, sid, "max_iterations", options.max_iterations)
   raise AgentLoopError::MaxIterationsReached(options.max_iterations)
 }
 

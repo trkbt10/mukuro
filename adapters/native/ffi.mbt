@@ -484,3 +484,20 @@ pub extern "C" fn c_append_gateway_auth_audit_detail(
   token_age_sec : Int,
   blocked_until : Int64,
 ) -> Int = "moonbit_append_gateway_auth_audit_detail"
+
+// ============================================================
+// 履歴記録用FFI
+// ============================================================
+
+///|
+/// ディレクトリを再帰的に作成（mkdir -p 相当）
+/// returns: 0 on success, -1 on error
+#borrow(path)
+pub extern "C" fn c_mkdir_recursive(path : CString, mode : Int) -> Int = "moonbit_mkdir_recursive"
+
+///|
+/// Unix epoch秒から年月日を取得（gmtime_r ラッパー）
+/// out_buf: 12バイト出力バッファ（year:4, month:4, day:4、リトルエンディアン）
+/// returns: 0 on success, -1 on error
+#borrow(out_buf)
+pub extern "C" fn c_gmtime(epoch_secs : Int64, out_buf : Bytes) -> Int = "moonbit_gmtime"
