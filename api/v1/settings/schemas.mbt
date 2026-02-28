@@ -14,7 +14,9 @@ pub(all) struct RetrySettingsResponse {
 
 ///|
 /// Create from RetryConfig
-pub fn RetrySettingsResponse::from_config(config : @types.RetryConfig) -> RetrySettingsResponse {
+pub fn RetrySettingsResponse::from_config(
+  config : @types.RetryConfig,
+) -> RetrySettingsResponse {
   {
     max_retries: config.max_retries,
     initial_backoff_ms: config.initial_backoff_ms,
@@ -50,7 +52,9 @@ pub(all) struct AgentSettingsResponse {
 
 ///|
 /// Create from AgentConfig
-pub fn AgentSettingsResponse::from_config(config : @types.AgentConfig) -> AgentSettingsResponse {
+pub fn AgentSettingsResponse::from_config(
+  config : @types.AgentConfig,
+) -> AgentSettingsResponse {
   {
     max_iterations: config.max_iterations,
     timeout_ms: config.timeout_ms,
@@ -79,7 +83,9 @@ pub(all) struct ModelSettingsResponse {
 
 ///|
 /// Create from ModelOptions
-pub fn ModelSettingsResponse::from_config(config : @types.ModelOptions) -> ModelSettingsResponse {
+pub fn ModelSettingsResponse::from_config(
+  config : @types.ModelOptions,
+) -> ModelSettingsResponse {
   {
     model_name: config.model_name,
     temperature: config.temperature,
@@ -123,11 +129,14 @@ pub(all) struct ProviderSettingsResponse {
   timeout_ms : Int
   max_retries : Int
   has_api_key : Bool
+  use_responses_api : Bool
 }
 
 ///|
 /// Create from ProviderConfig
-pub fn ProviderSettingsResponse::from_config(config : @types.ProviderConfig) -> ProviderSettingsResponse {
+pub fn ProviderSettingsResponse::from_config(
+  config : @types.ProviderConfig,
+) -> ProviderSettingsResponse {
   let has_key = match config.api_key {
     Some(_) => true
     None => false
@@ -139,12 +148,15 @@ pub fn ProviderSettingsResponse::from_config(config : @types.ProviderConfig) -> 
     timeout_ms: config.timeout_ms,
     max_retries: config.max_retries,
     has_api_key: has_key,
+    use_responses_api: config.use_responses_api,
   }
 }
 
 ///|
 /// Convert to JSON
-pub fn ProviderSettingsResponse::to_json(self : ProviderSettingsResponse) -> Json {
+pub fn ProviderSettingsResponse::to_json(
+  self : ProviderSettingsResponse,
+) -> Json {
   let obj : Map[String, Json] = {}
   obj["name"] = Json::string(self.name)
   match self.base_url {
@@ -155,6 +167,7 @@ pub fn ProviderSettingsResponse::to_json(self : ProviderSettingsResponse) -> Jso
   obj["timeout_ms"] = Json::number(self.timeout_ms.to_double())
   obj["max_retries"] = Json::number(self.max_retries.to_double())
   obj["has_api_key"] = Json::boolean(self.has_api_key)
+  obj["use_responses_api"] = Json::boolean(self.use_responses_api)
   Json::object(obj)
 }
 
@@ -185,6 +198,62 @@ pub fn AllSettingsResponse::to_json(self : AllSettingsResponse) -> Json {
 }
 
 ///|
+/// Model + Inference 統合レスポンス
+pub(all) struct ModelInferenceSettingsResponse {
+  model_name : String
+  temperature : Double?
+  max_tokens : Int?
+  stop_sequences : Array[String]?
+  thinking_enabled : Bool
+  thinking_level : String
+  thinking_budget_tokens : Int?
+}
+
+///|
+pub fn ModelInferenceSettingsResponse::from_configs(
+  model : @types.ModelOptions,
+  thinking : @types.ThinkingConfig,
+) -> ModelInferenceSettingsResponse {
+  {
+    model_name: model.model_name,
+    temperature: model.temperature,
+    max_tokens: model.max_tokens,
+    stop_sequences: model.stop_sequences,
+    thinking_enabled: thinking.enabled,
+    thinking_level: thinking.level.to_string(),
+    thinking_budget_tokens: thinking.budget_tokens,
+  }
+}
+
+///|
+pub fn ModelInferenceSettingsResponse::to_json(
+  self : ModelInferenceSettingsResponse,
+) -> Json {
+  let obj : Map[String, Json] = {}
+  obj["model_name"] = Json::string(self.model_name)
+  match self.temperature {
+    Some(t) => obj["temperature"] = Json::number(t)
+    None => obj["temperature"] = Json::null()
+  }
+  match self.max_tokens {
+    Some(m) => obj["max_tokens"] = Json::number(m.to_double())
+    None => obj["max_tokens"] = Json::null()
+  }
+  match self.stop_sequences {
+    Some(seqs) =>
+      obj["stop_sequences"] = Json::array(seqs.map(fn(s) { Json::string(s) }))
+    None => obj["stop_sequences"] = Json::null()
+  }
+  obj["thinking_enabled"] = Json::boolean(self.thinking_enabled)
+  obj["thinking_level"] = Json::string(self.thinking_level)
+  match self.thinking_budget_tokens {
+    Some(b) => obj["thinking_budget_tokens"] = Json::number(b.to_double())
+    None => obj["thinking_budget_tokens"] = Json::null()
+  }
+  Json::object(obj)
+}
+
+///|
 /// Thinking settings response (OpenClaw compatible)
 pub(all) struct ThinkingSettingsResponse {
   enabled : Bool
@@ -194,7 +263,9 @@ pub(all) struct ThinkingSettingsResponse {
 
 ///|
 /// Create from ThinkingConfig
-pub fn ThinkingSettingsResponse::from_config(config : @types.ThinkingConfig) -> ThinkingSettingsResponse {
+pub fn ThinkingSettingsResponse::from_config(
+  config : @types.ThinkingConfig,
+) -> ThinkingSettingsResponse {
   {
     enabled: config.enabled,
     level: config.level.to_string(),
@@ -204,7 +275,9 @@ pub fn ThinkingSettingsResponse::from_config(config : @types.ThinkingConfig) -> 
 
 ///|
 /// Convert to JSON
-pub fn ThinkingSettingsResponse::to_json(self : ThinkingSettingsResponse) -> Json {
+pub fn ThinkingSettingsResponse::to_json(
+  self : ThinkingSettingsResponse,
+) -> Json {
   let obj : Map[String, Json] = {}
   obj["enabled"] = Json::boolean(self.enabled)
   obj["level"] = Json::string(self.level)
@@ -214,4 +287,3 @@ pub fn ThinkingSettingsResponse::to_json(self : ThinkingSettingsResponse) -> Jso
   }
   Json::object(obj)
 }
-

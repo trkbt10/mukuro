@@ -84,10 +84,16 @@ pub(all) struct SettingsApiHandlers {
   get_thinking : RouteHandler
   /// PUT /settings/thinking - update thinking settings
   update_thinking : RouteHandler
+  /// GET /settings/model-inference - get merged model + thinking
+  get_model_inference : RouteHandler
+  /// PUT /settings/model-inference - update merged model + thinking
+  update_model_inference : RouteHandler
   /// GET /settings/providers - list providers
   list_providers : RouteHandler
   /// PUT /settings/providers/{name} - update provider
   update_provider : RouteHandler
+  /// GET /settings/providers/{name}/models - list known models
+  list_provider_models : RouteHandler
 }
 
 ///|
@@ -158,7 +164,10 @@ pub fn ApiRouter::new() -> ApiRouter {
 
 ///|
 /// Route an API request
-pub fn ApiRouter::route(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+pub fn ApiRouter::route(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
   // Check body size limit
   match validate_body_size(ctx.body) {
     Some(resp) => return resp
@@ -181,34 +190,35 @@ pub fn ApiRouter::route(self : ApiRouter, ctx : ApiRequestContext) -> ApiRespons
     "config" => self.route_config(ctx)
     "providers" => self.route_providers(ctx)
     "chat" => self.route_chat(ctx)
-    _ => error_response(404, "not_found", "Unknown API endpoint: /api/v1/\{resource}")
+    _ =>
+      error_response(
+        404,
+        "not_found",
+        "Unknown API endpoint: /api/v1/\{resource}",
+      )
   }
 }
 
 ///|
 /// API index handler - returns API info
 fn api_index_handler(_ctx : ApiRequestContext) -> ApiResponse {
-  json_response(
-    200,
-    {
-      "version": "v1",
-      "endpoints": Json::array(
-        [
-          "/api/v1/plugins",
-          "/api/v1/context",
-          "/api/v1/settings",
-          "/api/v1/config",
-          "/api/v1/providers",
-          "/api/v1/chat",
-        ].map(fn(s) { Json::string(s) }),
-      ),
-    },
-  )
+  json_response(200, {
+    "version": "v1",
+    "endpoints": Json::array(
+      [
+        "/api/v1/plugins", "/api/v1/context", "/api/v1/settings", "/api/v1/config",
+        "/api/v1/providers", "/api/v1/chat",
+      ].map(fn(s) { Json::string(s) }),
+    ),
+  })
 }
 
 ///|
 /// Route plugin API requests
-fn ApiRouter::route_plugins(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+fn ApiRouter::route_plugins(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
   match self.plugin_handlers {
     None => error_response(501, "not_implemented", "Plugin API not configured")
     Some(handlers) => route_plugin_endpoint(handlers, ctx)
@@ -266,7 +276,10 @@ fn route_plugin_endpoint(
 
 ///|
 /// Route context API requests
-fn ApiRouter::route_context(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+fn ApiRouter::route_context(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
   match self.context_handlers {
     None => error_response(501, "not_implemented", "Context API not configured")
     Some(handlers) => route_context_endpoint(handlers, ctx)
@@ -303,7 +316,10 @@ fn route_context_endpoint(
 
 ///|
 /// Route settings API requests
-fn ApiRouter::route_settings(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+fn ApiRouter::route_settings(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
   match self.settings_handlers {
     None =>
       error_response(501, "not_implemented", "Settings API not configured")
@@ -340,6 +356,9 @@ fn route_settings_endpoint(
       ("PUT", "model") => return (handlers.update_model.0)(ctx)
       ("GET", "thinking") => return (handlers.get_thinking.0)(ctx)
       ("PUT", "thinking") => return (handlers.update_thinking.0)(ctx)
+      ("GET", "model-inference") => return (handlers.get_model_inference.0)(ctx)
+      ("PUT", "model-inference") =>
+        return (handlers.update_model_inference.0)(ctx)
       ("GET", "providers") => return (handlers.list_providers.0)(ctx)
       _ =>
         return error_response(405, "method_not_allowed", "Method not allowed")
@@ -352,12 +371,24 @@ fn route_settings_endpoint(
     }
     return error_response(405, "method_not_allowed", "Method not allowed")
   }
+  // /settings/providers/{name}/models
+  if segments.length() == 4 &&
+    segments[1] == "providers" &&
+    segments[3] == "models" {
+    if meth == "GET" {
+      return (handlers.list_provider_models.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
   error_response(404, "not_found", "Unknown settings endpoint")
 }
 
 ///|
 /// Route config API requests
-fn ApiRouter::route_config(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+fn ApiRouter::route_config(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
   match self.config_handlers {
     None => error_response(501, "not_implemented", "Config API not configured")
     Some(handlers) => route_config_endpoint(handlers, ctx)
@@ -470,7 +501,10 @@ fn route_provider_endpoint(
 
 ///|
 /// Route chat API requests
-fn ApiRouter::route_chat(self : ApiRouter, ctx : ApiRequestContext) -> ApiResponse {
+fn ApiRouter::route_chat(
+  self : ApiRouter,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
   match self.chat_handlers {
     None => error_response(501, "not_implemented", "Chat API not configured")
     Some(handlers) => route_chat_endpoint(handlers, ctx)
@@ -500,7 +534,9 @@ fn route_chat_endpoint(
     return error_response(405, "method_not_allowed", "Method not allowed")
   }
   // /chat/sessions/{chat_id}/history
-  if segments.length() == 4 && segments[1] == "sessions" && segments[3] == "history" {
+  if segments.length() == 4 &&
+    segments[1] == "sessions" &&
+    segments[3] == "history" {
     if meth == "GET" {
       return (handlers.get_history.0)(ctx)
     }

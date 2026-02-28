@@ -241,6 +241,8 @@ pub(all) struct ProviderConfig {
   timeout_ms : Int
   /// リトライ回数
   max_retries : Int
+  /// Responses API を使用するか（OpenAI互換プロバイダ向け）
+  use_responses_api : Bool
 }
 
 ///|
@@ -325,6 +327,7 @@ pub fn ProviderConfig::new(
   name~ : String,
   api_key~ : String?,
   default_model~ : String,
+  use_responses_api? : Bool = false,
 ) -> ProviderConfig {
   {
     name,
@@ -333,6 +336,7 @@ pub fn ProviderConfig::new(
     default_model,
     timeout_ms: 30000,
     max_retries: 3,
+    use_responses_api,
   }
 }
 
@@ -401,6 +405,7 @@ pub fn ProviderConfig::to_json(self : ProviderConfig) -> Json {
   obj["default_model"] = Json::string(self.default_model)
   obj["timeout_ms"] = Json::number(self.timeout_ms.to_double())
   obj["max_retries"] = Json::number(self.max_retries.to_double())
+  obj["use_responses_api"] = Json::boolean(self.use_responses_api)
   Json::object(obj)
 }
 

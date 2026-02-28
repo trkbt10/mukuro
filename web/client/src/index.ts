@@ -42,6 +42,8 @@ export type {
   UpdateRetrySettings,
   UpdateAgentSettings,
   UpdateModelSettings,
+  ModelInferenceSettings,
+  UpdateModelInferenceSettings,
   UpdateThinkingSettings,
   UpdateProviderSettings,
   // Message Provider types

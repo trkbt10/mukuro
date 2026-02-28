@@ -19,7 +19,7 @@ import {
   UserCircle,
   RotateCcw,
   Cpu,
-  Brain,
+  KeyRound,
   MessageCircle,
   Sliders,
   Moon,
@@ -50,8 +50,8 @@ const contextFileIcons: Record<string, React.ReactNode> = {
 const settingSections = [
   { id: 'retry', label: 'Retry', icon: <RotateCcw style={smallIcon} /> },
   { id: 'agent', label: 'Agent', icon: <Bot style={smallIcon} /> },
-  { id: 'model', label: 'Model', icon: <Cpu style={smallIcon} /> },
-  { id: 'thinking', label: 'Thinking', icon: <Brain style={smallIcon} /> },
+  { id: 'model-inference', label: 'Model & Inference', icon: <Cpu style={smallIcon} /> },
+  { id: 'ai-providers', label: 'AI Providers', icon: <KeyRound style={smallIcon} /> },
 ] as const;
 
 function ConnectionIndicator() {

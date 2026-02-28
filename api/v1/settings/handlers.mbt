@@ -89,11 +89,20 @@ pub fn create_settings_handlers(
     update_thinking: @api.RouteHandler(fn(ctx) {
       handle_update_thinking(state, ctx)
     }),
+    get_model_inference: @api.RouteHandler(fn(ctx) {
+      handle_get_model_inference(state, ctx)
+    }),
+    update_model_inference: @api.RouteHandler(fn(ctx) {
+      handle_update_model_inference(state, ctx)
+    }),
     list_providers: @api.RouteHandler(fn(ctx) {
       handle_list_providers(state, ctx)
     }),
     update_provider: @api.RouteHandler(fn(ctx) {
       handle_update_provider(state, ctx)
+    }),
+    list_provider_models: @api.RouteHandler(fn(ctx) {
+      handle_list_provider_models(state, ctx)
     }),
   }
 }
@@ -107,9 +116,7 @@ fn handle_get_all(
   match state.config {
     None =>
       @api.error_response(
-        503,
-        "service_unavailable",
-        "Configuration not initialized",
+        503, "service_unavailable", "Configuration not initialized",
       )
     Some(config) => {
       let providers : Array[ProviderSettingsResponse] = []
@@ -140,9 +147,7 @@ fn handle_update_all(
       match state.config {
         None =>
           @api.error_response(
-            503,
-            "service_unavailable",
-            "Configuration not initialized",
+            503, "service_unavailable", "Configuration not initialized",
           )
         Some(config) => {
           let mut new_config = config
@@ -164,7 +169,7 @@ fn handle_update_all(
                 Some(String(s)) => agent = { ..agent, bootstrap: s }
                 _ => ()
               }
-              new_config = { ..new_config, agent }
+              new_config = { ..new_config, agent, }
             }
             _ => ()
           }
@@ -282,13 +287,10 @@ fn handle_update_retry(
         _ => ()
       }
       state.retry_config = retry
-      @api.json_response(
-        200,
-        {
-          "ok": true,
-          "data": RetrySettingsResponse::from_config(retry).to_json(),
-        },
-      )
+      @api.json_response(200, {
+        "ok": true,
+        "data": RetrySettingsResponse::from_config(retry).to_json(),
+      })
     }
   }
 }
@@ -302,9 +304,7 @@ fn handle_get_agent(
   match state.config {
     None =>
       @api.error_response(
-        503,
-        "service_unavailable",
-        "Configuration not initialized",
+        503, "service_unavailable", "Configuration not initialized",
       )
     Some(config) => {
       let response = AgentSettingsResponse::from_config(config.agent)
@@ -325,9 +325,7 @@ fn handle_update_agent(
       match state.config {
         None =>
           @api.error_response(
-            503,
-            "service_unavailable",
-            "Configuration not initialized",
+            503, "service_unavailable", "Configuration not initialized",
           )
         Some(config) => {
           let mut agent = config.agent
@@ -344,14 +342,11 @@ fn handle_update_agent(
             Some(String(s)) => agent = { ..agent, bootstrap: s }
             _ => ()
           }
-          state.config = Some({ ..config, agent })
-          @api.json_response(
-            200,
-            {
-              "ok": true,
-              "data": AgentSettingsResponse::from_config(agent).to_json(),
-            },
-          )
+          state.config = Some({ ..config, agent, })
+          @api.json_response(200, {
+            "ok": true,
+            "data": AgentSettingsResponse::from_config(agent).to_json(),
+          })
         }
       }
   }
@@ -366,12 +361,12 @@ fn handle_get_model(
   match state.config {
     None =>
       @api.error_response(
-        503,
-        "service_unavailable",
-        "Configuration not initialized",
+        503, "service_unavailable", "Configuration not initialized",
       )
     Some(config) => {
-      let response = ModelSettingsResponse::from_config(config.agent.model_options)
+      let response = ModelSettingsResponse::from_config(
+        config.agent.model_options,
+      )
       @api.json_response(200, { "data": response.to_json() })
     }
   }
@@ -389,9 +384,7 @@ fn handle_update_model(
       match state.config {
         None =>
           @api.error_response(
-            503,
-            "service_unavailable",
-            "Configuration not initialized",
+            503, "service_unavailable", "Configuration not initialized",
           )
         Some(config) => {
           let mut model = config.agent.model_options
@@ -421,7 +414,11 @@ fn handle_update_model(
               }
               model = {
                 ..model,
-                stop_sequences: if seqs.length() > 0 { Some(seqs) } else { None },
+                stop_sequences: if seqs.length() > 0 {
+                  Some(seqs)
+                } else {
+                  None
+                },
               }
             }
             Some(Null) => model = { ..model, stop_sequences: None }
@@ -429,13 +426,10 @@ fn handle_update_model(
           }
           let new_agent = { ..config.agent, model_options: model }
           state.config = Some({ ..config, agent: new_agent })
-          @api.json_response(
-            200,
-            {
-              "ok": true,
-              "data": ModelSettingsResponse::from_config(model).to_json(),
-            },
-          )
+          @api.json_response(200, {
+            "ok": true,
+            "data": ModelSettingsResponse::from_config(model).to_json(),
+          })
         }
       }
   }
@@ -481,18 +475,15 @@ fn handle_update_thinking(
       // Sync to MukuroConfig and persist
       match state.config {
         Some(config) => {
-          state.config = Some({ ..config, thinking })
+          state.config = Some({ ..config, thinking, })
           state.persist()
         }
         None => ()
       }
-      @api.json_response(
-        200,
-        {
-          "ok": true,
-          "data": ThinkingSettingsResponse::from_config(thinking).to_json(),
-        },
-      )
+      @api.json_response(200, {
+        "ok": true,
+        "data": ThinkingSettingsResponse::from_config(thinking).to_json(),
+      })
     }
   }
 }
@@ -506,9 +497,7 @@ fn handle_list_providers(
   match state.config {
     None =>
       @api.error_response(
-        503,
-        "service_unavailable",
-        "Configuration not initialized",
+        503, "service_unavailable", "Configuration not initialized",
       )
     Some(config) => {
       let providers : Array[Json] = []
@@ -537,9 +526,7 @@ fn handle_update_provider(
       match state.config {
         None =>
           @api.error_response(
-            503,
-            "service_unavailable",
-            "Configuration not initialized",
+            503, "service_unavailable", "Configuration not initialized",
           )
         Some(config) => {
           let mut found = false
@@ -571,6 +558,11 @@ fn handle_update_provider(
                 Some(String(s)) => updated = { ..updated, api_key: Some(s) }
                 _ => ()
               }
+              match obj.get("use_responses_api") {
+                Some(True) => updated = { ..updated, use_responses_api: true }
+                Some(False) => updated = { ..updated, use_responses_api: false }
+                _ => ()
+              }
               new_providers.push(updated)
             } else {
               new_providers.push(p)
@@ -584,8 +576,149 @@ fn handle_update_provider(
             )
           }
           state.config = Some({ ..config, providers: new_providers })
+          state.persist()
           @api.json_response(200, { "ok": true })
         }
       }
+  }
+}
+
+///|
+/// GET /settings/model-inference - Get merged model + thinking settings
+fn handle_get_model_inference(
+  state : SettingsState,
+  _ctx : @api.ApiRequestContext,
+) -> @api.ApiResponse {
+  match state.config {
+    None =>
+      @api.error_response(
+        503, "service_unavailable", "Configuration not initialized",
+      )
+    Some(config) => {
+      let response = ModelInferenceSettingsResponse::from_configs(
+        config.agent.model_options,
+        state.thinking_config,
+      )
+      @api.json_response(200, { "data": response.to_json() })
+    }
+  }
+}
+
+///|
+/// PUT /settings/model-inference - Update merged model + thinking settings
+fn handle_update_model_inference(
+  state : SettingsState,
+  ctx : @api.ApiRequestContext,
+) -> @api.ApiResponse {
+  match @api.require_json_object(ctx.body) {
+    Err(resp) => resp
+    Ok(obj) =>
+      match state.config {
+        None =>
+          @api.error_response(
+            503, "service_unavailable", "Configuration not initialized",
+          )
+        Some(config) => {
+          // Update model options
+          let mut model = config.agent.model_options
+          match obj.get("model_name") {
+            Some(String(s)) => model = { ..model, model_name: s }
+            _ => ()
+          }
+          match obj.get("temperature") {
+            Some(Number(n, ..)) => model = { ..model, temperature: Some(n) }
+            Some(Null) => model = { ..model, temperature: None }
+            _ => ()
+          }
+          match obj.get("max_tokens") {
+            Some(Number(n, ..)) =>
+              model = { ..model, max_tokens: Some(n.to_int()) }
+            Some(Null) => model = { ..model, max_tokens: None }
+            _ => ()
+          }
+          match obj.get("stop_sequences") {
+            Some(Array(arr)) => {
+              let seqs : Array[String] = []
+              for item in arr {
+                match item {
+                  String(s) => seqs.push(s)
+                  _ => ()
+                }
+              }
+              model = {
+                ..model,
+                stop_sequences: if seqs.length() > 0 {
+                  Some(seqs)
+                } else {
+                  None
+                },
+              }
+            }
+            Some(Null) => model = { ..model, stop_sequences: None }
+            _ => ()
+          }
+          // Update thinking config
+          let mut thinking = state.thinking_config
+          match obj.get("thinking_enabled") {
+            Some(True) => thinking = { ..thinking, enabled: true }
+            Some(False) => thinking = { ..thinking, enabled: false }
+            _ => ()
+          }
+          match obj.get("thinking_level") {
+            Some(String(s)) =>
+              thinking = {
+                ..thinking,
+                level: @types.ThinkingLevel::from_string(s),
+              }
+            _ => ()
+          }
+          match obj.get("thinking_budget_tokens") {
+            Some(Number(n, ..)) =>
+              thinking = { ..thinking, budget_tokens: Some(n.to_int()) }
+            Some(Null) => thinking = { ..thinking, budget_tokens: None }
+            _ => ()
+          }
+          // Persist both
+          let new_agent = { ..config.agent, model_options: model }
+          state.config = Some({ ..config, agent: new_agent, thinking })
+          state.thinking_config = thinking
+          state.persist()
+          let response = ModelInferenceSettingsResponse::from_configs(
+            model, thinking,
+          )
+          @api.json_response(200, { "ok": true, "data": response.to_json() })
+        }
+      }
+  }
+}
+
+///|
+/// GET /settings/providers/{name}/models - List known models for a provider
+fn handle_list_provider_models(
+  _state : SettingsState,
+  ctx : @api.ApiRequestContext,
+) -> @api.ApiResponse {
+  if ctx.segments.length() < 3 {
+    return @api.error_response(400, "bad_request", "Provider name is required")
+  }
+  let provider_name = ctx.segments[2]
+  let models = get_known_models_for_provider(provider_name)
+  let model_json : Array[Json] = models.map(fn(m) { Json::string(m) })
+  @api.json_response(200, { "data": Json::array(model_json) })
+}
+
+///|
+/// 主要プロバイダの既知モデルリスト
+fn get_known_models_for_provider(provider : String) -> Array[String] {
+  match provider {
+    "anthropic" =>
+      [
+        "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-5-haiku-20241022",
+      ]
+    "openai" =>
+      ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1", "o1-mini", "o3-mini"]
+    "groq" =>
+      ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
+    _ => []
   }
 }

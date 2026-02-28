@@ -1,4 +1,4 @@
-import { Settings as SettingsIcon, RotateCcw, Bot, Cpu, Brain } from 'lucide-react';
+import { Settings as SettingsIcon, RotateCcw, Bot, Cpu, KeyRound } from 'lucide-react';
 import { Badge, Loading, StatCard } from '@/components/ui';
 import { useAllSettings } from '@/hooks';
 import styles from './Settings.module.css';
@@ -6,8 +6,8 @@ import styles from './Settings.module.css';
 const sections = [
   { key: 'retry', label: 'Retry Settings', desc: 'Configure retry behavior for failed API calls', icon: RotateCcw },
   { key: 'agent', label: 'Agent Settings', desc: 'Configure agent loop parameters', icon: Bot },
-  { key: 'model', label: 'Model Settings', desc: 'Configure the AI model parameters', icon: Cpu },
-  { key: 'thinking', label: 'Thinking Settings', desc: 'Configure extended thinking behavior', icon: Brain },
+  { key: 'model-inference', label: 'Model & Inference', desc: 'Configure the AI model and extended thinking', icon: Cpu },
+  { key: 'ai-providers', label: 'AI Providers', desc: 'Configure provider API keys, base URLs, and models', icon: KeyRound },
 ];
 
 export function Settings() {

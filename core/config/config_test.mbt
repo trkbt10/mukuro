@@ -62,9 +62,13 @@ test "ConfigLoaderImpl::load_from_string parses flat config format" {
   // provider should be extracted from top-level fields
   inspect(config.providers.length(), content="1")
   inspect(config.providers[0].name, content="groq")
-  inspect(config.providers[0].base_url, content="Some(\"https://api.groq.com/openai\")")
+  inspect(
+    config.providers[0].base_url,
+    content="Some(\"https://api.groq.com/openai\")",
+  )
   inspect(config.providers[0].default_model, content="openai/gpt-oss-20b")
   inspect(config.providers[0].api_key, content="Some(\"gsk_test\")")
+  inspect(config.providers[0].use_responses_api, content="true")
 }
 
 ///|
@@ -90,6 +94,24 @@ test "ConfigLoaderImpl::load_from_string parses provider config" {
   inspect(provider.default_model, content="gpt-4")
   inspect(provider.timeout_ms, content="5000")
   inspect(provider.max_retries, content="5")
+  inspect(provider.use_responses_api, content="false")
+}
+
+///|
+test "ConfigLoaderImpl::load_from_string parses use_responses_api in provider" {
+  let loader = ConfigLoaderImpl::default()
+  let json =
+    #|{
+    #|  "providers": [
+    #|    {
+    #|      "name": "groq",
+    #|      "default_model": "llama-3.3-70b",
+    #|      "use_responses_api": true
+    #|    }
+    #|  ]
+    #|}
+  let config = loader.load_from_string(json)
+  inspect(config.providers[0].use_responses_api, content="true")
 }
 
 ///|

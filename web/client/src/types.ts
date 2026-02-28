@@ -131,6 +131,7 @@ export interface ProviderSettings {
   timeout_ms: number;
   max_retries: number;
   has_api_key: boolean;
+  use_responses_api: boolean;
 }
 
 export type ThinkingLevel =
@@ -192,6 +193,27 @@ export interface UpdateProviderSettings {
   timeout_ms?: number;
   max_retries?: number;
   api_key?: string;
+  use_responses_api?: boolean;
+}
+
+export interface ModelInferenceSettings {
+  model_name: string;
+  temperature: number | null;
+  max_tokens: number | null;
+  stop_sequences: string[] | null;
+  thinking_enabled: boolean;
+  thinking_level: ThinkingLevel;
+  thinking_budget_tokens: number | null;
+}
+
+export interface UpdateModelInferenceSettings {
+  model_name?: string;
+  temperature?: number | null;
+  max_tokens?: number | null;
+  stop_sequences?: string[] | null;
+  thinking_enabled?: boolean;
+  thinking_level?: ThinkingLevel;
+  thinking_budget_tokens?: number | null;
 }
 
 // ============================================================================

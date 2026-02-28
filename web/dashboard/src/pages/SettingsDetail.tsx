@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Save } from 'lucide-react';
+import { Save, Eye, EyeOff } from 'lucide-react';
 import {
   Button,
   Input,
@@ -13,11 +13,13 @@ import {
   useAllSettings,
   useUpdateRetrySettings,
   useUpdateAgentSettings,
-  useUpdateModelSettings,
-  useThinkingSettings,
-  useUpdateThinkingSettings,
+  useModelInferenceSettings,
+  useUpdateModelInferenceSettings,
+  useAiProviders,
+  useUpdateAiProvider,
+  useProviderModels,
 } from '@/hooks';
-import type { ThinkingLevel } from '@mukuro/client';
+import type { ThinkingLevel, ProviderSettings } from '@mukuro/client';
 import styles from './SettingsDetail.module.css';
 
 const thinkingLevelOptions = [
@@ -32,8 +34,8 @@ const thinkingLevelOptions = [
 const sectionMeta: Record<string, { title: string; desc: string }> = {
   retry: { title: 'Retry Settings', desc: 'Configure retry behavior for failed API calls' },
   agent: { title: 'Agent Settings', desc: 'Configure agent loop parameters' },
-  model: { title: 'Model Settings', desc: 'Configure the AI model parameters' },
-  thinking: { title: 'Thinking Settings', desc: 'Configure extended thinking behavior' },
+  'model-inference': { title: 'Model & Inference', desc: 'Configure the AI model and extended thinking behavior' },
+  'ai-providers': { title: 'AI Providers', desc: 'Configure provider API keys, base URLs, and model selection' },
 };
 
 export function SettingsDetail() {
@@ -63,8 +65,8 @@ export function SettingsDetail() {
 
       {section === 'retry' && settings && <RetrySection settings={settings.retry} />}
       {section === 'agent' && settings && <AgentSection settings={settings.agent} />}
-      {section === 'model' && settings && <ModelSection settings={settings.model} />}
-      {section === 'thinking' && <ThinkingSection />}
+      {section === 'model-inference' && <ModelInferenceSection />}
+      {section === 'ai-providers' && <AiProvidersSection />}
     </div>
   );
 }
@@ -147,48 +149,12 @@ function AgentSection({ settings }: { settings: { max_iterations: number; timeou
   );
 }
 
-function ModelSection({ settings }: { settings: { model_name: string; temperature: number | null; max_tokens: number | null } }) {
-  const updateModel = useUpdateModelSettings();
-  const [modelName, setModelName] = useState(settings.model_name);
-  const [temperature, setTemperature] = useState(settings.temperature !== null ? String(settings.temperature) : '');
-  const [maxTokens, setMaxTokens] = useState(settings.max_tokens !== null ? String(settings.max_tokens) : '');
-  const [dirty, setDirty] = useState(false);
-
-  useEffect(() => {
-    setModelName(settings.model_name);
-    setTemperature(settings.temperature !== null ? String(settings.temperature) : '');
-    setMaxTokens(settings.max_tokens !== null ? String(settings.max_tokens) : '');
-    setDirty(false);
-  }, [settings]);
-
-  const handleSave = () => {
-    updateModel.mutate(
-      { model_name: modelName, temperature: temperature ? parseFloat(temperature) : null, max_tokens: maxTokens ? parseInt(maxTokens, 10) : null },
-      { onSuccess: () => setDirty(false) }
-    );
-  };
-
-  return (
-    <PanelSection
-      title="Configuration"
-      action={
-        <Button size="sm" onClick={handleSave} loading={updateModel.isPending} disabled={!dirty} leftIcon={<Save style={{ width: 12, height: 12 }} />}>
-          Save
-        </Button>
-      }
-    >
-      <div className={styles.fields}>
-        <Input label="Model Name" value={modelName} onChange={(v) => { setModelName(v); setDirty(true); }} placeholder="e.g., claude-3-5-sonnet-20241022" />
-        <Input label="Temperature" type="number" value={temperature} onChange={(v) => { setTemperature(v); setDirty(true); }} placeholder="0.0 - 1.0" />
-        <Input label="Max Tokens" type="number" value={maxTokens} onChange={(v) => { setMaxTokens(v); setDirty(true); }} placeholder="e.g., 4096" />
-      </div>
-    </PanelSection>
-  );
-}
-
-function ThinkingSection() {
-  const { data: settings } = useThinkingSettings();
-  const updateThinking = useUpdateThinkingSettings();
+function ModelInferenceSection() {
+  const { data: settings } = useModelInferenceSettings();
+  const updateModelInference = useUpdateModelInferenceSettings();
+  const [modelName, setModelName] = useState('');
+  const [temperature, setTemperature] = useState('');
+  const [maxTokens, setMaxTokens] = useState('');
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
   const [thinkingLevel, setThinkingLevel] = useState<ThinkingLevel>('medium');
   const [budgetTokens, setBudgetTokens] = useState('');
@@ -196,50 +162,212 @@ function ThinkingSection() {
 
   useEffect(() => {
     if (settings) {
-      setThinkingEnabled(settings.enabled);
-      setThinkingLevel(settings.level);
-      setBudgetTokens(settings.budget_tokens !== null ? String(settings.budget_tokens) : '');
+      setModelName(settings.model_name);
+      setTemperature(settings.temperature !== null ? String(settings.temperature) : '');
+      setMaxTokens(settings.max_tokens !== null ? String(settings.max_tokens) : '');
+      setThinkingEnabled(settings.thinking_enabled);
+      setThinkingLevel(settings.thinking_level);
+      setBudgetTokens(settings.thinking_budget_tokens !== null ? String(settings.thinking_budget_tokens) : '');
       setDirty(false);
     }
   }, [settings]);
 
   const handleSave = () => {
-    updateThinking.mutate(
-      { enabled: thinkingEnabled, level: thinkingLevel, budget_tokens: budgetTokens ? parseInt(budgetTokens, 10) : null },
+    updateModelInference.mutate(
+      {
+        model_name: modelName,
+        temperature: temperature ? parseFloat(temperature) : null,
+        max_tokens: maxTokens ? parseInt(maxTokens, 10) : null,
+        thinking_enabled: thinkingEnabled,
+        thinking_level: thinkingLevel,
+        thinking_budget_tokens: budgetTokens ? parseInt(budgetTokens, 10) : null,
+      },
       { onSuccess: () => setDirty(false) }
     );
   };
 
   return (
+    <>
+      <PanelSection
+        title="Model"
+        action={
+          <Button size="sm" onClick={handleSave} loading={updateModelInference.isPending} disabled={!dirty} leftIcon={<Save style={{ width: 12, height: 12 }} />}>
+            Save
+          </Button>
+        }
+      >
+        <div className={styles.fields}>
+          <Input label="Model Name" value={modelName} onChange={(v) => { setModelName(v); setDirty(true); }} placeholder="e.g., claude-sonnet-4-20250514" />
+          <Input label="Temperature" type="number" value={temperature} onChange={(v) => { setTemperature(v); setDirty(true); }} placeholder="API default (leave empty)" />
+          <Input label="Max Tokens" type="number" value={maxTokens} onChange={(v) => { setMaxTokens(v); setDirty(true); }} placeholder="API default (leave empty)" />
+        </div>
+      </PanelSection>
+      <PanelSection title="Extended Thinking">
+        <div className={styles.fields}>
+          <Toggle
+            checked={thinkingEnabled}
+            onChange={(checked) => { setThinkingEnabled(checked); setDirty(true); }}
+            label="Enable Thinking"
+            description="Allow the model to think before responding"
+          />
+          <Select
+            label="Thinking Level"
+            options={thinkingLevelOptions}
+            value={thinkingLevel}
+            onChange={(value) => { setThinkingLevel(value as ThinkingLevel); setDirty(true); }}
+            disabled={!thinkingEnabled}
+          />
+          <Input
+            label="Budget Tokens"
+            type="number"
+            value={budgetTokens}
+            onChange={(v) => { setBudgetTokens(v); setDirty(true); }}
+            placeholder="Optional token budget"
+            disabled={!thinkingEnabled}
+          />
+        </div>
+      </PanelSection>
+    </>
+  );
+}
+
+function AiProvidersSection() {
+  const { data: providers, isLoading } = useAiProviders();
+
+  if (isLoading) {
+    return <Loading message="Loading providers..." />;
+  }
+
+  if (!providers || providers.length === 0) {
+    return (
+      <PanelSection title="Providers">
+        <p style={{ color: 'var(--mk-text-muted)', fontSize: '0.8125rem' }}>
+          No providers configured. Add a provider in your config file.
+        </p>
+      </PanelSection>
+    );
+  }
+
+  return (
+    <>
+      {providers.map((p) => (
+        <ProviderCard key={p.name} provider={p} />
+      ))}
+    </>
+  );
+}
+
+function ProviderCard({ provider }: { provider: ProviderSettings }) {
+  const updateProvider = useUpdateAiProvider();
+  const { data: knownModels } = useProviderModels(provider.name);
+  const [baseUrl, setBaseUrl] = useState(provider.base_url ?? '');
+  const [apiKey, setApiKey] = useState('');
+  const [apiKeyDirty, setApiKeyDirty] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [defaultModel, setDefaultModel] = useState(provider.default_model);
+  const [useResponsesApi, setUseResponsesApi] = useState(provider.use_responses_api);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setBaseUrl(provider.base_url ?? '');
+    setApiKey('');
+    setApiKeyDirty(false);
+    setShowApiKey(false);
+    setDefaultModel(provider.default_model);
+    setUseResponsesApi(provider.use_responses_api);
+    setDirty(false);
+  }, [provider]);
+
+  const modelOptions = useMemo(() => {
+    const opts = (knownModels ?? []).map((m) => ({ value: m, label: m }));
+    // Ensure current model is in the list
+    if (defaultModel && !opts.some((o) => o.value === defaultModel)) {
+      opts.unshift({ value: defaultModel, label: defaultModel });
+    }
+    return opts;
+  }, [knownModels, defaultModel]);
+
+  const handleSave = () => {
+    const update: Record<string, unknown> = {
+      base_url: baseUrl || null,
+      default_model: defaultModel,
+      use_responses_api: useResponsesApi,
+    };
+    if (apiKeyDirty && apiKey) {
+      update.api_key = apiKey;
+    }
+    updateProvider.mutate(
+      { name: provider.name, update },
+      { onSuccess: () => { setDirty(false); setApiKeyDirty(false); } }
+    );
+  };
+
+  const apiKeyPlaceholder = provider.has_api_key ? '********' : 'Enter API key';
+
+  return (
     <PanelSection
-      title="Configuration"
+      title={provider.name}
       action={
-        <Button size="sm" onClick={handleSave} loading={updateThinking.isPending} disabled={!dirty} leftIcon={<Save style={{ width: 12, height: 12 }} />}>
+        <Button size="sm" onClick={handleSave} loading={updateProvider.isPending} disabled={!dirty} leftIcon={<Save style={{ width: 12, height: 12 }} />}>
           Save
         </Button>
       }
     >
       <div className={styles.fields}>
-        <Toggle
-          checked={thinkingEnabled}
-          onChange={(checked) => { setThinkingEnabled(checked); setDirty(true); }}
-          label="Enable Thinking"
-          description="Allow the model to think before responding"
-        />
-        <Select
-          label="Thinking Level"
-          options={thinkingLevelOptions}
-          value={thinkingLevel}
-          onChange={(value) => { setThinkingLevel(value as ThinkingLevel); setDirty(true); }}
-          disabled={!thinkingEnabled}
-        />
         <Input
-          label="Budget Tokens"
-          type="number"
-          value={budgetTokens}
-          onChange={(v) => { setBudgetTokens(v); setDirty(true); }}
-          placeholder="Optional token budget"
-          disabled={!thinkingEnabled}
+          label="Base URL"
+          value={baseUrl}
+          onChange={(v) => { setBaseUrl(v); setDirty(true); }}
+          placeholder="e.g., https://api.groq.com/openai"
+        />
+        <div style={{ position: 'relative' }}>
+          <Input
+            label="API Key"
+            type={showApiKey ? 'text' : 'password'}
+            value={apiKey}
+            onChange={(v) => { setApiKey(v); setApiKeyDirty(true); setDirty(true); }}
+            placeholder={apiKeyPlaceholder}
+          />
+          <button
+            type="button"
+            onClick={() => setShowApiKey(!showApiKey)}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: 28,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 4,
+              color: 'var(--mk-text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+            aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
+          >
+            {showApiKey ? <EyeOff style={{ width: 14, height: 14 }} /> : <Eye style={{ width: 14, height: 14 }} />}
+          </button>
+        </div>
+        {modelOptions.length > 0 ? (
+          <Select
+            label="Default Model"
+            options={modelOptions}
+            value={defaultModel}
+            onChange={(v) => { setDefaultModel(v); setDirty(true); }}
+          />
+        ) : (
+          <Input
+            label="Default Model"
+            value={defaultModel}
+            onChange={(v) => { setDefaultModel(v); setDirty(true); }}
+            placeholder="e.g., gpt-4o"
+          />
+        )}
+        <Toggle
+          checked={useResponsesApi}
+          onChange={(checked) => { setUseResponsesApi(checked); setDirty(true); }}
+          label="Use Responses API"
+          description="Use the OpenAI Responses API format instead of Chat Completions"
         />
       </div>
     </PanelSection>

@@ -4,6 +4,7 @@ import type {
   UpdateRetrySettings,
   UpdateAgentSettings,
   UpdateModelSettings,
+  UpdateModelInferenceSettings,
   UpdateThinkingSettings,
   UpdateProviderSettings,
 } from '@mukuro/client';
@@ -95,3 +96,25 @@ export const useUpdateAiProvider = createMutation<unknown, { name: string; updat
   successMessage: 'Provider settings updated',
   errorMessage: 'Failed to update provider settings',
 });
+
+export function useModelInferenceSettings() {
+  return useQuery({
+    queryKey: [...SETTINGS_KEY, 'model-inference'],
+    queryFn: () => getClient().settings.getModelInference(),
+  });
+}
+
+export const useUpdateModelInferenceSettings = createMutation<unknown, UpdateModelInferenceSettings>({
+  mutationFn: (update) => getClient().settings.updateModelInference(update),
+  invalidateKeys: () => [SETTINGS_KEY],
+  successMessage: 'Model & inference settings updated',
+  errorMessage: 'Failed to update model & inference settings',
+});
+
+export function useProviderModels(providerName: string) {
+  return useQuery({
+    queryKey: [...SETTINGS_KEY, 'providers', providerName, 'models'],
+    queryFn: () => getClient().settings.listProviderModels(providerName),
+    enabled: !!providerName,
+  });
+}

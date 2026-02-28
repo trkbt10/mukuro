@@ -92,7 +92,13 @@ fn parse_config_json(
     Ok(None) => []
     Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
-  { agent, providers, fallback, channels, thinking: @types.ThinkingConfig::default() }
+  {
+    agent,
+    providers,
+    fallback,
+    channels,
+    thinking: @types.ThinkingConfig::default(),
+  }
 }
 
 ///|
@@ -124,6 +130,10 @@ fn parse_providers_from_flat(
         _ => "default"
       }
   }
+  let use_responses_api = match obj.get("use_responses_api") {
+    Some(True) => true
+    _ => false
+  }
   [
     {
       name: provider_name,
@@ -132,6 +142,7 @@ fn parse_providers_from_flat(
       default_model,
       timeout_ms: 30000,
       max_retries: 3,
+      use_responses_api,
     },
   ]
 }
@@ -139,9 +150,7 @@ fn parse_providers_from_flat(
 ///|
 /// Flat config format からAgentConfigを構築
 /// top-level の "model", "provider", "base_url" 等から推定
-fn parse_agent_config_from_flat(
-  obj : Map[String, Json],
-) -> @types.AgentConfig {
+fn parse_agent_config_from_flat(obj : Map[String, Json]) -> @types.AgentConfig {
   let mut model_options = @types.ModelOptions::default()
   // top-level "model" フィールドを model_name にマッピング
   match obj.get("model") {
@@ -161,7 +170,7 @@ fn parse_agent_config_from_flat(
       _ => ()
     }
   }
-  { ..@types.AgentConfig::default(), model_options }
+  { ..@types.AgentConfig::default(), model_options, }
 }
 
 ///|
@@ -274,7 +283,22 @@ fn parse_provider_config(
     Ok(v) => v
     Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  { name, api_key, base_url, default_model, timeout_ms, max_retries }
+  let use_responses_api = match
+    @config_json_accessors.bool_field_or_default(
+      obj, "use_responses_api", false,
+    ) {
+    Ok(v) => v
+    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
+  }
+  {
+    name,
+    api_key,
+    base_url,
+    default_model,
+    timeout_ms,
+    max_retries,
+    use_responses_api,
+  }
 }
 
 ///|
@@ -359,6 +383,7 @@ fn merge_provider_from_env(
     default_model: provider.default_model,
     timeout_ms: provider.timeout_ms,
     max_retries: provider.max_retries,
+    use_responses_api: provider.use_responses_api,
   }
 }
 
@@ -433,7 +458,13 @@ pub impl @interfaces.ConfigLoader for ConfigLoaderImpl with default_config(self)
   ]
   let fallback : @types.FallbackConfig = @types.FallbackConfig::new()
   let channels : Array[@types.ChannelConfig] = []
-  { agent, providers, fallback, channels, thinking: @types.ThinkingConfig::default() }
+  {
+    agent,
+    providers,
+    fallback,
+    channels,
+    thinking: @types.ThinkingConfig::default(),
+  }
 }
 
 ///|
@@ -629,7 +660,13 @@ pub impl @interfaces.ConfigLoader for FileStoreConfigLoader with default_config(
   ]
   let fallback : @types.FallbackConfig = @types.FallbackConfig::new()
   let channels : Array[@types.ChannelConfig] = []
-  { agent, providers, fallback, channels, thinking: @types.ThinkingConfig::default() }
+  {
+    agent,
+    providers,
+    fallback,
+    channels,
+    thinking: @types.ThinkingConfig::default(),
+  }
 }
 
 ///|

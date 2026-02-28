@@ -8,11 +8,13 @@ import type {
   RetrySettings,
   AgentSettings,
   ModelSettings,
+  ModelInferenceSettings,
   ThinkingSettings,
   ProviderSettings,
   UpdateRetrySettings,
   UpdateAgentSettings,
   UpdateModelSettings,
+  UpdateModelInferenceSettings,
   UpdateThinkingSettings,
   UpdateProviderSettings,
 } from '../types.js';
@@ -136,6 +138,45 @@ export class SettingsApi {
       throw new Error('Failed to update thinking settings');
     }
     return res.data;
+  }
+
+  /**
+   * Get merged model + thinking settings
+   */
+  async getModelInference(): Promise<ModelInferenceSettings> {
+    const res = await this.http.get<ApiResponse<ModelInferenceSettings>>(
+      '/settings/model-inference'
+    );
+    if (!res.data) {
+      throw new Error('Failed to get model inference settings');
+    }
+    return res.data;
+  }
+
+  /**
+   * Update merged model + thinking settings
+   */
+  async updateModelInference(
+    update: UpdateModelInferenceSettings
+  ): Promise<ModelInferenceSettings> {
+    const res = await this.http.put<ApiResponse<ModelInferenceSettings>>(
+      '/settings/model-inference',
+      update
+    );
+    if (!res.data) {
+      throw new Error('Failed to update model inference settings');
+    }
+    return res.data;
+  }
+
+  /**
+   * List known models for a provider
+   */
+  async listProviderModels(name: string): Promise<string[]> {
+    const res = await this.http.get<ApiResponse<string[]>>(
+      `/settings/providers/${encodeURIComponent(name)}/models`
+    );
+    return res.data ?? [];
   }
 
   /**
