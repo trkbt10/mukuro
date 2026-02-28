@@ -4,6 +4,5 @@ import {
 }
 
 import {
-  "trkbt10/mukuro/core/model/protocol" @protocol,
   "moonbitlang/core/test",
 } for "test"

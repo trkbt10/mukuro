@@ -282,144 +282,6 @@ test "AnthropicMessagesAccumulator text-only without tool_use stop_reason" {
   }
 }
 
-// =============================================================================
-// Responses API Non-Streaming Parser Tests
-// =============================================================================
-
-///|
-test "parse_responses_api_response text (OpenAI fixture)" {
-  // Based on testdata/sse_fixtures/openai/responses/text_nonstream.json
-  let json : Json = {
-    "output": Json::array([
-      {
-        "id": "msg_1",
-        "type": "message",
-        "status": "completed",
-        "content": Json::array([
-          { "type": "output_text", "annotations": Json::array([]), "text": "Four." },
-        ]),
-        "role": "assistant",
-      },
-    ]),
-    "status": "completed",
-  }
-  let result = parse_responses_api_response(json)
-  match result {
-    @types.ModelResponse::Text(content) => inspect(content, content="Four.")
-    _ => fail("Expected Text response")
-  }
-}
-
-///|
-test "parse_responses_api_response tool call (OpenAI fixture)" {
-  // Based on testdata/sse_fixtures/openai/responses/toolcall_nonstream.json
-  let json : Json = {
-    "output": Json::array([
-      {
-        "id": "fc_1",
-        "type": "function_call",
-        "status": "completed",
-        "arguments": "{\"location\":\"Tokyo\"}",
-        "call_id": "call_eArLoUy4ikZiEzhId8UK1v2l",
-        "name": "get_weather",
-      },
-    ]),
-    "status": "completed",
-  }
-  let result = parse_responses_api_response(json)
-  match result {
-    @types.ModelResponse::ToolCalls(calls) => {
-      inspect(calls.length(), content="1")
-      inspect(calls[0].name, content="get_weather")
-      inspect(calls[0].id, content="call_eArLoUy4ikZiEzhId8UK1v2l")
-      match calls[0].arguments {
-        { "location": String(loc), .. } => inspect(loc, content="Tokyo")
-        _ => fail("Expected location argument")
-      }
-    }
-    _ => fail("Expected ToolCalls response")
-  }
-}
-
-///|
-test "parse_responses_api_response with reasoning + text (Groq fixture)" {
-  // Based on testdata/sse_fixtures/groq/responses/text_nonstream.json
-  // Has reasoning output (skipped) then message output
-  let json : Json = {
-    "output": Json::array([
-      {
-        "type": "reasoning",
-        "id": "r1",
-        "content": Json::array([
-          { "type": "reasoning_text", "text": "The user wants 2+2..." },
-        ]),
-      },
-      {
-        "type": "message",
-        "id": "msg_1",
-        "status": "completed",
-        "role": "assistant",
-        "content": Json::array([
-          { "type": "output_text", "text": "4" },
-        ]),
-      },
-    ]),
-    "status": "completed",
-  }
-  let result = parse_responses_api_response(json)
-  match result {
-    @types.ModelResponse::Text(content) =>
-      // reasoning is skipped
-      inspect(content, content="4")
-    _ => fail("Expected Text response")
-  }
-}
-
-///|
-test "parse_responses_api_response with reasoning + function_call (Groq fixture)" {
-  // Based on testdata/sse_fixtures/groq/responses/toolcall_nonstream.json
-  let json : Json = {
-    "output": Json::array([
-      {
-        "type": "reasoning",
-        "id": "r1",
-        "content": Json::array([
-          { "type": "reasoning_text", "text": "Use get_weather tool." },
-        ]),
-      },
-      {
-        "type": "function_call",
-        "id": "fc_349411e2",
-        "status": "completed",
-        "call_id": "fc_349411e2",
-        "name": "get_weather",
-        "arguments": "{\"location\":\"Tokyo\"}",
-      },
-    ]),
-    "status": "completed",
-  }
-  let result = parse_responses_api_response(json)
-  match result {
-    @types.ModelResponse::ToolCalls(calls) => {
-      inspect(calls.length(), content="1")
-      inspect(calls[0].name, content="get_weather")
-    }
-    _ => fail("Expected ToolCalls response")
-  }
-}
-
-///|
-test "parse_responses_api_response error" {
-  let json : Json = {
-    "error": { "message": "Invalid API key", "type": "invalid_request_error" },
-  }
-  let result = parse_responses_api_response(json)
-  match result {
-    @types.ModelResponse::ModelError(msg) =>
-      inspect(msg, content="Invalid API key")
-    _ => fail("Expected ModelError response")
-  }
-}
 
 // =============================================================================
 // History IO Tests (ModelMessage JSON roundtrip)
@@ -694,6 +556,86 @@ test "history IO: full conversation roundtrip" {
 // Streaming ↔ Non-streaming consistency tests
 // =============================================================================
 
+// =============================================================================
+// Tool Result Response Tests (multi-turn: after sending tool results back)
+// =============================================================================
+
+///|
+test "ChatCompletionsAccumulator toolresult response (Groq fixture)" {
+  // Model's response AFTER receiving tool result — text with reasoning
+  // Based on testdata/sse_fixtures/groq/chat_completions/toolresult_stream.jsonl
+  let jsonl =
+    #| {"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"reasoning":"Received weather data.","channel":"analysis"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":"**Tokyo Weather**"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":" - 22 °C, partly cloudy, 65% humidity."},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+    #| [DONE]
+  let result = accumulate_chat_completions(jsonl)
+  match result {
+    @types.ModelResponse::Text(content) => {
+      // reasoning is skipped; only content text accumulated
+      assert_true(content.contains("Tokyo Weather"))
+      assert_true(content.contains("22"))
+      assert_true(content.contains("65"))
+    }
+    _ => fail("Expected Text response after tool result")
+  }
+}
+
+///|
+test "ResponsesApiAccumulator toolresult response (Groq fixture)" {
+  // Model's response AFTER receiving tool result — reasoning then text message
+  // Based on testdata/sse_fixtures/groq/responses/toolresult_stream.jsonl
+  let jsonl =
+    #| {"event":"response.created","data":{"type":"response.created","sequence_number":0}}
+    #| {"event":"response.in_progress","data":{"type":"response.in_progress","sequence_number":1}}
+    #| {"event":"response.output_item.added","data":{"type":"response.output_item.added","item":{"type":"reasoning","id":"r1"},"sequence_number":2}}
+    #| {"event":"response.reasoning_text.delta","data":{"type":"response.reasoning_text.delta","delta":"Weather info received.","sequence_number":3}}
+    #| {"event":"response.output_item.added","data":{"type":"response.output_item.added","item":{"type":"message","id":"msg1","role":"assistant","content":[]},"sequence_number":4}}
+    #| {"event":"response.output_text.delta","data":{"type":"response.output_text.delta","delta":"In Tokyo it's **22 °C** with **partly cloudy** sky, humidity **65%**.","sequence_number":5}}
+    #| {"event":"response.output_text.done","data":{"type":"response.output_text.done","text":"In Tokyo it's **22 °C** with **partly cloudy** sky, humidity **65%**.","sequence_number":6}}
+    #| {"event":"response.completed","data":{"type":"response.completed","sequence_number":7}}
+  let result = accumulate_responses_api(jsonl)
+  match result {
+    @types.ModelResponse::Text(content) => {
+      // reasoning skipped; text output only
+      assert_true(content.contains("22"))
+      assert_true(content.contains("partly cloudy"))
+      assert_true(content.contains("65"))
+    }
+    _ => fail("Expected Text response after tool result")
+  }
+}
+
+///|
+test "AnthropicMessagesAccumulator toolresult response (fixture)" {
+  // Model's response AFTER receiving tool result — plain text
+  // Based on testdata/sse_fixtures/anthropic/messages/toolresult_stream.jsonl
+  let jsonl =
+    #| {"event":"message_start","data":{"type":"message_start","message":{"id":"msg_1","model":"claude-sonnet-4-6","role":"assistant","content":[],"stop_reason":null}}}
+    #| {"event":"content_block_start","data":{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}}
+    #| {"event":"ping","data":{"type":"ping"}}
+    #| {"event":"content_block_delta","data":{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Here's the weather in **Tokyo**: "}}}
+    #| {"event":"content_block_delta","data":{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"22°C, partly cloudy, 65% humidity."}}}
+    #| {"event":"content_block_stop","data":{"type":"content_block_stop","index":0}}
+    #| {"event":"message_delta","data":{"type":"message_delta","delta":{"stop_reason":"end_turn"}}}
+    #| {"event":"message_stop","data":{"type":"message_stop"}}
+  let result = accumulate_anthropic_messages(jsonl)
+  match result {
+    @types.ModelResponse::Text(content) => {
+      assert_true(content.contains("Tokyo"))
+      assert_true(content.contains("22"))
+      assert_true(content.contains("65"))
+    }
+    _ => fail("Expected Text response after tool result")
+  }
+}
+
+// =============================================================================
+// Streaming ↔ Non-streaming consistency tests
+// =============================================================================
+
 ///|
 test "Responses API: streaming and non-streaming produce same text" {
   // Streaming result
@@ -716,7 +658,7 @@ test "Responses API: streaming and non-streaming produce same text" {
       },
     ]),
   }
-  let nonstream_result = parse_responses_api_response(nonstream_json)
+  let nonstream_result = @protocol.parse_responses_api_response(nonstream_json)
   // Both should produce the same text
   match (stream_result, nonstream_result) {
     (@types.ModelResponse::Text(s), @types.ModelResponse::Text(ns)) =>
@@ -747,7 +689,7 @@ test "Responses API: streaming and non-streaming produce same tool call" {
       },
     ]),
   }
-  let nonstream_result = parse_responses_api_response(nonstream_json)
+  let nonstream_result = @protocol.parse_responses_api_response(nonstream_json)
   // Both should produce tool calls with same name
   match (stream_result, nonstream_result) {
     (

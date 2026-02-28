@@ -88,17 +88,17 @@ pub fn AnthropicProvider::build_request(
   options : @types.ModelOptions,
 ) -> Json {
   // システムメッセージを分離
-  let system_message = extract_system_message(messages)
+  let system_message = @protocol.extract_system_message(messages)
   let non_system_messages = filter_non_system_messages(messages)
   // メッセージをJSON形式に変換
   let messages_json : Array[Json] = []
   for msg in non_system_messages {
-    messages_json.push(message_to_anthropic_json(msg))
+    messages_json.push(@protocol.message_to_anthropic_json(msg))
   }
   // ツールをJSON形式に変換
   let tools_json : Array[Json] = []
   for tool in tools {
-    tools_json.push(tool_to_anthropic_json(tool))
+    tools_json.push(@protocol.tool_to_anthropic_json(tool))
   }
   // リクエストボディを構築
   let mut body : Json = {
@@ -145,18 +145,6 @@ pub fn AnthropicProvider::build_request(
 }
 
 ///|
-/// システムメッセージを抽出
-fn extract_system_message(messages : Array[@types.ModelMessage]) -> String {
-  for msg in messages {
-    match msg {
-      @types.ModelMessage::System(content) => return content
-      _ => ()
-    }
-  }
-  ""
-}
-
-///|
 /// システムメッセージ以外をフィルタ
 fn filter_non_system_messages(
   messages : Array[@types.ModelMessage],
@@ -174,51 +162,7 @@ fn filter_non_system_messages(
 ///|
 /// Anthropicレスポンスをパース
 pub fn parse_anthropic_response(response_json : Json) -> @types.ModelResponse {
-  match response_json {
-    { "content": content, "stop_reason": String(stop_reason), .. } => {
-      // ツール使用をチェック
-      if stop_reason == "tool_use" {
-        let tool_calls = parse_anthropic_tool_calls(content)
-        if tool_calls.length() > 0 {
-          return @types.ModelResponse::ToolCalls(tool_calls)
-        }
-      }
-      // テキスト応答を抽出
-      match content {
-        Array(blocks) => {
-          let text = StringBuilder::new()
-          for block in blocks {
-            match block {
-              { "type": String("text"), "text": String(t), .. } => {
-                if text.to_string().length() > 0 {
-                  text.write_char('\n')
-                }
-                text.write_string(t)
-              }
-              _ => ()
-            }
-          }
-          @types.ModelResponse::Text(text.to_string())
-        }
-        _ => @types.ModelResponse::ModelError("Invalid content format")
-      }
-    }
-    { "error": { "message": String(msg), .. }, .. } =>
-      @types.ModelResponse::ModelError(msg)
-    _ => @types.ModelResponse::ModelError("Unknown response format")
-  }
-}
-
-///|
-/// JSONにフィールドを設定するヘルパー
-fn Json::set_field(self : Json, key : String, value : Json) -> Json {
-  match self {
-    Object(map) => {
-      map[key] = value
-      Json::object(map)
-    }
-    _ => self
-  }
+  @protocol.parse_anthropic_response(response_json)
 }
 
 ///|
@@ -242,7 +186,7 @@ pub async fn invoke_anthropic_async(
     let body_str = response.body.to_unchecked_string()
     try {
       let json = @json.parse(body_str)
-      parse_anthropic_response(json)
+      @protocol.parse_anthropic_response(json)
     } catch {
       e => @types.ModelResponse::ModelError("JSON parse error: \{e}")
     }
@@ -284,7 +228,7 @@ pub fn call_anthropic_async(
         let body_str = response.body.to_unchecked_string()
         try {
           let json = @json.parse(body_str)
-          on_success(parse_anthropic_response(json))
+          on_success(@protocol.parse_anthropic_response(json))
         } catch {
           e => on_error("JSON parse error: \{e}")
         }

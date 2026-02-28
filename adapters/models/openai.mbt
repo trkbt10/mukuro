@@ -72,12 +72,12 @@ pub fn OpenAIProvider::build_request(
   // メッセージをJSON形式に変換
   let messages_json : Array[Json] = []
   for msg in messages {
-    messages_json.push(message_to_openai_json(msg))
+    messages_json.push(@protocol.message_to_openai_json(msg))
   }
   // ツールをJSON形式に変換
   let tools_json : Array[Json] = []
   for tool in tools {
-    tools_json.push(tool_to_openai_json(tool))
+    tools_json.push(@protocol.tool_to_openai_json(tool))
   }
   // リクエストボディを構築
   let mut body : Json = {
@@ -101,53 +101,6 @@ pub fn OpenAIProvider::build_request(
   }
   ignore(self.config)
   body
-}
-
-///|
-/// OpenAIレスポンスをパース
-pub fn parse_openai_response(response_json : Json) -> @types.ModelResponse {
-  match response_json {
-    { "choices": Array(choices), .. } => {
-      if choices.length() == 0 {
-        return @types.ModelResponse::ModelError("No choices in response")
-      }
-      let choice = choices[0]
-      match choice {
-        { "message": message, "finish_reason": String(finish_reason), .. } => {
-          // ツール呼び出しをチェック
-          if finish_reason == "tool_calls" {
-            match message {
-              { "tool_calls": tool_calls, .. } => {
-                let calls = parse_openai_tool_calls(tool_calls)
-                if calls.length() > 0 {
-                  return @types.ModelResponse::ToolCalls(calls)
-                }
-              }
-              _ => ()
-            }
-          }
-          // テキスト応答を抽出
-          match message {
-            { "content": String(content), .. } =>
-              @types.ModelResponse::Text(content)
-            { "content": Null, "tool_calls": tool_calls, .. } => {
-              let calls = parse_openai_tool_calls(tool_calls)
-              if calls.length() > 0 {
-                @types.ModelResponse::ToolCalls(calls)
-              } else {
-                @types.ModelResponse::Text("")
-              }
-            }
-            _ => @types.ModelResponse::ModelError("Invalid message format")
-          }
-        }
-        _ => @types.ModelResponse::ModelError("Invalid choice format")
-      }
-    }
-    { "error": { "message": String(msg), .. }, .. } =>
-      @types.ModelResponse::ModelError(msg)
-    _ => @types.ModelResponse::ModelError("Unknown response format")
-  }
 }
 
 ///|
@@ -175,7 +128,7 @@ pub async fn invoke_openai_async(
     let body_str = response.body.to_unchecked_string()
     try {
       let json = @json.parse(body_str)
-      parse_openai_response(json)
+      @protocol.parse_openai_chat_response(json)
     } catch {
       e => @types.ModelResponse::ModelError("JSON parse error: \{e}")
     }
@@ -221,7 +174,7 @@ pub fn call_openai_async(
         let body_str = response.body.to_unchecked_string()
         try {
           let json = @json.parse(body_str)
-          on_success(parse_openai_response(json))
+          on_success(@protocol.parse_openai_chat_response(json))
         } catch {
           e => on_error("JSON parse error: \{e}")
         }
@@ -234,4 +187,16 @@ pub fn call_openai_async(
     },
     on_error,
   )
+}
+
+///|
+/// JSONにフィールドを設定するヘルパー
+fn Json::set_field(self : Json, key : String, value : Json) -> Json {
+  match self {
+    Object(map) => {
+      map[key] = value
+      Json::object(map)
+    }
+    _ => self
+  }
 }
