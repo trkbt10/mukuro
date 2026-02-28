@@ -84,17 +84,13 @@ pub fn ToolManagerState::set_tool_status(
 }
 
 ///|
-/// Check if tool is builtin
+/// Check if tool is builtin (source is Plugin("builtin"))
 pub fn ToolManagerState::is_builtin(
   self : ToolManagerState,
   id : String
 ) -> Bool {
   match self.tools.get(id) {
-    Some(state) =>
-      match state.source {
-        @interfaces.ToolSource::Builtin => true
-        _ => false
-      }
+    Some(state) => state.source.is_builtin()
     None => false
   }
 }
@@ -107,7 +103,6 @@ pub fn ToolManagerState::count_by_source(
   let counts : Map[String, Int] = {}
   for _, state in self.tools {
     let key = match state.source {
-      @interfaces.ToolSource::Builtin => "builtin"
       @interfaces.ToolSource::Plugin(_) => "plugin"
       @interfaces.ToolSource::UserDefined => "user_defined"
       @interfaces.ToolSource::MCP(_) => "mcp"

@@ -108,21 +108,18 @@ fn handle_remove(
   }
   let id = segments[1].to_string()
   match state.get_tool(id) {
-    Some(tool_state) => {
-      // Check if builtin
-      match tool_state.source {
-        @interfaces.ToolSource::Builtin =>
-          @api.error_response(
-            403,
-            "forbidden",
-            "Cannot remove builtin tool '\{id}'",
-          )
-        _ => {
-          state.remove_tool_state(id)
-          @api.json_response(200, { "ok": true, "id": id, "removed": true })
-        }
+    Some(tool_state) =>
+      // Check if builtin (Plugin("builtin"))
+      if tool_state.source.is_builtin() {
+        @api.error_response(
+          403,
+          "forbidden",
+          "Cannot remove builtin tool '\{id}'",
+        )
+      } else {
+        state.remove_tool_state(id)
+        @api.json_response(200, { "ok": true, "id": id, "removed": true })
       }
-    }
     None => @api.error_response(404, "not_found", "Tool '\{id}' not found")
   }
 }

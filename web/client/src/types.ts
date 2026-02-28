@@ -427,7 +427,7 @@ export interface MemoryListResponse {
 // Tool Types
 // ============================================================================
 
-export type ToolSource = 'builtin' | 'plugin' | 'user_defined' | 'mcp';
+export type ToolSource = 'plugin' | 'user_defined' | 'mcp';
 
 export type ToolStatus = 'available' | 'disabled' | 'error' | 'unavailable';
 
@@ -444,7 +444,6 @@ export interface ToolListItem {
 export interface ToolStats {
   total: number;
   enabled: number;
-  builtin: number;
   plugin: number;
   user_defined: number;
   mcp: number;

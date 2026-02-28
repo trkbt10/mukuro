@@ -2,16 +2,23 @@
 /// Dynamic tool management interfaces
 
 ///|
-/// Tool source type - distinguishes builtin from user-defined tools
+/// Tool source type - distinguishes plugin-provided from user-defined tools
 pub(all) enum ToolSource {
-  /// Built into the agent (datetime, memory, spawn, message)
-  Builtin
-  /// Provided by a plugin (plugin_id stored separately)
+  /// Provided by a plugin (plugin_id as payload; "builtin" for built-in tools)
   Plugin(String)
   /// User-defined tool from {data_dir}/tools/
   UserDefined
-  /// MCP server tool (server_id stored separately)
+  /// MCP server tool (server_id as payload)
   MCP(String)
+}
+
+///|
+/// Check if tool source is from the builtin plugin
+pub fn ToolSource::is_builtin(self : ToolSource) -> Bool {
+  match self {
+    Plugin("builtin") => true
+    _ => false
+  }
 }
 
 ///|
@@ -49,7 +56,7 @@ pub(all) struct ToolState {
 }
 
 ///|
-/// Create builtin tool state
+/// Create builtin tool state (source: Plugin("builtin"))
 pub fn ToolState::builtin(
   id~ : String,
   name~ : String,
@@ -59,7 +66,7 @@ pub fn ToolState::builtin(
   {
     id,
     name,
-    source: ToolSource::Builtin,
+    source: ToolSource::Plugin("builtin"),
     enabled: true,
     status: ToolStatus::Available,
     loaded_at: 0L,

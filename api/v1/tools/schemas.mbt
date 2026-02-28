@@ -6,7 +6,6 @@
 /// Tool source type as string for JSON
 fn source_to_string(source : @interfaces.ToolSource) -> String {
   match source {
-    @interfaces.ToolSource::Builtin => "builtin"
     @interfaces.ToolSource::Plugin(_) => "plugin"
     @interfaces.ToolSource::UserDefined => "user_defined"
     @interfaces.ToolSource::MCP(_) => "mcp"
@@ -143,7 +142,6 @@ pub fn ToolDetailResponse::to_json(self : ToolDetailResponse) -> Json {
 pub(all) struct ToolStats {
   total : Int
   enabled : Int
-  builtin : Int
   plugin : Int
   user_defined : Int
   mcp : Int
@@ -155,7 +153,6 @@ pub fn ToolStats::to_json(self : ToolStats) -> Json {
   {
     "total": self.total,
     "enabled": self.enabled,
-    "builtin": self.builtin,
     "plugin": self.plugin,
     "user_defined": self.user_defined,
     "mcp": self.mcp,
@@ -169,7 +166,6 @@ pub fn calculate_stats(state : ToolManagerState) -> ToolStats {
   {
     total: state.tools.length(),
     enabled: state.count_enabled(),
-    builtin: counts.get("builtin").unwrap_or(0),
     plugin: counts.get("plugin").unwrap_or(0),
     user_defined: counts.get("user_defined").unwrap_or(0),
     mcp: counts.get("mcp").unwrap_or(0),

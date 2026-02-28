@@ -133,7 +133,7 @@ pub fn init_api_v1_state(
       description="Built-in tools: datetime, memory, message, spawn, web, shell, filesystem",
     ),
   )
-  // ビルトインツールをツール状態に登録（source: Builtin）
+  // ビルトインツールをツール状態に登録（source: Plugin("builtin")）
   for def in @defs.get_all_tool_definitions() {
     api_v1_tools_state.set_tool(
       def.name,

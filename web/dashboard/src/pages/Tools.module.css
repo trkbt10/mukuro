@@ -49,11 +49,6 @@
   text-transform: capitalize;
 }
 
-.sourceBadge[data-source="builtin"] {
-  background: var(--mk-info-subtle);
-  color: var(--mk-info);
-}
-
 .sourceBadge[data-source="plugin"] {
   background: var(--mk-accent-subtle);
   color: var(--mk-accent);

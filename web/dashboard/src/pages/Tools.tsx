@@ -1,4 +1,4 @@
-import { Wrench, Activity, PackageCheck, Puzzle, Server } from 'lucide-react';
+import { Wrench, Activity, Puzzle, Server } from 'lucide-react';
 import { Badge, Loading, StatCard, Toggle } from '@/components/ui';
 import { useTools, useEnableTool, useDisableTool } from '@/hooks';
 import styles from './Tools.module.css';
@@ -16,7 +16,6 @@ export function Tools() {
   const stats = data?.stats ?? {
     total: 0,
     enabled: 0,
-    builtin: 0,
     plugin: 0,
     user_defined: 0,
     mcp: 0,
@@ -42,8 +41,8 @@ export function Tools() {
       <div className={styles.statGrid}>
         <StatCard label="Total" value={stats.total} icon={Wrench} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
         <StatCard label="Enabled" value={stats.enabled} icon={Activity} iconBg="var(--mk-success-subtle)" iconColor="var(--mk-success)" />
-        <StatCard label="Built-in" value={stats.builtin} icon={PackageCheck} iconBg="var(--mk-info-subtle)" iconColor="var(--mk-info)" />
-        <StatCard label="Plugin" value={stats.plugin} icon={Puzzle} iconBg="var(--mk-warning-subtle)" iconColor="var(--mk-warning)" />
+        <StatCard label="Plugin" value={stats.plugin} icon={Puzzle} iconBg="var(--mk-info-subtle)" iconColor="var(--mk-info)" />
+        <StatCard label="MCP" value={stats.mcp} icon={Server} iconBg="var(--mk-warning-subtle)" iconColor="var(--mk-warning)" />
       </div>
 
       {tools.length > 0 && (
