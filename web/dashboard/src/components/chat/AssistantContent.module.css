@@ -1,0 +1,90 @@
+/* Markdown content styles - shared between Chat and History */
+
+.markdown {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.mdText {
+  margin: var(--mk-space-sm) 0;
+  white-space: pre-wrap;
+}
+
+.mdHeader {
+  margin: var(--mk-space-md) 0 var(--mk-space-sm);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mdCodeBlock {
+  position: relative;
+  margin: var(--mk-space-md) 0;
+}
+
+.mdCodeLang {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 2px var(--mk-space-sm);
+  font-size: 10px;
+  color: var(--mk-text-muted);
+  border-radius: 0 var(--mk-radius-md) 0 var(--mk-radius-sm);
+  background: var(--mk-bg-base, rgba(0, 0, 0, 0.05));
+  user-select: none;
+}
+
+.mdPre {
+  background: var(--mk-bg-base, #1a1a1a);
+  border-radius: var(--mk-radius-md);
+  padding: var(--mk-space-md);
+  overflow-x: auto;
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+  font-size: var(--mk-font-size-sm, 13px);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.mdTable {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--mk-space-md) 0;
+  font-size: var(--mk-font-size-sm, 13px);
+}
+
+.mdTable th,
+.mdTable td {
+  border: 1px solid var(--mk-border-default);
+  padding: var(--mk-space-sm) var(--mk-space-md);
+}
+
+.mdTable th {
+  background: var(--mk-bg-base, rgba(0, 0, 0, 0.05));
+  font-weight: 600;
+}
+
+.mdQuote {
+  border-left: 3px solid var(--mk-accent);
+  margin: var(--mk-space-md) 0;
+  padding: var(--mk-space-sm) var(--mk-space-lg);
+  color: var(--mk-text-secondary, var(--mk-text-muted));
+}
+
+.mdList {
+  padding-left: 1.5em;
+  margin: var(--mk-space-sm) 0;
+}
+
+.mdHr {
+  border: none;
+  border-top: 1px solid var(--mk-border-default);
+  margin: var(--mk-space-lg) 0;
+}

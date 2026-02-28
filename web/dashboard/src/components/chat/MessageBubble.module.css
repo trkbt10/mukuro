@@ -1,0 +1,52 @@
+/* Message bubble styles - shared between Chat and History */
+
+.messageRow {
+  display: flex;
+  max-width: 80%;
+  animation: fadeSlideIn 0.2s ease-out;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.messageRowUser {
+  composes: messageRow;
+  align-self: flex-end;
+}
+
+.messageRowAssistant {
+  composes: messageRow;
+  align-self: flex-start;
+}
+
+.bubble {
+  padding: var(--mk-space-md) var(--mk-space-lg);
+  border-radius: var(--mk-radius-lg);
+  font-size: var(--mk-font-size-md);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubbleUser {
+  composes: bubble;
+  background: var(--mk-accent);
+  color: #fff;
+  border-bottom-right-radius: var(--mk-radius-sm);
+}
+
+.bubbleAssistant {
+  composes: bubble;
+  background: var(--mk-bg-surface);
+  border: 1px solid var(--mk-border-default);
+  color: var(--mk-text-primary);
+  border-bottom-left-radius: var(--mk-radius-sm);
+}

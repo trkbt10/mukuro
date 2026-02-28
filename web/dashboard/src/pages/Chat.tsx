@@ -1,173 +1,20 @@
-import { useState, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   MessageCircle,
   Plus,
   Trash2,
   Send,
-  Wifi,
-  WifiOff,
-  Loader2,
   AlertCircle,
-  ShieldAlert,
 } from 'lucide-react';
-import { MarkdownViewer } from 'react-editor-ui/viewers/MarkdownViewer';
-import { parseTable } from 'react-editor-ui/viewers/MarkdownViewer/parser/table-detector';
-import { Badge, IconButton } from '@/components/ui';
+import { IconButton } from '@/components/ui';
+import { MessageBubble, StatusBadge, ThinkingIndicator } from '@/components/chat';
 import {
   useChat,
   getChatId,
   resetChatId,
-  type ChatMessage,
-  type ChatStatus,
 } from '@/hooks/useChat';
-import { useMarkdownBlocks, type ParsedBlock } from '@/hooks/useMarkdownParser';
 import { getClient } from '@/lib/client';
 import styles from './Chat.module.css';
-
-const iconSm = { width: 10, height: 10, marginRight: 4 };
-
-function StatusBadge({ status }: { status: ChatStatus }) {
-  const config: Record<
-    ChatStatus,
-    { label: string; variant: 'success' | 'warning' | 'error' | 'default'; icon: React.ReactNode }
-  > = {
-    connected:    { label: 'Connected',    variant: 'success', icon: <Wifi style={iconSm} /> },
-    thinking:     { label: 'Thinking...',  variant: 'warning', icon: <Wifi style={iconSm} /> },
-    connecting:   { label: 'Connecting',   variant: 'default', icon: <Loader2 style={{ ...iconSm, animation: 'spin 1s linear infinite' }} /> },
-    disconnected: { label: 'Disconnected', variant: 'error',   icon: <WifiOff style={iconSm} /> },
-    error:        { label: 'Error',        variant: 'error',   icon: <AlertCircle style={iconSm} /> },
-    auth_error:   { label: 'Auth Required',variant: 'warning', icon: <ShieldAlert style={iconSm} /> },
-  };
-
-  const { label, variant, icon } = config[status];
-  return (
-    <Badge variant={variant} size="sm">
-      {icon}
-      {label}
-    </Badge>
-  );
-}
-
-function ThinkingIndicator() {
-  return (
-    <div className={styles.thinking}>
-      <div className={styles.thinkingDots}>
-        <span className={styles.thinkingDot} />
-        <span className={styles.thinkingDot} />
-        <span className={styles.thinkingDot} />
-      </div>
-      <span>Agent is thinking...</span>
-    </div>
-  );
-}
-
-function BlockView({ block }: { block: ParsedBlock }) {
-  if (block.type === 'horizontal_rule') {
-    return <hr className={styles.mdHr} />;
-  }
-
-  if (block.type === 'code') {
-    const lang = (block.metadata?.language as string) ?? '';
-    return (
-      <div className={styles.mdCodeBlock}>
-        {lang && lang !== 'text' && (
-          <span className={styles.mdCodeLang}>{lang}</span>
-        )}
-        <pre className={styles.mdPre}>
-          <code>{block.content}</code>
-        </pre>
-      </div>
-    );
-  }
-
-  if (block.type === 'table') {
-    const parsed = parseTable(block.content);
-    if (parsed) {
-      return (
-        <table className={styles.mdTable}>
-          <thead>
-            <tr>
-              {parsed.headers.map((h, i) => (
-                <th key={i} style={{ textAlign: parsed.alignments[i] ?? 'left' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {parsed.rows.map((row, ri) => (
-              <tr key={ri}>
-                {row.map((cell, ci) => (
-                  <td key={ci} style={{ textAlign: parsed.alignments[ci] ?? 'left' }}>
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      );
-    }
-    return <pre className={styles.mdPre}>{block.content}</pre>;
-  }
-
-  if (block.type === 'list') {
-    const lines = block.content.split('\n').filter(Boolean);
-    const Tag = block.metadata?.ordered ? 'ol' : 'ul';
-    return (
-      <Tag className={styles.mdList}>
-        {lines.map((line, i) => (
-          <li key={i}>{line}</li>
-        ))}
-      </Tag>
-    );
-  }
-
-  if (block.type === 'header') {
-    const level = (block.metadata?.level as number) ?? 1;
-    const Tag = `h${Math.min(level, 6)}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
-    return <Tag className={styles.mdHeader}>{block.content}</Tag>;
-  }
-
-  if (block.type === 'quote') {
-    return <blockquote className={styles.mdQuote}>{block.content}</blockquote>;
-  }
-
-  // text / other
-  return <p className={styles.mdText}>{block.content}</p>;
-}
-
-const AssistantContent = memo(function AssistantContent({
-  content,
-}: {
-  content: string;
-}) {
-  const blocks = useMarkdownBlocks(content);
-  return (
-    <MarkdownViewer value={content} className={styles.markdown}>
-      {blocks.map((block) => (
-        <BlockView key={block.id} block={block} />
-      ))}
-    </MarkdownViewer>
-  );
-});
-
-function MessageBubble({ message }: { message: ChatMessage }) {
-  const isUser = message.role === 'user';
-  return (
-    <div
-      className={isUser ? styles.messageRowUser : styles.messageRowAssistant}
-    >
-      <div className={isUser ? styles.bubbleUser : styles.bubbleAssistant}>
-        {isUser ? (
-          message.content
-        ) : (
-          <AssistantContent content={message.content} />
-        )}
-      </div>
-    </div>
-  );
-}
 
 export function Chat() {
   const [chatId, setChatId] = useState(getChatId);

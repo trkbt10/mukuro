@@ -13,20 +13,15 @@ import {
   Loader2,
 } from 'lucide-react';
 import { IconButton, Badge } from '@/components/ui';
+import { AssistantContent } from '@/components/chat';
 import { useHistoryNavigation, formatHistoryDate } from '@/hooks';
+import { formatTimestamp, extractRecordContent } from '@/lib/messages';
 import type { HistoryRecord } from '@mukuro/client';
 import styles from './History.module.css';
 
-function formatTimestamp(ts: number) {
-  const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
 function RecordItem({ record }: { record: HistoryRecord }) {
   const payload = record.payload ?? {};
-  const content = typeof payload === 'string'
-    ? payload
-    : (payload as Record<string, unknown>).content as string | undefined;
+  const content = extractRecordContent(payload);
 
   switch (record.record_type) {
     case 'session_start':
@@ -58,7 +53,7 @@ function RecordItem({ record }: { record: HistoryRecord }) {
         <div className={styles.recordUser}>
           <span className={styles.recordUserIcon}><User style={{ width: 14, height: 14 }} /></span>
           <div className={styles.recordBody}>
-            <div className={styles.recordUserBubble}>{content ?? '(empty)'}</div>
+            <div className={styles.recordUserBubble}>{content || '(empty)'}</div>
           </div>
         </div>
       );
@@ -68,7 +63,9 @@ function RecordItem({ record }: { record: HistoryRecord }) {
         <div className={styles.recordAssistant}>
           <span className={styles.recordAssistantIcon}><Bot style={{ width: 14, height: 14 }} /></span>
           <div className={styles.recordBody}>
-            <div className={styles.recordAssistantBubble}>{content ?? '(empty)'}</div>
+            <div className={styles.recordAssistantBubble}>
+              {content ? <AssistantContent content={content} /> : '(empty)'}
+            </div>
           </div>
         </div>
       );
@@ -110,7 +107,7 @@ function RecordItem({ record }: { record: HistoryRecord }) {
           <span className={styles.recordErrorIcon}><AlertCircle style={{ width: 14, height: 14 }} /></span>
           <div className={styles.recordBody}>
             <div className={styles.recordErrorBanner}>
-              {content ?? (payload as Record<string, unknown>).message as string ?? 'Unknown error'}
+              {content || 'Unknown error'}
             </div>
           </div>
         </div>

@@ -5,12 +5,12 @@
  * Supports both complete messages and future streaming deltas.
  */
 import { useState, useEffect } from 'react';
-import { createStreamingMarkdownParser } from 'react-editor-ui/viewers/MarkdownViewer/parser/streaming-parser';
+import { createStreamingMarkdownParser } from 'react-editor-ui/parsers/Markdown';
 import type {
   MarkdownParseEvent,
   EndEvent,
   MarkdownElementMetadata,
-} from 'react-editor-ui/viewers/MarkdownViewer/parser/types';
+} from 'react-editor-ui/parsers/Markdown';
 
 export type ParsedBlock = {
   id: string;
