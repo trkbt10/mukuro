@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type {
   HistoryDateEntry,
@@ -93,16 +93,26 @@ export interface HistoryNavigation {
 
 export function useHistoryNavigation(): HistoryNavigation {
   const navigate = useNavigate();
-  const params = useParams<{ date?: string; sessionId?: string }>();
+  const location = useLocation();
+
+  // /history, /history/2026-02-28, /history/2026-02-28/web_chat%3Aabc
+  const segments = useMemo(() => {
+    const rest = location.pathname.replace(/^\/history\/?/, '');
+    if (!rest) return [];
+    return rest.split('/').filter(Boolean);
+  }, [location.pathname]);
+
+  const dateSegment = segments[0] ?? null;
+  const sessionSegment = segments[1] ?? null;
 
   // URL → 選択状態
   const selectedDate = useMemo(() => {
-    if (!params.date) return null;
-    return parseDate(params.date);
-  }, [params.date]);
+    if (!dateSegment) return null;
+    return parseDate(dateSegment);
+  }, [dateSegment]);
 
-  const selectedSessionId = params.sessionId
-    ? decodeURIComponent(params.sessionId)
+  const selectedSessionId = sessionSegment
+    ? decodeURIComponent(sessionSegment)
     : null;
 
   // 月表示state: URLの日付から同期、なければ現在月
@@ -164,9 +174,9 @@ export function useHistoryNavigation(): HistoryNavigation {
   }, [navigate]);
 
   const selectSession = useCallback((sessionId: string) => {
-    if (!params.date) return;
-    navigate(`/history/${params.date}/${encodeURIComponent(sessionId)}`);
-  }, [params.date, navigate]);
+    if (!dateSegment) return;
+    navigate(`/history/${dateSegment}/${encodeURIComponent(sessionId)}`);
+  }, [dateSegment, navigate]);
 
   const resume = useCallback(async () => {
     if (!selectedSessionId) return;
