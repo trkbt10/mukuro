@@ -17,6 +17,7 @@ warnings = "-29"
 
 options(
   "native-stub": [ "ffi_stubs.c", "sqlite_stubs.c", "ws_server_stubs.c" ],
+  link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
   targets: {
     "clock.mbt": [ "native" ],
     "daemon.mbt": [ "native" ],
