@@ -58,9 +58,7 @@ test "ContextPruner::prune_hard_clear removes all except system" {
 
 ///|
 test "estimate_token_count returns reasonable estimate" {
-  let messages = [
-    @types.ModelMessage::User(content="Hello world", name=None), // 11 chars
-  ]
+  let messages = [@types.ModelMessage::User(content="Hello world", name=None)] // 11 chars
   let count = estimate_token_count(messages)
   // ~11/4 = ~3 tokens
   inspect(count >= 2 && count <= 4, content="true")

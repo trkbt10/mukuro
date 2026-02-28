@@ -1,0 +1,6 @@
+import {
+  "trkbt10/mukuro/api/v1" @api,
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/history" @core_history,
+  "moonbitlang/core/json",
+}

@@ -71,11 +71,7 @@ fn ChatCompletionsAccumulator::process_tool_call_delta(
   match tc {
     { "id": String(id), "function": { "name": String(name), .. }, .. } => {
       // 新規ツールコール
-      let acc : ToolCallAcc = {
-        id,
-        name,
-        arguments: StringBuilder::new(),
-      }
+      let acc : ToolCallAcc = { id, name, arguments: StringBuilder::new() }
       match tc {
         { "function": { "arguments": String(args), .. }, .. } =>
           acc.arguments.write_string(args)
@@ -104,7 +100,9 @@ pub fn ChatCompletionsAccumulator::finish(
     for tc in self.tool_calls {
       let args_str = tc.arguments.to_string()
       let arguments : Json = @json.parse(args_str) catch { _ => {} }
-      calls.push(@types.ToolCallRequest::new(id=tc.id, name=tc.name, arguments~))
+      calls.push(
+        @types.ToolCallRequest::new(id=tc.id, name=tc.name, arguments~),
+      )
     }
     @types.ModelResponse::ToolCalls(calls)
   } else {
@@ -145,11 +143,7 @@ pub fn ResponsesApiAccumulator::feed(
     "response.output_item.added" =>
       match event.data {
         {
-          "item": {
-            "type": String("function_call"),
-            "name": String(name),
-            ..
-          } as item,
+          "item": { "type": String("function_call"), "name": String(name), .. } as item,
           ..
         } => {
           let id = match item {
@@ -157,9 +151,7 @@ pub fn ResponsesApiAccumulator::feed(
             { "id": String(fid), .. } => fid
             _ => ""
           }
-          self.function_calls.push(
-            { id, name, arguments: StringBuilder::new() },
-          )
+          self.function_calls.push({ id, name, arguments: StringBuilder::new() })
         }
         _ => ()
       }
@@ -167,9 +159,9 @@ pub fn ResponsesApiAccumulator::feed(
       match event.data {
         { "delta": String(delta), .. } =>
           if self.function_calls.length() > 0 {
-            self.function_calls[self.function_calls.length() - 1]
-            .arguments
-            .write_string(delta)
+            self.function_calls[self.function_calls.length() - 1].arguments.write_string(
+              delta,
+            )
           }
         _ => ()
       }
@@ -233,10 +225,7 @@ pub fn AnthropicMessagesAccumulator::feed(
             ..
           },
           ..
-        } =>
-          self.tool_calls.push(
-            { id, name, arguments: StringBuilder::new() },
-          )
+        } => self.tool_calls.push({ id, name, arguments: StringBuilder::new() })
         _ => ()
       }
     "content_block_delta" =>
@@ -252,9 +241,9 @@ pub fn AnthropicMessagesAccumulator::feed(
           ..
         } =>
           if self.tool_calls.length() > 0 {
-            self.tool_calls[self.tool_calls.length() - 1]
-            .arguments
-            .write_string(pj)
+            self.tool_calls[self.tool_calls.length() - 1].arguments.write_string(
+              pj,
+            )
           }
         _ => ()
       }
@@ -278,7 +267,9 @@ pub fn AnthropicMessagesAccumulator::finish(
     for tc in self.tool_calls {
       let args_str = tc.arguments.to_string()
       let arguments : Json = @json.parse(args_str) catch { _ => {} }
-      calls.push(@types.ToolCallRequest::new(id=tc.id, name=tc.name, arguments~))
+      calls.push(
+        @types.ToolCallRequest::new(id=tc.id, name=tc.name, arguments~),
+      )
     }
     @types.ModelResponse::ToolCalls(calls)
   } else {
@@ -292,7 +283,9 @@ pub fn AnthropicMessagesAccumulator::finish(
 
 ///|
 /// Chat Completions JSONLを一括処理してModelResponseを返す
-pub fn accumulate_chat_completions(content : String) -> @types.ModelResponse raise {
+pub fn accumulate_chat_completions(
+  content : String,
+) -> @types.ModelResponse raise {
   let events = parse_chat_completions_jsonl(content)
   let acc = ChatCompletionsAccumulator::new()
   for event in events {

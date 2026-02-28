@@ -74,4 +74,8 @@ export type {
   HistoryRecord,
   HistorySessionDetail,
   ResumeSessionResponse,
+  // Plugin Action types
+  PluginActionList,
+  MemoryEntry,
+  MemoryListResponse,
 } from './types.js';

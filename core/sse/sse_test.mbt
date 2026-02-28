@@ -282,7 +282,6 @@ test "AnthropicMessagesAccumulator text-only without tool_use stop_reason" {
   }
 }
 
-
 // =============================================================================
 // History IO Tests (ModelMessage JSON roundtrip)
 // =============================================================================
@@ -291,8 +290,7 @@ test "AnthropicMessagesAccumulator text-only without tool_use stop_reason" {
 /// ModelMessage を JSON に変換（テスト用）
 fn model_message_to_json(msg : @types.ModelMessage) -> Json {
   match msg {
-    @types.ModelMessage::System(text) =>
-      { "role": "system", "content": text }
+    @types.ModelMessage::System(text) => { "role": "system", "content": text }
     @types.ModelMessage::User(content~, name~) =>
       match name {
         Some(n) => { "role": "user", "content": content, "name": n }
@@ -347,13 +345,15 @@ fn json_to_model_message(json : Json) -> @types.ModelMessage? {
                 "arguments": arguments,
                 ..
               } =>
-                calls.push(
-                  @types.ToolCallRequest::new(id~, name~, arguments~),
-                )
+                calls.push(@types.ToolCallRequest::new(id~, name~, arguments~))
               _ => ()
             }
           }
-          if calls.length() > 0 { Some(calls) } else { None }
+          if calls.length() > 0 {
+            Some(calls)
+          } else {
+            None
+          }
         }
         _ => None
       }
@@ -438,16 +438,11 @@ test "history IO: Assistant message roundtrip" {
 ///|
 test "history IO: Assistant message with tool calls roundtrip" {
   let calls = [
-    @types.ToolCallRequest::new(
-      id="call_abc",
-      name="get_weather",
-      arguments={ "location": "Tokyo" },
-    ),
+    @types.ToolCallRequest::new(id="call_abc", name="get_weather", arguments={
+      "location": "Tokyo",
+    }),
   ]
-  let msg = @types.ModelMessage::Assistant(
-    content="",
-    tool_calls=Some(calls),
-  )
+  let msg = @types.ModelMessage::Assistant(content="", tool_calls=Some(calls))
   let json = model_message_to_json(msg)
   let restored = json_to_model_message(json)
   match restored {
@@ -495,11 +490,9 @@ test "history IO: full conversation roundtrip" {
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="call_001",
-          name="get_weather",
-          arguments={ "location": "Tokyo" },
-        ),
+        @types.ToolCallRequest::new(id="call_001", name="get_weather", arguments={
+          "location": "Tokyo",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -651,9 +644,7 @@ test "Responses API: streaming and non-streaming produce same text" {
     "output": Json::array([
       {
         "type": "message",
-        "content": Json::array([
-          { "type": "output_text", "text": "Four." },
-        ]),
+        "content": Json::array([{ "type": "output_text", "text": "Four." }]),
         "role": "assistant",
       },
     ]),

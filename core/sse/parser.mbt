@@ -33,9 +33,7 @@ fn split_lines(s : String) -> Array[String] {
 ///|
 /// Chat Completions形式のJSONLをパース
 /// フォーマット: 各行がJSON（event:ヘッダーなし）。[DONE]で終端。
-pub fn parse_chat_completions_jsonl(
-  content : String,
-) -> Array[SseEvent] raise {
+pub fn parse_chat_completions_jsonl(content : String) -> Array[SseEvent] raise {
   let events : Array[SseEvent] = []
   let lines = split_lines(content)
   for line in lines {
@@ -69,4 +67,3 @@ pub fn parse_event_stream_jsonl(content : String) -> Array[SseEvent] raise {
   }
   events
 }
-

@@ -163,7 +163,7 @@ fn reconnect_delay_ms(base : ChannelBaseConfig, attempt : Int) -> Int {
 ///|
 async fn WebSocketChannelAdapter::connect_once(
   self : WebSocketChannelAdapter,
-) -> Unit raise {
+) -> Unit {
   let headers : Map[String, String] = {}
   match self.config.auth_token {
     Some(token) => headers["Authorization"] = "Bearer \{token}"

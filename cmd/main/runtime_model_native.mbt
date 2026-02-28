@@ -286,7 +286,7 @@ async fn call_anthropic_impl(
     model,
     messages,
     tools,
-    system=system,
+    system~,
     max_tokens=options.max_tokens,
     temperature=options.temperature,
   ).stringify()
@@ -376,7 +376,7 @@ async fn call_anthropic_async_impl(
     model,
     messages,
     tools,
-    system=system,
+    system~,
     max_tokens=options.max_tokens,
     temperature=options.temperature,
   ).stringify()

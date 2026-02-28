@@ -86,7 +86,9 @@ pub(all) struct PluginAddRequest {
 
 ///|
 /// Parse from JSON
-pub fn PluginAddRequest::from_json(obj : Map[String, Json]) -> PluginAddRequest? {
+pub fn PluginAddRequest::from_json(
+  obj : Map[String, Json],
+) -> PluginAddRequest? {
   let manifest_path = match obj.get("manifest_path") {
     Some(String(s)) => s
     _ => return None

@@ -1,9 +1,14 @@
+/**
+ * Plugin management hooks
+ * List, get, add, delete, enable, disable, reload, upload, settings
+ */
+
 import { useQuery } from '@tanstack/react-query';
 import { getClient } from '@/lib/client';
 import type { PluginAddRequest } from '@mukuro/client';
 import { createMutation } from './mutation';
 
-const PLUGINS_KEY = ['plugins'];
+export const PLUGINS_KEY = ['plugins'];
 
 export function usePlugins() {
   return useQuery({

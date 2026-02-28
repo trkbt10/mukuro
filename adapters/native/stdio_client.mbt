@@ -59,9 +59,7 @@ fn NativeStdioClient::next_request_id(self : NativeStdioClient) -> Int {
 
 ///|
 /// Validate environment variable key - only allow alphanumeric and underscore
-pub fn validate_env_key(
-  key : String,
-) -> Unit raise StdioClientError {
+pub fn validate_env_key(key : String) -> Unit raise StdioClientError {
   if key.length() == 0 {
     raise StdioClientError::ProcessFailed("Empty environment variable key")
   }
@@ -69,21 +67,21 @@ pub fn validate_env_key(
   // First character must be letter or underscore
   let first = chars[0]
   if not(
-    (first >= 'a' && first <= 'z') ||
-    (first >= 'A' && first <= 'Z') ||
-    first == '_',
-  ) {
+      (first >= 'a' && first <= 'z') ||
+      (first >= 'A' && first <= 'Z') ||
+      first == '_',
+    ) {
     raise StdioClientError::ProcessFailed(
       "Invalid environment variable key: \{key}",
     )
   }
   for c in chars {
     if not(
-      (c >= 'a' && c <= 'z') ||
-      (c >= 'A' && c <= 'Z') ||
-      (c >= '0' && c <= '9') ||
-      c == '_',
-    ) {
+        (c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') ||
+        c == '_',
+      ) {
       raise StdioClientError::ProcessFailed(
         "Invalid character '\{c}' in environment variable key: \{key}",
       )
@@ -161,9 +159,7 @@ pub fn NativeStdioClient::send_request(
   // Serialize request to JSON
   let request_json = actual_request.to_json().stringify()
   // Build pipe command
-  let cmd = self.build_pipe_command(request_json) catch {
-    e => raise e
-  }
+  let cmd = self.build_pipe_command(request_json) catch { e => raise e }
   // Execute using popen with UTF-8 bytes
   let cmd_bytes = string_to_utf8_cstring(cmd)
   let mode_bytes = string_to_utf8_cstring("r")

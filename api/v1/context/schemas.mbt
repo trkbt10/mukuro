@@ -354,7 +354,9 @@ pub(all) struct ContextFilesListResponse {
 
 ///|
 /// Convert to JSON
-pub fn ContextFilesListResponse::to_json(self : ContextFilesListResponse) -> Json {
+pub fn ContextFilesListResponse::to_json(
+  self : ContextFilesListResponse,
+) -> Json {
   let arr : Array[Json] = []
   for f in self.files {
     arr.push(f.to_json())

@@ -178,9 +178,7 @@ test "SystemPromptWhen::First only applies on first message" {
   let builder = DefaultContextBuilder::default()
   // Not first message - system prompt should not be applied
   let input : @interfaces.ContextInput = {
-    session_history: [
-      @types.ModelMessage::User(content="Previous", name=None),
-    ],
+    session_history: [@types.ModelMessage::User(content="Previous", name=None)],
     memory_context: [],
     skills: [],
     bootstrap: "",
@@ -381,11 +379,7 @@ fn find_position(haystack : String, needle : String) -> Int {
     return -1
   }
   for i in 0..<(h_len - n_len + 1) {
-    let slice = try {
-      haystack[i:i + n_len].to_string()
-    } catch {
-      _ => continue
-    }
+    let slice = haystack[i:i + n_len].to_string() catch { _ => continue }
     if slice == needle {
       return i
     }

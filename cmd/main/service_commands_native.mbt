@@ -77,7 +77,9 @@ fn install_launchd_service(config : ServiceConfig) -> CliResult {
   let load_cmd = "launchctl load \{plist_path}"
   let load_result = @native.c_system(@native.string_to_cstring(load_cmd))
   if load_result != 0 {
-    return CliResult::Error("Failed to load service. Run: launchctl load \{plist_path}")
+    return CliResult::Error(
+      "Failed to load service. Run: launchctl load \{plist_path}",
+    )
   }
   CliResult::Ok("Service installed successfully at \{plist_path}")
 }
@@ -190,7 +192,9 @@ fn uninstall_systemd_service() -> CliResult {
       ),
     )
     ignore(@native.c_remove_file(@native.string_to_cstring(sys_unit)))
-    ignore(@native.c_system(@native.string_to_cstring("systemctl daemon-reload")))
+    ignore(
+      @native.c_system(@native.string_to_cstring("systemctl daemon-reload")),
+    )
     return CliResult::Ok("Service uninstalled from \{sys_unit}")
   }
   CliResult::Error("Service not found")
@@ -213,7 +217,9 @@ fn execute_service_start() -> CliResult {
     ServicePlatform::Linux => {
       // Try user-level first
       let user_unit = get_systemd_unit_path(true)
-      let user_exists = @native.c_file_exists(@native.string_to_cstring(user_unit))
+      let user_exists = @native.c_file_exists(
+        @native.string_to_cstring(user_unit),
+      )
       if user_exists == 1 {
         let result = @native.c_system(
           @native.string_to_cstring("systemctl --user start mukuro-gateway"),
@@ -252,7 +258,9 @@ fn execute_service_stop() -> CliResult {
     ServicePlatform::Linux => {
       // Try user-level first
       let user_unit = get_systemd_unit_path(true)
-      let user_exists = @native.c_file_exists(@native.string_to_cstring(user_unit))
+      let user_exists = @native.c_file_exists(
+        @native.string_to_cstring(user_unit),
+      )
       if user_exists == 1 {
         let result = @native.c_system(
           @native.string_to_cstring("systemctl --user stop mukuro-gateway"),
@@ -329,12 +337,22 @@ fn get_launchd_status() -> ServiceStatus {
   let user_exists = @native.c_file_exists(@native.string_to_cstring(user_plist))
   let sys_exists = @native.c_file_exists(@native.string_to_cstring(sys_plist))
   if user_exists != 1 && sys_exists != 1 {
-    return { installed: false, running: false, pid: None, message: "Not installed" }
+    return {
+      installed: false,
+      running: false,
+      pid: None,
+      message: "Not installed",
+    }
   }
   // Service is installed, check if running via launchctl list
   // This is simplified - would need proper parsing of launchctl output
   let plist_path = if user_exists == 1 { user_plist } else { sys_plist }
-  { installed: true, running: false, pid: None, message: "Installed at \{plist_path}" }
+  {
+    installed: true,
+    running: false,
+    pid: None,
+    message: "Installed at \{plist_path}",
+  }
 }
 
 ///|
@@ -345,10 +363,20 @@ fn get_systemd_status() -> ServiceStatus {
   let user_exists = @native.c_file_exists(@native.string_to_cstring(user_unit))
   let sys_exists = @native.c_file_exists(@native.string_to_cstring(sys_unit))
   if user_exists != 1 && sys_exists != 1 {
-    return { installed: false, running: false, pid: None, message: "Not installed" }
+    return {
+      installed: false,
+      running: false,
+      pid: None,
+      message: "Not installed",
+    }
   }
   let path = if user_exists == 1 { user_unit } else { sys_unit }
-  { installed: true, running: false, pid: None, message: "Installed at \{path}" }
+  {
+    installed: true,
+    running: false,
+    pid: None,
+    message: "Installed at \{path}",
+  }
 }
 
 ///|
@@ -368,7 +396,9 @@ fn execute_service_logs(opts : ServiceLogsOptions) -> CliResult {
     }
     ServicePlatform::Linux => {
       let user_unit = get_systemd_unit_path(true)
-      let user_exists = @native.c_file_exists(@native.string_to_cstring(user_unit))
+      let user_exists = @native.c_file_exists(
+        @native.string_to_cstring(user_unit),
+      )
       let base_cmd = if user_exists == 1 {
         "journalctl --user -u mukuro-gateway"
       } else {

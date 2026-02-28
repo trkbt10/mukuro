@@ -10,7 +10,9 @@ pub struct ContextPruner {
 
 ///|
 /// Create new context pruner
-pub fn ContextPruner::new(config : @types.ContextPruningConfig) -> ContextPruner {
+pub fn ContextPruner::new(
+  config : @types.ContextPruningConfig,
+) -> ContextPruner {
   { config, }
 }
 
@@ -64,9 +66,7 @@ fn ContextPruner::prune_soft_trim(
   if self.config.preserve_system {
     for msg in messages {
       match msg {
-        @types.ModelMessage::System(_) => {
-          result.push(msg)
-        }
+        @types.ModelMessage::System(_) => result.push(msg)
         _ => ()
       }
     }
@@ -149,7 +149,11 @@ pub fn ContextPruner::prune_to_token_budget(
     Some(n) => n
     None => 1000
   }
-  let target_tokens = if max_tokens > min_tokens { max_tokens } else { min_tokens }
+  let target_tokens = if max_tokens > min_tokens {
+    max_tokens
+  } else {
+    min_tokens
+  }
   let current_tokens = estimate_token_count(messages)
   if current_tokens <= target_tokens {
     return messages

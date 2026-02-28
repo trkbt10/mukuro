@@ -255,6 +255,66 @@ test "history_file_path - sanitizes dangerous characters" {
 }
 
 ///|
+test "parse_int_string - valid numbers" {
+  assert_eq(parse_int_string("123"), Some(123))
+  assert_eq(parse_int_string("0"), Some(0))
+  assert_eq(parse_int_string("2026"), Some(2026))
+}
+
+///|
+test "parse_int_string - invalid input" {
+  assert_eq(parse_int_string(""), None)
+  assert_eq(parse_int_string("abc"), None)
+  assert_eq(parse_int_string("12a"), None)
+  assert_eq(parse_int_string("-5"), None)
+}
+
+///|
+test "parse_history_filename - basic" {
+  match parse_history_filename("web_chat-abc-1709164800.jsonl") {
+    Some((channel, chat_id, epoch)) => {
+      assert_eq(channel, "web_chat")
+      assert_eq(chat_id, "abc")
+      assert_eq(epoch, 1709164800L)
+    }
+    None => fail("Expected Some")
+  }
+}
+
+///|
+test "parse_history_filename - complex chat_id with dashes" {
+  match parse_history_filename("discord-room-abc-def-1709164800.jsonl") {
+    Some((channel, chat_id, epoch)) => {
+      assert_eq(channel, "discord")
+      assert_eq(chat_id, "room-abc-def")
+      assert_eq(epoch, 1709164800L)
+    }
+    None => fail("Expected Some")
+  }
+}
+
+///|
+test "parse_history_filename - no extension returns None" {
+  assert_true(parse_history_filename("web_chat-abc-1709164800.txt") is None)
+  assert_true(parse_history_filename("web_chat-abc-1709164800") is None)
+}
+
+///|
+test "parse_history_filename - missing dash returns None" {
+  assert_true(parse_history_filename("nodash.jsonl") is None)
+}
+
+///|
+test "parse_history_filename - invalid epoch returns None" {
+  assert_true(parse_history_filename("web_chat-abc-notanumber.jsonl") is None)
+}
+
+///|
+test "parse_history_filename - empty string returns None" {
+  assert_true(parse_history_filename("") is None)
+}
+
+///|
 test "NoOpHistoryRecorder - does nothing without error" {
   let recorder = @interfaces.NoOpHistoryRecorder::new()
   let hr : &@interfaces.HistoryRecorder = recorder
@@ -272,4 +332,22 @@ test "NoOpHistoryRecorder - does nothing without error" {
   hr.flush() catch {
     _ => fail("flush should not fail")
   }
+}
+
+///|
+test "NoOpHistoryReader - returns empty arrays" {
+  let reader = @interfaces.NoOpHistoryReader::new()
+  let hr : &@interfaces.HistoryReader = reader
+  let records = hr.read_session(session_id="test") catch {
+    _ => fail("read_session should not fail")
+  }
+  assert_eq(records.length(), 0)
+  let sessions = hr.list_sessions(year=2026, month=2, day=28) catch {
+    _ => fail("list_sessions should not fail")
+  }
+  assert_eq(sessions.length(), 0)
+  let dates = hr.list_dates() catch {
+    _ => fail("list_dates should not fail")
+  }
+  assert_eq(dates.length(), 0)
 }

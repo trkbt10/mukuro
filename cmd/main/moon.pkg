@@ -12,6 +12,7 @@ import {
   "trkbt10/mukuro/api/v1/context" @api_context,
   "trkbt10/mukuro/api/v1/providers" @api_providers,
   "trkbt10/mukuro/api/v1/chat" @api_chat,
+  "trkbt10/mukuro/api/v1/history" @api_history,
   "trkbt10/mukuro/core/config" @config,
   "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
   "trkbt10/mukuro/core/agent" @agent,
@@ -59,6 +60,7 @@ options(
     "plugin_transport_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "plugin_watcher_native.mbt": [ "native" ],
     "plugin_watcher_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "protocol_fixture_native_test.mbt": [ "native" ],
     "runtime_capability_native.mbt": [ "native" ],
     "runtime_capability_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "runtime_capability_stub_test.mbt": [ "js", "wasm", "wasm-gc" ],
@@ -73,6 +75,5 @@ options(
     "service_commands_native.mbt": [ "native" ],
     "service_commands_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "service_e2e_native_test.mbt": [ "native" ],
-    "protocol_fixture_native_test.mbt": [ "native" ],
   },
 )

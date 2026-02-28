@@ -27,7 +27,13 @@ pub(all) struct ContextFiles {
 ///|
 /// 空のContextFilesを作成
 pub fn ContextFiles::empty() -> ContextFiles {
-  { soul: None, agents_handbook: None, tools_config: None, identity: None, user_context: None }
+  {
+    soul: None,
+    agents_handbook: None,
+    tools_config: None,
+    identity: None,
+    user_context: None,
+  }
 }
 
 ///|

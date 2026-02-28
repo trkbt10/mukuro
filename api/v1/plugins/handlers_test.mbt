@@ -183,7 +183,10 @@ test "handle_remove returns 404 for unknown plugin" {
 ///|
 test "handle_enable enables plugin" {
   let state = PluginManagerState::new()
-  let plugin : @interfaces.PluginState = { ..make_test_plugin_state("test"), enabled: false }
+  let plugin : @interfaces.PluginState = {
+    ..make_test_plugin_state("test"),
+    enabled: false,
+  }
   state.set_plugin("test", plugin)
   let handlers = create_plugin_handlers(state)
   let ctx = make_ctx("PUT", "/api/v1/plugins/test/enable", "")
@@ -211,7 +214,10 @@ test "handle_enable returns 404 for unknown plugin" {
 ///|
 test "handle_disable disables plugin" {
   let state = PluginManagerState::new()
-  let plugin : @interfaces.PluginState = { ..make_test_plugin_state("test"), enabled: true }
+  let plugin : @interfaces.PluginState = {
+    ..make_test_plugin_state("test"),
+    enabled: true,
+  }
   state.set_plugin("test", plugin)
   let handlers = create_plugin_handlers(state)
   let ctx = make_ctx("PUT", "/api/v1/plugins/test/disable", "")
@@ -329,4 +335,151 @@ test "handle_update_settings returns 400 for invalid JSON" {
   let ctx = make_ctx("PUT", "/api/v1/plugins/test/settings", "invalid")
   let resp = (handlers.update_settings.0)(ctx)
   assert_eq(resp.status, 400)
+}
+
+// =============================================================================
+// Plugin Actions (RPC) Tests
+// =============================================================================
+
+///|
+test "register_action and list_actions" {
+  let state = PluginManagerState::new()
+  state.set_plugin("test", make_test_plugin_state("test"))
+  state.register_action("test", "hello", fn(_params) {
+    @api.json_response(200, { "msg": "hello" })
+  })
+  state.register_action("test", "bye", fn(_params) {
+    @api.json_response(200, { "msg": "bye" })
+  })
+  let actions = state.list_actions("test")
+  assert_eq(actions.length(), 2)
+  assert_true(actions.contains("hello"))
+  assert_true(actions.contains("bye"))
+}
+
+///|
+test "list_actions returns empty for plugin with no actions" {
+  let state = PluginManagerState::new()
+  state.set_plugin("test", make_test_plugin_state("test"))
+  let actions = state.list_actions("test")
+  assert_eq(actions.length(), 0)
+}
+
+///|
+test "invoke_action calls registered handler" {
+  let state = PluginManagerState::new()
+  state.set_plugin("test", make_test_plugin_state("test"))
+  state.register_action("test", "greet", fn(params) {
+    let name = match params {
+      { "name": String(n), .. } => n
+      _ => "world"
+    }
+    @api.json_response(200, { "greeting": "hello \{name}" })
+  })
+  match state.invoke_action("test", "greet", { "name": "Alice" }) {
+    Some(resp) => {
+      assert_eq(resp.status, 200)
+      assert_true(resp.body.contains("Alice"))
+    }
+    None => fail("Expected action result")
+  }
+}
+
+///|
+test "invoke_action returns None for unknown action" {
+  let state = PluginManagerState::new()
+  state.set_plugin("test", make_test_plugin_state("test"))
+  assert_true(state.invoke_action("test", "missing", {}) is None)
+}
+
+///|
+test "invoke_action returns None for unknown plugin" {
+  let state = PluginManagerState::new()
+  assert_true(state.invoke_action("unknown", "action", {}) is None)
+}
+
+///|
+test "handle_list_actions returns action names" {
+  let state = PluginManagerState::new()
+  state.set_plugin("myplugin", make_test_plugin_state("myplugin"))
+  state.register_action("myplugin", "do_stuff", fn(_params) {
+    @api.json_response(200, { "ok": true })
+  })
+  let ctx = make_ctx("GET", "/api/v1/plugins/myplugin/actions", "")
+  let resp = handle_list_actions(state, ctx)
+  assert_eq(resp.status, 200)
+  assert_true(resp.body.contains("do_stuff"))
+  assert_true(resp.body.contains("myplugin"))
+}
+
+///|
+test "handle_list_actions returns 404 for unknown plugin" {
+  let state = PluginManagerState::new()
+  let ctx = make_ctx("GET", "/api/v1/plugins/unknown/actions", "")
+  let resp = handle_list_actions(state, ctx)
+  assert_eq(resp.status, 404)
+}
+
+///|
+test "handle_invoke_action calls action and returns result" {
+  let state = PluginManagerState::new()
+  state.set_plugin("test", make_test_plugin_state("test"))
+  state.register_action("test", "echo", fn(params) {
+    @api.json_response(200, { "echo": params })
+  })
+  let ctx = make_ctx(
+    "POST",
+    "/api/v1/plugins/test/actions/echo",
+    "{\"msg\":\"hi\"}",
+  )
+  let resp = handle_invoke_action(state, ctx)
+  assert_eq(resp.status, 200)
+  assert_true(resp.body.contains("hi"))
+}
+
+///|
+test "handle_invoke_action returns 404 for unknown plugin" {
+  let state = PluginManagerState::new()
+  let ctx = make_ctx(
+    "POST",
+    "/api/v1/plugins/unknown/actions/test",
+    "{}",
+  )
+  let resp = handle_invoke_action(state, ctx)
+  assert_eq(resp.status, 404)
+}
+
+///|
+test "handle_invoke_action returns 404 for unknown action" {
+  let state = PluginManagerState::new()
+  state.set_plugin("test", make_test_plugin_state("test"))
+  let ctx = make_ctx(
+    "POST",
+    "/api/v1/plugins/test/actions/missing",
+    "{}",
+  )
+  let resp = handle_invoke_action(state, ctx)
+  assert_eq(resp.status, 404)
+  assert_true(resp.body.contains("action_not_found"))
+}
+
+///|
+test "handle_invoke_action returns 400 for disabled plugin" {
+  let state = PluginManagerState::new()
+  let plugin : @interfaces.PluginState = {
+    ..make_test_plugin_state("test"),
+    enabled: false,
+  }
+  state.set_plugin("test", plugin)
+  state.register_action("test", "echo", fn(_params) {
+    @api.json_response(200, { "ok": true })
+  })
+  let ctx = make_ctx(
+    "POST",
+    "/api/v1/plugins/test/actions/echo",
+    "{}",
+  )
+  let resp = handle_invoke_action(state, ctx)
+  assert_eq(resp.status, 400)
+  assert_true(resp.body.contains("plugin_disabled"))
 }

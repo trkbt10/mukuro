@@ -108,7 +108,7 @@ pub fn ApiRequestContext::new(
   path~ : String,
   headers~ : Map[String, String],
   body~ : String,
-  role~ : ApiRole = ApiRole::Admin,
+  role? : ApiRole = ApiRole::Admin,
 ) -> ApiRequestContext {
   let segments = parse_path_segments(path)
   let query = parse_query_params(path)
@@ -257,6 +257,49 @@ fn parse_client_id_from_headers(headers : Map[String, String]) -> String {
 }
 
 ///|
+/// Minimal URL decode (%XX → character)
+pub fn url_decode(s : String) -> String {
+  let buf = StringBuilder::new()
+  let chars = s.to_array()
+  let len = chars.length()
+  let mut i = 0
+  while i < len {
+    if chars[i] == '%' && i + 2 < len {
+      let hi = hex_digit(chars[i + 1])
+      let lo = hex_digit(chars[i + 2])
+      match (hi, lo) {
+        (Some(h), Some(l)) => {
+          buf.write_char((h * 16 + l).unsafe_to_char())
+          i = i + 3
+          continue
+        }
+        _ => ()
+      }
+    }
+    if chars[i] == '+' {
+      buf.write_char(' ')
+    } else {
+      buf.write_char(chars[i])
+    }
+    i = i + 1
+  }
+  buf.to_string()
+}
+
+///|
+fn hex_digit(c : Char) -> Int? {
+  if c >= '0' && c <= '9' {
+    Some(c.to_int() - '0'.to_int())
+  } else if c >= 'a' && c <= 'f' {
+    Some(c.to_int() - 'a'.to_int() + 10)
+  } else if c >= 'A' && c <= 'F' {
+    Some(c.to_int() - 'A'.to_int() + 10)
+  } else {
+    None
+  }
+}
+
+///|
 /// Create JSON response
 pub fn json_response(status : Int, body : Json) -> ApiResponse {
   let headers : Map[String, String] = {}
@@ -288,10 +331,11 @@ pub fn error_response_with_details(
   message : String,
   details : Map[String, Json],
 ) -> ApiResponse {
-  json_response(
-    status,
-    { "error": code, "message": message, "details": Json::object(details) },
-  )
+  json_response(status, {
+    "error": code,
+    "message": message,
+    "details": Json::object(details),
+  })
 }
 
 ///|
@@ -306,16 +350,13 @@ pub fn[T : ToJson] paginated_response(
   for item in data {
     items.push(item.to_json())
   }
-  json_response(
-    200,
-    {
-      "data": Json::array(items),
-      "meta": {
-        "total": total,
-        "page": page,
-        "per_page": per_page,
-        "total_pages": (total + per_page - 1) / per_page,
-      },
+  json_response(200, {
+    "data": Json::array(items),
+    "meta": {
+      "total": total,
+      "page": page,
+      "per_page": per_page,
+      "total_pages": (total + per_page - 1) / per_page,
     },
-  )
+  })
 }

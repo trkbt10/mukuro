@@ -64,4 +64,3 @@ test "load_gateway_config_impl returns error for missing config file" {
     },
   )
 }
-

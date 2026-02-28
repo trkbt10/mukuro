@@ -110,9 +110,7 @@ pub fn parse_responses_api_response(
               _ => ""
             }
             let arguments : Json = @json.parse(args_str) catch { _ => {} }
-            tool_calls.push(
-              @types.ToolCallRequest::new(id~, name~, arguments~),
-            )
+            tool_calls.push(@types.ToolCallRequest::new(id~, name~, arguments~))
           }
           _ => () // reasoning, web_search_call, etc.
         }

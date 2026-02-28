@@ -64,9 +64,7 @@ fn handle_get(
 ) -> @api.ApiResponse {
   if ctx.segments.length() < 2 {
     return @api.error_response(
-      400,
-      "bad_request",
-      "Context file name is required",
+      400, "bad_request", "Context file name is required",
     )
   }
   let name = ctx.segments[1]
@@ -94,9 +92,7 @@ fn handle_update(
 ) -> @api.ApiResponse {
   if ctx.segments.length() < 2 {
     return @api.error_response(
-      400,
-      "bad_request",
-      "Context file name is required",
+      400, "bad_request", "Context file name is required",
     )
   }
   let name = ctx.segments[1]
@@ -119,23 +115,19 @@ fn handle_update(
                   file_type,
                   Some(content),
                 )
-                @api.json_response(
-                  200,
-                  { "ok": true, "data": response.to_json() },
-                )
+                @api.json_response(200, {
+                  "ok": true,
+                  "data": response.to_json(),
+                })
               } else {
                 @api.error_response(
-                  500,
-                  "internal_error",
-                  "Failed to write context file",
+                  500, "internal_error", "Failed to write context file",
                 )
               }
             }
             _ =>
               @api.error_response(
-                400,
-                "bad_request",
-                "Field 'content' is required and must be a string",
+                400, "bad_request", "Field 'content' is required and must be a string",
               )
           }
       }
@@ -150,9 +142,7 @@ fn handle_delete(
 ) -> @api.ApiResponse {
   if ctx.segments.length() < 2 {
     return @api.error_response(
-      400,
-      "bad_request",
-      "Context file name is required",
+      400, "bad_request", "Context file name is required",
     )
   }
   let name = ctx.segments[1]
@@ -169,9 +159,7 @@ fn handle_delete(
         @api.json_response(200, { "ok": true })
       } else {
         @api.error_response(
-          500,
-          "internal_error",
-          "Failed to delete context file",
+          500, "internal_error", "Failed to delete context file",
         )
       }
     }

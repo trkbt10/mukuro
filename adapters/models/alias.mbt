@@ -45,22 +45,14 @@ pub fn ModelAliasRegistry::with_defaults() -> ModelAliasRegistry {
     provider: "openai",
     model_name: "gpt-4-turbo-preview",
   })
-  registry.register({
-    alias: "gpt4o",
-    provider: "openai",
-    model_name: "gpt-4o",
-  })
+  registry.register({ alias: "gpt4o", provider: "openai", model_name: "gpt-4o" })
   registry.register({
     alias: "gpt35",
     provider: "openai",
     model_name: "gpt-3.5-turbo",
   })
   // Ollama aliases
-  registry.register({
-    alias: "llama",
-    provider: "ollama",
-    model_name: "llama2",
-  })
+  registry.register({ alias: "llama", provider: "ollama", model_name: "llama2" })
   registry.register({
     alias: "mistral",
     provider: "ollama",
@@ -146,13 +138,13 @@ fn infer_provider_from_model(model_name : String) -> String {
   let lower = model_name.to_lower()
   if lower.contains("claude") {
     "anthropic"
-  } else if lower.contains("gpt") || lower.contains("o1") || lower.contains(
-    "davinci",
-  ) {
+  } else if lower.contains("gpt") ||
+    lower.contains("o1") ||
+    lower.contains("davinci") {
     "openai"
-  } else if lower.contains("llama") || lower.contains("mistral") || lower.contains(
-    "codellama",
-  ) {
+  } else if lower.contains("llama") ||
+    lower.contains("mistral") ||
+    lower.contains("codellama") {
     "ollama"
   } else {
     // Default to anthropic

@@ -13,9 +13,7 @@ pub fn validate_body_size(body : String) -> ApiResponse? {
   if body.length() > max_body_size {
     Some(
       error_response(
-        413,
-        "payload_too_large",
-        "Request body exceeds maximum size of 1MB",
+        413, "payload_too_large", "Request body exceeds maximum size of 1MB",
       ),
     )
   } else {
@@ -46,7 +44,10 @@ pub fn is_action_allowed(role : ApiRole, action : ApiAction) -> Bool {
 
 ///|
 /// Determine required action for endpoint
-pub fn get_required_action(meth : String, segments : Array[String]) -> ApiAction {
+pub fn get_required_action(
+  meth : String,
+  segments : Array[String],
+) -> ApiAction {
   // POST/PUT/DELETE require at least Write
   // Some POST endpoints (create) require Admin
   match meth.to_upper() {
@@ -109,7 +110,9 @@ pub fn validate_json_body(body : String) -> Result[Json, ApiResponse] {
 
 ///|
 /// Middleware: Require non-empty JSON object body
-pub fn require_json_object(body : String) -> Result[Map[String, Json], ApiResponse] {
+pub fn require_json_object(
+  body : String,
+) -> Result[Map[String, Json], ApiResponse] {
   if body.length() == 0 {
     return Err(error_response(400, "missing_body", "Request body is required"))
   }
@@ -122,9 +125,7 @@ pub fn require_json_object(body : String) -> Result[Map[String, Json], ApiRespon
         _ =>
           Err(
             error_response(
-              400,
-              "invalid_body",
-              "Request body must be a JSON object",
+              400, "invalid_body", "Request body must be a JSON object",
             ),
           )
       }
@@ -140,7 +141,13 @@ pub fn require_string_field(
   match obj.get(field) {
     Some(String(v)) => Ok(v)
     Some(_) =>
-      Err(error_response(400, "invalid_field", "Field '\{field}' must be a string"))
+      Err(
+        error_response(
+          400,
+          "invalid_field",
+          "Field '\{field}' must be a string",
+        ),
+      )
     None =>
       Err(error_response(400, "missing_field", "Field '\{field}' is required"))
   }
@@ -168,7 +175,11 @@ pub fn require_int_field(
     Some(Number(v, ..)) => Ok(v.to_int())
     Some(_) =>
       Err(
-        error_response(400, "invalid_field", "Field '\{field}' must be a number"),
+        error_response(
+          400,
+          "invalid_field",
+          "Field '\{field}' must be a number",
+        ),
       )
     None =>
       Err(error_response(400, "missing_field", "Field '\{field}' is required"))
@@ -195,7 +206,11 @@ pub fn require_bool_field(
     Some(False) => Ok(false)
     Some(_) =>
       Err(
-        error_response(400, "invalid_field", "Field '\{field}' must be a boolean"),
+        error_response(
+          400,
+          "invalid_field",
+          "Field '\{field}' must be a boolean",
+        ),
       )
     None =>
       Err(error_response(400, "missing_field", "Field '\{field}' is required"))
@@ -204,7 +219,10 @@ pub fn require_bool_field(
 
 ///|
 /// Middleware: Extract optional bool field from JSON
-pub fn get_optional_bool_field(obj : Map[String, Json], field : String) -> Bool? {
+pub fn get_optional_bool_field(
+  obj : Map[String, Json],
+  field : String,
+) -> Bool? {
   match obj.get(field) {
     Some(True) => Some(true)
     Some(False) => Some(false)
@@ -240,15 +258,12 @@ pub fn validate_json_content_type(
       }
   }
   // Accept if content-type starts with application/json or is empty
-  if content_type.length() == 0 ||
-    content_type.has_prefix("application/json") {
+  if content_type.length() == 0 || content_type.has_prefix("application/json") {
     None
   } else {
     Some(
       error_response(
-        415,
-        "unsupported_media_type",
-        "Content-Type must be application/json",
+        415, "unsupported_media_type", "Content-Type must be application/json",
       ),
     )
   }
@@ -269,7 +284,10 @@ pub(all) struct RateLimitState {
 
 ///|
 /// Create new rate limit state
-pub fn RateLimitState::new(max_requests~ : Int, window_seconds~ : Int64) -> RateLimitState {
+pub fn RateLimitState::new(
+  max_requests~ : Int,
+  window_seconds~ : Int64,
+) -> RateLimitState {
   { counts: {}, window_start: {}, max_requests, window_seconds }
 }
 

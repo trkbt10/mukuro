@@ -54,7 +54,10 @@ pub(all) struct ServiceConfig {
 
 ///|
 /// Create default service config
-pub fn ServiceConfig::default(exe_path : String, config_path : String?) -> ServiceConfig {
+pub fn ServiceConfig::default(
+  exe_path : String,
+  config_path : String?,
+) -> ServiceConfig {
   {
     name: service_name,
     display_name: service_display_name,

@@ -22,6 +22,7 @@ import {
   useUpdatePluginSettings,
 } from '@/hooks';
 import { formatDate } from '@/lib/utils';
+import { getPluginPanels } from './pluginPanels';
 import styles from './PluginDetail.module.css';
 
 export function PluginDetail() {
@@ -92,6 +93,9 @@ export function PluginDetail() {
     }
     setSettingsModalOpen(true);
   };
+
+  // Schema-based panels: render any panels registered for this plugin
+  const panels = getPluginPanels(plugin.id);
 
   return (
     <div className={styles.page}>
@@ -171,6 +175,10 @@ export function PluginDetail() {
           )}
         </PanelSection>
       </div>
+
+      {panels.map(({ component: Panel, label }) => (
+        <Panel key={label} />
+      ))}
 
       <DeleteConfirmModal
         open={deleteModalOpen}

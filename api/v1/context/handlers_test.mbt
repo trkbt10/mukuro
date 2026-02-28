@@ -134,10 +134,7 @@ test "handle_get returns 400 when name is missing" {
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context", "")
   // Manually set segments to simulate missing name
-  let ctx2 : @api.ApiRequestContext = {
-    ..ctx,
-    segments: ["context"],
-  }
+  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context"] }
   let resp = (handlers.get.0)(ctx2)
   assert_eq(resp.status, 400)
 }
@@ -152,9 +149,7 @@ test "handle_update writes file content" {
   let state = ContextState::new(create_mock_io(storage))
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx(
-    "PUT",
-    "/api/v1/context/soul",
-    "{\"content\":\"New soul content\"}",
+    "PUT", "/api/v1/context/soul", "{\"content\":\"New soul content\"}",
   )
   let resp = (handlers.update.0)(ctx)
   assert_eq(resp.status, 200)
@@ -180,9 +175,7 @@ test "handle_update returns 404 for invalid file type" {
   let state = ContextState::new(create_mock_io(storage))
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx(
-    "PUT",
-    "/api/v1/context/invalid",
-    "{\"content\":\"test\"}",
+    "PUT", "/api/v1/context/invalid", "{\"content\":\"test\"}",
   )
   let resp = (handlers.update.0)(ctx)
   assert_eq(resp.status, 404)

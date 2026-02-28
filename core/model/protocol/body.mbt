@@ -4,8 +4,8 @@ pub fn build_openai_chat_body(
   model : String,
   messages : Array[@types.ModelMessage],
   tools : Array[@types.ToolDefinition],
-  max_tokens~ : Int? = None,
-  temperature~ : Double? = None,
+  max_tokens? : Int? = None,
+  temperature? : Double? = None,
 ) -> Json {
   let msgs = messages_to_openai_json(messages)
   let mut body : Json = { "model": model, "messages": Json::array(msgs) }
@@ -15,12 +15,15 @@ pub fn build_openai_chat_body(
     None => ()
   }
   match temperature {
-    Some(temp) =>
-      body = set_json_field(body, "temperature", Json::number(temp))
+    Some(temp) => body = set_json_field(body, "temperature", Json::number(temp))
     None => ()
   }
   if tools.length() > 0 {
-    body = set_json_field(body, "tools", Json::array(tools_to_openai_json(tools)))
+    body = set_json_field(
+      body,
+      "tools",
+      Json::array(tools_to_openai_json(tools)),
+    )
     body = set_json_field(body, "tool_choice", Json::string("auto"))
   }
   body
@@ -52,9 +55,9 @@ pub fn build_anthropic_body(
   model : String,
   messages : Array[@types.ModelMessage],
   tools : Array[@types.ToolDefinition],
-  max_tokens~ : Int? = None,
-  system~ : String = "",
-  temperature~ : Double? = None,
+  max_tokens? : Int? = None,
+  system? : String = "",
+  temperature? : Double? = None,
 ) -> Json {
   let system_msg = if system.length() > 0 {
     system
@@ -73,8 +76,7 @@ pub fn build_anthropic_body(
     body = set_json_field(body, "system", Json::string(system_msg))
   }
   match temperature {
-    Some(temp) =>
-      body = set_json_field(body, "temperature", Json::number(temp))
+    Some(temp) => body = set_json_field(body, "temperature", Json::number(temp))
     None => ()
   }
   if tools.length() > 0 {

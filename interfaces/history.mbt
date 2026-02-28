@@ -57,6 +57,8 @@ pub(open) trait HistoryReader {
   read_session(Self, session_id~ : String) -> Array[HistoryRecord] raise HistoryError
   /// 指定日のセッション一覧を取得
   list_sessions(Self, year~ : Int, month~ : Int, day~ : Int) -> Array[String] raise HistoryError
+  /// 履歴がある日付一覧を取得（year, month, day のタプル配列）
+  list_dates(Self) -> Array[(Int, Int, Int)] raise HistoryError
 }
 
 ///|
@@ -86,4 +88,40 @@ pub impl HistoryRecorder for NoOpHistoryRecorder with record(_self, record~) -> 
 ///|
 pub impl HistoryRecorder for NoOpHistoryRecorder with flush(_self) -> Unit raise HistoryError {
   // no-op
+}
+
+///|
+/// 何も返さないNoOpリーダー実装（テスト用、無効化用）
+pub struct NoOpHistoryReader {}
+
+///|
+pub fn NoOpHistoryReader::new() -> NoOpHistoryReader {
+  NoOpHistoryReader::{  }
+}
+
+///|
+pub impl HistoryReader for NoOpHistoryReader with read_session(
+  _self,
+  session_id~,
+) -> Array[HistoryRecord] raise HistoryError {
+  ignore(session_id)
+  []
+}
+
+///|
+pub impl HistoryReader for NoOpHistoryReader with list_sessions(
+  _self,
+  year~,
+  month~,
+  day~,
+) -> Array[String] raise HistoryError {
+  ignore(year)
+  ignore(month)
+  ignore(day)
+  []
+}
+
+///|
+pub impl HistoryReader for NoOpHistoryReader with list_dates(_self) -> Array[(Int, Int, Int)] raise HistoryError {
+  []
 }

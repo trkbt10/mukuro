@@ -145,11 +145,9 @@ fn handle_add(
       match ProviderAddRequest::from_json(obj) {
         None =>
           @api.error_response(
-            400,
-            "bad_request",
-            "Invalid request. Required: id, name, provider_type",
+            400, "bad_request", "Invalid request. Required: id, name, provider_type",
           )
-        Some(request) => {
+        Some(request) =>
           // Check if already exists
           match state.get_provider(request.id) {
             Some(_) =>
@@ -186,7 +184,6 @@ fn handle_add(
               @api.json_response(201, { "ok": true, "id": request.id })
             }
           }
-        }
       }
   }
 }
@@ -360,9 +357,7 @@ fn handle_connect(
     Some(provider_state) => {
       if not(provider_state.config.enabled) {
         return @api.error_response(
-          400,
-          "bad_request",
-          "Provider is disabled. Enable it first.",
+          400, "bad_request", "Provider is disabled. Enable it first.",
         )
       }
       // Update status to connecting
@@ -440,14 +435,11 @@ fn handle_test(
       }
       if missing.length() > 0 {
         let missing_str = missing.join(", ")
-        @api.json_response(
-          200,
-          {
-            "ok": false,
-            "error": "Missing required settings: \{missing_str}",
-            "missing_fields": missing_str,
-          },
-        )
+        @api.json_response(200, {
+          "ok": false,
+          "error": "Missing required settings: \{missing_str}",
+          "missing_fields": missing_str,
+        })
       } else {
         @api.json_response(200, { "ok": true, "message": "Configuration valid" })
       }

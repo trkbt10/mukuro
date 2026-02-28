@@ -403,3 +403,22 @@ export interface HistorySessionDetail {
 export interface ResumeSessionResponse {
   chat_id: string;
 }
+
+// ============================================================================
+// Plugin Action Types
+// ============================================================================
+
+export interface PluginActionList {
+  plugin_id: string;
+  actions: string[];
+}
+
+export interface MemoryEntry {
+  key: string;
+  value: unknown;
+}
+
+export interface MemoryListResponse {
+  entries: MemoryEntry[];
+  count: number;
+}

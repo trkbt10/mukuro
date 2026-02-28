@@ -9,12 +9,14 @@ pub(all) struct PluginManagerState {
   mut plugins : Map[String, @interfaces.PluginState]
   /// Plugin settings
   mut settings : Map[String, Map[String, Json]]
+  /// Plugin action handlers: plugin_id -> action_name -> handler
+  mut actions : Map[String, Map[String, (Json) -> @api.ApiResponse]]
 }
 
 ///|
 /// Create new plugin manager state
 pub fn PluginManagerState::new() -> PluginManagerState {
-  { plugins: {}, settings: {} }
+  { plugins: {}, settings: {}, actions: {} }
 }
 
 ///|
@@ -105,7 +107,9 @@ pub fn create_plugin_handlers(
     reload: @api.RouteHandler(fn(ctx) { handle_reload(state, ctx) }),
     upload: @api.RouteHandler(fn(ctx) { handle_upload(state, ctx) }),
     get_settings: @api.RouteHandler(fn(ctx) { handle_get_settings(state, ctx) }),
-    update_settings: @api.RouteHandler(fn(ctx) { handle_update_settings(state, ctx) }),
+    update_settings: @api.RouteHandler(fn(ctx) {
+      handle_update_settings(state, ctx)
+    }),
   }
 }
 
@@ -120,7 +124,11 @@ fn handle_list(
     let item : PluginListItem = {
       id,
       name: id,
-      version: if plugin_state.is_builtin { "builtin" } else { "1.0.0" },
+      version: if plugin_state.is_builtin {
+        "builtin"
+      } else {
+        "1.0.0"
+      },
       description: plugin_state.description,
       enabled: plugin_state.enabled,
       status: plugin_state.status.to_string(),
@@ -149,7 +157,11 @@ fn handle_get(
       let response : PluginDetailResponse = {
         id: plugin_id,
         name: plugin_id,
-        version: if plugin_state.is_builtin { "builtin" } else { "1.0.0" },
+        version: if plugin_state.is_builtin {
+          "builtin"
+        } else {
+          "1.0.0"
+        },
         description: plugin_state.description,
         author: None,
         enabled: plugin_state.enabled,
@@ -177,9 +189,7 @@ fn handle_add(
       match PluginAddRequest::from_json(obj) {
         None =>
           @api.error_response(
-            400,
-            "bad_request",
-            "Invalid plugin add request. Required: manifest_path",
+            400, "bad_request", "Invalid plugin add request. Required: manifest_path",
           )
         Some(request) => {
           // Generate plugin ID from manifest path
@@ -325,7 +335,10 @@ fn handle_reload(
       @api.error_response(404, "not_found", "Plugin '\{plugin_id}' not found")
     Some(plugin_state) => {
       // Update modified_at to simulate reload
-      let updated = { ..plugin_state, modified_at: plugin_state.modified_at + 1L }
+      let updated = {
+        ..plugin_state,
+        modified_at: plugin_state.modified_at + 1L,
+      }
       state.set_plugin(plugin_id, updated)
       @api.json_response(200, { "ok": true, "reloaded": true })
     }
@@ -341,9 +354,7 @@ fn handle_upload(
   // ZIP upload requires multipart/form-data parsing
   // This is a placeholder - actual implementation would need FFI for ZIP extraction
   @api.error_response(
-    501,
-    "not_implemented",
-    "ZIP upload requires native FFI support",
+    501, "not_implemented", "ZIP upload requires native FFI support",
   )
 }
 
@@ -387,6 +398,122 @@ fn handle_update_settings(
         Ok(obj) => {
           state.set_settings(plugin_id, obj)
           @api.json_response(200, { "ok": true })
+        }
+      }
+  }
+}
+
+// =============================================================================
+// Plugin Actions (RPC)
+// =============================================================================
+
+///|
+/// Register a plugin action handler
+pub fn PluginManagerState::register_action(
+  self : PluginManagerState,
+  plugin_id : String,
+  action_name : String,
+  handler : (Json) -> @api.ApiResponse,
+) -> Unit {
+  match self.actions.get(plugin_id) {
+    Some(action_map) => action_map[action_name] = handler
+    None => {
+      let action_map : Map[String, (Json) -> @api.ApiResponse] = {}
+      action_map[action_name] = handler
+      self.actions[plugin_id] = action_map
+    }
+  }
+}
+
+///|
+/// List action names for a plugin
+pub fn PluginManagerState::list_actions(
+  self : PluginManagerState,
+  plugin_id : String,
+) -> Array[String] {
+  match self.actions.get(plugin_id) {
+    Some(action_map) => action_map.keys().collect()
+    None => []
+  }
+}
+
+///|
+/// Invoke a plugin action
+pub fn PluginManagerState::invoke_action(
+  self : PluginManagerState,
+  plugin_id : String,
+  action_name : String,
+  params : Json,
+) -> @api.ApiResponse? {
+  match self.actions.get(plugin_id) {
+    Some(action_map) =>
+      match action_map.get(action_name) {
+        Some(handler) => Some(handler(params))
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+/// GET /plugins/{id}/actions - List available actions
+pub fn handle_list_actions(
+  state : PluginManagerState,
+  ctx : @api.ApiRequestContext,
+) -> @api.ApiResponse {
+  if ctx.segments.length() < 2 {
+    return @api.error_response(400, "bad_request", "Plugin ID is required")
+  }
+  let plugin_id = ctx.segments[1]
+  match state.get_plugin(plugin_id) {
+    None =>
+      @api.error_response(404, "not_found", "Plugin '\{plugin_id}' not found")
+    Some(_) => {
+      let action_names = state.list_actions(plugin_id)
+      let json_names : Array[Json] = action_names.map(fn(n) { Json::string(n) })
+      @api.json_response(200, {
+        "data": {
+          "plugin_id": plugin_id,
+          "actions": Json::array(json_names),
+        },
+      })
+    }
+  }
+}
+
+///|
+/// POST /plugins/{id}/actions/{action} - Invoke plugin action
+pub fn handle_invoke_action(
+  state : PluginManagerState,
+  ctx : @api.ApiRequestContext,
+) -> @api.ApiResponse {
+  if ctx.segments.length() < 4 {
+    return @api.error_response(400, "bad_request", "Action name is required")
+  }
+  let plugin_id = ctx.segments[1]
+  let action_name = ctx.segments[3]
+  match state.get_plugin(plugin_id) {
+    None =>
+      @api.error_response(404, "not_found", "Plugin '\{plugin_id}' not found")
+    Some(plugin_state) =>
+      if not(plugin_state.enabled) {
+        @api.error_response(
+          400, "plugin_disabled", "Plugin '\{plugin_id}' is disabled",
+        )
+      } else {
+        let params : Json = if ctx.body.length() > 0 {
+          @json.parse(ctx.body) catch { _ => Json::object({}) }
+        } else {
+          Json::object({})
+        }
+        match state.invoke_action(plugin_id, action_name, params) {
+          Some(resp) => resp
+          None =>
+            @api.error_response(
+              404,
+              "action_not_found",
+              "Action '\{action_name}' not found on plugin '\{plugin_id}'",
+            )
         }
       }
   }

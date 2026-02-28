@@ -152,7 +152,9 @@ pub(all) struct ProviderAddRequest {
 
 ///|
 /// Parse from JSON
-pub fn ProviderAddRequest::from_json(obj : Map[String, Json]) -> ProviderAddRequest? {
+pub fn ProviderAddRequest::from_json(
+  obj : Map[String, Json],
+) -> ProviderAddRequest? {
   let id = match obj.get("id") {
     Some(String(s)) => s
     _ => return None
@@ -286,18 +288,16 @@ pub fn settings_schema_to_response(
       @interfaces.ProviderFieldType::Select(opts) => ("select", Some(opts))
       other => (other.to_string(), None)
     }
-    fields.push(
-      {
-        key: field.key,
-        label: field.label,
-        field_type,
-        required: field.required,
-        description: field.description,
-        default_value: field.default_value,
-        is_secret: field.is_secret,
-        options,
-      },
-    )
+    fields.push({
+      key: field.key,
+      label: field.label,
+      field_type,
+      required: field.required,
+      description: field.description,
+      default_value: field.default_value,
+      is_secret: field.is_secret,
+      options,
+    })
   }
   { provider_type: schema.provider_type.to_string(), fields }
 }

@@ -36,6 +36,15 @@ pub fn BuiltinToolContext::new(
 }
 
 ///|
+/// 外部から MemoryStore を注入してコンテキストを作成
+pub fn BuiltinToolContext::with_memory(
+  memory : MemoryStore,
+  send_message : (@types.OutboundMessage) -> Unit,
+) -> BuiltinToolContext {
+  { memory, agent_manager: SubAgentManager::new(), send_message }
+}
+
+///|
 /// 同期ツールを実行
 pub fn execute_sync_tool(
   ctx : BuiltinToolContext,

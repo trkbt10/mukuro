@@ -47,37 +47,25 @@ pub fn generate_launchd_plist(config : ServiceConfig) -> String {
   plist = plist + "<dict>\n"
   // Label
   plist = plist + "  <key>Label</key>\n"
-  plist = plist +
-    "  <string>" +
-    escape_xml(config.name) +
-    "</string>\n"
+  plist = plist + "  <string>" + escape_xml(config.name) + "</string>\n"
   // Program arguments
   plist = plist + "  <key>ProgramArguments</key>\n"
   plist = plist + "  <array>\n"
-  plist = plist +
-    "    <string>" +
-    escape_xml(config.executable) +
-    "</string>\n"
+  plist = plist + "    <string>" + escape_xml(config.executable) + "</string>\n"
   for arg in config.args {
     plist = plist + "    <string>" + escape_xml(arg) + "</string>\n"
   }
   match config.config_path {
     Some(path) => {
       plist = plist + "    <string>--config</string>\n"
-      plist = plist +
-        "    <string>" +
-        escape_xml(path) +
-        "</string>\n"
+      plist = plist + "    <string>" + escape_xml(path) + "</string>\n"
     }
     None => ()
   }
   plist = plist + "  </array>\n"
   // Working directory
   plist = plist + "  <key>WorkingDirectory</key>\n"
-  plist = plist +
-    "  <string>" +
-    escape_xml(config.working_dir) +
-    "</string>\n"
+  plist = plist + "  <string>" + escape_xml(config.working_dir) + "</string>\n"
   // Run at load
   if config.auto_start {
     plist = plist + "  <key>RunAtLoad</key>\n"
@@ -90,10 +78,7 @@ pub fn generate_launchd_plist(config : ServiceConfig) -> String {
   match config.stdout_log {
     Some(path) => {
       plist = plist + "  <key>StandardOutPath</key>\n"
-      plist = plist +
-        "  <string>" +
-        escape_xml(path) +
-        "</string>\n"
+      plist = plist + "  <string>" + escape_xml(path) + "</string>\n"
     }
     None => ()
   }
@@ -101,10 +86,7 @@ pub fn generate_launchd_plist(config : ServiceConfig) -> String {
   match config.stderr_log {
     Some(path) => {
       plist = plist + "  <key>StandardErrorPath</key>\n"
-      plist = plist +
-        "  <string>" +
-        escape_xml(path) +
-        "</string>\n"
+      plist = plist + "  <string>" + escape_xml(path) + "</string>\n"
     }
     None => ()
   }
@@ -120,10 +102,7 @@ pub fn generate_launchd_plist(config : ServiceConfig) -> String {
 /// Generate systemd unit content
 pub fn generate_systemd_unit(config : ServiceConfig) -> String {
   let mut unit = "[Unit]\n"
-  unit = unit +
-    "Description=" +
-    escape_systemd_arg(config.display_name) +
-    "\n"
+  unit = unit + "Description=" + escape_systemd_arg(config.display_name) + "\n"
   unit = unit + "After=network.target\n"
   unit = unit + "\n"
   unit = unit + "[Service]\n"
@@ -148,19 +127,13 @@ pub fn generate_systemd_unit(config : ServiceConfig) -> String {
   // Standard output
   match config.stdout_log {
     Some(path) =>
-      unit = unit +
-        "StandardOutput=append:" +
-        escape_systemd_arg(path) +
-        "\n"
+      unit = unit + "StandardOutput=append:" + escape_systemd_arg(path) + "\n"
     None => unit = unit + "StandardOutput=journal\n"
   }
   // Standard error
   match config.stderr_log {
     Some(path) =>
-      unit = unit +
-        "StandardError=append:" +
-        escape_systemd_arg(path) +
-        "\n"
+      unit = unit + "StandardError=append:" + escape_systemd_arg(path) + "\n"
     None => unit = unit + "StandardError=journal\n"
   }
   unit = unit + "\n"

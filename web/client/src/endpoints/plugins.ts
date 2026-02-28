@@ -8,6 +8,7 @@ import type {
   PluginDetail,
   PluginAddRequest,
   PluginSettings,
+  PluginActionList,
 } from '../types.js';
 import type { HttpClient } from '../client.js';
 
@@ -121,5 +122,30 @@ export class PluginsApi {
       throw new Error('Failed to update plugin settings');
     }
     return res.data;
+  }
+
+  /**
+   * List available actions for a plugin
+   */
+  async listActions(id: string): Promise<PluginActionList> {
+    const res = await this.http.get<ApiResponse<PluginActionList>>(
+      `/plugins/${encodeURIComponent(id)}/actions`
+    );
+    return res.data ?? { plugin_id: id, actions: [] };
+  }
+
+  /**
+   * Invoke a plugin action (RPC)
+   */
+  async invokeAction<T = unknown>(
+    id: string,
+    action: string,
+    params?: Record<string, unknown>
+  ): Promise<T> {
+    const res = await this.http.post<T>(
+      `/plugins/${encodeURIComponent(id)}/actions/${encodeURIComponent(action)}`,
+      params ?? {}
+    );
+    return res;
   }
 }

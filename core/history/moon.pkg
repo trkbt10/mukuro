@@ -2,4 +2,5 @@ import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/logging" @logging,
   "moonbitlang/core/json",
+  "moonbitlang/core/strconv" @strconv,
 }

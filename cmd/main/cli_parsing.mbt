@@ -346,7 +346,9 @@ pub fn parse_service_args(args : ArrayView[String]) -> Command {
 
 ///|
 /// service installオプションをパース
-fn parse_service_install_opts(args : ArrayView[String]) -> ServiceInstallOptions {
+fn parse_service_install_opts(
+  args : ArrayView[String],
+) -> ServiceInstallOptions {
   let opts : ServiceInstallOptions = {
     user: true,
     system: false,
@@ -413,7 +415,9 @@ fn parse_service_logs_opts(args : ArrayView[String]) -> ServiceLogsOptions {
       }
       "-n" | "--lines" =>
         if i + 1 < arr.length() {
-          let parsed : Json = @json.parse(arr[i + 1]) catch { _ => Json::null() }
+          let parsed : Json = @json.parse(arr[i + 1]) catch {
+            _ => Json::null()
+          }
           match parsed {
             Number(n, ..) => opts.lines = n.to_int()
             _ => ()

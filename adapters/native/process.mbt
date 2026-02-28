@@ -27,18 +27,37 @@ pub fn NativeProcessExecutor::default() -> NativeProcessExecutor {
 
 ///|
 /// Validate command name - reject shell metacharacters and path traversal
-pub fn validate_command_name(
-  command : String,
-) -> Unit raise ProcessError {
+pub fn validate_command_name(command : String) -> Unit raise ProcessError {
   if command.length() == 0 {
     raise ProcessError::ExecutionFailed("Empty command name")
   }
   let chars = command.to_array()
   for c in chars {
     match c {
-      ';' | '&' | '|' | '$' | '`' | '(' | ')' | '{' | '}' | '<' | '>' |
-      '\n' | '\r' | '\'' | '"' | '\\' | '!' | '~' | '*' | '?' | '[' | ']' |
-      '#' => raise ProcessError::ExecutionFailed(
+      ';'
+      | '&'
+      | '|'
+      | '$'
+      | '`'
+      | '('
+      | ')'
+      | '{'
+      | '}'
+      | '<'
+      | '>'
+      | '\n'
+      | '\r'
+      | '\''
+      | '"'
+      | '\\'
+      | '!'
+      | '~'
+      | '*'
+      | '?'
+      | '['
+      | ']'
+      | '#' =>
+        raise ProcessError::ExecutionFailed(
           "Invalid character '\{c}' in command name: \{command}",
         )
       _ => ()

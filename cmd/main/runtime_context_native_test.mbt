@@ -122,11 +122,25 @@ test "enrich_envelope_with_workspace_context_impl injects context_files" {
   set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
   cleanup_workspace_context_files()
   // 各ファイルを作成
-  assert_true(write_text(".mukuro/test-runtime-context/SOUL.md", "Be helpful and kind"))
-  assert_true(write_text(".mukuro/test-runtime-context/AGENTS.md", "Follow code standards"))
-  assert_true(write_text(".mukuro/test-runtime-context/TOOLS.md", "Use pnpm for packages"))
-  assert_true(write_text(".mukuro/test-runtime-context/IDENTITY.md", "You are Mukuro Assistant"))
-  assert_true(write_text(".mukuro/test-runtime-context/USER.md", "User prefers dark mode"))
+  assert_true(
+    write_text(".mukuro/test-runtime-context/SOUL.md", "Be helpful and kind"),
+  )
+  assert_true(
+    write_text(
+      ".mukuro/test-runtime-context/AGENTS.md", "Follow code standards",
+    ),
+  )
+  assert_true(
+    write_text(".mukuro/test-runtime-context/TOOLS.md", "Use pnpm for packages"),
+  )
+  assert_true(
+    write_text(
+      ".mukuro/test-runtime-context/IDENTITY.md", "You are Mukuro Assistant",
+    ),
+  )
+  assert_true(
+    write_text(".mukuro/test-runtime-context/USER.md", "User prefers dark mode"),
+  )
 
   let envelope : @types.InboundEnvelope = {
     channel: "test",
@@ -185,7 +199,9 @@ test "enrich_envelope_with_workspace_context_impl ignores empty context_files" {
   // 空白のみのファイルを作成
   assert_true(write_text(".mukuro/test-runtime-context/SOUL.md", "   "))
   // 内容のあるファイルを作成
-  assert_true(write_text(".mukuro/test-runtime-context/IDENTITY.md", "Real identity"))
+  assert_true(
+    write_text(".mukuro/test-runtime-context/IDENTITY.md", "Real identity"),
+  )
 
   let envelope : @types.InboundEnvelope = {
     channel: "test",
@@ -217,7 +233,9 @@ test "enrich_envelope_with_workspace_context_impl respects metadata override" {
   set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
   cleanup_workspace_context_files()
   // ワークスペースにファイルを作成
-  assert_true(write_text(".mukuro/test-runtime-context/SOUL.md", "Workspace soul"))
+  assert_true(
+    write_text(".mukuro/test-runtime-context/SOUL.md", "Workspace soul"),
+  )
   assert_true(
     write_text(".mukuro/test-runtime-context/IDENTITY.md", "Workspace identity"),
   )

@@ -11,13 +11,13 @@ pub fn constant_time_compare(a : String, b : String) -> Bool {
     // Still do work to avoid leaking length difference timing
     let mut _dummy = 0
     for i in 0..<a_bytes.length() {
-      _dummy = _dummy.lxor(a_bytes[i].to_int())
+      _dummy = _dummy ^ a_bytes[i].to_int()
     }
     return false
   }
   let mut result = 0
   for i in 0..<a_bytes.length() {
-    result = result.lor(a_bytes[i].to_int().lxor(b_bytes[i].to_int()))
+    result = result | (a_bytes[i].to_int() ^ b_bytes[i].to_int())
   }
   result == 0
 }

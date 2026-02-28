@@ -253,9 +253,7 @@ test "fixture: Groq Chat Completions toolcall stream JSONL parses" {
 
 ///|
 test "fixture: OpenAI Responses text stream JSONL parses" {
-  let content = read_fixture(
-    fixture_path("openai/responses/text_stream.jsonl"),
-  )
+  let content = read_fixture(fixture_path("openai/responses/text_stream.jsonl"))
   let events = @sse.parse_event_stream_jsonl(content)
   fixture_assert_true(events.length() > 5)
   // Should have response.completed event
@@ -331,9 +329,7 @@ test "fixture: Groq Chat Completions toolcall stream accumulates to tool calls" 
 
 ///|
 test "fixture: OpenAI Responses text stream accumulates to text" {
-  let content = read_fixture(
-    fixture_path("openai/responses/text_stream.jsonl"),
-  )
+  let content = read_fixture(fixture_path("openai/responses/text_stream.jsonl"))
   let result = @sse.accumulate_responses_api(content)
   match result {
     @types.ModelResponse::Text(text) => inspect(text, content="Four.")

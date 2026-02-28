@@ -12,6 +12,15 @@ export {
 } from './usePlugins';
 
 export {
+  usePluginActions,
+  usePluginActionQuery,
+  useMemoryEntries,
+  useSetMemoryEntry,
+  useDeleteMemoryEntry,
+  useClearMemory,
+} from './usePluginActions';
+
+export {
   useContextFiles,
   useContextFile,
   useUpdateContextFile,

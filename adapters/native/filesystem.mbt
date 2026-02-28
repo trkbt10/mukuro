@@ -32,9 +32,7 @@ fn NativeFileStore::resolve_path(
 ) -> String raise FileSystemError {
   // Reject path traversal attempts
   if path.contains("..") {
-    raise FileSystemError::InvalidPath(
-      "Path traversal not allowed: \{path}",
-    )
+    raise FileSystemError::InvalidPath("Path traversal not allowed: \{path}")
   }
   match self.base_dir {
     Some(base) => if path.has_prefix("/") { path } else { "\{base}/\{path}" }
@@ -45,8 +43,7 @@ fn NativeFileStore::resolve_path(
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with read_file(self, path~) {
   let resolved = self.resolve_path(path) catch {
-    FileSystemError::InvalidPath(msg) =>
-      raise FileSystemError::InvalidPath(msg)
+    FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
   let cpath = string_to_cstring(resolved)
@@ -77,8 +74,7 @@ pub impl @interfaces.FileStore for NativeFileStore with write_file(
   data~,
 ) {
   let resolved = self.resolve_path(path) catch {
-    FileSystemError::InvalidPath(msg) =>
-      raise FileSystemError::InvalidPath(msg)
+    FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
   let cpath = string_to_cstring(resolved)
@@ -99,15 +95,14 @@ pub impl @interfaces.FileStore for NativeFileStore with write_file(
 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with exists(self, path~) {
-  let resolved = try { self.resolve_path(path) } catch { _ => return false }
+  let resolved = self.resolve_path(path) catch { _ => return false }
   c_access(string_to_cstring(resolved), f_ok) == 0
 }
 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with remove_file(self, path~) {
   let resolved = self.resolve_path(path) catch {
-    FileSystemError::InvalidPath(msg) =>
-      raise FileSystemError::InvalidPath(msg)
+    FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
   let result = c_remove(string_to_cstring(resolved))
@@ -119,8 +114,7 @@ pub impl @interfaces.FileStore for NativeFileStore with remove_file(self, path~)
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with create_dir(self, path~) {
   let resolved = self.resolve_path(path) catch {
-    FileSystemError::InvalidPath(msg) =>
-      raise FileSystemError::InvalidPath(msg)
+    FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
   let result = c_mkdir(string_to_cstring(resolved), 493)
@@ -132,16 +126,11 @@ pub impl @interfaces.FileStore for NativeFileStore with create_dir(self, path~) 
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with list_dir(self, path~) {
   let resolved = self.resolve_path(path) catch {
-    FileSystemError::InvalidPath(msg) =>
-      raise FileSystemError::InvalidPath(msg)
+    FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
   let buffer = Bytes::new(8192)
-  let bytes_written = c_list_dir(
-    string_to_cstring(resolved),
-    buffer,
-    8192,
-  )
+  let bytes_written = c_list_dir(string_to_cstring(resolved), buffer, 8192)
   if bytes_written < 0 {
     raise FileSystemError::IoError("Cannot list directory: \{resolved}")
   }
@@ -149,8 +138,7 @@ pub impl @interfaces.FileStore for NativeFileStore with list_dir(self, path~) {
     return []
   }
   // Parse UTF-16LE output separated by newlines
-  let output = Bytes::from_iter(buffer[:bytes_written].iter())
-    .to_unchecked_string()
+  let output = Bytes::from_iter(buffer[:bytes_written].iter()).to_unchecked_string()
   let result : Array[String] = []
   for line in output.split("\n") {
     let s = line.to_string()
@@ -167,9 +155,7 @@ pub fn NativeFileStore::read_text(
   path : String,
 ) -> String raise FileSystemError {
   // Re-call the implementation directly to get correct error type
-  let resolved = self.resolve_path(path) catch {
-    e => raise e
-  }
+  let resolved = self.resolve_path(path) catch { e => raise e }
   let cpath = string_to_cstring(resolved)
   match c_fopen(cpath, string_to_cstring("rb")) {
     Some(file) => {

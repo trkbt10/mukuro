@@ -69,10 +69,7 @@ test "message_to_anthropic_json converts User message with name" {
 
 ///|
 test "message_to_anthropic_json converts Assistant message" {
-  let msg = @types.ModelMessage::Assistant(
-    content="Hi there!",
-    tool_calls=None,
-  )
+  let msg = @types.ModelMessage::Assistant(content="Hi there!", tool_calls=None)
   let json = message_to_anthropic_json(msg)
   match json {
     { "role": "assistant", "content": "Hi there!", .. } => ()
@@ -83,27 +80,17 @@ test "message_to_anthropic_json converts Assistant message" {
 ///|
 test "message_to_anthropic_json converts Assistant with tool_calls" {
   let calls = [
-    @types.ToolCallRequest::new(
-      id="call_1",
-      name="get_weather",
-      arguments={ "location": "Tokyo" },
-    ),
+    @types.ToolCallRequest::new(id="call_1", name="get_weather", arguments={
+      "location": "Tokyo",
+    }),
   ]
-  let msg = @types.ModelMessage::Assistant(
-    content="",
-    tool_calls=Some(calls),
-  )
+  let msg = @types.ModelMessage::Assistant(content="", tool_calls=Some(calls))
   let json = message_to_anthropic_json(msg)
   match json {
     { "role": "assistant", "content": Array(items), .. } => {
       inspect(items.length(), content="1")
       match items[0] {
-        {
-          "type": "tool_use",
-          "id": "call_1",
-          "name": "get_weather",
-          ..
-        } => ()
+        { "type": "tool_use", "id": "call_1", "name": "get_weather", .. } => ()
         _ => fail("Unexpected tool_use format")
       }
     }
@@ -167,12 +154,8 @@ test "message_to_openai_json converts ToolResult message" {
   )
   let json = message_to_openai_json(msg)
   match json {
-    {
-      "role": "tool",
-      "tool_call_id": "call_456",
-      "content": "Tool output",
-      ..
-    } => ()
+    { "role": "tool", "tool_call_id": "call_456", "content": "Tool output", .. } =>
+      ()
     _ => fail("Unexpected JSON format")
   }
 }
@@ -243,11 +226,9 @@ test "tool_to_responses_api_json converts correctly" {
 ///|
 test "tools_to_openai_json wraps in function object" {
   let tools : Array[@types.ToolDefinition] = [
-    @types.ToolDefinition::new(
-      name="get_weather",
-      description="Get weather",
-      parameters={ "type": "object" },
-    ),
+    @types.ToolDefinition::new(name="get_weather", description="Get weather", parameters={
+      "type": "object",
+    }),
   ]
   let json_tools = tools_to_openai_json(tools)
   inspect(json_tools.length(), content="1")
@@ -279,11 +260,9 @@ test "tools_to_responses_api_json produces correct format" {
 ///|
 test "tools_to_anthropic_json uses input_schema" {
   let tools : Array[@types.ToolDefinition] = [
-    @types.ToolDefinition::new(
-      name="get_weather",
-      description="Get weather",
-      parameters={ "type": "object" },
-    ),
+    @types.ToolDefinition::new(name="get_weather", description="Get weather", parameters={
+      "type": "object",
+    }),
   ]
   let json_tools = tools_to_anthropic_json(tools)
   inspect(json_tools.length(), content="1")
@@ -409,8 +388,7 @@ test "parse_anthropic_response returns text for end_turn" {
   let json : Json = @json.parse(body)
   let result = parse_anthropic_response(json)
   match result {
-    @types.ModelResponse::Text(content) =>
-      assert_true(content.contains("22"))
+    @types.ModelResponse::Text(content) => assert_true(content.contains("22"))
     _ => fail("Expected Text response")
   }
 }
@@ -472,9 +450,7 @@ test "parse_openai_chat_response handles tool_calls response" {
 
 ///|
 test "parse_openai_chat_response handles error response" {
-  let response_json : Json = {
-    "error": { "message": "Rate limit exceeded" },
-  }
+  let response_json : Json = { "error": { "message": "Rate limit exceeded" } }
   let result = parse_openai_chat_response(response_json)
   match result {
     @types.ModelResponse::ModelError(msg) =>
@@ -542,8 +518,7 @@ test "parse_openai_chat_response returns text when no tool calls" {
   let json : Json = @json.parse(body)
   let result = parse_openai_chat_response(json)
   match result {
-    @types.ModelResponse::Text(content) =>
-      assert_true(content.contains("22"))
+    @types.ModelResponse::Text(content) => assert_true(content.contains("22"))
     _ => fail("Expected Text response")
   }
 }
@@ -767,10 +742,7 @@ test "messages_to_openai_json converts all message types" {
     @types.ModelMessage::System("You are helpful"),
     @types.ModelMessage::User(content="Hello", name=None),
     @types.ModelMessage::Assistant(content="Hi!", tool_calls=None),
-    @types.ModelMessage::ToolResult(
-      tool_call_id="call_1",
-      content="result",
-    ),
+    @types.ModelMessage::ToolResult(tool_call_id="call_1", content="result"),
   ]
   let result = messages_to_openai_json(messages)
   inspect(result.length(), content="4")
@@ -805,11 +777,9 @@ test "messages_to_anthropic_json includes text+tool_use in assistant" {
     @types.ModelMessage::Assistant(
       content="Let me check.",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="toolu_001",
-          name="get_weather",
-          arguments={ "location": "Tokyo" },
-        ),
+        @types.ToolCallRequest::new(id="toolu_001", name="get_weather", arguments={
+          "location": "Tokyo",
+        }),
       ]),
     ),
   ]
@@ -829,11 +799,9 @@ test "messages_to_responses_input converts all message types" {
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="fc_001",
-          name="get_weather",
-          arguments={ "location": "Tokyo" },
-        ),
+        @types.ToolCallRequest::new(id="fc_001", name="get_weather", arguments={
+          "location": "Tokyo",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -897,11 +865,9 @@ test "build_openai_chat_body with tools includes tool_choice auto" {
     @types.ModelMessage::User(content="Hello", name=None),
   ]
   let tools : Array[@types.ToolDefinition] = [
-    @types.ToolDefinition::new(
-      name="calc",
-      description="Calculator",
-      parameters={ "type": "object" },
-    ),
+    @types.ToolDefinition::new(name="calc", description="Calculator", parameters={
+      "type": "object",
+    }),
   ]
   let body = build_openai_chat_body("gpt-4", messages, tools)
   let s = body.stringify()
@@ -944,11 +910,9 @@ test "build_responses_api_body with tools includes tool_choice auto" {
     @types.ModelMessage::User(content="Hello", name=None),
   ]
   let tools : Array[@types.ToolDefinition] = [
-    @types.ToolDefinition::new(
-      name="datetime",
-      description="Get time",
-      parameters={ "type": "object" },
-    ),
+    @types.ToolDefinition::new(name="datetime", description="Get time", parameters={
+      "type": "object",
+    }),
   ]
   let body = build_responses_api_body("gpt-4", messages, tools)
   let s = body.stringify()
@@ -969,10 +933,9 @@ test "build_anthropic_body includes system and max_tokens" {
   assert_true(s.contains("\"max_tokens\""))
   // System message should NOT be in messages array
   match body {
-    { "messages": Array(msgs), .. } => {
+    { "messages": Array(msgs), .. } =>
       // Only user message
       inspect(msgs.length(), content="1")
-    }
     _ => fail("Expected messages array")
   }
 }
@@ -983,11 +946,9 @@ test "build_anthropic_body with tools includes tools array" {
     @types.ModelMessage::User(content="Hi", name=None),
   ]
   let tools : Array[@types.ToolDefinition] = [
-    @types.ToolDefinition::new(
-      name="get_weather",
-      description="Get weather",
-      parameters={ "type": "object" },
-    ),
+    @types.ToolDefinition::new(name="get_weather", description="Get weather", parameters={
+      "type": "object",
+    }),
   ]
   let body = build_anthropic_body("claude-3", messages, tools)
   let s = body.stringify()
@@ -1009,11 +970,9 @@ test "regression: responses_api body includes function_call before function_call
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="fc_001",
-          name="get_weather",
-          arguments={ "location": "Tokyo" },
-        ),
+        @types.ToolCallRequest::new(id="fc_001", name="get_weather", arguments={
+          "location": "Tokyo",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -1028,12 +987,12 @@ test "regression: responses_api body includes function_call before function_call
   // Must contain function_call_output item
   inspect(s.contains("function_call_output"), content="true")
   // function_call must appear BEFORE function_call_output
-  match (
-    string_index_of(s, "function_call\""),
-    string_index_of(s, "function_call_output"),
-  ) {
-    (Some(fc_pos), Some(fco_pos)) =>
-      inspect(fc_pos < fco_pos, content="true")
+  match
+    (
+      string_index_of(s, "function_call\""),
+      string_index_of(s, "function_call_output"),
+    ) {
+    (Some(fc_pos), Some(fco_pos)) => inspect(fc_pos < fco_pos, content="true")
     _ => fail("Both function_call and function_call_output must be present")
   }
   // call_id must be preserved
@@ -1050,11 +1009,9 @@ test "regression: chat_completions body includes tool_calls and tool role for mu
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="call_abc",
-          name="get_weather",
-          arguments={ "location": "Tokyo" },
-        ),
+        @types.ToolCallRequest::new(id="call_abc", name="get_weather", arguments={
+          "location": "Tokyo",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -1082,11 +1039,9 @@ test "regression: anthropic body includes tool_use and tool_result for multi-tur
     @types.ModelMessage::Assistant(
       content="Let me check.",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="toolu_001",
-          name="get_weather",
-          arguments={ "location": "Tokyo" },
-        ),
+        @types.ToolCallRequest::new(id="toolu_001", name="get_weather", arguments={
+          "location": "Tokyo",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -1095,14 +1050,10 @@ test "regression: anthropic body includes tool_use and tool_result for multi-tur
     ),
   ]
   let tools : Array[@types.ToolDefinition] = [
-    @types.ToolDefinition::new(
-      name="get_weather",
-      description="Get weather",
-      parameters={
-        "type": "object",
-        "properties": { "location": { "type": "string" } },
-      },
-    ),
+    @types.ToolDefinition::new(name="get_weather", description="Get weather", parameters={
+      "type": "object",
+      "properties": { "location": { "type": "string" } },
+    }),
   ]
   let body = build_anthropic_body("claude-3", messages, tools)
   let s = body.stringify()
@@ -1126,11 +1077,9 @@ test "regression: tool_choice auto with non-empty tools" {
     @types.ModelMessage::User(content="Hello", name=None),
   ]
   let tools : Array[@types.ToolDefinition] = [
-    @types.ToolDefinition::new(
-      name="test",
-      description="Test tool",
-      parameters={ "type": "object" },
-    ),
+    @types.ToolDefinition::new(name="test", description="Test tool", parameters={
+      "type": "object",
+    }),
   ]
   // OpenAI Chat Completions
   let chat_body = build_openai_chat_body("gpt-4", messages, tools)
@@ -1154,14 +1103,8 @@ test "regression: no tool_choice when tools empty" {
   let empty_tools : Array[@types.ToolDefinition] = []
   // OpenAI Chat Completions
   let chat_body = build_openai_chat_body("gpt-4", messages, empty_tools)
-  inspect(
-    chat_body.stringify().contains("tool_choice"),
-    content="false",
-  )
+  inspect(chat_body.stringify().contains("tool_choice"), content="false")
   // Responses API
   let resp_body = build_responses_api_body("gpt-4", messages, empty_tools)
-  inspect(
-    resp_body.stringify().contains("tool_choice"),
-    content="false",
-  )
+  inspect(resp_body.stringify().contains("tool_choice"), content="false")
 }

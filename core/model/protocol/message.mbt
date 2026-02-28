@@ -166,8 +166,7 @@ pub fn messages_to_responses_input(
               })
             }
           }
-          _ =>
-            input_items.push({ "role": "assistant", "content": content })
+          _ => input_items.push({ "role": "assistant", "content": content })
         }
       @types.ModelMessage::ToolResult(tool_call_id~, content~) =>
         input_items.push({
@@ -182,9 +181,7 @@ pub fn messages_to_responses_input(
 
 ///|
 /// メッセージ配列からシステムメッセージを抽出
-pub fn extract_system_message(
-  messages : Array[@types.ModelMessage],
-) -> String {
+pub fn extract_system_message(messages : Array[@types.ModelMessage]) -> String {
   for msg in messages {
     match msg {
       @types.ModelMessage::System(content) => return content
