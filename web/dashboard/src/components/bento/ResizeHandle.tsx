@@ -1,5 +1,4 @@
 import { useRef, useCallback, useEffect } from 'react';
-import { GripHorizontal } from 'lucide-react';
 import type { BentoSize } from './grid/fractal';
 import { sizeSpan } from './layout-types';
 import styles from './BentoGrid.module.css';
@@ -85,7 +84,15 @@ export function ResizeHandle({ blockId, currentSize, columns, onResize }: Resize
       onPointerDown={onPointerDown}
       title="Drag to resize"
     >
-      <GripHorizontal style={{ width: 14, height: 14 }} />
+      <svg width={14} height={14} viewBox="0 0 14 14" fill="none">
+        <path
+          d="M4 1 L12 1 Q13 1 13 2 L13 10"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </div>
   );
 }
