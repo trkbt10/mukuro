@@ -21,8 +21,6 @@ pub struct NativeWebSocketClient {
   headers : Map[String, String]
   /// Current connection
   mut conn : @websocket.Conn?
-  /// Message queue for received messages
-  received_messages : Array[String]
   /// Whether connected
   mut connected : Bool
 }
@@ -33,7 +31,7 @@ pub fn NativeWebSocketClient::new(
   url~ : String,
   headers~ : Map[String, String],
 ) -> NativeWebSocketClient {
-  { url, headers, conn: None, received_messages: [], connected: false }
+  { url, headers, conn: None, connected: false }
 }
 
 ///|
@@ -172,77 +170,3 @@ fn parse_jsonrpc_response(json : Json) -> @interfaces.JsonRpcResponse? {
   }
 }
 
-///|
-/// WebSocket transport adapter that wraps NativeWebSocketClient
-/// and provides synchronous-looking interface for plugin system
-pub struct WebSocketTransportAdapter {
-  /// WebSocket client
-  client : NativeWebSocketClient
-  /// Plugin ID
-  plugin_id : String
-  /// Request ID counter
-  mut request_id : Int
-}
-
-///|
-/// Create a new WebSocket transport adapter
-pub fn WebSocketTransportAdapter::new(
-  plugin_id~ : String,
-  url~ : String,
-  headers~ : Map[String, String],
-) -> WebSocketTransportAdapter {
-  let client = NativeWebSocketClient::new(url~, headers~)
-  { client, plugin_id, request_id: 0 }
-}
-
-///|
-/// Get next request ID
-fn WebSocketTransportAdapter::next_request_id(
-  self : WebSocketTransportAdapter,
-) -> Int {
-  self.request_id = self.request_id + 1
-  self.request_id
-}
-
-///|
-/// Connect (async)
-pub async fn WebSocketTransportAdapter::connect(
-  self : WebSocketTransportAdapter,
-) -> Unit raise WebSocketClientError {
-  self.client.connect()
-}
-
-///|
-/// Send request (async)
-pub async fn WebSocketTransportAdapter::send_request(
-  self : WebSocketTransportAdapter,
-  request : @interfaces.JsonRpcRequest,
-) -> @interfaces.JsonRpcResponse raise WebSocketClientError {
-  // Ensure request has ID
-  let actual_request = match request.id {
-    Some(_) => request
-    None =>
-      @interfaces.JsonRpcRequest::new(
-        rpc_method=request.rpc_method,
-        params=request.params,
-        id=Some(self.next_request_id()),
-      )
-  }
-  self.client.send_jsonrpc_request(actual_request)
-}
-
-///|
-/// Close connection (async)
-pub async fn WebSocketTransportAdapter::close(
-  self : WebSocketTransportAdapter,
-) -> Unit {
-  self.client.close()
-}
-
-///|
-/// Check if connected
-pub fn WebSocketTransportAdapter::is_connected(
-  self : WebSocketTransportAdapter,
-) -> Bool {
-  self.client.is_connected()
-}

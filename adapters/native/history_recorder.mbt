@@ -46,7 +46,7 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with init_session
     _ => raise @interfaces.HistoryError::IoError("Failed to get date")
   }
   let dir_path = @history.history_dir_for_date(self.base_dir, year, month, day)
-  if c_mkdir_recursive(string_to_cstring(dir_path), 493) != 0 {
+  if c_mkdir_recursive(string_to_cstring(dir_path), dir_permission) != 0 {
     raise @interfaces.HistoryError::DirectoryCreationFailed(dir_path)
   }
   let (channel, chat_id) = @history.split_session_id(session_id)

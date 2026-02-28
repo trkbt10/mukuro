@@ -202,7 +202,7 @@ pub fn NativeStdioClient::send_request(
             "Invalid JSON: \{e} - output: \{line}",
           )
       }
-      match parse_stdio_jsonrpc_response(json) {
+      match parse_jsonrpc_response(json) {
         Some(response) => response
         None =>
           raise StdioClientError::InvalidResponse(
@@ -227,40 +227,6 @@ fn find_first_json_line(lines : Array[String]) -> String? {
     }
   }
   None
-}
-
-///|
-/// Parse JSON as JSON-RPC response
-fn parse_stdio_jsonrpc_response(json : Json) -> @interfaces.JsonRpcResponse? {
-  match json {
-    { "jsonrpc": String(ver), .. } if ver == "2.0" => {
-      let result = match json {
-        { "result": r, .. } => Some(r)
-        _ => None
-      }
-      let error : @interfaces.JsonRpcError? = match json {
-        { "error": Object(e), .. } => {
-          let code = match e.get("code") {
-            Some(Number(n, ..)) => n.to_int()
-            _ => -32603
-          }
-          let message = match e.get("message") {
-            Some(String(m)) => m
-            _ => "Unknown error"
-          }
-          let data = e.get("data")
-          Some({ code, message, data })
-        }
-        _ => None
-      }
-      let id = match json {
-        { "id": Number(i, ..), .. } => Some(i.to_int())
-        _ => None
-      }
-      Some({ jsonrpc: ver, result, error, id })
-    }
-    _ => None
-  }
 }
 
 ///|

@@ -29,59 +29,9 @@ pub fn NativeTransportFactory::create_handler(
   self : NativeTransportFactory,
   manifest : @interfaces.PluginManifest,
 ) -> &@interfaces.PluginTransportHandler raise @interfaces.PluginError {
-  match manifest.transport {
-    @interfaces.PluginTransport::Http =>
-      match manifest.http {
-        Some(http_config) => {
-          let handler : &@interfaces.PluginTransportHandler = @plugin_transport.HttpTransportHandler::with_client(
-            plugin_id=manifest.id,
-            config=http_config,
-            auth_token=self.default_auth_token,
-            token_header=self.default_token_header,
-            http_client=self.http_client,
-          )
-          handler
-        }
-        None =>
-          raise @interfaces.PluginError::InvalidManifest(
-            "HTTP transport requires http configuration",
-          )
-      }
-    @interfaces.PluginTransport::Stdio => {
-      let config = match manifest.entry {
-        Some(entry) => @interfaces.PluginStdioConfig::default(command=entry)
-        None =>
-          raise @interfaces.PluginError::InvalidManifest(
-            "Stdio transport requires entry command",
-          )
-      }
-      let adapter : &@interfaces.PluginTransportHandler = StdioTransportAdapter::new(
-        plugin_id=manifest.id,
-        config~,
-      )
-      adapter
-    }
-    @interfaces.PluginTransport::WebSocket =>
-      // Use NativeWebSocketTransportHandler with async trait methods
-      match manifest.http {
-        Some(http) => {
-          let url = match http.base_url {
-            Some(url) => url
-            None => "ws://localhost:\{http.port}"
-          }
-          let ws_config = @interfaces.PluginWebSocketConfig::default(url~)
-          let handler : &@interfaces.PluginTransportHandler = NativeWebSocketTransportHandler::new(
-            plugin_id=manifest.id,
-            config=ws_config,
-          )
-          handler
-        }
-        None =>
-          raise @interfaces.PluginError::InvalidManifest(
-            "WebSocket transport requires url configuration",
-          )
-      }
-  }
+  self.create_handler_with_auth(
+    manifest, self.default_auth_token, self.default_token_header,
+  )
 }
 
 ///|

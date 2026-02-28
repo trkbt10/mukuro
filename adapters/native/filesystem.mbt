@@ -85,7 +85,7 @@ pub impl @interfaces.FileStore for NativeFileStore with create_dir(self, path~) 
     FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
-  let result = c_mkdir(string_to_cstring(resolved), 493)
+  let result = c_mkdir(string_to_cstring(resolved), dir_permission)
   if result != 0 {
     raise FileSystemError::IoError("Cannot create directory: \{resolved}")
   }

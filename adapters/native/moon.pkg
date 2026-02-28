@@ -16,7 +16,7 @@ import {
 warnings = "-29"
 
 options(
-  "native-stub": [ "ffi_stubs.c", "sqlite_stubs.c", "ws_server_stubs.c" ],
+  "native-stub": [ "ffi_stubs.c", "sqlite_stubs.c" ],
   link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
   targets: {
     "clock.mbt": [ "native" ],
@@ -24,6 +24,7 @@ options(
     "debug_popen_test.mbt": [ "native" ],
     "ffi.mbt": [ "native" ],
     "file_utils.mbt": [ "native" ],
+    "file_utils_test.mbt": [ "native" ],
     "filesystem.mbt": [ "native" ],
     "filesystem_security_test.mbt": [ "native" ],
     "history_recorder.mbt": [ "native" ],
@@ -41,7 +42,6 @@ options(
     "stdio_security_test.mbt": [ "native" ],
     "websocket_client.mbt": [ "native" ],
     "ws_e2e_test.mbt": [ "native" ],
-    "ws_server.mbt": [ "native" ],
     "ws_transport.mbt": [ "native" ],
   },
 )

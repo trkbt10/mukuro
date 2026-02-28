@@ -94,21 +94,13 @@ fn build_command(
 }
 
 ///|
-pub impl @interfaces.ProcessExecutor for NativeProcessExecutor with exec(
-  self,
-  command~,
-  args~,
-  options~,
-) {
-  ignore(self)
-  let cmd = build_command(command, args, options) catch {
-    ProcessError::ExecutionFailed(msg) =>
-      raise ProcessError::ExecutionFailed(msg)
-    e => raise e
-  }
-  let handle = c_popen_handle(string_to_utf8_cstring(cmd), string_to_utf8_cstring("r"))
+/// popen でコマンドを実行し、stdout と終了コードを返す
+fn run_popen(cmd : String) -> @interfaces.ProcessResult raise ProcessError {
+  let handle = c_popen_handle(
+    string_to_utf8_cstring(cmd), string_to_utf8_cstring("r"),
+  )
   if handle == 0L {
-    raise ProcessError::ExecutionFailed("Failed to execute: \{command}")
+    raise ProcessError::ExecutionFailed("Failed to execute: \{cmd}")
   }
   let buffer = Bytes::new(65536)
   let bytes_read = c_fread_handle(buffer, 1, 65536, handle)
@@ -122,6 +114,22 @@ pub impl @interfaces.ProcessExecutor for NativeProcessExecutor with exec(
     .land(0xFFU)
     .reinterpret_as_int()
   { exit_code: actual_exit_code, stdout, stderr: Bytes::new(0) }
+}
+
+///|
+pub impl @interfaces.ProcessExecutor for NativeProcessExecutor with exec(
+  self,
+  command~,
+  args~,
+  options~,
+) {
+  ignore(self)
+  let cmd = build_command(command, args, options) catch {
+    ProcessError::ExecutionFailed(msg) =>
+      raise ProcessError::ExecutionFailed(msg)
+    e => raise e
+  }
+  run_popen(cmd)
 }
 
 ///|
@@ -155,22 +163,7 @@ pub fn NativeProcessExecutor::shell(
   ) catch {
     e => raise e
   }
-  let handle = c_popen_handle(string_to_utf8_cstring(cmd), string_to_utf8_cstring("r"))
-  if handle == 0L {
-    raise ProcessError::ExecutionFailed("Failed to execute: sh")
-  }
-  let buffer = Bytes::new(65536)
-  let bytes_read = c_fread_handle(buffer, 1, 65536, handle)
-  let exit_code = c_pclose_handle(handle)
-  let stdout = if bytes_read > 0 {
-    @bytes.copy_slice(buffer[:bytes_read])
-  } else {
-    Bytes::new(0)
-  }
-  let actual_exit_code = (exit_code.reinterpret_as_uint() >> 8)
-    .land(0xFFU)
-    .reinterpret_as_int()
-  { exit_code: actual_exit_code, stdout, stderr: Bytes::new(0) }
+  run_popen(cmd)
 }
 
 ///|

@@ -2,6 +2,10 @@
 /// Native ファイル操作ユーティリティ
 /// ハンドルベースFFIによる共通ヘルパー関数群
 
+///|
+/// ディレクトリ作成時のパーミッション (0o755)
+pub let dir_permission : Int = 493
+
 // ============================================================
 // ディレクトリ操作
 // ============================================================
@@ -84,16 +88,40 @@ pub fn native_read_file_bytes(
   }
   let chunk_size = 65536
   let chunk = Bytes::new(chunk_size)
-  let bytes_read = c_fread_handle(chunk, 1, chunk_size, handle)
+  let chunks : Array[Bytes] = []
+  let mut total_size = 0
+  while true {
+    let bytes_read = c_fread_handle(chunk, 1, chunk_size, handle)
+    if bytes_read < 0 {
+      let _ = c_fclose_handle(handle)
+      raise FileSystemError::IoError("Read error: \{file_path}")
+    }
+    if bytes_read == 0 {
+      break
+    }
+    chunks.push(@bytes.copy_slice(chunk[:bytes_read]))
+    total_size = total_size + bytes_read
+    if bytes_read < chunk_size {
+      break
+    }
+  }
   let _ = c_fclose_handle(handle)
-  if bytes_read < 0 {
-    raise FileSystemError::IoError("Read error: \{file_path}")
+  if chunks.length() == 0 {
+    return Bytes::new(0)
   }
-  if bytes_read < chunk_size {
-    @bytes.copy_slice(chunk[:bytes_read])
-  } else {
-    chunk
+  if chunks.length() == 1 {
+    return chunks[0]
   }
+  // 複数チャンクを結合（FixedArray経由）
+  let arr : FixedArray[Byte] = FixedArray::make(total_size, b'\x00')
+  let mut offset = 0
+  for c in chunks {
+    for i = 0; i < c.length(); i = i + 1 {
+      arr[offset + i] = c[i]
+    }
+    offset = offset + c.length()
+  }
+  Bytes::makei(total_size, fn(i) { arr[i] })
 }
 
 // ============================================================
