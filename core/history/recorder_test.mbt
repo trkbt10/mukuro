@@ -5,6 +5,10 @@ test "record_type_to_string - all variants" {
     "session_start",
   )
   assert_eq(
+    record_type_to_string(@interfaces.HistoryRecordType::SessionMeta),
+    "session_meta",
+  )
+  assert_eq(
     record_type_to_string(@interfaces.HistoryRecordType::UserMessage),
     "user_message",
   )
@@ -37,6 +41,10 @@ test "string_to_record_type - all variants" {
     Some(@interfaces.HistoryRecordType::SessionStart),
   )
   assert_eq(
+    string_to_record_type("session_meta"),
+    Some(@interfaces.HistoryRecordType::SessionMeta),
+  )
+  assert_eq(
     string_to_record_type("user_message"),
     Some(@interfaces.HistoryRecordType::UserMessage),
   )
@@ -66,6 +74,45 @@ test "string_to_record_type - all variants" {
 test "string_to_record_type - unknown returns None" {
   assert_eq(string_to_record_type("unknown"), None)
   assert_eq(string_to_record_type(""), None)
+}
+
+///|
+test "record_to_json_line - session_meta roundtrip" {
+  let record : @interfaces.HistoryRecord = {
+    timestamp: 1709164800000L,
+    session_id: "web_chat:abc123",
+    record_type: @interfaces.HistoryRecordType::SessionMeta,
+    payload: Json::object({
+      "model": Json::string("claude-sonnet-4-20250514"),
+      "max_iterations": Json::number(10.0),
+      "tools": Json::array([Json::string("shell"), Json::string("web")]),
+      "tool_count": Json::number(2.0),
+      "system_prompt": Json::string("You are a helpful assistant."),
+    }),
+  }
+  let line = record_to_json_line(record)
+  let parsed = parse_json_to_record(line)
+  match parsed {
+    Some(r) => {
+      assert_eq(r.timestamp, 1709164800000L)
+      assert_eq(r.session_id, "web_chat:abc123")
+      assert_eq(r.record_type, @interfaces.HistoryRecordType::SessionMeta)
+      match r.payload {
+        Object(obj) => {
+          match obj.get("model") {
+            Some(String(s)) => assert_eq(s, "claude-sonnet-4-20250514")
+            _ => fail("Expected model to be String")
+          }
+          match obj.get("tool_count") {
+            Some(Number(n, ..)) => assert_eq(n, 2.0)
+            _ => fail("Expected tool_count to be Number")
+          }
+        }
+        _ => fail("Expected JSON object payload")
+      }
+    }
+    None => fail("Failed to parse session_meta record")
+  }
 }
 
 ///|

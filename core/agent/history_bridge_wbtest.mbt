@@ -269,3 +269,36 @@ test "full session lifecycle records all events" {
   inspect(spy.records[5].record_type, content="SessionEnd")
   inspect(spy.flush_count, content="1")
 }
+
+///|
+test "record_session_meta writes SessionMeta record" {
+  let spy = SpyHistoryRecorder::new()
+  let hr : &@interfaces.HistoryRecorder? = Some(spy)
+  let clk : &@interfaces.Clock? = None
+  let payload = Json::object({
+    "model": Json::string("claude-sonnet-4-20250514"),
+    "max_iterations": Json::number(10.0),
+    "tools": Json::array([Json::string("shell"), Json::string("web")]),
+  })
+  record_session_meta(hr, clk, 5000L, "test:c1", payload)
+  inspect(spy.records.length(), content="1")
+  inspect(spy.records[0].record_type, content="SessionMeta")
+  inspect(spy.records[0].timestamp, content="5000")
+  inspect(spy.records[0].session_id, content="test:c1")
+  match spy.records[0].payload {
+    Object(obj) =>
+      match obj.get("model") {
+        Some(String(s)) => inspect(s, content="claude-sonnet-4-20250514")
+        _ => fail("Expected model to be String")
+      }
+    _ => fail("Expected JSON object payload")
+  }
+}
+
+///|
+test "record_session_meta with None recorder does nothing" {
+  let hr : &@interfaces.HistoryRecorder? = None
+  let clk : &@interfaces.Clock? = None
+  record_session_meta(hr, clk, 5000L, "test:c1", Json::object({}))
+  // should not panic
+}

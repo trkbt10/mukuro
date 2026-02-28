@@ -7,6 +7,7 @@
 pub fn record_type_to_string(rt : @interfaces.HistoryRecordType) -> String {
   match rt {
     SessionStart => "session_start"
+    SessionMeta => "session_meta"
     UserMessage => "user_message"
     AssistantMessage => "assistant_message"
     ToolCall => "tool_call"
@@ -21,6 +22,7 @@ pub fn record_type_to_string(rt : @interfaces.HistoryRecordType) -> String {
 pub fn string_to_record_type(s : String) -> @interfaces.HistoryRecordType? {
   match s {
     "session_start" => Some(@interfaces.HistoryRecordType::SessionStart)
+    "session_meta" => Some(@interfaces.HistoryRecordType::SessionMeta)
     "user_message" => Some(@interfaces.HistoryRecordType::UserMessage)
     "assistant_message" => Some(@interfaces.HistoryRecordType::AssistantMessage)
     "tool_call" => Some(@interfaces.HistoryRecordType::ToolCall)

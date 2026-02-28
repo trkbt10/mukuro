@@ -3,6 +3,8 @@
 pub(all) enum HistoryRecordType {
   /// セッション開始
   SessionStart
+  /// セッションメタデータ（モデル名、設定値、システムプロンプト等）
+  SessionMeta
   /// ユーザーメッセージ
   UserMessage
   /// アシスタントメッセージ

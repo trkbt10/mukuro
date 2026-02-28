@@ -77,6 +77,23 @@ fn record_session_start(
 }
 
 ///|
+/// SessionMeta を記録（モデル名、設定値、システムプロンプト、ツール一覧等）
+fn record_session_meta(
+  hr : &@interfaces.HistoryRecorder?,
+  clock : &@interfaces.Clock?,
+  fallback_ts : Int64,
+  sid : String,
+  payload : Json,
+) -> Unit {
+  safe_record(hr, {
+    timestamp: get_event_timestamp(clock, fallback_ts),
+    session_id: sid,
+    record_type: @interfaces.HistoryRecordType::SessionMeta,
+    payload,
+  })
+}
+
+///|
 /// UserMessage を記録
 fn record_user_message(
   hr : &@interfaces.HistoryRecorder?,
