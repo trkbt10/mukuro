@@ -7,7 +7,7 @@
 
 .content {
   flex: 1;
-  min-height: 0;   /* allow flex item to shrink — enables child overflow-y: auto */
-  overflow: hidden;
+  min-height: 0;
+  overflow-y: auto;
   background: var(--mk-bg-base);
 }

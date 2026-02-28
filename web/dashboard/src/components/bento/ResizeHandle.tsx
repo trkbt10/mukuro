@@ -84,11 +84,11 @@ export function ResizeHandle({ blockId, currentSize, columns, onResize }: Resize
       onPointerDown={onPointerDown}
       title="Drag to resize"
     >
-      <svg width={14} height={14} viewBox="0 0 14 14" fill="none">
+      <svg width={32} height={32} viewBox="0 0 32 32" fill="none">
         <path
-          d="M4 1 L12 1 Q13 1 13 2 L13 10"
+          d="M30 2 L30 6 Q30 30 6 30 L2 30"
           stroke="currentColor"
-          strokeWidth={2}
+          strokeWidth={1.5}
           strokeLinecap="round"
           strokeLinejoin="round"
         />

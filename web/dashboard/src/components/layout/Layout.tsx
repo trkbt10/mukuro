@@ -45,5 +45,5 @@ export function Layout() {
     },
   ];
 
-  return <GridLayout config={config} layers={layers} root />;
+  return <GridLayout config={config} layers={layers} />;
 }
