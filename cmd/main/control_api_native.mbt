@@ -45,7 +45,9 @@ fn create_context_file_io() -> @api_context.ContextFileIO {
       ) ==
       0
     },
-    delete: fn(path) { @native.c_remove_file(@native.string_to_cstring(path)) == 0 },
+    delete: fn(path) {
+      @native.c_remove_file(@native.string_to_cstring(path)) == 0
+    },
     get_dir: fn() { get_workspace_context_dir() },
   }
 }
@@ -57,26 +59,145 @@ let api_v1_context_state : @api_context.ContextState = @api_context.ContextState
 )
 
 ///|
+/// Global history reader（data_dir() を使ってレコーダーと同じパスを参照）
+let global_history_reader : @native.NativeHistoryReader = @native.NativeHistoryReader::new(
+  base_dir=@config.data_dir(),
+)
+
+///|
 /// Get API v1 router with handlers configured
 fn get_api_v1_router() -> @api.ApiRouter {
+  let history_reader : &@interfaces.HistoryReader = global_history_reader
   {
-    plugin_handlers: Some(@api_plugins.create_plugin_handlers(api_v1_plugins_state)),
-    context_handlers: Some(@api_context.create_context_handlers(api_v1_context_state)),
-    settings_handlers: Some(@api_settings.create_settings_handlers(api_v1_settings_state)),
+    plugin_handlers: Some(
+      @api_plugins.create_plugin_handlers(api_v1_plugins_state),
+    ),
+    plugin_action_dispatcher: Some(fn(ctx) {
+      let segments = ctx.segments
+      let meth = ctx.http_method.to_upper()
+      // GET /plugins/{id}/actions - list actions
+      if segments.length() == 3 && meth == "GET" {
+        return @api_plugins.handle_list_actions(api_v1_plugins_state, ctx)
+      }
+      // POST /plugins/{id}/actions/{action} - invoke action
+      if segments.length() == 4 && meth == "POST" {
+        return @api_plugins.handle_invoke_action(api_v1_plugins_state, ctx)
+      }
+      @api.error_response(405, "method_not_allowed", "Method not allowed")
+    }),
+    context_handlers: Some(
+      @api_context.create_context_handlers(api_v1_context_state),
+    ),
+    settings_handlers: Some(
+      @api_settings.create_settings_handlers(api_v1_settings_state),
+    ),
     config_handlers: None,
-    provider_handlers: Some(@api_providers.create_provider_handlers(api_v1_providers_state)),
-    chat_handlers: Some(@api_chat.create_chat_handlers(
-      @api_chat.ChatState::new(global_session_store),
-    )),
+    provider_handlers: Some(
+      @api_providers.create_provider_handlers(api_v1_providers_state),
+    ),
+    chat_handlers: Some(
+      @api_chat.create_chat_handlers(
+        @api_chat.ChatState::new(
+          global_session_store,
+          history_reader=history_reader,
+        ),
+      ),
+    ),
+    history_handlers: Some(
+      @api_history.create_history_handlers(
+        @api_history.HistoryState::new(history_reader),
+      ),
+    ),
   }
 }
 
 ///|
 /// Initialize API v1 state from config
-pub fn init_api_v1_state(config : @types.MukuroConfig, config_path : String) -> Unit {
+pub fn init_api_v1_state(
+  config : @types.MukuroConfig,
+  config_path : String,
+) -> Unit {
   api_v1_settings_state.init(config, config_path)
   api_v1_settings_state.set_persister(persist_config_to_file)
   api_v1_plugins_state.init_builtins()
+  register_memory_actions(api_v1_plugins_state, global_memory_store)
+}
+
+///|
+/// Register memory CRUD actions on the memory plugin
+fn register_memory_actions(
+  state : @api_plugins.PluginManagerState,
+  store : @builtin.MemoryStore,
+) -> Unit {
+  // list - list all entries
+  state.register_action("memory", "list", fn(_params) {
+    let keys = store.keys()
+    let entries : Array[Json] = []
+    for key in keys {
+      let entry : Map[String, Json] = {}
+      entry["key"] = Json::string(key)
+      match store.get(key) {
+        Some(value) => entry["value"] = value
+        None => ()
+      }
+      entries.push(Json::object(entry))
+    }
+    @api.json_response(200, {
+      "data": { "entries": Json::array(entries), "count": keys.length() },
+    })
+  })
+  // get - get a single entry by key
+  state.register_action("memory", "get", fn(params) {
+    let key = match params {
+      { "key": String(k), .. } => k
+      _ =>
+        return @api.error_response(
+          400, "bad_request", "Missing 'key' parameter",
+        )
+    }
+    match store.get(key) {
+      Some(value) =>
+        @api.json_response(200, { "data": { "key": key, "value": value } })
+      None =>
+        @api.error_response(404, "not_found", "Key '\{key}' not found")
+    }
+  })
+  // set - create or update an entry
+  state.register_action("memory", "set", fn(params) {
+    let key = match params {
+      { "key": String(k), .. } => k
+      _ =>
+        return @api.error_response(
+          400, "bad_request", "Missing 'key' parameter",
+        )
+    }
+    let value = match params {
+      { "value": v, .. } => v
+      _ =>
+        return @api.error_response(
+          400, "bad_request", "Missing 'value' parameter",
+        )
+    }
+    store.set(key, value)
+    @api.json_response(200, { "ok": true, "key": key })
+  })
+  // delete - delete an entry by key
+  state.register_action("memory", "delete", fn(params) {
+    let key = match params {
+      { "key": String(k), .. } => k
+      _ =>
+        return @api.error_response(
+          400, "bad_request", "Missing 'key' parameter",
+        )
+    }
+    let deleted = store.delete(key)
+    @api.json_response(200, { "ok": true, "deleted": deleted })
+  })
+  // clear - clear all entries
+  state.register_action("memory", "clear", fn(_params) {
+    store.clear()
+    @api.json_response(200, { "ok": true })
+  })
 }
 
 ///|
@@ -106,7 +227,11 @@ fn write_config_file(path : String, content : String) -> Unit {
 ///|
 /// Convert ApiResponse to ControlApiResponse
 fn api_response_to_control(resp : @api.ApiResponse) -> ControlApiResponse {
-  add_cors_headers({ status: resp.status, body: resp.body, headers: resp.headers })
+  add_cors_headers({
+    status: resp.status,
+    body: resp.body,
+    headers: resp.headers,
+  })
 }
 
 ///|
@@ -375,6 +500,119 @@ fn validate_control_api_access(
   }
 }
 
+///|
+/// Default base URLs for known providers
+fn get_default_provider_base_url(provider_name : String) -> String? {
+  match provider_name {
+    "anthropic" => Some("https://api.anthropic.com")
+    "openai" => Some("https://api.openai.com")
+    "groq" => Some("https://api.groq.com/openai")
+    _ => None
+  }
+}
+
+///|
+/// Fetch models from a provider's /v1/models endpoint
+async fn fetch_live_provider_models(
+  provider_name : String,
+  api_key : String,
+  base_url : String,
+) -> Array[String] {
+  let http = @native.NativeHttpClient::new(
+    timeout_seconds=10,
+    user_agent="mukuro/0.1.0",
+  )
+  let url = if base_url.has_suffix("/") {
+    base_url + "v1/models"
+  } else {
+    base_url + "/v1/models"
+  }
+  let headers : Map[String, String] = {}
+  headers["Accept"] = "application/json"
+  if provider_name == "anthropic" {
+    headers["x-api-key"] = api_key
+    headers["anthropic-version"] = "2023-06-01"
+  } else {
+    headers["Authorization"] = "Bearer " + api_key
+  }
+  let response = http.do_request_async({
+    url,
+    http_method: @interfaces.HttpMethod::Get,
+    headers,
+    body: None,
+  }) catch {
+    _ => return []
+  }
+  if response.status != 200 {
+    return []
+  }
+  let body_str = response.body.to_unchecked_string()
+  let json : Json = @json.parse(body_str) catch { _ => return [] }
+  let models : Array[String] = []
+  match json {
+    Object(obj) =>
+      match obj.get("data") {
+        Some(Array(arr)) =>
+          for item in arr {
+            match item {
+              Object(model_obj) =>
+                match model_obj.get("id") {
+                  Some(String(id)) => models.push(id)
+                  _ => ()
+                }
+              _ => ()
+            }
+          }
+        _ => ()
+      }
+    _ => ()
+  }
+  models
+}
+
+///|
+/// Async handler for GET /api/v1/settings/providers/{name}/models.
+/// Fetches live models from the provider API. Returns empty array on failure.
+async fn try_fetch_provider_models(
+  path : String,
+) -> ControlApiResponse? {
+  let views = path.split("/").collect()
+  // ["", "api", "v1", "settings", "providers", "{name}", "models"]
+  if views.length() < 7 ||
+    views[4] != "providers" ||
+    views[6] != "models" {
+    return None
+  }
+  let provider_name = views[5].to_string()
+  if provider_name.length() == 0 {
+    return None
+  }
+  let empty = Some(json_response(200, { "data": Json::array([]) }))
+  let config = match api_v1_settings_state.get_config() {
+    Some(c) => c
+    None => return empty
+  }
+  for p in config.providers {
+    if p.name == provider_name {
+      let base_url = match p.base_url {
+        Some(url) => url
+        None =>
+          match get_default_provider_base_url(provider_name) {
+            Some(url) => url
+            None => return empty
+          }
+      }
+      let api_key = match p.api_key {
+        Some(key) => key
+        None => return empty
+      }
+      let models = fetch_live_provider_models(provider_name, api_key, base_url)
+      let arr : Array[Json] = models.map(fn(m) { Json::string(m) })
+      return Some(json_response(200, { "data": Json::array(arr) }))
+    }
+  }
+  empty
+}
 
 ///|
 /// Add CORS headers to a response
@@ -413,6 +651,13 @@ pub async fn handle_control_api_request(
       @xhttp.RequestMethod::Delete => "DELETE"
       _ => "GET"
     }
+    // Async intercept: live model fetch from provider APIs
+    if meth_str == "GET" {
+      match try_fetch_provider_models(path) {
+        Some(resp) => return resp
+        None => ()
+      }
+    }
     let ctx = @api.ApiRequestContext::new(
       meth=meth_str,
       path~,
@@ -427,57 +672,29 @@ pub async fn handle_control_api_request(
   match meth {
     @xhttp.RequestMethod::Get =>
       if path == "/status" {
-        match
-          validate_control_api_access(
-            gateway,
-            headers,
-          ) {
+        match validate_control_api_access(gateway, headers) {
           Some(resp) => return resp
           None => ()
         }
-        return json_response(
-          200,
-          status_json(gateway.status()),
-        )
+        return json_response(200, status_json(gateway.status()))
       } else if path == "/health" {
-        match
-          validate_control_api_access(
-            gateway,
-            headers,
-          ) {
+        match validate_control_api_access(gateway, headers) {
           Some(resp) => return resp
           None => ()
         }
-        return json_response(
-          200,
-          health_summary_json(gateway.status()),
-        )
+        return json_response(200, health_summary_json(gateway.status()))
       } else if path == "/health/live" {
-        match
-          validate_control_api_access(
-            gateway,
-            headers,
-          ) {
+        match validate_control_api_access(gateway, headers) {
           Some(resp) => return resp
           None => ()
         }
-        return json_response(
-          200,
-          health_live_json(gateway.status()),
-        )
+        return json_response(200, health_live_json(gateway.status()))
       } else if path == "/health/ready" {
-        match
-          validate_control_api_access(
-            gateway,
-            headers,
-          ) {
+        match validate_control_api_access(gateway, headers) {
           Some(resp) => return resp
           None => ()
         }
-        return json_response(
-          200,
-          health_ready_json(gateway.status()),
-        )
+        return json_response(200, health_ready_json(gateway.status()))
       } else {
         return error_response(404, "not_found", "Unknown endpoint")
       }
@@ -555,17 +772,14 @@ async fn handle_control_api_dispatch_async(
       gateway.dispatch_outbound(auth~, message=outbound) catch {
         e => return control_error_to_response(e)
       }
-      json_response(
-        200,
-        {
-          "ok": true,
-          "response": {
-            "channel": outbound.channel.to_json(),
-            "chat_id": outbound.chat_id.to_json(),
-            "content": outbound.content.to_json(),
-          },
+      json_response(200, {
+        "ok": true,
+        "response": {
+          "channel": outbound.channel.to_json(),
+          "chat_id": outbound.chat_id.to_json(),
+          "content": outbound.content.to_json(),
         },
-      )
+      })
     }
     None => error_response(400, "bad_request", "Invalid dispatch payload")
   }
@@ -581,7 +795,7 @@ pub async fn run_control_api_server_blocking(
   gateway : @control.Gateway,
   host : String,
   port : Int,
-) -> Unit raise {
+) -> Unit {
   run_control_api_server_with_tick_blocking(gateway, host, port, fn() { true })
 }
 
@@ -591,8 +805,8 @@ pub async fn run_control_api_server_with_tick_blocking(
   host : String,
   port : Int,
   on_tick : () -> Bool,
-) -> Unit raise {
-  @async.with_task_group((group) => {
+) -> Unit {
+  @async.with_task_group(group => {
     let server = @xhttp.Server::new(host~, port~) catch { e => raise e }
     defer server.close()
     group.spawn_bg(no_wait=true, allow_failure=true, () => {

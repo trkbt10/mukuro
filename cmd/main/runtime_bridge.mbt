@@ -102,6 +102,10 @@ let global_history_recorder : Ref[&@interfaces.HistoryRecorder?] = Ref::new(
 let global_clock : @native.NativeClock = @native.NativeClock::new()
 
 ///|
+/// グローバル共有 MemoryStore（API層とエージェントループで共有）
+let global_memory_store : @builtin.MemoryStore = @builtin.MemoryStore::new()
+
+///|
 /// ビルトインツール用のToolExecutorアダプタ
 struct BuiltinToolExecutorAdapter {
   tool_context : @builtin.BuiltinToolContext
@@ -135,9 +139,10 @@ pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
 ///|
 /// ビルトインツールをグローバルレジストリに登録
 pub fn register_builtin_tools() -> Unit {
-  let tool_ctx = @builtin.BuiltinToolContext::new(fn(msg) {
-    global_outbound_dispatcher.sent_messages.push(msg)
-  })
+  let tool_ctx = @builtin.BuiltinToolContext::with_memory(
+    global_memory_store,
+    fn(msg) { global_outbound_dispatcher.sent_messages.push(msg) },
+  )
   let executor : BuiltinToolExecutorAdapter = { tool_context: tool_ctx }
   for definition in @builtin.get_all_tool_definitions() {
     global_tool_registry.register(definition, executor)
@@ -278,7 +283,7 @@ let global_plugin_initializer : Ref[@plugin.PluginSystemInitializer?] = {
 ///|
 /// Initialize the plugin system from the default plugin directory (async)
 pub async fn initialize_plugin_system() -> Unit {
-  initialize_plugin_system_from_dir(plugin_dir=".mukuro/plugins")
+  initialize_plugin_system_from_dir(plugin_dir=@config.data_dir() + "/plugins")
 }
 
 ///|

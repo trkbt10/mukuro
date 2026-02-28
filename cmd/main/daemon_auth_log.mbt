@@ -26,7 +26,7 @@ fn read_auth_log_text() -> String? {
   let buffer_len = 262144
   let buffer = Bytes::new(buffer_len)
   let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(daemon_auth_log_path),
+    @native.string_to_cstring(daemon_auth_log_path()),
     buffer,
     buffer_len,
   )
@@ -47,11 +47,11 @@ pub fn query_gateway_auth_log(
   if content.length() == 0 {
     if as_json {
       return CliResult::Ok(
-        "{\"path\":\"\{daemon_auth_log_path}\",\"total\":0,\"since_seconds\":\{since_seconds}}",
+        "{\"path\":\"\{daemon_auth_log_path()}\",\"total\":0,\"since_seconds\":\{since_seconds}}",
       )
     }
     return CliResult::Ok(
-      "Gateway auth log is empty or not found: \{daemon_auth_log_path}",
+      "Gateway auth log is empty or not found: \{daemon_auth_log_path()}",
     )
   }
 
@@ -93,7 +93,7 @@ pub fn query_gateway_auth_log(
       clients_obj[name] = Json::number(count.to_double())
     }
     let payload : Json = {
-      "path": daemon_auth_log_path,
+      "path": daemon_auth_log_path(),
       "total": total,
       "since_seconds": Json::number(since_seconds.to_double()),
       "cutoff_ts": Json::number(cutoff.to_double()),
@@ -104,7 +104,7 @@ pub fn query_gateway_auth_log(
   }
 
   let mut output = "Gateway Auth Log Summary\n"
-  output = output + "  Path: \{daemon_auth_log_path}\n"
+  output = output + "  Path: \{daemon_auth_log_path()}\n"
   output = output + "  Total: \{total}\n"
   output = output + "  Since: last \{since_seconds}s\n"
   output = output + "  Events:\n"

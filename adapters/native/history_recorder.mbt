@@ -6,7 +6,7 @@
 /// NativeHistoryRecorder
 /// セッション単位で JSONL ファイルに追記する
 pub struct NativeHistoryRecorder {
-  /// ベースディレクトリ（.mukuro 等）
+  /// ベースディレクトリ（@config.data_dir() で解決）
   base_dir : String
   /// 現在のファイルハンドル
   mut current_file : CFile?
@@ -116,8 +116,7 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with record(
     Some(file) => {
       let line = @history.record_to_json_line(record)
       let line_with_newline = line + "\n"
-      let utf8_bytes = @utf8.encode(line_with_newline)
-      let data = Bytes::from_iter(utf8_bytes.iter())
+      let data = @utf8.encode(line_with_newline)
       let written = c_fwrite(data, 1, data.length(), file)
       if written != data.length() {
         raise @interfaces.HistoryError::IoError(
@@ -306,4 +305,43 @@ pub impl @interfaces.HistoryReader for NativeHistoryReader with list_sessions(
     }
   }
   sessions
+}
+
+///|
+pub impl @interfaces.HistoryReader for NativeHistoryReader with list_dates(self) -> Array[(Int, Int, Int)] raise @interfaces.HistoryError {
+  let dates : Array[(Int, Int, Int)] = []
+  let history_root = "\{self.base_dir}/history"
+  for year_name in list_dir_entries(history_root) {
+    let year = match @history.parse_int_string(year_name) {
+      Some(y) => y
+      None => continue
+    }
+    let year_path = "\{history_root}/\{year_name}"
+    for month_name in list_dir_entries(year_path) {
+      let month = match @history.parse_int_string(month_name) {
+        Some(m) => m
+        None => continue
+      }
+      let month_path = "\{year_path}/\{month_name}"
+      for day_name in list_dir_entries(month_path) {
+        let day = match @history.parse_int_string(day_name) {
+          Some(d) => d
+          None => continue
+        }
+        // 実際にJSONLファイルがあるか確認
+        let day_path = "\{month_path}/\{day_name}"
+        let mut has_files = false
+        for file_name in list_dir_entries(day_path) {
+          if file_name.has_suffix(".jsonl") {
+            has_files = true
+            break
+          }
+        }
+        if has_files {
+          dates.push((year, month, day))
+        }
+      }
+    }
+  }
+  dates
 }

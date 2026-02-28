@@ -36,10 +36,14 @@ let daemon_auth_fail_threshold : Int = 5
 let daemon_auth_rate_limit_sec : Int64 = 15
 
 ///|
-let daemon_startup_config_path = ".mukuro/daemon-startup.json"
+fn daemon_startup_config_path() -> String {
+  @config.data_dir() + "/daemon-startup.json"
+}
 
 ///|
-let daemon_auth_log_path = ".mukuro/gateway-auth.log"
+fn daemon_auth_log_path() -> String {
+  @config.data_dir() + "/gateway-auth.log"
+}
 
 ///|
 struct DaemonStartupConfig {
@@ -82,7 +86,7 @@ fn write_daemon_startup_config(
   }
   let text = payload.stringify()
   @native.c_write_text_file(
-    @native.string_to_cstring(daemon_startup_config_path),
+    @native.string_to_cstring(daemon_startup_config_path()),
     @native.string_to_cstring(text),
   ) ==
   0
@@ -170,7 +174,7 @@ fn load_daemon_startup_config() -> DaemonStartupConfig {
   let buffer_len = 65536
   let buffer = Bytes::new(buffer_len)
   let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(daemon_startup_config_path),
+    @native.string_to_cstring(daemon_startup_config_path()),
     buffer,
     buffer_len,
   )

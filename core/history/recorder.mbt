@@ -80,7 +80,7 @@ pub fn parse_json_to_record(line : String) -> @interfaces.HistoryRecord? {
 
 ///|
 /// 日付パーツから履歴ディレクトリパスを構築
-/// returns: e.g. ".mukuro/history/2026/02/28"
+/// returns: e.g. "{base_dir}/history/2026/02/28"
 pub fn history_dir_for_date(
   base_dir : String,
   year : Int,
@@ -95,7 +95,7 @@ pub fn history_dir_for_date(
 
 ///|
 /// 履歴ファイルのフルパスを構築
-/// returns: e.g. ".mukuro/history/2026/02/28/web_chat-abc123-1709164800.jsonl"
+/// returns: e.g. "{base_dir}/history/2026/02/28/web_chat-abc123-1709164800.jsonl"
 pub fn history_file_path(
   base_dir : String,
   channel : String,
@@ -141,4 +141,92 @@ fn zero_pad2(n : Int) -> String {
   } else {
     n.to_string()
   }
+}
+
+///|
+/// 文字列を非負整数にパース、失敗時は None を返す
+/// 数字以外の文字を含む場合も None
+pub fn parse_int_string(s : String) -> Int? {
+  let mut result = 0
+  if s.length() == 0 {
+    return None
+  }
+  for c in s {
+    if c >= '0' && c <= '9' {
+      result = result * 10 + (c.to_int() - '0'.to_int())
+    } else {
+      return None
+    }
+  }
+  Some(result)
+}
+
+///|
+/// 履歴ファイル名をパースして (channel, chat_id, epoch_secs) を返す
+/// e.g. "web_chat-abc-1709164800.jsonl" → Some(("web_chat", "abc", 1709164800L))
+pub fn parse_history_filename(filename : String) -> (String, String, Int64)? {
+  // .jsonl を除去
+  if not(filename.has_suffix(".jsonl")) {
+    return None
+  }
+  // .jsonl を除去 — StringBuilder で安全に切り出す
+  let name_buf = StringBuilder::new()
+  let fn_chars = filename.to_array()
+  for i in 0..<(fn_chars.length() - 6) {
+    name_buf.write_char(fn_chars[i])
+  }
+  let name = name_buf.to_string()
+  // 最後の '-' で epoch_secs を分離
+  let mut last_dash = -1
+  let chars = name.to_array()
+  for i in 0..<chars.length() {
+    if chars[i] == '-' {
+      last_dash = i
+    }
+  }
+  if last_dash <= 0 {
+    return None
+  }
+  let epoch_buf = StringBuilder::new()
+  for i in (last_dash + 1)..<chars.length() {
+    epoch_buf.write_char(chars[i])
+  }
+  let epoch_str = epoch_buf.to_string()
+  let prefix_buf = StringBuilder::new()
+  for i in 0..<last_dash {
+    prefix_buf.write_char(chars[i])
+  }
+  let prefix = prefix_buf.to_string()
+  // epoch_secs をパース
+  let epoch_secs = try {
+    @strconv.parse_int64(epoch_str)
+  } catch {
+    _ => return None
+  }
+  // prefix の最初の '-' で channel と chat_id を分離
+  let mut first_dash = -1
+  let prefix_chars = prefix.to_array()
+  for i in 0..<prefix_chars.length() {
+    if prefix_chars[i] == '-' {
+      first_dash = i
+      break
+    }
+  }
+  if first_dash <= 0 {
+    return None
+  }
+  let ch_buf = StringBuilder::new()
+  for i in 0..<first_dash {
+    ch_buf.write_char(prefix_chars[i])
+  }
+  let channel = ch_buf.to_string()
+  let ci_buf = StringBuilder::new()
+  for i in (first_dash + 1)..<prefix_chars.length() {
+    ci_buf.write_char(prefix_chars[i])
+  }
+  let chat_id = ci_buf.to_string()
+  if channel.length() == 0 || chat_id.length() == 0 {
+    return None
+  }
+  Some((channel, chat_id, epoch_secs))
 }

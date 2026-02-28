@@ -7,7 +7,7 @@ struct WorkspaceContextDirCell {
 }
 
 ///|
-let workspace_context_dir_cell : WorkspaceContextDirCell = { path: ".mukuro" }
+let workspace_context_dir_cell : WorkspaceContextDirCell = { path: @config.data_dir() }
 
 ///|
 pub fn set_workspace_context_dir_for_process(path : String) -> Unit {
@@ -59,13 +59,12 @@ fn memory_json_from_lines(content : String) -> Json {
 /// 空でないファイルを読み込むヘルパー
 fn read_non_empty_file(path : String) -> String? {
   match read_text_file_optional(path) {
-    Some(content) => {
+    Some(content) =>
       if content.trim(chars=" \t\n\r").length() > 0 {
         Some(content)
       } else {
         None
       }
-    }
     None => None
   }
 }

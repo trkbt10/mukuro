@@ -39,7 +39,7 @@ async fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
     // プラグイン初期化失敗は警告のみ（Gateway自体は起動継続）
   }
   // プラグイン監視のセットアップ（オプション）
-  setup_plugin_watcher(".mukuro/plugins")
+  setup_plugin_watcher(@config.data_dir() + "/plugins")
   // 設定ファイルが指定されている場合のみ読み込み（未指定時はデフォルト）
   let base_config = match opts.config_path {
     Some(path) =>
