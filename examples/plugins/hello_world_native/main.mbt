@@ -44,8 +44,7 @@ fn read_stdin_line() -> String? {
 /// Write a line to stdout (native backend only)
 fn write_stdout_line(line : String) -> Unit {
   let bytes = @utf8.encode(line + "\n")
-  let arr = Bytes::from_iter(bytes.iter())
-  let _ = c_write_stdout(arr, arr.length())
+  let _ = c_write_stdout(bytes, bytes.length())
 }
 
 ///|

@@ -3,10 +3,7 @@
 
 ///|
 fn bytes_to_string(buffer : Bytes, len : Int) -> String {
-  let slice = Bytes::from_iter(buffer[:len].iter())
-  @utf8.decode(slice) catch {
-    _ => "<decode error>"
-  }
+  @bytes.decode_utf8_or(buffer[:len], default="<decode error>")
 }
 
 ///|

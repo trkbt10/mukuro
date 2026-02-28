@@ -33,9 +33,7 @@ fn read_auth_log_text() -> String? {
   if read_len <= 0 {
     return None
   }
-  let data = Bytes::from_iter(buffer[:read_len].iter())
-  let decoded = @utf8.decode(data[:]) catch { _ => return None }
-  Some(decoded)
+  @bytes.decode_utf8(buffer[:read_len])
 }
 
 ///|

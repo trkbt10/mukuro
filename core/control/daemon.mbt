@@ -83,7 +83,7 @@ pub fn PidManager::read_pid(self : PidManager) -> Int raise DaemonError {
   let bytes = self.fs.read_file(path=self.pid_path) catch {
     e => raise DaemonError::PidFileReadError(e.to_string())
   }
-  let content = bytes.to_unchecked_string().trim(chars=" \t\n\r")
+  let content = @bytes.decode_utf8_or(bytes[:], default="").trim(chars=" \t\n\r")
   let json : Json = @json.parse(content) catch {
     _ => raise DaemonError::PidFileReadError("Invalid PID format: \{content}")
   }

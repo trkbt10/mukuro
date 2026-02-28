@@ -75,12 +75,7 @@ pub impl @interfaces.ChannelAdapter for HttpChannelAdapter with send(
         Some(token) => headers["Authorization"] = "Bearer \{token}"
         None => ()
       }
-      let body = Bytes::from_iter(
-        payload
-        .stringify()
-        .iter()
-        .map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-      )
+      let body = @bytes.encode_utf8(payload.stringify())
       let _ = @interfaces.HttpClient::request(self.http_client, {
         url,
         http_method: @interfaces.HttpMethod::Post,

@@ -23,13 +23,9 @@ fn read_fixture(path : String) -> String raise {
   if read_len < 0 {
     fail("Fixture file not found: \{path}")
   }
-  let data = if read_len == 0 {
-    Bytes::new(0)
-  } else {
-    Bytes::from_iter(buffer[:read_len].iter())
-  }
-  @utf8.decode(data[:]) catch {
-    _ => fail("UTF-8 decode failed for: \{path}")
+  match @bytes.decode_utf8(buffer[:read_len]) {
+    Some(s) => s
+    None => fail("UTF-8 decode failed for: \{path}")
   }
 }
 

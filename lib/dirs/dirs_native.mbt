@@ -45,18 +45,12 @@ fn home_dir_impl() -> String {
 fn get_env(name : String) -> String? {
   let buffer_len = 4096
   let buffer = Bytes::new(buffer_len)
-  let name_bytes = @utf8.encode(name)
-  let arr : Array[Byte] = []
-  for b in name_bytes {
-    arr.push(b)
-  }
-  arr.push(b'\x00')
-  let name_c = Bytes::from_iter(arr.iter())
+  let name_c = @bytes.to_utf8_cstring(name)
   let read_len = c_getenv_safe(name_c, buffer, buffer_len)
   if read_len <= 0 {
     return None
   }
-  Some(@utf8.decode(buffer[:read_len]) catch { _ => return None })
+  @bytes.decode_utf8(buffer[:read_len])
 }
 
 ///|

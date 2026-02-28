@@ -4,6 +4,7 @@ import {
   "trkbt10/mukuro/core/config" @config,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8" @utf8,
+  "trkbt10/mukuro/lib/bytes" @bytes,
 }
 
 import {

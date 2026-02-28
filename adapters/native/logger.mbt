@@ -65,9 +65,7 @@ fn output_line(output : LogOutput, line : String) -> Unit {
       match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
         Some(file) => {
           let out = line + "\n"
-          let bytes = Bytes::from_iter(
-            out.iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-          )
+          let bytes = @bytes.encode_utf8(out)
           let _ = c_fwrite(bytes, 1, bytes.length(), file)
           let _ = c_fclose(file)
         }

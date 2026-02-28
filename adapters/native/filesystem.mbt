@@ -56,9 +56,8 @@ pub impl @interfaces.FileStore for NativeFileStore with read_file(self, path~) {
       if bytes_read < 0 {
         raise FileSystemError::IoError("Read error: \{resolved}")
       }
-      // サブセットを取得
       if bytes_read < buffer_size {
-        Bytes::from_iter(buffer[:bytes_read].iter())
+        @bytes.copy_slice(buffer[:bytes_read])
       } else {
         buffer
       }
@@ -137,16 +136,7 @@ pub impl @interfaces.FileStore for NativeFileStore with list_dir(self, path~) {
   if bytes_written == 0 {
     return []
   }
-  // Parse UTF-16LE output separated by newlines
-  let output = Bytes::from_iter(buffer[:bytes_written].iter()).to_unchecked_string()
-  let result : Array[String] = []
-  for line in output.split("\n") {
-    let s = line.to_string()
-    if s.length() > 0 {
-      result.push(s)
-    }
-  }
-  result
+  @bytes.parse_utf16le_lines(buffer, bytes_written)
 }
 
 ///|
@@ -166,11 +156,7 @@ pub fn NativeFileStore::read_text(
       if bytes_read < 0 {
         raise FileSystemError::IoError("Read error: \{resolved}")
       }
-      if bytes_read < buffer_size {
-        Bytes::from_iter(buffer[:bytes_read].iter()).to_unchecked_string()
-      } else {
-        buffer.to_unchecked_string()
-      }
+      @bytes.decode_utf8_or(buffer[:bytes_read], default="")
     }
     None => raise FileSystemError::FileNotFound(resolved)
   }

@@ -17,13 +17,9 @@ fn read_config_text_impl(
       "Config file not found or unreadable: \{path}",
     )
   }
-  let data = if read_len == 0 {
-    Bytes::new(0)
-  } else {
-    Bytes::from_iter(buffer[:read_len].iter())
-  }
-  @utf8.decode(data[:]) catch {
-    _ =>
+  match @bytes.decode_utf8(buffer[:read_len]) {
+    Some(s) => s
+    None =>
       raise @interfaces.ControlError::ConfigError(
         "Config file is not valid UTF-8: \{path}",
       )

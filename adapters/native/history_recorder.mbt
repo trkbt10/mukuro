@@ -123,6 +123,8 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with record(
           "Write failed: wrote \{written}/\{data.length()} bytes",
         )
       }
+      // バッファをディスクにフラッシュ（セッション中断・並行アクセスでのデータ喪失を防止）
+      let _ = c_fflush(file)
     }
     None =>
       raise @interfaces.HistoryError::IoError(
@@ -181,30 +183,7 @@ fn list_dir_entries(dir_path : String) -> Array[String] {
   if bytes_read <= 0 {
     return []
   }
-  // UTF-16LE の改行区切りをパース
-  let entries : Array[String] = []
-  let current = StringBuilder::new()
-  let mut i = 0
-  while i + 1 < bytes_read {
-    let lo = buffer[i].to_int()
-    let hi = buffer[i + 1].to_int()
-    let ch = (lo | (hi << 8)).unsafe_to_char()
-    if ch == '\n' {
-      let name = current.to_string()
-      if name.length() > 0 {
-        entries.push(name)
-      }
-      current.reset()
-    } else {
-      current.write_char(ch)
-    }
-    i = i + 2
-  }
-  let last = current.to_string()
-  if last.length() > 0 {
-    entries.push(last)
-  }
-  entries
+  @bytes.parse_utf16le_lines(buffer, bytes_read)
 }
 
 ///|
@@ -220,9 +199,8 @@ fn read_file_text(file_path : String) -> String raise @interfaces.HistoryError {
         if bytes_read <= 0 {
           break
         }
-        // UTF-8 バイト列を文字列に変換して追加
         buf.write_string(
-          Bytes::from_iter(chunk[:bytes_read].iter()).to_unchecked_string(),
+          @bytes.decode_utf8_or(chunk[:bytes_read], default=""),
         )
         if bytes_read < chunk_size {
           break

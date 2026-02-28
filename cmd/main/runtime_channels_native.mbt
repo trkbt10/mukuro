@@ -27,9 +27,7 @@ fn read_runtime_config_text(path : String) -> String? {
   if read_len <= 0 {
     return None
   }
-  let data = Bytes::from_iter(buffer[:read_len].iter())
-  let content = @utf8.decode(data[:]) catch { _ => return None }
-  Some(content)
+  @bytes.decode_utf8(buffer[:read_len])
 }
 
 ///|

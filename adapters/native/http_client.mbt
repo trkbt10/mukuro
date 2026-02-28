@@ -148,9 +148,7 @@ pub async fn NativeHttpClient::post_json(
 ) -> @interfaces.HttpResponse raise @interfaces.HttpError {
   let headers : Map[String, String] = {}
   headers["Content-Type"] = "application/json"
-  let body = Bytes::from_iter(
-    json.stringify().iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-  )
+  let body = @bytes.encode_utf8(json.stringify())
   self.do_request_async({
     url,
     http_method: @interfaces.HttpMethod::Post,
@@ -172,7 +170,7 @@ pub async fn NativeHttpClient::get_json(
     headers,
     body: None,
   })
-  let body_str = response.body.to_unchecked_string()
+  let body_str = @bytes.decode_utf8_or(response.body[:], default="")
   @json.parse(body_str) catch {
     _ =>
       raise @interfaces.HttpError::StatusError(

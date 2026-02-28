@@ -28,6 +28,7 @@ import {
   "trkbt10/mukuro/tools/builtin" @builtin,
   "trkbt10/mukuro/adapters/channels" @channels,
   "trkbt10/mukuro/adapters/native" @native,
+  "trkbt10/mukuro/lib/bytes" @bytes,
 }
 
 warnings = "-29"

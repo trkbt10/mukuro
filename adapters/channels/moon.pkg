@@ -8,6 +8,7 @@ import {
   "trkbt10/mukuro/adapters/native" @native,
   "moonbitlang/core/json",
   "mizchi/x/websocket" @xws,
+  "trkbt10/mukuro/lib/bytes" @bytes,
 }
 
 warnings = "-29"

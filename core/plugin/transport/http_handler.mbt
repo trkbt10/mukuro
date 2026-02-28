@@ -260,9 +260,7 @@ pub impl @interfaces.PluginTransportHandler for HttpTransportHandler with send_r
       let headers = self.build_headers()
       let body_json = actual_request.to_json()
       let body_str = body_json.stringify()
-      let body_bytes = Bytes::from_iter(
-        body_str.iter().map(fn(c) { c.to_int().land(0xFF).to_byte() }),
-      )
+      let body_bytes = @bytes.encode_utf8(body_str)
       let response = client.post(url~, body=body_bytes, headers~) catch {
         e =>
           raise @interfaces.TransportError::SendFailed(

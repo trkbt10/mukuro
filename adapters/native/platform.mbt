@@ -23,19 +23,19 @@ pub fn NativePlatform::get_info(
 ) -> @interfaces.PlatformInfo {
   let os_name = try {
     let result = self.process.shell("uname -s")
-    result.stdout.to_unchecked_string().split("\n").collect()[0].to_string()
+    @bytes.decode_utf8_or(result.stdout[:], default="Unknown").split("\n").collect()[0].to_string()
   } catch {
     _ => "Unknown"
   }
   let arch = try {
     let result = self.process.shell("uname -m")
-    result.stdout.to_unchecked_string().split("\n").collect()[0].to_string()
+    @bytes.decode_utf8_or(result.stdout[:], default="Unknown").split("\n").collect()[0].to_string()
   } catch {
     _ => "Unknown"
   }
   let version = try {
     let result = self.process.shell("uname -r")
-    result.stdout.to_unchecked_string().split("\n").collect()[0].to_string()
+    @bytes.decode_utf8_or(result.stdout[:], default="Unknown").split("\n").collect()[0].to_string()
   } catch {
     _ => "Unknown"
   }

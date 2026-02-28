@@ -119,7 +119,13 @@ pub fn init_api_v1_state(
 ) -> Unit {
   api_v1_settings_state.init(config, config_path)
   api_v1_settings_state.set_persister(persist_config_to_file)
-  api_v1_plugins_state.init_builtins()
+  // ビルトインツール定義からプラグイン状態を自動導出（source of truth: get_all_tool_definitions）
+  for def in @builtin.get_all_tool_definitions() {
+    api_v1_plugins_state.set_plugin(
+      def.name,
+      @interfaces.PluginState::builtin(id=def.name, description=def.description),
+    )
+  }
   register_memory_actions(api_v1_plugins_state, global_memory_store)
 }
 
@@ -546,7 +552,7 @@ async fn fetch_live_provider_models(
   if response.status != 200 {
     return []
   }
-  let body_str = response.body.to_unchecked_string()
+  let body_str = @bytes.decode_utf8_or(response.body[:], default="")
   let json : Json = @json.parse(body_str) catch { _ => return [] }
   let models : Array[String] = []
   match json {

@@ -181,9 +181,9 @@ fn load_daemon_startup_config() -> DaemonStartupConfig {
   if read_len <= 0 {
     return daemon_startup_default()
   }
-  let data = Bytes::from_iter(buffer[:read_len].iter())
-  let content = @utf8.decode(data[:]) catch {
-    _ => return daemon_startup_default()
+  let content = match @bytes.decode_utf8(buffer[:read_len]) {
+    Some(s) => s
+    None => return daemon_startup_default()
   }
   parse_daemon_startup_config(content)
 }

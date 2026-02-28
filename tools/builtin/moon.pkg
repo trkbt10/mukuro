@@ -7,6 +7,8 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/async" @async,
   "moonbitlang/x/time" @xtime,
+  "moonbitlang/core/encoding/utf8",
+  "trkbt10/mukuro/lib/bytes" @bytes,
 }
 
 import {
@@ -16,15 +18,21 @@ import {
 warnings = "-29"
 
 options(
+  "native-stub": [ "native_stubs.c" ],
   targets: {
     "builtin_test.mbt": [ "js" ],
     "filesystem.mbt": [ "js" ],
+    "filesystem_native.mbt": [ "native" ],
+    "ffi_native.mbt": [ "native" ],
     "registry_js.mbt": [ "js" ],
     "registry_native.mbt": [ "native", "wasm", "wasm-gc" ],
     "shell.mbt": [ "js" ],
+    "shell_native.mbt": [ "native" ],
     "time_js.mbt": [ "js" ],
     "time_native.mbt": [ "native" ],
     "time_wasm.mbt": [ "wasm", "wasm-gc" ],
     "web.mbt": [ "js" ],
+    "web_native.mbt": [ "native" ],
+    "native_tools_test.mbt": [ "native" ],
   },
 )

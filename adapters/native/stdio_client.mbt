@@ -179,10 +179,9 @@ pub fn NativeStdioClient::send_request(
   if bytes_read <= 0 {
     raise StdioClientError::InvalidResponse("No output from process")
   }
-  // Decode output as UTF-8
-  let output_bytes = Bytes::from_iter(buffer[:bytes_read].iter())
-  let output_text = @utf8.decode(output_bytes) catch {
-    _ =>
+  let output_text = match @bytes.decode_utf8(buffer[:bytes_read]) {
+    Some(s) => s
+    None =>
       raise StdioClientError::InvalidResponse(
         "Invalid UTF-8 output from process",
       )

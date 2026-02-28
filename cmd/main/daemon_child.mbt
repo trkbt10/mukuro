@@ -14,8 +14,7 @@ fn read_last_ipc_client_id() -> String {
   if read_len <= 0 {
     return "unknown"
   }
-  Bytes::from_iter(buffer[:read_len].iter())
-  .to_unchecked_string()
+  @bytes.decode_utf8_or(buffer[:read_len], default="unknown")
   .trim(chars=" \t\n\r")
   .to_string()
 }

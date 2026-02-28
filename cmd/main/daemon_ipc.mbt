@@ -27,12 +27,10 @@ fn daemon_ipc_request(command : String) -> String? {
   if read_len <= 0 {
     return None
   }
-  Some(
-    Bytes::from_iter(buffer[:read_len].iter())
-    .to_unchecked_string()
-    .trim(chars=" \t\n\r")
-    .to_string(),
-  )
+  match @bytes.decode_utf8(buffer[:read_len]) {
+    Some(s) => Some(s.trim(chars=" \t\n\r").to_string())
+    None => None
+  }
 }
 
 ///|

@@ -343,12 +343,5 @@ pub fn WsServer::get_client_ids(self : WsServer) -> Array[Int] {
 ///|
 /// Convert String to null-terminated C string bytes
 fn string_to_cstring_bytes(s : String) -> Bytes {
-  let utf8 = @utf8.encode(s)
-  // Append null terminator
-  let arr : Array[Byte] = []
-  for b in utf8 {
-    arr.push(b)
-  }
-  arr.push(b'\x00')
-  Bytes::from_iter(arr.iter())
+  @bytes.to_utf8_cstring(s)
 }

@@ -57,6 +57,10 @@ pub extern "C" fn c_write_stdout(data : Bytes, len : Int) -> Int = "moonbit_writ
 /// stdout をフラッシュ
 pub extern "C" fn c_fflush_stdout() -> Int = "moonbit_fflush_stdout"
 
+///|
+/// 任意の FILE* をフラッシュ
+pub extern "C" fn c_fflush(stream : CFile) -> Int = "moonbit_fflush"
+
 // ============================================================
 // ファイルシステム
 // ============================================================
@@ -208,14 +212,7 @@ pub fn cstring_to_string(cs : CString) -> String = "%identity"
 /// MoonBit String から UTF-8 null終端 Bytes への変換
 /// C関数に渡すための適切なフォーマット
 pub fn string_to_utf8_cstring(s : String) -> Bytes {
-  let utf8 = @utf8.encode(s)
-  // Add null terminator - collect bytes into array and add null
-  let arr : Array[Byte] = []
-  for b in utf8 {
-    arr.push(b)
-  }
-  arr.push(b'\x00')
-  Bytes::from_iter(arr.iter())
+  @bytes.to_utf8_cstring(s)
 }
 
 // ============================================================
