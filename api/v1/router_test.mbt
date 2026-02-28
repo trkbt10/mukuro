@@ -53,10 +53,10 @@ fn make_router_with_handlers() -> ApiRouter {
     update_model_inference: RouteHandler(dummy_handler),
     list_providers: RouteHandler(dummy_handler),
     update_provider: RouteHandler(dummy_handler),
-    list_provider_models: RouteHandler(dummy_handler),
   }
   {
     plugin_handlers: Some(plugin_handlers),
+    plugin_action_dispatcher: None,
     context_handlers: Some(context_handlers),
     settings_handlers: Some(settings_handlers),
     config_handlers: None,

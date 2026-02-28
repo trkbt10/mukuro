@@ -11,6 +11,8 @@ pub(all) struct RouteHandler((ApiRequestContext) -> ApiResponse)
 pub(all) struct ApiRouter {
   /// Plugin handlers
   plugin_handlers : PluginApiHandlers?
+  /// Plugin action dispatcher (handles /plugins/{id}/actions/*)
+  plugin_action_dispatcher : ((ApiRequestContext) -> ApiResponse)?
   /// Context handlers (file-based context management)
   context_handlers : ContextApiHandlers?
   /// Settings handlers
@@ -86,8 +88,6 @@ pub(all) struct SettingsApiHandlers {
   list_providers : RouteHandler
   /// PUT /settings/providers/{name} - update provider
   update_provider : RouteHandler
-  /// GET /settings/providers/{name}/models - list known models
-  list_provider_models : RouteHandler
 }
 
 ///|
@@ -161,6 +161,7 @@ pub(all) struct ProviderApiHandlers {
 pub fn ApiRouter::new() -> ApiRouter {
   {
     plugin_handlers: None,
+    plugin_action_dispatcher: None,
     context_handlers: None,
     settings_handlers: None,
     config_handlers: None,
@@ -228,6 +229,17 @@ fn ApiRouter::route_plugins(
   self : ApiRouter,
   ctx : ApiRequestContext,
 ) -> ApiResponse {
+  // Check for action routes: /plugins/{id}/actions or /plugins/{id}/actions/{action}
+  let segments = ctx.segments
+  if segments.length() >= 3 && segments[2] == "actions" {
+    match self.plugin_action_dispatcher {
+      Some(dispatcher) => return dispatcher(ctx)
+      None =>
+        return error_response(
+          501, "not_implemented", "Plugin actions not configured",
+        )
+    }
+  }
   match self.plugin_handlers {
     None => error_response(501, "not_implemented", "Plugin API not configured")
     Some(handlers) => route_plugin_endpoint(handlers, ctx)
@@ -373,15 +385,6 @@ fn route_settings_endpoint(
   if segments.length() == 3 && segments[1] == "providers" {
     if meth == "PUT" {
       return (handlers.update_provider.0)(ctx)
-    }
-    return error_response(405, "method_not_allowed", "Method not allowed")
-  }
-  // /settings/providers/{name}/models
-  if segments.length() == 4 &&
-    segments[1] == "providers" &&
-    segments[3] == "models" {
-    if meth == "GET" {
-      return (handlers.list_provider_models.0)(ctx)
     }
     return error_response(405, "method_not_allowed", "Method not allowed")
   }

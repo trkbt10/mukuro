@@ -219,42 +219,6 @@ test "handle_update_model_inference returns 503 when not initialized" {
 }
 
 // =============================================================================
-// GET /settings/providers/{name}/models Tests
-// =============================================================================
-
-///|
-test "handle_list_provider_models returns models for anthropic" {
-  let state = SettingsState::new()
-  let handlers = create_settings_handlers(state)
-  let ctx = @api.ApiRequestContext::new(
-    meth="GET",
-    path="/api/v1/settings/providers/anthropic/models",
-    headers={},
-    body="",
-    role=@api.ApiRole::Admin,
-  )
-  let resp = (handlers.list_provider_models.0)(ctx)
-  assert_eq(resp.status, 200)
-  assert_true(resp.body.contains("claude-sonnet-4-20250514"))
-}
-
-///|
-test "handle_list_provider_models returns empty for unknown provider" {
-  let state = SettingsState::new()
-  let handlers = create_settings_handlers(state)
-  let ctx = @api.ApiRequestContext::new(
-    meth="GET",
-    path="/api/v1/settings/providers/unknown/models",
-    headers={},
-    body="",
-    role=@api.ApiRole::Admin,
-  )
-  let resp = (handlers.list_provider_models.0)(ctx)
-  assert_eq(resp.status, 200)
-  assert_true(resp.body.contains("[]"))
-}
-
-// =============================================================================
 // PUT /settings/providers/{name} use_responses_api Tests
 // =============================================================================
 

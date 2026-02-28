@@ -91,9 +91,6 @@ pub fn create_settings_handlers(
     update_provider: @api.RouteHandler(fn(ctx) {
       handle_update_provider(state, ctx)
     }),
-    list_provider_models: @api.RouteHandler(fn(ctx) {
-      handle_list_provider_models(state, ctx)
-    }),
   }
 }
 
@@ -519,33 +516,3 @@ fn handle_update_model_inference(
   }
 }
 
-///|
-/// GET /settings/providers/{name}/models - List known models for a provider
-fn handle_list_provider_models(
-  _state : SettingsState,
-  ctx : @api.ApiRequestContext,
-) -> @api.ApiResponse {
-  if ctx.segments.length() < 3 {
-    return @api.error_response(400, "bad_request", "Provider name is required")
-  }
-  let provider_name = ctx.segments[2]
-  let models = get_known_models_for_provider(provider_name)
-  let model_json : Array[Json] = models.map(fn(m) { Json::string(m) })
-  @api.json_response(200, { "data": Json::array(model_json) })
-}
-
-///|
-/// 主要プロバイダの既知モデルリスト
-fn get_known_models_for_provider(provider : String) -> Array[String] {
-  match provider {
-    "anthropic" =>
-      [
-        "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-5-haiku-20241022",
-      ]
-    "openai" =>
-      ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1", "o1-mini", "o3-mini"]
-    "groq" =>
-      ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"]
-    _ => []
-  }
-}
