@@ -180,9 +180,13 @@ export function useHistoryNavigation(): HistoryNavigation {
 
   const resume = useCallback(async () => {
     if (!selectedSessionId) return;
-    const result = await resumeMutation.mutateAsync(selectedSessionId);
-    localStorage.setItem('mukuro_chat_id', result.chat_id);
-    navigate(`/chat?resumed=${encodeURIComponent(result.chat_id)}`);
+    try {
+      const result = await resumeMutation.mutateAsync(selectedSessionId);
+      localStorage.setItem('mukuro_chat_id', result.chat_id);
+      navigate(`/chat?resumed=${encodeURIComponent(result.chat_id)}`);
+    } catch (err) {
+      console.error('Failed to resume session:', err);
+    }
   }, [selectedSessionId, resumeMutation, navigate]);
 
   const refresh = useCallback(() => {

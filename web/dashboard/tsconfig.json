@@ -18,7 +18,10 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "react-editor-ui/viewers/MarkdownViewer/parser/*": [
+        "./node_modules/react-editor-ui/src/viewers/MarkdownViewer/parser/*"
+      ]
     }
   },
   "include": ["src"]

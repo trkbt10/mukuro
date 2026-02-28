@@ -106,23 +106,22 @@ pub impl @interfaces.ProcessExecutor for NativeProcessExecutor with exec(
       raise ProcessError::ExecutionFailed(msg)
     e => raise e
   }
-  match c_popen(string_to_cstring(cmd), string_to_cstring("r")) {
-    Some(pipe) => {
-      let buffer = Bytes::new(65536)
-      let bytes_read = c_fread(buffer, 1, 65536, pipe)
-      let exit_code = c_pclose(pipe)
-      let stdout = if bytes_read > 0 {
-        @bytes.copy_slice(buffer[:bytes_read])
-      } else {
-        Bytes::new(0)
-      }
-      let actual_exit_code = (exit_code.reinterpret_as_uint() >> 8)
-        .land(0xFFU)
-        .reinterpret_as_int()
-      { exit_code: actual_exit_code, stdout, stderr: Bytes::new(0) }
-    }
-    None => raise ProcessError::ExecutionFailed("Failed to execute: \{command}")
+  let handle = c_popen_handle(string_to_utf8_cstring(cmd), string_to_utf8_cstring("r"))
+  if handle == 0L {
+    raise ProcessError::ExecutionFailed("Failed to execute: \{command}")
   }
+  let buffer = Bytes::new(65536)
+  let bytes_read = c_fread_handle(buffer, 1, 65536, handle)
+  let exit_code = c_pclose_handle(handle)
+  let stdout = if bytes_read > 0 {
+    @bytes.copy_slice(buffer[:bytes_read])
+  } else {
+    Bytes::new(0)
+  }
+  let actual_exit_code = (exit_code.reinterpret_as_uint() >> 8)
+    .land(0xFFU)
+    .reinterpret_as_int()
+  { exit_code: actual_exit_code, stdout, stderr: Bytes::new(0) }
 }
 
 ///|
@@ -149,7 +148,6 @@ pub fn NativeProcessExecutor::shell(
   command : String,
 ) -> @interfaces.ProcessResult raise ProcessError {
   ignore(self)
-  // Call implementation directly to get correct error type
   let cmd = build_command(
     "sh",
     ["-c", command],
@@ -157,23 +155,22 @@ pub fn NativeProcessExecutor::shell(
   ) catch {
     e => raise e
   }
-  match c_popen(string_to_cstring(cmd), string_to_cstring("r")) {
-    Some(pipe) => {
-      let buffer = Bytes::new(65536)
-      let bytes_read = c_fread(buffer, 1, 65536, pipe)
-      let exit_code = c_pclose(pipe)
-      let stdout = if bytes_read > 0 {
-        @bytes.copy_slice(buffer[:bytes_read])
-      } else {
-        Bytes::new(0)
-      }
-      let actual_exit_code = (exit_code.reinterpret_as_uint() >> 8)
-        .land(0xFFU)
-        .reinterpret_as_int()
-      { exit_code: actual_exit_code, stdout, stderr: Bytes::new(0) }
-    }
-    None => raise ProcessError::ExecutionFailed("Failed to execute: sh")
+  let handle = c_popen_handle(string_to_utf8_cstring(cmd), string_to_utf8_cstring("r"))
+  if handle == 0L {
+    raise ProcessError::ExecutionFailed("Failed to execute: sh")
   }
+  let buffer = Bytes::new(65536)
+  let bytes_read = c_fread_handle(buffer, 1, 65536, handle)
+  let exit_code = c_pclose_handle(handle)
+  let stdout = if bytes_read > 0 {
+    @bytes.copy_slice(buffer[:bytes_read])
+  } else {
+    Bytes::new(0)
+  }
+  let actual_exit_code = (exit_code.reinterpret_as_uint() >> 8)
+    .land(0xFFU)
+    .reinterpret_as_int()
+  { exit_code: actual_exit_code, stdout, stderr: Bytes::new(0) }
 }
 
 ///|

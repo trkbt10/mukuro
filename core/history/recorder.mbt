@@ -144,6 +144,30 @@ fn zero_pad2(n : Int) -> String {
 }
 
 ///|
+/// session_id (channel:chat_id) を分離する
+/// "web_chat:abc-123" → ("web_chat", "abc-123")
+/// コロンなしの場合は ("default", session_id) を返す
+pub fn split_session_id(session_id : String) -> (String, String) {
+  let channel_buf = StringBuilder::new()
+  let chat_id_buf = StringBuilder::new()
+  let mut found_colon = false
+  for c in session_id {
+    if !found_colon && c == ':' {
+      found_colon = true
+    } else if found_colon {
+      chat_id_buf.write_char(c)
+    } else {
+      channel_buf.write_char(c)
+    }
+  }
+  if found_colon {
+    (channel_buf.to_string(), chat_id_buf.to_string())
+  } else {
+    ("default", session_id)
+  }
+}
+
+///|
 /// 文字列を非負整数にパース、失敗時は None を返す
 /// 数字以外の文字を含む場合も None
 pub fn parse_int_string(s : String) -> Int? {

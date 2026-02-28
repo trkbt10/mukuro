@@ -1263,12 +1263,30 @@ int moonbit_pclose_handle(int64_t handle) {
 }
 
 /*
+ * fwrite with handle
+ */
+int moonbit_fwrite_handle(const unsigned char* data, int size, int nmemb, int64_t handle) {
+    FILE* f = (FILE*)(uintptr_t)handle;
+    if (!f) return -1;
+    return (int)fwrite(data, (size_t)size, (size_t)nmemb, f);
+}
+
+/*
  * fclose with handle
  */
 int moonbit_fclose_handle(int64_t handle) {
     FILE* f = (FILE*)(uintptr_t)handle;
     if (!f) return -1;
     return fclose(f);
+}
+
+/*
+ * fflush with handle
+ */
+int moonbit_fflush_handle(int64_t handle) {
+    FILE* f = (FILE*)(uintptr_t)handle;
+    if (!f) return -1;
+    return fflush(f);
 }
 
 /*
@@ -1457,10 +1475,29 @@ int moonbit_write_stdout(const unsigned char* data, int len) {
 }
 
 /*
- * fflush wrapper
+ * stderrにバイト列を書き込む
+ */
+int moonbit_write_stderr(const unsigned char* data, int len) {
+    if (!data || len <= 0) return -1;
+
+    size_t written = fwrite(data, 1, (size_t)len, stderr);
+    fflush(stderr);
+    return (int)written;
+}
+
+/*
+ * fflush wrapper (stdout)
  */
 int moonbit_fflush_stdout(void) {
     return fflush(stdout);
+}
+
+/*
+ * fflush wrapper (arbitrary FILE*)
+ */
+int moonbit_fflush(FILE* stream) {
+    if (!stream) return -1;
+    return fflush(stream);
 }
 
 /*

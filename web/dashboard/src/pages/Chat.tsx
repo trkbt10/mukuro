@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import {
   MessageCircle,
   Plus,
@@ -10,6 +10,8 @@ import {
   AlertCircle,
   ShieldAlert,
 } from 'lucide-react';
+import { MarkdownViewer } from 'react-editor-ui/viewers/MarkdownViewer';
+import { parseTable } from 'react-editor-ui/viewers/MarkdownViewer/parser/table-detector';
 import { Badge, IconButton } from '@/components/ui';
 import {
   useChat,
@@ -18,6 +20,7 @@ import {
   type ChatMessage,
   type ChatStatus,
 } from '@/hooks/useChat';
+import { useMarkdownBlocks, type ParsedBlock } from '@/hooks/useMarkdownParser';
 import { getClient } from '@/lib/client';
 import styles from './Chat.module.css';
 
@@ -58,6 +61,97 @@ function ThinkingIndicator() {
   );
 }
 
+function BlockView({ block }: { block: ParsedBlock }) {
+  if (block.type === 'horizontal_rule') {
+    return <hr className={styles.mdHr} />;
+  }
+
+  if (block.type === 'code') {
+    const lang = (block.metadata?.language as string) ?? '';
+    return (
+      <div className={styles.mdCodeBlock}>
+        {lang && lang !== 'text' && (
+          <span className={styles.mdCodeLang}>{lang}</span>
+        )}
+        <pre className={styles.mdPre}>
+          <code>{block.content}</code>
+        </pre>
+      </div>
+    );
+  }
+
+  if (block.type === 'table') {
+    const parsed = parseTable(block.content);
+    if (parsed) {
+      return (
+        <table className={styles.mdTable}>
+          <thead>
+            <tr>
+              {parsed.headers.map((h, i) => (
+                <th key={i} style={{ textAlign: parsed.alignments[i] ?? 'left' }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {parsed.rows.map((row, ri) => (
+              <tr key={ri}>
+                {row.map((cell, ci) => (
+                  <td key={ci} style={{ textAlign: parsed.alignments[ci] ?? 'left' }}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    }
+    return <pre className={styles.mdPre}>{block.content}</pre>;
+  }
+
+  if (block.type === 'list') {
+    const lines = block.content.split('\n').filter(Boolean);
+    const Tag = block.metadata?.ordered ? 'ol' : 'ul';
+    return (
+      <Tag className={styles.mdList}>
+        {lines.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </Tag>
+    );
+  }
+
+  if (block.type === 'header') {
+    const level = (block.metadata?.level as number) ?? 1;
+    const Tag = `h${Math.min(level, 6)}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+    return <Tag className={styles.mdHeader}>{block.content}</Tag>;
+  }
+
+  if (block.type === 'quote') {
+    return <blockquote className={styles.mdQuote}>{block.content}</blockquote>;
+  }
+
+  // text / other
+  return <p className={styles.mdText}>{block.content}</p>;
+}
+
+const AssistantContent = memo(function AssistantContent({
+  content,
+}: {
+  content: string;
+}) {
+  const blocks = useMarkdownBlocks(content);
+  return (
+    <MarkdownViewer value={content} className={styles.markdown}>
+      {blocks.map((block) => (
+        <BlockView key={block.id} block={block} />
+      ))}
+    </MarkdownViewer>
+  );
+});
+
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user';
   return (
@@ -65,7 +159,11 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       className={isUser ? styles.messageRowUser : styles.messageRowAssistant}
     >
       <div className={isUser ? styles.bubbleUser : styles.bubbleAssistant}>
-        {message.content}
+        {isUser ? (
+          message.content
+        ) : (
+          <AssistantContent content={message.content} />
+        )}
       </div>
     </div>
   );
@@ -76,6 +174,7 @@ export function Chat() {
   const { messages, status, errorMsg, sendMessage, clearMessages } =
     useChat(chatId);
   const [input, setInput] = useState('');
+  const composingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -107,7 +206,7 @@ export function Chat() {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter' && !e.shiftKey && !composingRef.current) {
         e.preventDefault();
         handleSend();
       }
@@ -199,6 +298,8 @@ export function Chat() {
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => { composingRef.current = true; }}
+          onCompositionEnd={() => { composingRef.current = false; }}
           placeholder={
             status === 'auth_error'
               ? 'Authentication required — set MUKURO_AUTH_TOKEN'

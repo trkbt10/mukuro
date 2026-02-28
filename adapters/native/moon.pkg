@@ -23,6 +23,7 @@ options(
     "daemon.mbt": [ "native" ],
     "debug_popen_test.mbt": [ "native" ],
     "ffi.mbt": [ "native" ],
+    "file_utils.mbt": [ "native" ],
     "filesystem.mbt": [ "native" ],
     "filesystem_security_test.mbt": [ "native" ],
     "history_recorder.mbt": [ "native" ],

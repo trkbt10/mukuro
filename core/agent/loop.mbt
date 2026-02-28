@@ -310,6 +310,7 @@ pub async fn run_agent_loop(
     // リトライ状態を初期化
     let retry_state = RetryState::new(options.retry_config)
     // モデル呼び出し（リトライロジック付き）
+    // flush ガード: model_invoke 例外時もファイルハンドルを閉じる
     let response = call_model_with_retry(
       deps.model_orchestrator,
       ctx.messages,
@@ -317,7 +318,16 @@ pub async fn run_agent_loop(
       options.model_options,
       options.retry_config,
       retry_state,
-    )
+    ) catch {
+      AgentLoopError::ModelCallFailed(msg) => {
+        record_error(hr, clk, ts, sid, msg)
+        raise AgentLoopError::ModelCallFailed(msg)
+      }
+      other => {
+        safe_flush(hr)
+        raise other
+      }
+    }
     match response {
       @types.ModelResponse::Text(content) => {
         ctx.set_state(AgentState::SendingResponse)
@@ -330,7 +340,10 @@ pub async fn run_agent_loop(
           @types.ModelMessage::Assistant(content~, tool_calls=None),
         )
         deps.session_store.save(session) catch {
-          e => raise AgentLoopError::SessionError(e.to_string())
+          e => {
+            safe_flush(hr)
+            raise AgentLoopError::SessionError(e.to_string())
+          }
         }
         ctx.set_state(AgentState::Completed)
         record_session_end(hr, clk, ts, sid, "completed", ctx.iteration)
@@ -607,13 +620,23 @@ pub async fn run_agent_loop_async(
     ctx.set_state(AgentState::WaitingForModel)
     ctx.increment_iteration()
     // モデル呼び出し（リトライロジック付き）
+    // flush ガード: model_invoke 例外時もファイルハンドルを閉じる
     let response = call_model_with_retry_async(
       deps.model_invoke,
       ctx.messages,
       tool_definitions,
       options.model_options,
       options.retry_config,
-    )
+    ) catch {
+      AgentLoopError::ModelCallFailed(msg) => {
+        record_error(hr, clk, ts, sid, msg)
+        raise AgentLoopError::ModelCallFailed(msg)
+      }
+      other => {
+        safe_flush(hr)
+        raise other
+      }
+    }
     match response {
       @types.ModelResponse::Text(content) => {
         ctx.set_state(AgentState::SendingResponse)
@@ -626,7 +649,10 @@ pub async fn run_agent_loop_async(
           @types.ModelMessage::Assistant(content~, tool_calls=None),
         )
         deps.session_store.save(session) catch {
-          e => raise AgentLoopError::SessionError(e.to_string())
+          e => {
+            safe_flush(hr)
+            raise AgentLoopError::SessionError(e.to_string())
+          }
         }
         ctx.set_state(AgentState::Completed)
         record_session_end(hr, clk, ts, sid, "completed", ctx.iteration)

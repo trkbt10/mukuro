@@ -27,17 +27,8 @@ fn context_path(file : String) -> String {
 
 ///|
 fn read_text_file_optional(path : String) -> String? {
-  let buffer_len = 131072
-  let buffer = Bytes::new(buffer_len)
-  let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(path),
-    buffer,
-    buffer_len,
-  )
-  if read_len <= 0 {
-    return None
-  }
-  @bytes.decode_utf8(buffer[:read_len])
+  let content = @native.native_read_file_text(path) catch { _ => return None }
+  Some(content)
 }
 
 ///|

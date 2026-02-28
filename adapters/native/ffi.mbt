@@ -15,33 +15,6 @@ pub extern "C" fn c_time() -> Int64 = "moonbit_time_now"
 // ============================================================
 
 ///|
-/// C FILE ポインタ
-#external
-pub type CFile
-
-///|
-/// 標準出力に文字列を出力
-#borrow(s)
-pub extern "C" fn c_puts(s : CString) -> Int = "moonbit_puts"
-
-///|
-/// 標準エラーに文字列を出力
-#borrow(s)
-pub extern "C" fn c_fputs(s : CString, stream : CFile) -> Int = "moonbit_fputs"
-
-///|
-/// stderr を取得（ヘルパー関数が必要）
-pub extern "C" fn c_get_stderr() -> CFile = "moonbit_get_stderr"
-
-///|
-/// stdin を取得
-pub extern "C" fn c_get_stdin() -> CFile = "moonbit_get_stdin"
-
-///|
-/// stdout を取得
-pub extern "C" fn c_get_stdout() -> CFile = "moonbit_get_stdout"
-
-///|
 /// stdinから1行読み取る
 /// returns: 読み取ったバイト数（0=EOF、-1=エラー）
 #borrow(buffer)
@@ -54,45 +27,18 @@ pub extern "C" fn c_read_stdin_line(buffer : Bytes, buffer_len : Int) -> Int = "
 pub extern "C" fn c_write_stdout(data : Bytes, len : Int) -> Int = "moonbit_write_stdout"
 
 ///|
-/// stdout をフラッシュ
-pub extern "C" fn c_fflush_stdout() -> Int = "moonbit_fflush_stdout"
+/// stderrに書き込む
+/// returns: 書き込んだバイト数、エラー時-1
+#borrow(data)
+pub extern "C" fn c_write_stderr(data : Bytes, len : Int) -> Int = "moonbit_write_stderr"
 
 ///|
-/// 任意の FILE* をフラッシュ
-pub extern "C" fn c_fflush(stream : CFile) -> Int = "moonbit_fflush"
+/// stdout をフラッシュ
+pub extern "C" fn c_fflush_stdout() -> Int = "moonbit_fflush_stdout"
 
 // ============================================================
 // ファイルシステム
 // ============================================================
-
-///|
-/// ファイルを開く
-#borrow(path, mode)
-pub extern "C" fn c_fopen(path : CString, mode : CString) -> CFile? = "moonbit_fopen"
-
-///|
-/// ファイルを閉じる
-pub extern "C" fn c_fclose(file : CFile) -> Int = "fclose"
-
-///|
-/// ファイルから読み込み
-#borrow(ptr)
-pub extern "C" fn c_fread(
-  ptr : Bytes,
-  size : Int,
-  nmemb : Int,
-  stream : CFile,
-) -> Int = "fread"
-
-///|
-/// ファイルに書き込み
-#borrow(ptr)
-pub extern "C" fn c_fwrite(
-  ptr : Bytes,
-  size : Int,
-  nmemb : Int,
-  stream : CFile,
-) -> Int = "fwrite"
 
 ///|
 /// ファイルの存在確認
@@ -125,20 +71,11 @@ pub extern "C" fn c_list_dir(
 // ============================================================
 
 ///|
-/// コマンドを実行（popen）- 旧API（CString版、非推奨）
-#borrow(command, mode)
-pub extern "C" fn c_popen(command : CString, mode : CString) -> CFile? = "moonbit_popen"
-
-///|
 /// コマンドを実行（popen）- UTF-8 Bytes版
 /// command と mode は null終端されたUTF-8バイト列
 /// 戻り値はハンドル（Int64）、0は失敗
 #borrow(command, mode)
 pub extern "C" fn c_popen_handle(command : Bytes, mode : Bytes) -> Int64 = "moonbit_popen_bytes"
-
-///|
-/// popen を閉じる
-pub extern "C" fn c_pclose(stream : CFile) -> Int = "moonbit_pclose"
 
 ///|
 /// pclose - ハンドル版
@@ -167,6 +104,20 @@ pub extern "C" fn c_system(command : CString) -> Int = "system"
 /// ファイルを開く（fopen）- UTF-8 Bytes版、ハンドル返却
 #borrow(path, mode)
 pub extern "C" fn c_fopen_handle(path : Bytes, mode : Bytes) -> Int64 = "moonbit_fopen_bytes"
+
+///|
+/// ファイルに書き込み - ハンドル版
+#borrow(data)
+pub extern "C" fn c_fwrite_handle(
+  data : Bytes,
+  size : Int,
+  nmemb : Int,
+  handle : Int64,
+) -> Int = "moonbit_fwrite_handle"
+
+///|
+/// ファイルをフラッシュ - ハンドル版
+pub extern "C" fn c_fflush_handle(handle : Int64) -> Int = "moonbit_fflush_handle"
 
 // ============================================================
 // 環境変数

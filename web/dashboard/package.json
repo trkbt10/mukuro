@@ -30,7 +30,7 @@
     "lucide-react": "^0.575.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-editor-ui": "^0.0.1",
+    "react-editor-ui": "^0.1.1",
     "react-panel-layout": "^0.7.1",
     "react-router-dom": "^7.13.1",
     "react-use": "^17.6.0",

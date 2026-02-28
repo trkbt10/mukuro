@@ -6,8 +6,10 @@ import { Loading } from '@/components/ui';
 import {
   BentoGrid, BentoBlock,
   SvgCardShell, SvgCardShellLink,
-  SvgIcon, SvgH3, SvgH4, SvgBody, SvgLabel, SvgLabelUpper, SvgDisplay,
+  SvgIcon, SvgH3, SvgH4, SvgBody, SvgLabel, SvgLabelUpper,
+  SvgText,
   contentArea, contentZones, splitH, splitV,
+  TYPE,
   type BentoSize, type Rect,
 } from '@/components/bento';
 import { DraggableBlock } from '@/components/bento/DraggableBlock';
@@ -46,6 +48,17 @@ type StatCardProps = {
 
 const StatCard: FC<StatCardProps> = ({ size, label, value, fallbackChar, iconBg, iconText, clipId }) => {
   const { top, bottom } = contentZones(size);
+
+  // Split bottom zone: ~30% for label, ~70% for display value
+  const labelH = TYPE.labelUpper.fontSize * (TYPE.labelUpper.lineHeight ?? 1.4);
+  const displayMaxH = bottom.h - labelH - 4; // 4px min gap
+  // Scale display fontSize to fit: max 48, but clamp to available height
+  const displayFontSize = Math.min(48, displayMaxH / 1.1);
+  const displayRenderH = displayFontSize * 1.1;
+  // Position label at top of bottom zone, display below with even gap
+  const gap = Math.max((bottom.h - labelH - displayRenderH) / 2, 2);
+  const displayY = bottom.y + labelH + gap;
+
   return (
     <>
       <SvgIcon
@@ -57,7 +70,12 @@ const StatCard: FC<StatCardProps> = ({ size, label, value, fallbackChar, iconBg,
         textFill={iconText}
       />
       <SvgLabelUpper x={bottom.x} y={bottom.y}>{label}</SvgLabelUpper>
-      <SvgDisplay x={bottom.x} y={bottom.y + 18}>{value}</SvgDisplay>
+      <SvgText
+        preset={{ ...TYPE.display, fontSize: displayFontSize }}
+        text={value}
+        x={bottom.x}
+        y={displayY}
+      />
     </>
   );
 };
@@ -66,6 +84,34 @@ type SettingsEntry = { label: string; value: string };
 
 const SettingsCard: FC<{ size: BentoSize; entries: SettingsEntry[] }> = ({ size, entries }) => {
   const cr = contentArea(size);
+
+  const labelH = TYPE.labelUpper.fontSize * (TYPE.labelUpper.lineHeight ?? 1.4);
+  const bodyH = TYPE.body.fontSize * (TYPE.body.lineHeight ?? 1.5);
+
+  // Compact (1x1): each zone is ~28px but label+body need ~38px.
+  // Use inline layout: label and value on same line, no title row.
+  const compact = cr.h < (entries.length + 1) * (labelH + bodyH + 4);
+
+  if (compact) {
+    const vSplit = splitV(cr, entries.length);
+    return (
+      <>
+        {entries.map((entry, i) => {
+          const zone = vSplit.cells[i]!;
+          // Stack label + body from zone top, centered vertically within zone
+          const contentH = labelH + bodyH;
+          const topPad = Math.max((zone.h - contentH) / 2, 0);
+          return (
+            <g key={entry.label}>
+              <SvgLabelUpper x={zone.x} y={zone.y + topPad}>{entry.label}</SvgLabelUpper>
+              <SvgBody x={zone.x} y={zone.y + topPad + labelH} fill={TEXT}>{entry.value}</SvgBody>
+            </g>
+          );
+        })}
+      </>
+    );
+  }
+
   const vSplit = splitV(cr, entries.length + 1);
   const titleZone = vSplit.cells[0]!;
 
@@ -74,10 +120,12 @@ const SettingsCard: FC<{ size: BentoSize; entries: SettingsEntry[] }> = ({ size,
       <SvgH4 x={titleZone.x} y={titleZone.y}>{'Settings'}</SvgH4>
       {entries.map((entry, i) => {
         const zone = vSplit.cells[i + 1]!;
+        const gap = Math.max((zone.h - labelH - bodyH) * 0.3, 2);
+        const valueY = zone.y + labelH + gap;
         return (
           <g key={entry.label}>
             <SvgLabelUpper x={zone.x} y={zone.y}>{entry.label}</SvgLabelUpper>
-            <SvgBody x={zone.x} y={zone.y + 16} fill={TEXT}>{entry.value}</SvgBody>
+            <SvgBody x={zone.x} y={valueY} fill={TEXT}>{entry.value}</SvgBody>
           </g>
         );
       })}
@@ -87,10 +135,14 @@ const SettingsCard: FC<{ size: BentoSize; entries: SettingsEntry[] }> = ({ size,
 
 const PluginListTitle: FC<{ size: BentoSize; count: number }> = ({ size, count }) => {
   const cr = contentArea(size);
+  // Align count badge to right edge of content area, vertically centered with title
+  const h3H = TYPE.h3.fontSize * (TYPE.h3.lineHeight ?? 1.35);
+  const labelH = TYPE.label.fontSize * (TYPE.label.lineHeight ?? 1.4);
+  const labelY = cr.y + (h3H - labelH) / 2;
   return (
     <>
       <SvgH3 x={cr.x} y={cr.y}>{'Plugins'}</SvgH3>
-      <SvgLabel x={cr.x + cr.w - 24} y={cr.y + 4} fill={TEXT_SEC}>{`${count}`}</SvgLabel>
+      <SvgLabel x={cr.x + cr.w} y={labelY} fill={TEXT_SEC} textAnchor="end">{`${count}`}</SvgLabel>
     </>
   );
 };
@@ -103,6 +155,49 @@ type HealthCardProps = {
 
 const HealthCard: FC<HealthCardProps> = ({ size, healthStatus, isLive }) => {
   const cr = contentArea(size);
+
+  const coreOk = healthStatus !== 'unhealthy';
+  const apiOk = isLive;
+  const coreColor = coreOk ? '#22c55e' : '#ef4444';
+  const apiColor = apiOk ? '#22c55e' : '#ef4444';
+  const coreLabel = coreOk ? 'Healthy' : 'Unhealthy';
+  const apiLabel = apiOk ? 'Healthy' : 'Down';
+
+  const h4H = TYPE.h4.fontSize * (TYPE.h4.lineHeight ?? 1.35);
+  const labelH = TYPE.label.fontSize * (TYPE.label.lineHeight ?? 1.4);
+  const dotR = 4;
+
+  // Compact (1x1): vertical stack — title, then two status rows
+  // Wide layout needs at least ~160px width for horizontal split
+  const compact = cr.w < 160;
+
+  if (compact) {
+    const vSplit = splitV(cr, 3);
+    const titleZone = vSplit.cells[0]!;
+    const coreZone = vSplit.cells[1]!;
+    const apiZone = vSplit.cells[2]!;
+
+    const renderCompactRow = (zone: Rect, color: string, name: string, val: string) => {
+      const cy = zone.y + zone.h / 2;
+      return (
+        <g key={name}>
+          <circle cx={zone.x + dotR + 2} cy={cy} r={dotR} fill={color} />
+          <SvgLabel x={zone.x + dotR * 3 + 4} y={cy - labelH / 2}>{name}</SvgLabel>
+          <SvgBody x={zone.x + zone.w} y={cy - labelH / 2} textAnchor="end">{val}</SvgBody>
+        </g>
+      );
+    };
+
+    return (
+      <>
+        <SvgH4 x={titleZone.x} y={titleZone.y}>{'Health'}</SvgH4>
+        {renderCompactRow(coreZone, coreColor, 'Core', coreLabel)}
+        {renderCompactRow(apiZone, apiColor, 'API', apiLabel)}
+      </>
+    );
+  }
+
+  // Wide layout: horizontal split — title column + status rows
   const hSplit = splitH(cr, 3);
   const left = hSplit.cells[0]!;
   const right: Rect = {
@@ -115,25 +210,31 @@ const HealthCard: FC<HealthCardProps> = ({ size, healthStatus, isLive }) => {
   const row1 = statusSplit.cells[0]!;
   const row2 = statusSplit.cells[1]!;
 
-  const coreOk = healthStatus !== 'unhealthy';
-  const apiOk = isLive;
-  const coreColor = coreOk ? '#22c55e' : '#ef4444';
-  const apiColor = apiOk ? '#22c55e' : '#ef4444';
-  const coreLabel = coreOk ? 'Healthy' : 'Unhealthy';
-  const apiLabel = apiOk ? 'Healthy' : 'Down';
+  const bodyH = TYPE.body.fontSize * (TYPE.body.lineHeight ?? 1.5);
+  const leftGap = Math.max((left.h - h4H - bodyH) * 0.15, 2);
+  const subtitleY = left.y + h4H + leftGap;
+
+  const dotPad = dotR * 3;
+  const textMidOffset = labelH / 2;
+
+  const renderRow = (row: Rect, color: string, name: string, val: string) => {
+    const cy = row.y + row.h / 2;
+    const textY = cy - textMidOffset;
+    return (
+      <g key={name}>
+        <circle cx={row.x + dotR + 2} cy={cy} r={dotR} fill={color} />
+        <SvgLabel x={row.x + dotPad + 4} y={textY}>{name}</SvgLabel>
+        <SvgBody x={row.x + row.w} y={textY} textAnchor="end">{val}</SvgBody>
+      </g>
+    );
+  };
 
   return (
     <>
       <SvgH4 x={left.x} y={left.y}>{'Health'}</SvgH4>
-      <SvgBody x={left.x} y={left.y + 24}>{'System'}</SvgBody>
-
-      <circle cx={row1.x + 6} cy={row1.y + row1.h / 2} r={4} fill={coreColor} />
-      <SvgLabel x={row1.x + 18} y={row1.y + row1.h / 2 - 7}>{'Core'}</SvgLabel>
-      <SvgBody x={row1.x + row1.w - 50} y={row1.y + row1.h / 2 - 7}>{coreLabel}</SvgBody>
-
-      <circle cx={row2.x + 6} cy={row2.y + row2.h / 2} r={4} fill={apiColor} />
-      <SvgLabel x={row2.x + 18} y={row2.y + row2.h / 2 - 7}>{'API'}</SvgLabel>
-      <SvgBody x={row2.x + row2.w - 50} y={row2.y + row2.h / 2 - 7}>{apiLabel}</SvgBody>
+      <SvgBody x={left.x} y={subtitleY}>{'System'}</SvgBody>
+      {renderRow(row1, coreColor, 'Core', coreLabel)}
+      {renderRow(row2, apiColor, 'API', apiLabel)}
     </>
   );
 };

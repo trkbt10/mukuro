@@ -20,31 +20,6 @@ pub fn PluginManagerState::new() -> PluginManagerState {
 }
 
 ///|
-/// Initialize with builtin tools
-pub fn PluginManagerState::init_builtins(self : PluginManagerState) -> Unit {
-  // datetime tool
-  self.plugins["datetime"] = @interfaces.PluginState::builtin(
-    id="datetime",
-    description="Get current date and time in various formats",
-  )
-  // memory tool
-  self.plugins["memory"] = @interfaces.PluginState::builtin(
-    id="memory",
-    description="Store and retrieve information across conversation turns",
-  )
-  // message tool
-  self.plugins["message"] = @interfaces.PluginState::builtin(
-    id="message",
-    description="Send messages to users or other systems",
-  )
-  // spawn tool
-  self.plugins["spawn"] = @interfaces.PluginState::builtin(
-    id="spawn",
-    description="Spawn sub-agents for parallel task execution",
-  )
-}
-
-///|
 /// Add or update plugin state
 pub fn PluginManagerState::set_plugin(
   self : PluginManagerState,

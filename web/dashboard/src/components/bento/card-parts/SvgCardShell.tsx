@@ -56,7 +56,7 @@ export const SvgCardShell: FC<SvgCardShellProps> = ({ size, children, overlay, t
         viewBox={`0 0 ${w} ${h}`}
         width="100%"
         height="100%"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"
       >
         {children}
@@ -99,7 +99,7 @@ export const SvgCardShellLink: FC<SvgCardShellLinkProps> = ({
         viewBox={`0 0 ${w} ${h}`}
         width="100%"
         height="100%"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid meet"
         xmlns="http://www.w3.org/2000/svg"
       >
         {children}

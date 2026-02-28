@@ -55,22 +55,15 @@ fn NativeLogger::log(
 fn output_line(output : LogOutput, line : String) -> Unit {
   match output {
     LogOutput::Stdout => {
-      let _ = c_puts(string_to_cstring(line))
+      let data = @utf8.encode(line + "\n")
+      let _ = c_write_stdout(data, data.length())
     }
     LogOutput::Stderr => {
-      let stderr = c_get_stderr()
-      let _ = c_fputs(string_to_cstring(line + "\n"), stderr)
+      let data = @utf8.encode(line + "\n")
+      let _ = c_write_stderr(data, data.length())
     }
     LogOutput::File(path) =>
-      match c_fopen(string_to_cstring(path), string_to_cstring("a")) {
-        Some(file) => {
-          let out = line + "\n"
-          let bytes = @bytes.encode_utf8(out)
-          let _ = c_fwrite(bytes, 1, bytes.length(), file)
-          let _ = c_fclose(file)
-        }
-        None => ()
-      }
+      native_append_file_text(path, line + "\n") catch { _ => () }
   }
 }
 

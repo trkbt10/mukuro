@@ -217,17 +217,7 @@ fn persist_config_to_file(config : @types.MukuroConfig, path : String) -> Unit {
 ///|
 /// Write config content to file
 fn write_config_file(path : String, content : String) -> Unit {
-  let cpath = @native.string_to_cstring(path)
-  let mode = @native.string_to_cstring("w")
-  let file = @native.c_fopen(cpath, mode)
-  match file {
-    Some(f) => {
-      let bytes = @utf8.encode(content)
-      ignore(@native.c_fwrite(bytes, 1, bytes.length(), f))
-      ignore(@native.c_fclose(f))
-    }
-    None => () // Failed to open file, silently ignore
-  }
+  @native.native_write_file_text(path, content) catch { _ => () }
 }
 
 ///|

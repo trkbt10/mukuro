@@ -74,6 +74,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'react-editor-ui/viewers/MarkdownViewer/parser': path.resolve(
+        __dirname,
+        'node_modules/react-editor-ui/src/viewers/MarkdownViewer/parser',
+      ),
     },
   },
   server: {
