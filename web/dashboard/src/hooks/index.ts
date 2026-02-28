@@ -80,8 +80,10 @@ export {
 } from './useChat';
 
 export {
+  useHistoryNavigation,
   useHistoryDates,
   useHistorySessions,
   useHistorySession,
   useResumeSession,
+  formatHistoryDate,
 } from './useHistory';

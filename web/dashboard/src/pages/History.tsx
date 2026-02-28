@@ -1,5 +1,3 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   History as HistoryIcon,
   ChevronLeft,
@@ -15,18 +13,9 @@ import {
   Loader2,
 } from 'lucide-react';
 import { IconButton, Badge } from '@/components/ui';
-import {
-  useHistoryDates,
-  useHistorySessions,
-  useHistorySession,
-  useResumeSession,
-} from '@/hooks';
+import { useHistoryNavigation, formatHistoryDate } from '@/hooks';
 import type { HistoryRecord } from '@mukuro/client';
 import styles from './History.module.css';
-
-function formatDate(year: number, month: number, day: number) {
-  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
 
 function formatTimestamp(ts: number) {
   const d = new Date(ts);
@@ -133,67 +122,7 @@ function RecordItem({ record }: { record: HistoryRecord }) {
 }
 
 export function History() {
-  const navigate = useNavigate();
-  const { data: dates, isLoading: datesLoading, refetch: refetchDates } = useHistoryDates();
-
-  const now = useMemo(() => new Date(), []);
-  const [viewYear, setViewYear] = useState(now.getFullYear());
-  const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
-
-  const [selectedDate, setSelectedDate] = useState<{ year: number; month: number; day: number } | null>(null);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-
-  const { data: sessions } = useHistorySessions(
-    selectedDate?.year ?? null,
-    selectedDate?.month ?? null,
-    selectedDate?.day ?? null,
-  );
-
-  const { data: sessionDetail, isLoading: detailLoading } = useHistorySession(selectedSessionId);
-
-  const resumeMutation = useResumeSession();
-
-  // Filter dates to the current month view
-  const monthDates = useMemo(() => {
-    if (!dates) return [];
-    return dates
-      .filter(d => d.year === viewYear && d.month === viewMonth)
-      .sort((a, b) => b.day - a.day);
-  }, [dates, viewYear, viewMonth]);
-
-  const handlePrevMonth = useCallback(() => {
-    if (viewMonth === 1) {
-      setViewYear(y => y - 1);
-      setViewMonth(12);
-    } else {
-      setViewMonth(m => m - 1);
-    }
-  }, [viewMonth]);
-
-  const handleNextMonth = useCallback(() => {
-    if (viewMonth === 12) {
-      setViewYear(y => y + 1);
-      setViewMonth(1);
-    } else {
-      setViewMonth(m => m + 1);
-    }
-  }, [viewMonth]);
-
-  const handleSelectDate = useCallback((year: number, month: number, day: number) => {
-    setSelectedDate({ year, month, day });
-    setSelectedSessionId(null);
-  }, []);
-
-  const handleResume = useCallback(async () => {
-    if (!selectedSessionId) return;
-    try {
-      const result = await resumeMutation.mutateAsync(selectedSessionId);
-      localStorage.setItem('mukuro_chat_id', result.chat_id);
-      navigate(`/chat?resumed=${encodeURIComponent(result.chat_id)}`);
-    } catch (err) {
-      console.error('Failed to resume session:', err);
-    }
-  }, [selectedSessionId, resumeMutation, navigate]);
+  const h = useHistoryNavigation();
 
   return (
     <div className={styles.page}>
@@ -201,9 +130,9 @@ export function History() {
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>History</h1>
-          {dates && (
+          {h.dates && (
             <Badge variant="default" size="sm">
-              {dates.length} date{dates.length !== 1 ? 's' : ''}
+              {h.dates.length} date{h.dates.length !== 1 ? 's' : ''}
             </Badge>
           )}
         </div>
@@ -211,7 +140,7 @@ export function History() {
           <IconButton
             icon={<RefreshCw style={{ width: 14, height: 14 }} />}
             aria-label="Refresh"
-            onClick={() => refetchDates()}
+            onClick={h.refresh}
             variant="ghost"
             size="sm"
           />
@@ -226,17 +155,17 @@ export function History() {
             <IconButton
               icon={<ChevronLeft style={{ width: 14, height: 14 }} />}
               aria-label="Previous month"
-              onClick={handlePrevMonth}
+              onClick={h.prevMonth}
               variant="ghost"
               size="sm"
             />
             <span className={styles.monthLabel}>
-              {viewYear}/{String(viewMonth).padStart(2, '0')}
+              {h.viewYear}/{String(h.viewMonth).padStart(2, '0')}
             </span>
             <IconButton
               icon={<ChevronRight style={{ width: 14, height: 14 }} />}
               aria-label="Next month"
-              onClick={handleNextMonth}
+              onClick={h.nextMonth}
               variant="ghost"
               size="sm"
             />
@@ -244,24 +173,26 @@ export function History() {
 
           {/* Date list */}
           <div className={styles.dateList}>
-            {datesLoading ? (
+            {h.datesLoading ? (
               <div className={styles.loadingState}>
                 <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
               </div>
-            ) : monthDates.length === 0 ? (
+            ) : h.monthDates.length === 0 ? (
               <div className={styles.emptySubtext} style={{ padding: '16px', textAlign: 'center' }}>
                 No history for this month
               </div>
             ) : (
-              monthDates.map(d => {
-                const isSelected = selectedDate?.year === d.year && selectedDate?.month === d.month && selectedDate?.day === d.day;
+              h.monthDates.map(d => {
+                const isSelected = h.selectedDate?.year === d.year
+                  && h.selectedDate?.month === d.month
+                  && h.selectedDate?.day === d.day;
                 return (
                   <div
                     key={`${d.year}-${d.month}-${d.day}`}
                     className={isSelected ? styles.dateItemSelected : styles.dateItem}
-                    onClick={() => handleSelectDate(d.year, d.month, d.day)}
+                    onClick={() => h.selectDate(d.year, d.month, d.day)}
                   >
-                    <span>{formatDate(d.year, d.month, d.day)}</span>
+                    <span>{formatHistoryDate(d.year, d.month, d.day)}</span>
                     <div className={styles.dateBadges}>
                       {Array.from({ length: Math.min(d.session_count, 5) }).map((_, i) => (
                         <span key={i} className={styles.dateDot} />
@@ -274,14 +205,14 @@ export function History() {
           </div>
 
           {/* Sessions sub-list */}
-          {sessions && sessions.length > 0 && (
+          {h.sessions && h.sessions.length > 0 && (
             <div className={styles.sessionsSection}>
               <div className={styles.sessionsLabel}>Sessions</div>
-              {sessions.map(s => (
+              {h.sessions.map(s => (
                 <div
                   key={s.session_id}
-                  className={selectedSessionId === s.session_id ? styles.sessionItemSelected : styles.sessionItem}
-                  onClick={() => setSelectedSessionId(s.session_id)}
+                  className={h.selectedSessionId === s.session_id ? styles.sessionItemSelected : styles.sessionItem}
+                  onClick={() => h.selectSession(s.session_id)}
                 >
                   <span className={styles.sessionId} title={s.session_id}>
                     {s.chat_id}
@@ -294,34 +225,34 @@ export function History() {
 
         {/* Right panel */}
         <div className={styles.rightPanel}>
-          {selectedSessionId && sessionDetail ? (
+          {h.selectedSessionId && h.sessionDetail ? (
             <>
               {/* Session header */}
               <div className={styles.sessionHeader}>
                 <div>
-                  <div className={styles.sessionTitle}>{selectedSessionId}</div>
+                  <div className={styles.sessionTitle}>{h.selectedSessionId}</div>
                   <div className={styles.sessionMeta}>
-                    {sessionDetail.records.length} record{sessionDetail.records.length !== 1 ? 's' : ''}
+                    {h.sessionDetail.records.length} record{h.sessionDetail.records.length !== 1 ? 's' : ''}
                   </div>
                 </div>
                 <button
                   className={styles.resumeBtn}
-                  onClick={handleResume}
-                  disabled={resumeMutation.isPending}
+                  onClick={h.resume}
+                  disabled={h.resumePending}
                 >
                   <Play style={{ width: 12, height: 12 }} />
-                  {resumeMutation.isPending ? 'Resuming...' : 'Resume Chat'}
+                  {h.resumePending ? 'Resuming...' : 'Resume Chat'}
                 </button>
               </div>
 
               {/* Timeline */}
               <div className={styles.timeline}>
-                {sessionDetail.records.map((record, i) => (
+                {h.sessionDetail.records.map((record, i) => (
                   <RecordItem key={i} record={record} />
                 ))}
               </div>
             </>
-          ) : detailLoading ? (
+          ) : h.detailLoading ? (
             <div className={styles.loadingState}>
               <Loader2 style={{ width: 20, height: 20, animation: 'spin 1s linear infinite' }} />
             </div>
@@ -329,7 +260,7 @@ export function History() {
             <div className={styles.emptyState}>
               <HistoryIcon className={styles.emptyIcon} style={{ width: 48, height: 48 }} />
               <span className={styles.emptyText}>
-                {selectedDate ? 'Select a session to view' : 'Select a date to browse history'}
+                {h.selectedDate ? 'Select a session to view' : 'Select a date to browse history'}
               </span>
             </div>
           )}

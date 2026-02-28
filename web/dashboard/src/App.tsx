@@ -23,6 +23,8 @@ export default function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="chat" element={<Chat />} />
           <Route path="history" element={<History />} />
+          <Route path="history/:date" element={<History />} />
+          <Route path="history/:date/:sessionId" element={<History />} />
           <Route path="plugins" element={<Plugins />} />
           <Route path="plugins/:id" element={<PluginDetail />} />
           <Route path="context" element={<Context />} />
