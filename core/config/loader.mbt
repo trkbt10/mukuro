@@ -206,18 +206,14 @@ fn parse_model_options(
     Ok(v) => v
     Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  // temperature: defaults to Some(0.7) if not specified
   let temperature : Double? = match
     @config_json_accessors.optional_double_field(obj, "temperature") {
-    Ok(Some(v)) => Some(v)
-    Ok(None) => Some(0.7) // default
+    Ok(v) => v
     Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
-  // max_tokens: defaults to Some(4096) if not specified
   let max_tokens : Int? = match
     @config_json_accessors.optional_int_field(obj, "max_tokens") {
-    Ok(Some(v)) => Some(v)
-    Ok(None) => Some(4096) // default
+    Ok(v) => v
     Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }
   // stop_sequences: None if not specified

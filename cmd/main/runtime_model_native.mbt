@@ -229,7 +229,13 @@ async fn call_openai_impl(
   let body = (if orchestrator.use_responses_api {
     @protocol.build_responses_api_body(model, messages, tools)
   } else {
-    @protocol.build_openai_chat_body(model, messages, tools)
+    @protocol.build_openai_chat_body(
+      model,
+      messages,
+      tools,
+      max_tokens=options.max_tokens,
+      temperature=options.temperature,
+    )
   }).stringify()
   let base = normalize_base_url(orchestrator.base_url)
   let path = if orchestrator.use_responses_api {
@@ -281,6 +287,8 @@ async fn call_anthropic_impl(
     messages,
     tools,
     system=system,
+    max_tokens=options.max_tokens,
+    temperature=options.temperature,
   ).stringify()
   let req : @interfaces.HttpRequest = {
     url: "https://api.anthropic.com/v1/messages",
@@ -317,7 +325,13 @@ async fn call_openai_async_impl(
   let body = (if orchestrator.use_responses_api {
     @protocol.build_responses_api_body(model, messages, tools)
   } else {
-    @protocol.build_openai_chat_body(model, messages, tools)
+    @protocol.build_openai_chat_body(
+      model,
+      messages,
+      tools,
+      max_tokens=options.max_tokens,
+      temperature=options.temperature,
+    )
   }).stringify()
   let base = normalize_base_url(orchestrator.base_url)
   let path = if orchestrator.use_responses_api {
@@ -363,6 +377,8 @@ async fn call_anthropic_async_impl(
     messages,
     tools,
     system=system,
+    max_tokens=options.max_tokens,
+    temperature=options.temperature,
   ).stringify()
   let (response, body_data) = @xhttp.post(
     "https://api.anthropic.com/v1/messages",

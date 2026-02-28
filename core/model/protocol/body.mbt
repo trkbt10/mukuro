@@ -52,7 +52,7 @@ pub fn build_anthropic_body(
   model : String,
   messages : Array[@types.ModelMessage],
   tools : Array[@types.ToolDefinition],
-  max_tokens~ : Int = 4096,
+  max_tokens~ : Int? = None,
   system~ : String = "",
   temperature~ : Double? = None,
 ) -> Json {
@@ -62,9 +62,11 @@ pub fn build_anthropic_body(
     extract_system_message(messages)
   }
   let msgs = messages_to_anthropic_json(messages)
+  // Anthropic API requires max_tokens
+  let effective_max_tokens = max_tokens.or(8192)
   let mut body : Json = {
     "model": model,
-    "max_tokens": max_tokens,
+    "max_tokens": effective_max_tokens,
     "messages": Json::array(msgs),
   }
   if system_msg.length() > 0 {
