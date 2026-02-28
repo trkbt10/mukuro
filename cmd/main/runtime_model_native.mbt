@@ -20,7 +20,9 @@ fn validate_runtime_config_or_error(cfg : RuntimeModelConfig) -> String? {
   let model = cfg.model.trim(chars=" \t\n\r").to_string()
   let base_url = cfg.base_url.trim(chars=" \t\n\r").to_string()
   if provider.length() == 0 {
-    return Some("provider is required in \{default_runtime_config_path()}")
+    return Some(
+      "provider is required in \{default_runtime_config_path()}\n\nRun 'mukuro onboard --provider <provider> --api-key <key>' to initialize configuration.",
+    )
   }
   if is_openai_compatible_provider(provider) {
     if base_url.length() == 0 {

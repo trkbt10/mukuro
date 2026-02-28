@@ -46,6 +46,28 @@ test "ConfigLoaderImpl::load_from_string parses empty config" {
 }
 
 ///|
+test "ConfigLoaderImpl::load_from_string parses flat config format" {
+  let loader = ConfigLoaderImpl::default()
+  let json =
+    #|{
+    #|  "provider": "groq",
+    #|  "api_key": "gsk_test",
+    #|  "model": "openai/gpt-oss-20b",
+    #|  "base_url": "https://api.groq.com/openai",
+    #|  "use_responses_api": true
+    #|}
+  let config = loader.load_from_string(json)
+  // model_name should come from top-level "model", not the hardcoded default
+  inspect(config.agent.model_options.model_name, content="openai/gpt-oss-20b")
+  // provider should be extracted from top-level fields
+  inspect(config.providers.length(), content="1")
+  inspect(config.providers[0].name, content="groq")
+  inspect(config.providers[0].base_url, content="Some(\"https://api.groq.com/openai\")")
+  inspect(config.providers[0].default_model, content="openai/gpt-oss-20b")
+  inspect(config.providers[0].api_key, content="Some(\"gsk_test\")")
+}
+
+///|
 test "ConfigLoaderImpl::load_from_string parses provider config" {
   let loader = ConfigLoaderImpl::default()
   let json =

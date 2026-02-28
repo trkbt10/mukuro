@@ -1,0 +1,21 @@
+///|
+/// Config constants (native target)
+
+///|
+/// デフォルト設定ファイルパスを取得
+/// Standard path のみを返す（フォールバックなし）
+pub fn default_runtime_config_path() -> String {
+  @config.config_file_for(@config.PathMode::Standard)
+}
+
+///|
+/// 設定ファイルが存在するか確認
+pub fn runtime_config_exists(path : String) -> Bool {
+  @native.c_file_exists(@native.string_to_cstring(path)) == 1
+}
+
+///|
+/// 設定ファイル未検出時のエラーメッセージ
+pub fn config_not_found_message(path : String) -> String {
+  "Configuration file not found: \{path}\n\nRun 'mukuro onboard --provider <provider> --api-key <key>' to initialize configuration."
+}

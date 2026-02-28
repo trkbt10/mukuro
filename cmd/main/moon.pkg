@@ -36,6 +36,8 @@ options(
   link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
   targets: {
     "api_v1_e2e_native_test.mbt": [ "native" ],
+    "config_constants_native.mbt": [ "native" ],
+    "config_constants_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "config_file_native.mbt": [ "native" ],
     "control_api_native.mbt": [ "native" ],
     "control_api_native_test.mbt": [ "native" ],

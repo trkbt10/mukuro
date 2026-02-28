@@ -54,6 +54,17 @@ pub fn config_file() -> String {
 }
 
 ///|
+/// 指定したPathModeに対応する設定ファイルパスを取得
+pub fn config_file_for(mode : PathMode) -> String {
+  let dir = match mode {
+    Standard => @dirs.config_dir_for(app_name)
+    Local => mukuro_dir_name
+    Custom(base) => base
+  }
+  dir + "/config.json"
+}
+
+///|
 /// 現在のモードに応じたデータディレクトリを取得
 pub fn data_dir() -> String {
   match path_mode.val {
@@ -113,4 +124,10 @@ pub fn auth_log_file() -> String {
 /// ワークスペースディレクトリのパスを取得
 pub fn workspace_dir() -> String {
   data_dir() + "/workspace"
+}
+
+///|
+/// 履歴ディレクトリのベースパスを取得
+pub fn history_dir() -> String {
+  data_dir() + "/history"
 }

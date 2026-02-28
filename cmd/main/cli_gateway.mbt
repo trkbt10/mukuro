@@ -25,6 +25,9 @@ async fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   }
   // 設定パスの解決
   let config_path = opts.config_path.unwrap_or(default_runtime_config_path())
+  if not(runtime_config_exists(config_path)) {
+    return CliResult::Error(config_not_found_message(config_path))
+  }
   set_runtime_model_config_path_for_process(config_path)
   bootstrap_runtime_channels_from_config(config_path)
   // プラグインシステムの初期化（native transport使用）
@@ -75,17 +78,16 @@ async fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   let status = global_gateway.status()
 
   // API v1 state を初期化（設定読み込み）
+  let config_text = read_config_text_impl(config_path) catch {
+    _ => return CliResult::Error(config_not_found_message(config_path))
+  }
   let mukuro_config = @config.ConfigLoaderImpl::default().load_from_string(
-    read_config_text_impl(config_path) catch { _ => "{}" },
+    config_text,
   ) catch {
     _ =>
-      {
-        agent: @types.AgentConfig::default(),
-        providers: [],
-        fallback: @types.FallbackConfig::new(),
-        channels: [],
-        thinking: @types.ThinkingConfig::default(),
-      }
+      return CliResult::Error(
+        "Failed to parse configuration: \{config_path}\nCheck the file format or run 'mukuro onboard' to reinitialize.",
+      )
   }
   init_api_v1_state(mukuro_config, config_path)
 
