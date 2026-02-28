@@ -16,9 +16,13 @@ pub fn execute_web_tool_native(args : Json) -> @defs.ToolExecutionResult {
       }
       let http_method = @defs.get_string_arg(args, "method").unwrap_or("GET")
       // curlコマンドを構築
+      // -L: リダイレクト追従, --max-redirs 10: 最大10回
+      // --connect-timeout 10: 接続タイムアウト10秒
+      // --max-time 30: 全体タイムアウト30秒
       let escaped_url = escape_single_quote(url)
-      let mut cmd = "curl -s -w '\\n%{http_code}' -X '\{http_method}'"
-      // ヘッダーを追加
+      let mut cmd = "curl -s -L --max-redirs 10 --connect-timeout 10 --max-time 30 -w '\\n%{http_code}' -X '\{http_method}'"
+      // ヘッダーを追加（User-Agentがなければデフォルトを設定）
+      let mut has_user_agent = false
       match args {
         { "headers": Object(h), .. } =>
           for key, value in h {
@@ -27,11 +31,18 @@ pub fn execute_web_tool_native(args : Json) -> @defs.ToolExecutionResult {
                 let ek = escape_single_quote(key)
                 let ev = escape_single_quote(v)
                 cmd = cmd + " -H '\{ek}: \{ev}'"
+                if key.to_lower() == "user-agent" {
+                  has_user_agent = true
+                }
               }
               _ => ()
             }
           }
         _ => ()
+      }
+      if not(has_user_agent) {
+        cmd = cmd +
+          " -H 'User-Agent: Mozilla/5.0 (compatible; Mukuro/1.0)'"
       }
       // ボディを追加
       match @defs.get_string_arg(args, "body") {

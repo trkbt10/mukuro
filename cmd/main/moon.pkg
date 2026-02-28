@@ -13,6 +13,7 @@ import {
   "trkbt10/mukuro/api/v1/providers" @api_providers,
   "trkbt10/mukuro/api/v1/chat" @api_chat,
   "trkbt10/mukuro/api/v1/history" @api_history,
+  "trkbt10/mukuro/api/v1/tools" @api_tools,
   "trkbt10/mukuro/core/config" @config,
   "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
   "trkbt10/mukuro/core/agent" @agent,

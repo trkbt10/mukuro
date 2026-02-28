@@ -24,6 +24,9 @@ let api_v1_plugins_state : @api_plugins.PluginManagerState = @api_plugins.Plugin
 let api_v1_providers_state : @api_providers.ProviderManagerState = @api_providers.ProviderManagerState::new()
 
 ///|
+let api_v1_tools_state : @api_tools.ToolManagerState = @api_tools.ToolManagerState::new()
+
+///|
 /// Create context file I/O interface
 fn create_context_file_io() -> @api_context.ContextFileIO {
   {
@@ -108,6 +111,9 @@ fn get_api_v1_router() -> @api.ApiRouter {
         @api_history.HistoryState::new(history_reader),
       ),
     ),
+    tool_handlers: Some(
+      @api_tools.create_tool_handlers(api_v1_tools_state),
+    ),
   }
 }
 
@@ -119,91 +125,34 @@ pub fn init_api_v1_state(
 ) -> Unit {
   api_v1_settings_state.init(config, config_path)
   api_v1_settings_state.set_persister(persist_config_to_file)
-  // ビルトインツール定義からプラグイン状態を自動導出（source of truth: get_all_tool_definitions）
+  // ビルトインプラグインを登録（全ビルトインツールを提供）
+  api_v1_plugins_state.set_plugin(
+    "builtin",
+    @interfaces.PluginState::builtin(
+      id="builtin",
+      description="Built-in tools: datetime, memory, message, spawn, web, shell, filesystem",
+    ),
+  )
+  // ビルトインツールをツール状態に登録（source: Builtin）
   for def in @defs.get_all_tool_definitions() {
-    api_v1_plugins_state.set_plugin(
+    api_v1_tools_state.set_tool(
       def.name,
-      @interfaces.PluginState::builtin(id=def.name, description=def.description),
+      @interfaces.ToolState::builtin(
+        id=def.name,
+        name=def.name,
+        description=def.description,
+        parameters=def.parameters,
+      ),
     )
   }
-  register_memory_actions(api_v1_plugins_state, global_memory_store)
-}
-
-///|
-/// Register memory CRUD actions on the memory plugin
-fn register_memory_actions(
-  state : @api_plugins.PluginManagerState,
-  store : @builtin.MemoryStore,
-) -> Unit {
-  // list - list all entries
-  state.register_action("memory", "list", fn(_params) {
-    let keys = store.keys()
-    let entries : Array[Json] = []
-    for key in keys {
-      let entry : Map[String, Json] = {}
-      entry["key"] = Json::string(key)
-      match store.get(key) {
-        Some(value) => entry["value"] = value
-        None => ()
-      }
-      entries.push(Json::object(entry))
-    }
-    @api.json_response(200, {
-      "data": { "entries": Json::array(entries), "count": keys.length() },
-    })
-  })
-  // get - get a single entry by key
-  state.register_action("memory", "get", fn(params) {
-    let key = match params {
-      { "key": String(k), .. } => k
-      _ =>
-        return @api.error_response(
-          400, "bad_request", "Missing 'key' parameter",
-        )
-    }
-    match store.get(key) {
-      Some(value) =>
-        @api.json_response(200, { "data": { "key": key, "value": value } })
-      None =>
-        @api.error_response(404, "not_found", "Key '\{key}' not found")
-    }
-  })
-  // set - create or update an entry
-  state.register_action("memory", "set", fn(params) {
-    let key = match params {
-      { "key": String(k), .. } => k
-      _ =>
-        return @api.error_response(
-          400, "bad_request", "Missing 'key' parameter",
-        )
-    }
-    let value = match params {
-      { "value": v, .. } => v
-      _ =>
-        return @api.error_response(
-          400, "bad_request", "Missing 'value' parameter",
-        )
-    }
-    store.set(key, value)
-    @api.json_response(200, { "ok": true, "key": key })
-  })
-  // delete - delete an entry by key
-  state.register_action("memory", "delete", fn(params) {
-    let key = match params {
-      { "key": String(k), .. } => k
-      _ =>
-        return @api.error_response(
-          400, "bad_request", "Missing 'key' parameter",
-        )
-    }
-    let deleted = store.delete(key)
-    @api.json_response(200, { "ok": true, "deleted": deleted })
-  })
-  // clear - clear all entries
-  state.register_action("memory", "clear", fn(_params) {
-    store.clear()
-    @api.json_response(200, { "ok": true })
-  })
+  // ユーザー定義ツールを {data_dir}/tools/ からロード
+  for tool_state in @native.load_native_user_defined_tools() {
+    api_v1_tools_state.set_tool(tool_state.id, tool_state)
+  }
+  // builtin プラグインにアクションを登録（定義から自動登録）
+  for action in @builtin.get_all_builtin_actions(global_memory_store) {
+    api_v1_plugins_state.register_action("builtin", action.name, action.handler)
+  }
 }
 
 ///|

@@ -25,6 +25,8 @@ pub(all) struct ApiRouter {
   chat_handlers : ChatApiHandlers?
   /// History handlers
   history_handlers : HistoryApiHandlers?
+  /// Tool handlers
+  tool_handlers : ToolApiHandlers?
 }
 
 ///|
@@ -157,6 +159,21 @@ pub(all) struct ProviderApiHandlers {
 }
 
 ///|
+/// Tool API handlers interface
+pub(all) struct ToolApiHandlers {
+  /// GET /tools - list all tools
+  list : RouteHandler
+  /// GET /tools/{id} - get tool details
+  get : RouteHandler
+  /// PUT /tools/{id}/enable - enable tool
+  enable : RouteHandler
+  /// PUT /tools/{id}/disable - disable tool
+  disable : RouteHandler
+  /// DELETE /tools/{id} - remove tool (user-defined only)
+  remove : RouteHandler
+}
+
+///|
 /// Create empty router
 pub fn ApiRouter::new() -> ApiRouter {
   {
@@ -168,6 +185,7 @@ pub fn ApiRouter::new() -> ApiRouter {
     provider_handlers: None,
     chat_handlers: None,
     history_handlers: None,
+    tool_handlers: None,
   }
 }
 
@@ -200,6 +218,7 @@ pub fn ApiRouter::route(
     "providers" => self.route_providers(ctx)
     "chat" => self.route_chat(ctx)
     "history" => self.route_history(ctx)
+    "tools" => self.route_tools(ctx)
     _ =>
       error_response(
         404,
@@ -217,7 +236,7 @@ fn api_index_handler(_ctx : ApiRequestContext) -> ApiResponse {
     "endpoints": Json::array(
       [
         "/api/v1/plugins", "/api/v1/context", "/api/v1/settings", "/api/v1/config",
-        "/api/v1/providers", "/api/v1/chat", "/api/v1/history",
+        "/api/v1/providers", "/api/v1/chat", "/api/v1/history", "/api/v1/tools",
       ].map(fn(s) { Json::string(s) }),
     ),
   })
@@ -603,4 +622,51 @@ fn route_history_endpoint(
     return error_response(405, "method_not_allowed", "Method not allowed")
   }
   error_response(404, "not_found", "Unknown history endpoint")
+}
+
+///|
+/// Route tool API requests
+fn ApiRouter::route_tools(
+  self : ApiRouter,
+  ctx : ApiRequestContext
+) -> ApiResponse {
+  match self.tool_handlers {
+    None => error_response(501, "not_implemented", "Tool API not configured")
+    Some(handlers) => route_tool_endpoint(handlers, ctx)
+  }
+}
+
+///|
+/// Route tool endpoint
+fn route_tool_endpoint(
+  handlers : ToolApiHandlers,
+  ctx : ApiRequestContext
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /tools - list all
+  if segments.length() == 1 {
+    if meth == "GET" {
+      return (handlers.list.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /tools/{id}
+  if segments.length() == 2 {
+    match meth {
+      "GET" => return (handlers.get.0)(ctx)
+      "DELETE" => return (handlers.remove.0)(ctx)
+      _ => return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  // /tools/{id}/enable, /tools/{id}/disable
+  if segments.length() == 3 {
+    let action = segments[2]
+    match (meth, action) {
+      ("PUT", "enable") => return (handlers.enable.0)(ctx)
+      ("PUT", "disable") => return (handlers.disable.0)(ctx)
+      _ => return error_response(405, "method_not_allowed", "Method not allowed")
+    }
+  }
+  error_response(404, "not_found", "Unknown tool endpoint")
 }

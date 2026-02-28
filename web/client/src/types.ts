@@ -422,3 +422,41 @@ export interface MemoryListResponse {
   entries: MemoryEntry[];
   count: number;
 }
+
+// ============================================================================
+// Tool Types
+// ============================================================================
+
+export type ToolSource = 'builtin' | 'plugin' | 'user_defined' | 'mcp';
+
+export type ToolStatus = 'available' | 'disabled' | 'error' | 'unavailable';
+
+export interface ToolListItem {
+  id: string;
+  name: string;
+  description: string;
+  source: ToolSource;
+  source_id?: string;
+  enabled: boolean;
+  status: ToolStatus;
+}
+
+export interface ToolStats {
+  total: number;
+  enabled: number;
+  builtin: number;
+  plugin: number;
+  user_defined: number;
+  mcp: number;
+}
+
+export interface ToolListResponse {
+  data: ToolListItem[];
+  stats: ToolStats;
+}
+
+export interface ToolDetail extends ToolListItem {
+  status_message?: string;
+  loaded_at: number;
+  parameters: Record<string, unknown>;
+}

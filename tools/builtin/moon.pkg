@@ -2,6 +2,7 @@ import {
   "trkbt10/mukuro/tools/defs" @defs,
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/api/v1" @api,
   "moonbitlang/core/json",
   "moonbitlang/async" @async,
   "moonbitlang/x/time" @xtime,
@@ -16,6 +17,7 @@ warnings = "-29"
 
 options(
   targets: {
+    "actions_test.mbt": [ "js" ],
     "builtin_test.mbt": [ "js" ],
     "time_js.mbt": [ "js" ],
     "time_native.mbt": [ "native" ],

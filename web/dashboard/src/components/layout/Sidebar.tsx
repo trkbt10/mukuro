@@ -232,6 +232,14 @@ export function Sidebar() {
           />
         ))}
 
+        {/* Tools */}
+        <TreeItem
+          label="Tools"
+          icon={<Wrench style={iconSize} />}
+          selected={pathname === '/tools'}
+          onClick={() => navigate('/tools')}
+        />
+
         {/* Providers section */}
         <LayerItem
           id="providers"

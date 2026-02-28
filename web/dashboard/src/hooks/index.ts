@@ -87,3 +87,11 @@ export {
   useResumeSession,
   formatHistoryDate,
 } from './useHistory';
+
+export {
+  useTools,
+  useTool,
+  useEnableTool,
+  useDisableTool,
+  useDeleteTool,
+} from './useTools';

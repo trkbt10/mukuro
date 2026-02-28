@@ -1,0 +1,70 @@
+.page { composes: page from '@/styles/page.module.css'; }
+.header { composes: pageHeader from '@/styles/page.module.css'; align-items: center; }
+.pageTitle { composes: pageTitle from '@/styles/page.module.css'; }
+.pageDesc { composes: pageDesc from '@/styles/page.module.css'; }
+
+.statGrid {
+  display: grid;
+  gap: var(--mk-space-lg);
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.toolList { composes: itemList from '@/styles/page.module.css'; }
+.toolRow { composes: itemRow from '@/styles/page.module.css'; }
+
+.toolInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.toolName {
+  font-size: var(--mk-font-size-md);
+  font-weight: 500;
+  color: var(--mk-text-primary);
+}
+
+.toolDesc {
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toolMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-md);
+}
+
+.sourceBadge {
+  font-size: var(--mk-font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--mk-radius-sm);
+  background: var(--mk-bg-tertiary);
+  color: var(--mk-text-muted);
+  text-transform: capitalize;
+}
+
+.sourceBadge[data-source="builtin"] {
+  background: var(--mk-info-subtle);
+  color: var(--mk-info);
+}
+
+.sourceBadge[data-source="plugin"] {
+  background: var(--mk-accent-subtle);
+  color: var(--mk-accent);
+}
+
+.sourceBadge[data-source="user_defined"] {
+  background: var(--mk-success-subtle);
+  color: var(--mk-success);
+}
+
+.sourceBadge[data-source="mcp"] {
+  background: var(--mk-warning-subtle);
+  color: var(--mk-warning);
+}

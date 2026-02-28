@@ -191,6 +191,101 @@ test "is_sync_devtool returns true for all devtools" {
 }
 
 // =============================================================================
+// Web Native Tests
+// =============================================================================
+
+///|
+test "execute_web_tool_native fetch basic GET request" {
+  // httpbin.org is a reliable test service
+  let result = execute_web_tool_native({
+    "action": "fetch",
+    "url": "https://httpbin.org/get",
+    "method": "GET",
+  })
+  match result.status {
+    @defs.ToolResultStatus::Success =>
+      match result.data {
+        { "status": Number(code, ..), "body": String(body), .. } => {
+          assert_true(code >= 200.0 && code < 300.0)
+          assert_true(body.contains("httpbin.org"))
+        }
+        _ => fail("Expected status and body in result")
+      }
+    @defs.ToolResultStatus::Error =>
+      match result.data {
+        { "error": String(msg), .. } =>
+          fail("Fetch failed: \{msg}")
+        _ => fail("Fetch failed with unknown error")
+      }
+    _ => fail("Expected success or error")
+  }
+}
+
+///|
+test "execute_web_tool_native follows redirects" {
+  // httpbin.org/redirect/1 redirects once then returns 200
+  let result = execute_web_tool_native({
+    "action": "fetch",
+    "url": "https://httpbin.org/redirect/1",
+    "method": "GET",
+  })
+  match result.status {
+    @defs.ToolResultStatus::Success =>
+      match result.data {
+        { "status": Number(code, ..), .. } =>
+          // Should be 200 after following redirect, not 302
+          assert_true(code >= 200.0 && code < 300.0)
+        _ => fail("Expected status in result")
+      }
+    @defs.ToolResultStatus::Error =>
+      match result.data {
+        { "error": String(msg), .. } =>
+          fail("Redirect test failed: \{msg}")
+        _ => fail("Redirect test failed")
+      }
+    _ => fail("Expected success")
+  }
+}
+
+///|
+test "execute_web_tool_native sends user-agent" {
+  // httpbin.org/user-agent echoes back the User-Agent header
+  let result = execute_web_tool_native({
+    "action": "fetch",
+    "url": "https://httpbin.org/user-agent",
+    "method": "GET",
+  })
+  match result.status {
+    @defs.ToolResultStatus::Success =>
+      match result.data {
+        { "body": String(body), .. } =>
+          // Should have some User-Agent, not empty or curl default
+          assert_true(body.contains("user-agent"))
+        _ => fail("Expected body in result")
+      }
+    _ => fail("Expected success")
+  }
+}
+
+///|
+test "execute_web_tool_native missing url returns error" {
+  let result = execute_web_tool_native({ "action": "fetch" })
+  match result.status {
+    @defs.ToolResultStatus::Error => ()
+    _ => fail("Expected error for missing url")
+  }
+}
+
+///|
+test "execute_web_tool_native missing action returns error" {
+  let result = execute_web_tool_native({ "url": "https://example.com" })
+  match result.status {
+    @defs.ToolResultStatus::Error => ()
+    _ => fail("Expected error for missing action")
+  }
+}
+
+// =============================================================================
 // Helper
 // =============================================================================
 

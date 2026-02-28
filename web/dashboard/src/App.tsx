@@ -4,6 +4,7 @@ import { ConnectionOverlay } from './components/layout/ConnectionOverlay';
 import { Dashboard } from './pages/Dashboard';
 import { Plugins } from './pages/Plugins';
 import { PluginDetail } from './pages/PluginDetail';
+import { Tools } from './pages/Tools';
 import { Context } from './pages/Context';
 import { ContextDetail } from './pages/ContextDetail';
 import { Settings } from './pages/Settings';
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="history/*" element={<History />} />
           <Route path="plugins" element={<Plugins />} />
           <Route path="plugins/:id" element={<PluginDetail />} />
+          <Route path="tools" element={<Tools />} />
           <Route path="context" element={<Context />} />
           <Route path="context/:name" element={<ContextDetail />} />
           <Route path="providers" element={<MessageProviders />} />

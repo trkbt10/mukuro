@@ -13,6 +13,7 @@ export { ProvidersApi } from './endpoints/providers.js';
 export { GatewayApi } from './endpoints/gateway.js';
 export { ChatApi } from './endpoints/chat.js';
 export { HistoryApi } from './endpoints/history.js';
+export { ToolsApi } from './endpoints/tools.js';
 
 export {
   MukuroApiError,
@@ -78,4 +79,11 @@ export type {
   PluginActionList,
   MemoryEntry,
   MemoryListResponse,
+  // Tool types
+  ToolSource,
+  ToolStatus,
+  ToolListItem,
+  ToolStats,
+  ToolListResponse,
+  ToolDetail,
 } from './types.js';
