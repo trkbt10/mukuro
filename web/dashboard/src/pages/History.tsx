@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   History as HistoryIcon,
   ChevronLeft,
@@ -11,20 +12,112 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  Info,
 } from 'lucide-react';
 import { IconButton, Badge } from '@/components/ui';
 import { PageToolbar } from '@/components/layout/PageToolbar';
 import { AssistantContent } from '@/components/chat';
-import { useHistoryNavigation, formatHistoryDate } from '@/hooks';
+import { useHistoryNavigation } from '@/hooks';
 import { formatTimestamp, extractRecordContent } from '@/lib/messages';
-import type { HistoryRecord } from '@mukuro/client';
+import type { HistoryRecord, HistoryDateEntry } from '@mukuro/client';
 import styles from './History.module.css';
+
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+interface CalendarGridProps {
+  viewYear: number;
+  viewMonth: number;
+  monthDates: HistoryDateEntry[];
+  selectedDate: { year: number; month: number; day: number } | null;
+  onSelectDate: (year: number, month: number, day: number) => void;
+}
+
+function CalendarGrid({ viewYear, viewMonth, monthDates, selectedDate, onSelectDate }: CalendarGridProps) {
+  const today = useMemo(() => new Date(), []);
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth() + 1;
+  const todayDay = today.getDate();
+
+  const sessionCountByDay = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const d of monthDates) {
+      map.set(d.day, d.session_count);
+    }
+    return map;
+  }, [monthDates]);
+
+  const cells = useMemo(() => {
+    const firstDayOfWeek = new Date(viewYear, viewMonth - 1, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+    return Array.from({ length: 42 }, (_, i) => {
+      const day = i - firstDayOfWeek + 1;
+      if (day < 1 || day > daysInMonth) return null;
+      return day;
+    });
+  }, [viewYear, viewMonth]);
+
+  return (
+    <div className={styles.calendarGrid}>
+      <div className={styles.calendarHeader}>
+        {WEEKDAYS.map((d, i) => (
+          <span key={i}>{d}</span>
+        ))}
+      </div>
+      <div className={styles.calendarBody}>
+        {cells.map((day, i) => {
+          const hasSessions = day !== null && sessionCountByDay.has(day);
+          const isSelected = day !== null
+            && selectedDate?.year === viewYear
+            && selectedDate?.month === viewMonth
+            && selectedDate?.day === day;
+          const isToday = day !== null
+            && viewYear === todayYear
+            && viewMonth === todayMonth
+            && day === todayDay;
+
+          return (
+            <div
+              key={i}
+              className={styles.calendarCell}
+              data-empty={day === null || undefined}
+              data-selected={isSelected || undefined}
+              data-today={isToday || undefined}
+              onClick={() => day !== null && onSelectDate(viewYear, viewMonth, day)}
+            >
+              {day !== null && (
+                <>
+                  <span className={styles.dayNumber}>{day}</span>
+                  {hasSessions && <span className={styles.sessionDot} />}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function RecordItem({ record }: { record: HistoryRecord }) {
   const payload = record.payload ?? {};
   const content = extractRecordContent(payload);
 
   switch (record.record_type) {
+    case 'session_meta': {
+      const channel = (payload as Record<string, unknown>).channel as string | undefined;
+      return (
+        <div className={styles.recordStatus}>
+          <span className={styles.recordStatusDot}><Info style={{ width: 12, height: 12 }} /></span>
+          <div className={styles.recordBody}>
+            <span className={styles.recordStatusText}>
+              Session created {formatTimestamp(record.timestamp)}{channel ? ` (${channel})` : ''}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
     case 'session_start':
       return (
         <div className={styles.recordStatus}>
@@ -169,39 +262,20 @@ export function History() {
             />
           </div>
 
-          {/* Date list */}
-          <div className={styles.dateList}>
-            {h.datesLoading ? (
-              <div className={styles.loadingState}>
-                <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
-              </div>
-            ) : h.monthDates.length === 0 ? (
-              <div className={styles.emptySubtext} style={{ padding: '16px', textAlign: 'center' }}>
-                No history for this month
-              </div>
-            ) : (
-              h.monthDates.map(d => {
-                const isSelected = h.selectedDate?.year === d.year
-                  && h.selectedDate?.month === d.month
-                  && h.selectedDate?.day === d.day;
-                return (
-                  <div
-                    key={`${d.year}-${d.month}-${d.day}`}
-                    className={styles.dateItem}
-                    data-selected={isSelected || undefined}
-                    onClick={() => h.selectDate(d.year, d.month, d.day)}
-                  >
-                    <span>{formatHistoryDate(d.year, d.month, d.day)}</span>
-                    <div className={styles.dateBadges}>
-                      {Array.from({ length: Math.min(d.session_count, 5) }).map((_, i) => (
-                        <span key={i} className={styles.dateDot} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          {/* Calendar grid */}
+          {h.datesLoading ? (
+            <div className={styles.loadingState}>
+              <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
+            </div>
+          ) : (
+            <CalendarGrid
+              viewYear={h.viewYear}
+              viewMonth={h.viewMonth}
+              monthDates={h.monthDates}
+              selectedDate={h.selectedDate}
+              onSelectDate={h.selectDate}
+            />
+          )}
 
           {/* Sessions sub-list */}
           {h.sessions && h.sessions.length > 0 && (
@@ -250,6 +324,14 @@ export function History() {
                 {h.sessionDetail.records.map((record, i) => (
                   <RecordItem key={i} record={record} />
                 ))}
+                {h.sessionDetail.records.every(r =>
+                  r.record_type === 'session_meta' || r.record_type === 'session_start'
+                ) && (
+                  <div className={styles.emptyTimeline}>
+                    <Info style={{ width: 16, height: 16 }} />
+                    <span>No messages in this session yet</span>
+                  </div>
+                )}
               </div>
             </>
           ) : h.detailLoading ? (

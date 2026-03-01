@@ -16,11 +16,11 @@
   min-height: 0;
 }
 
-/* ── Left panel: month nav + dates + sessions ── */
+/* ── Left panel: month nav + calendar + sessions ── */
 
 .leftPanel {
-  width: 260px;
-  min-width: 220px;
+  width: 280px;
+  min-width: 260px;
   border-right: 1px solid var(--mk-border-subtle);
   display: flex;
   flex-direction: column;
@@ -55,6 +55,86 @@
 .dateList::-webkit-scrollbar-thumb {
   background: var(--mk-border-default);
   border-radius: 3px;
+}
+
+/* ── Calendar Grid ── */
+
+.calendarGrid {
+  display: flex;
+  flex-direction: column;
+  padding: var(--mk-space-sm);
+  flex-shrink: 0;
+}
+
+.calendarHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--mk-text-muted);
+  padding-bottom: var(--mk-space-xs);
+  margin-bottom: var(--mk-space-xs);
+  border-bottom: 1px solid var(--mk-border-subtle);
+}
+
+.calendarBody {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendarCell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--mk-radius-sm);
+  cursor: pointer;
+  font-size: var(--mk-font-size-xs);
+  color: var(--mk-text-secondary);
+  transition: background 0.12s ease, color 0.12s ease;
+  position: relative;
+}
+
+.calendarCell:hover:not([data-empty]) {
+  background: var(--mk-bg-surface);
+}
+
+.calendarCell[data-selected] {
+  background: var(--mk-accent);
+  color: white;
+}
+
+.calendarCell[data-selected] .sessionDot {
+  background: white;
+}
+
+.calendarCell[data-empty] {
+  cursor: default;
+  visibility: hidden;
+}
+
+.calendarCell[data-today] {
+  font-weight: 700;
+  color: var(--mk-accent);
+}
+
+.calendarCell[data-today][data-selected] {
+  color: white;
+}
+
+.dayNumber {
+  line-height: 1;
+}
+
+.sessionDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--mk-accent);
+  margin-top: 2px;
 }
 
 .dateItem {
@@ -386,6 +466,20 @@
   font-size: var(--mk-font-size-xs);
   color: var(--mk-error);
   max-width: 80%;
+}
+
+/* ── Empty timeline ── */
+
+.emptyTimeline {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-sm);
+  padding: var(--mk-space-lg);
+  color: var(--mk-text-muted);
+  font-size: var(--mk-font-size-sm);
+  border: 1px dashed var(--mk-border-default);
+  border-radius: var(--mk-radius-md);
+  justify-content: center;
 }
 
 /* ── Empty state ── */
