@@ -28,7 +28,6 @@ async fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   if not(runtime_config_exists(config_path)) {
     return CliResult::Error(config_not_found_message(config_path))
   }
-  set_runtime_model_config_path_for_process(config_path)
   bootstrap_runtime_channels_from_config(config_path)
   // プラグインシステムの初期化（native transport使用）
   initialize_plugin_system_with_native_transport() catch {

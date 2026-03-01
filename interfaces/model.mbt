@@ -29,6 +29,13 @@ pub(open) trait ModelProvider {
 }
 
 ///|
+/// プロバイダ解決トレイト
+/// config 等から ProviderConfig を取得する抽象化層
+pub(open) trait ProviderResolver {
+  resolve(Self) -> @types.ProviderConfig?
+}
+
+///|
 /// プロバイダエラー種別
 pub(all) enum ProviderError {
   /// 認証エラー

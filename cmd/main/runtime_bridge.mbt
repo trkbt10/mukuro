@@ -158,7 +158,6 @@ pub fn register_builtin_tools() -> Unit {
 let global_provider_resolver : ConfigProviderResolver = ConfigProviderResolver::new()
 
 ///|
-///|
 let global_model_orchestrator : RuntimeModelOrchestrator = RuntimeModelOrchestrator::new(
   global_provider_resolver,
 )

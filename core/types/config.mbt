@@ -303,7 +303,7 @@ pub(all) struct MukuroConfig {
 /// ModelOptionsのデフォルト値
 pub fn ModelOptions::default() -> ModelOptions {
   {
-    model_name: "claude-sonnet-4-20250514",
+    model_name: "",
     temperature: None,
     max_tokens: None,
     stop_sequences: None,

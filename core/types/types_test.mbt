@@ -71,9 +71,9 @@ test "ToolDefinition::new creates definition" {
 }
 
 ///|
-test "ModelOptions::default has no hardcoded values" {
+test "ModelOptions::default has empty model_name" {
   let opts = ModelOptions::default()
-  inspect(opts.model_name, content="claude-sonnet-4-20250514")
+  inspect(opts.model_name, content="")
   inspect(opts.temperature, content="None")
   inspect(opts.max_tokens, content="None")
 }

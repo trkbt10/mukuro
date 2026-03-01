@@ -60,8 +60,25 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   }
 
   let startup = load_daemon_startup_config()
-  set_runtime_model_config_path_for_process(startup.runtime_model_config_path)
-  bootstrap_runtime_channels_from_config(startup.runtime_model_config_path)
+  let config_path = startup.runtime_model_config_path
+  let config_text = read_config_text_impl(config_path) catch {
+    _ => {
+      @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+      @native.c_exit(1)
+      return CliResult::Exit(1)
+    }
+  }
+  let mukuro_config = @config.ConfigLoaderImpl::default().load_from_string(
+    config_text,
+  ) catch {
+    _ => {
+      @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+      @native.c_exit(1)
+      return CliResult::Exit(1)
+    }
+  }
+  init_api_v1_state(mukuro_config, config_path)
+  bootstrap_runtime_channels_from_config(config_path)
   global_gateway.start(config=startup.gateway_config) catch {
     _ => ()
   }

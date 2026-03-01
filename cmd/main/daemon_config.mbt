@@ -95,11 +95,19 @@ fn write_daemon_startup_config(
 ///|
 fn parse_daemon_startup_config(content : String) -> DaemonStartupConfig {
   let root_json : Json = @json.parse(content) catch {
-    _ => return daemon_startup_default()
+    _ => {
+      println("Warning: Failed to parse daemon startup config JSON, using defaults")
+      return daemon_startup_default()
+    }
   }
   let root = match root_json {
     Object(obj) => obj
-    _ => return daemon_startup_default()
+    _ => {
+      println(
+        "Warning: Daemon startup config is not a JSON object, using defaults",
+      )
+      return daemon_startup_default()
+    }
   }
   let runtime_model_config_path = match root.get("runtime_model_config_path") {
     Some(String(path)) => path
@@ -179,11 +187,17 @@ fn load_daemon_startup_config() -> DaemonStartupConfig {
     buffer_len,
   )
   if read_len <= 0 {
+    println("Warning: Could not read daemon startup config, using defaults")
     return daemon_startup_default()
   }
   let content = match @bytes.decode_utf8(buffer[:read_len]) {
     Some(s) => s
-    None => return daemon_startup_default()
+    None => {
+      println(
+        "Warning: Daemon startup config is not valid UTF-8, using defaults",
+      )
+      return daemon_startup_default()
+    }
   }
   parse_daemon_startup_config(content)
 }

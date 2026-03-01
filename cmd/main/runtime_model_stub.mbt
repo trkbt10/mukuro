@@ -2,8 +2,28 @@
 /// RuntimeModelOrchestrator（JS/WASMスタブ）
 
 ///|
+/// スタブ用 ProviderResolver（常に None を返す）
+pub struct ConfigProviderResolver {
+  _unit : Unit
+}
+
+///|
+pub fn ConfigProviderResolver::new() -> ConfigProviderResolver {
+  { _unit: () }
+}
+
+///|
+pub impl @interfaces.ProviderResolver for ConfigProviderResolver with resolve(
+  self,
+) {
+  ignore(self)
+  None
+}
+
+///|
 pub struct RuntimeModelOrchestrator {
   _placeholder : Unit
+  provider_resolver : &@interfaces.ProviderResolver
 }
 
 ///|
@@ -15,13 +35,10 @@ struct TestToggle {
 let test_toggle : TestToggle = { forced_response: None }
 
 ///|
-pub fn RuntimeModelOrchestrator::default() -> RuntimeModelOrchestrator {
-  { _placeholder: () }
-}
-
-///|
-pub fn set_runtime_model_config_path_for_process(path : String) -> Unit {
-  ignore(path)
+pub fn RuntimeModelOrchestrator::new(
+  provider_resolver : &@interfaces.ProviderResolver,
+) -> RuntimeModelOrchestrator {
+  { _placeholder: (), provider_resolver }
 }
 
 ///|
@@ -31,14 +48,15 @@ pub fn set_forced_response_for_test(response : String?) -> Unit {
 
 ///|
 pub async fn runtime_model_invoke_async(
+  provider_resolver : &@interfaces.ProviderResolver,
   messages : Array[@types.ModelMessage],
   tools : Array[@types.ToolDefinition],
   options : @types.ModelOptions,
 ) -> @types.ModelResponse {
+  ignore(provider_resolver)
   ignore(messages)
   ignore(tools)
   ignore(options)
-  // Satisfy async annotation requirement
   @async.pause()
   match test_toggle.forced_response {
     Some(content) => @types.ModelResponse::Text(content)

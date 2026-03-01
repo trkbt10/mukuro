@@ -40,11 +40,10 @@ fn parse_config_json(
     Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   // agent設定をパース
-  // flat config format (top-level "model", "provider", etc.) にも対応
   let agent : @types.AgentConfig = match
     @config_json_accessors.optional_object_field(obj, "agent") {
     Ok(Some(agent_obj)) => parse_agent_config(agent_obj)
-    Ok(None) => parse_agent_config_from_flat(obj)
+    Ok(None) => @types.AgentConfig::default()
     Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   // providers設定をパース
@@ -63,7 +62,7 @@ fn parse_config_json(
       }
       result
     }
-    Ok(None) => parse_providers_from_flat(obj)
+    Ok(None) => []
     Err(message) => raise @interfaces.ConfigError::ParseError(message)
   }
   // fallback設定をパース
@@ -99,78 +98,6 @@ fn parse_config_json(
     channels,
     thinking: @types.ThinkingConfig::default(),
   }
-}
-
-///|
-/// Flat config format からProviderConfigの配列を構築
-/// top-level の "provider", "api_key", "base_url", "model" から推定
-fn parse_providers_from_flat(
-  obj : Map[String, Json],
-) -> Array[@types.ProviderConfig] {
-  let provider_name = match obj.get("provider") {
-    Some(String(s)) => s
-    _ => return []
-  }
-  if provider_name.length() == 0 {
-    return []
-  }
-  let api_key : String? = match obj.get("api_key") {
-    Some(String(s)) => if s.length() > 0 { Some(s) } else { None }
-    _ => None
-  }
-  let base_url : String? = match obj.get("base_url") {
-    Some(String(s)) => if s.length() > 0 { Some(s) } else { None }
-    _ => None
-  }
-  let default_model = match obj.get("model") {
-    Some(String(s)) => if s.length() > 0 { s } else { "default" }
-    _ =>
-      match obj.get("default_model") {
-        Some(String(s)) => if s.length() > 0 { s } else { "default" }
-        _ => "default"
-      }
-  }
-  let use_responses_api = match obj.get("use_responses_api") {
-    Some(True) => true
-    _ => false
-  }
-  [
-    {
-      name: provider_name,
-      api_key,
-      base_url,
-      default_model,
-      timeout_ms: 30000,
-      max_retries: 3,
-      use_responses_api,
-    },
-  ]
-}
-
-///|
-/// Flat config format からAgentConfigを構築
-/// top-level の "model", "provider", "base_url" 等から推定
-fn parse_agent_config_from_flat(obj : Map[String, Json]) -> @types.AgentConfig {
-  let mut model_options = @types.ModelOptions::default()
-  // top-level "model" フィールドを model_name にマッピング
-  match obj.get("model") {
-    Some(String(m)) =>
-      if m.length() > 0 {
-        model_options = { ..model_options, model_name: m }
-      }
-    _ => ()
-  }
-  // top-level "default_model" も fallback として利用
-  if model_options.model_name == "claude-sonnet-4-20250514" {
-    match obj.get("default_model") {
-      Some(String(m)) =>
-        if m.length() > 0 {
-          model_options = { ..model_options, model_name: m }
-        }
-      _ => ()
-    }
-  }
-  { ..@types.AgentConfig::default(), model_options, }
 }
 
 ///|
@@ -210,7 +137,7 @@ fn parse_model_options(
 ) -> @types.ModelOptions raise @interfaces.ConfigError {
   let model_name = match
     @config_json_accessors.string_field_or_default(
-      obj, "model_name", "claude-sonnet-4-20250514",
+      obj, "model_name", "",
     ) {
     Ok(v) => v
     Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
