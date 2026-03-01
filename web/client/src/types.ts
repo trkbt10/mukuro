@@ -459,3 +459,18 @@ export interface ToolDetail extends ToolListItem {
   loaded_at: number;
   parameters: Record<string, unknown>;
 }
+
+// ============================================================================
+// Onboard Types
+// ============================================================================
+
+export interface OnboardGenerateRequest {
+  user_name?: string;
+  work?: string;
+  personality?: string;
+  notes?: string;
+}
+
+export type OnboardGenerateResponse = Partial<
+  Record<ContextFileName, string>
+>;

@@ -14,6 +14,7 @@ export { GatewayApi } from './endpoints/gateway.js';
 export { ChatApi } from './endpoints/chat.js';
 export { HistoryApi } from './endpoints/history.js';
 export { ToolsApi } from './endpoints/tools.js';
+export { OnboardApi } from './endpoints/onboard.js';
 
 export {
   MukuroApiError,
@@ -86,4 +87,7 @@ export type {
   ToolStats,
   ToolListResponse,
   ToolDetail,
+  // Onboard types
+  OnboardGenerateRequest,
+  OnboardGenerateResponse,
 } from './types.js';

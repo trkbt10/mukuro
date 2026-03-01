@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { ConnectionOverlay } from './components/layout/ConnectionOverlay';
+import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { Dashboard } from './pages/Dashboard';
 import { Plugins } from './pages/Plugins';
 import { PluginDetail } from './pages/PluginDetail';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="settings/:section" element={<SettingsDetail />} />
         </Route>
       </Routes>
+      <OnboardingWizard />
       <ConnectionOverlay />
       <Toaster />
     </BrowserRouter>

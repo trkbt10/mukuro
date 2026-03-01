@@ -11,6 +11,7 @@ import { GatewayApi } from './endpoints/gateway.js';
 import { ChatApi } from './endpoints/chat.js';
 import { HistoryApi } from './endpoints/history.js';
 import { ToolsApi } from './endpoints/tools.js';
+import { OnboardApi } from './endpoints/onboard.js';
 import type { ApiRole } from './types.js';
 
 export interface MukuroClientOptions {
@@ -44,6 +45,7 @@ export class MukuroClient implements HttpClient {
   readonly chat: ChatApi;
   readonly history: HistoryApi;
   readonly tools: ToolsApi;
+  readonly onboard: OnboardApi;
 
   constructor(options: MukuroClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
@@ -60,6 +62,7 @@ export class MukuroClient implements HttpClient {
     this.chat = new ChatApi(this);
     this.history = new HistoryApi(this);
     this.tools = new ToolsApi(this);
+    this.onboard = new OnboardApi(this);
   }
 
   private getHeaders(): Record<string, string> {
