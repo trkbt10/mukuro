@@ -6,7 +6,7 @@ export { Modal, type ModalProps } from './Modal';
 export { Toggle, type ToggleProps } from './Toggle';
 export { Spinner, Loading, type SpinnerProps, type LoadingProps } from './Spinner';
 export { toast, Toaster, type ToastData, type ToastType } from './Toast';
-export { PanelSection, type PanelSectionProps } from './PanelSection';
+export { PanelSection, ContentPanel, type PanelSectionProps, type ContentPanelProps } from './PanelSection';
 export { StatCard, type StatCardProps } from './StatCard';
 export { DeleteConfirmModal, type DeleteConfirmModalProps } from './DeleteConfirmModal';
 

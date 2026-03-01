@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, Trash2, Settings } from 'lucide-react';
+import { RefreshCw, Trash2, Settings } from 'lucide-react';
 import {
   Button,
   Badge,
@@ -12,6 +12,7 @@ import {
   PropertyRow,
   DeleteConfirmModal,
 } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import {
   usePlugin,
   usePluginSettings,
@@ -22,7 +23,7 @@ import {
   useUpdatePluginSettings,
 } from '@/hooks';
 import { formatDate } from '@/lib/utils';
-import { getPluginPanels } from './pluginPanels';
+import { getPluginPanels } from '@/components/plugins';
 import styles from './PluginDetail.module.css';
 
 export function PluginDetail() {
@@ -99,35 +100,28 @@ export function PluginDetail() {
 
   return (
     <div className={styles.page}>
-      <Link to="/plugins" className={styles.backLink}>
-        <ArrowLeft style={{ width: 14, height: 14 }} />
-        Back
-      </Link>
-
-      <div className={styles.titleRow}>
-        <div>
-          <div className={styles.titleGroup}>
-            <h1 className={styles.pageTitle}>{plugin.name}</h1>
-            {plugin.is_builtin && <Badge variant="default" size="sm">Builtin</Badge>}
-          </div>
-          <p className={styles.pluginId}>{plugin.id}</p>
-        </div>
-        <div className={styles.actions}>
-          {!plugin.is_builtin && (
-            <Button variant="secondary" size="sm" onClick={() => reloadPlugin.mutate(plugin.id)} loading={reloadPlugin.isPending} leftIcon={<RefreshCw style={{ width: 14, height: 14 }} />}>
-              Reload
+      <PageToolbar
+        back="/plugins"
+        title={plugin.name}
+        titleBadge={plugin.is_builtin && <Badge variant="default" size="sm">Builtin</Badge>}
+        actions={
+          <>
+            {!plugin.is_builtin && (
+              <Button variant="secondary" size="sm" onClick={() => reloadPlugin.mutate(plugin.id)} loading={reloadPlugin.isPending} leftIcon={<RefreshCw style={{ width: 14, height: 14 }} />}>
+                Reload
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={openSettingsModal} leftIcon={<Settings style={{ width: 14, height: 14 }} />}>
+              Settings
             </Button>
-          )}
-          <Button variant="secondary" size="sm" onClick={openSettingsModal} leftIcon={<Settings style={{ width: 14, height: 14 }} />}>
-            Settings
-          </Button>
-          {!plugin.is_builtin && (
-            <Button variant="danger" size="sm" onClick={() => setDeleteModalOpen(true)} leftIcon={<Trash2 style={{ width: 14, height: 14 }} />}>
-              Delete
-            </Button>
-          )}
-        </div>
-      </div>
+            {!plugin.is_builtin && (
+              <Button variant="danger" size="sm" onClick={() => setDeleteModalOpen(true)} leftIcon={<Trash2 style={{ width: 14, height: 14 }} />}>
+                Delete
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <div className={styles.grid}>
         <PanelSection title="Details">

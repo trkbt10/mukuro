@@ -1,0 +1,141 @@
+/* ── Memory Store Panel ── */
+
+.toolbar {
+  display: flex;
+  gap: var(--mk-space-md);
+}
+
+.emptyText {
+  color: var(--mk-text-secondary);
+  font-size: var(--mk-font-size-sm);
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--mk-border-default);
+  border-radius: var(--mk-radius-md);
+  overflow: hidden;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 2fr 72px;
+  gap: var(--mk-space-lg);
+  padding: var(--mk-space-md) var(--mk-space-lg);
+  background: var(--mk-surface-elevated);
+  font-size: var(--mk-font-size-xs);
+  font-weight: 600;
+  color: var(--mk-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 2fr 72px;
+  gap: var(--mk-space-lg);
+  padding: var(--mk-space-md) var(--mk-space-lg);
+  border-top: 1px solid var(--mk-border-default);
+  align-items: center;
+  transition: background 100ms;
+}
+
+.row:hover {
+  background: var(--mk-surface-elevated);
+}
+
+.colKey,
+.colValue,
+.colActions {
+  overflow: hidden;
+}
+
+.key {
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.value {
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: var(--mk-space-sm);
+  justify-content: flex-end;
+}
+
+.actionBtn {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--mk-radius-sm);
+  color: var(--mk-text-tertiary);
+  transition: color 100ms, background 100ms;
+}
+
+.actionBtn:hover {
+  color: var(--mk-text-primary);
+  background: var(--mk-surface-elevated);
+}
+
+.actionBtn[data-danger]:hover {
+  color: var(--mk-danger);
+}
+
+/* ── Modal fields ── */
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-lg);
+}
+
+.textareaField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-sm);
+}
+
+.textareaLabel {
+  font-size: var(--mk-font-size-sm);
+  font-weight: 500;
+  color: var(--mk-text-primary);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--mk-space-md);
+  border: 1px solid var(--mk-border-default);
+  border-radius: var(--mk-radius-md);
+  background: var(--mk-surface-base);
+  color: var(--mk-text-primary);
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-sm);
+  resize: vertical;
+  outline: none;
+  transition: border-color 150ms;
+}
+
+.textarea:focus {
+  border-color: var(--mk-accent);
+}
+
+.modalText {
+  color: var(--mk-text-secondary);
+  font-size: var(--mk-font-size-sm);
+}

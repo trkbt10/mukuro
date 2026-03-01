@@ -13,7 +13,7 @@ import {
   useDeleteMemoryEntry,
   useClearMemory,
 } from '@/hooks';
-import styles from './PluginDetail.module.css';
+import styles from './MemoryPanel.module.css';
 
 export function MemoryPanel() {
   const { data: memoryData, isLoading } = useMemoryEntries();
@@ -70,7 +70,7 @@ export function MemoryPanel() {
       <PanelSection
         title={`Memory Store (${entries.length})`}
         action={
-          <div className={styles.memoryToolbar}>
+          <div className={styles.toolbar}>
             <Button
               variant="secondary"
               size="sm"
@@ -93,32 +93,33 @@ export function MemoryPanel() {
         }
       >
         {isLoading ? (
-          <p className={styles.descriptionText}>Loading entries...</p>
+          <p className={styles.emptyText}>Loading entries...</p>
         ) : entries.length === 0 ? (
-          <p className={styles.descriptionText}>No entries stored. Use the agent or click Add to create one.</p>
+          <p className={styles.emptyText}>No entries stored. Use the agent or click Add to create one.</p>
         ) : (
-          <div className={styles.memoryTable}>
-            <div className={styles.memoryHeader}>
-              <span className={styles.memoryColKey}>Key</span>
-              <span className={styles.memoryColValue}>Value</span>
-              <span className={styles.memoryColActions} />
+          <div className={styles.table}>
+            <div className={styles.header}>
+              <span className={styles.colKey}>Key</span>
+              <span className={styles.colValue}>Value</span>
+              <span className={styles.colActions} />
             </div>
             {entries.map((entry) => (
-              <div key={entry.key} className={styles.memoryRow}>
-                <span className={styles.memoryKey}>{entry.key}</span>
-                <span className={styles.memoryValue} title={formatValue(entry.value)}>
+              <div key={entry.key} className={styles.row}>
+                <span className={styles.key}>{entry.key}</span>
+                <span className={styles.value} title={formatValue(entry.value)}>
                   {truncate(formatValue(entry.value), 80)}
                 </span>
-                <span className={styles.memoryActions}>
+                <span className={styles.actions}>
                   <button
-                    className={styles.memoryActionBtn}
+                    className={styles.actionBtn}
                     onClick={() => openEditModal(entry.key, entry.value)}
                     title="Edit"
                   >
                     <Pencil style={{ width: 13, height: 13 }} />
                   </button>
                   <button
-                    className={styles.memoryActionBtnDanger}
+                    className={styles.actionBtn}
+                    data-danger
                     onClick={() => deleteEntry.mutate(entry.key)}
                     title="Delete"
                   >
@@ -145,7 +146,7 @@ export function MemoryPanel() {
           </>
         }
       >
-        <div className={styles.settingsFields}>
+        <div className={styles.fields}>
           <Input
             label="Key"
             value={editKey}

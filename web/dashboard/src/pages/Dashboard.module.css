@@ -68,16 +68,11 @@
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-}
-
-.pluginDotOn {
-  composes: pluginDot;
-  background: var(--mk-success);
-}
-
-.pluginDotOff {
-  composes: pluginDot;
   background: var(--mk-text-muted);
+}
+
+.pluginDot[data-enabled] {
+  background: var(--mk-success);
 }
 
 .pluginName {

@@ -7,6 +7,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { IconButton } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import { MessageBubble, StatusBadge, ThinkingIndicator } from '@/components/chat';
 import { useChat } from '@/hooks/useChat';
 import { getClient } from '@/lib/client';
@@ -81,30 +82,30 @@ export function Chat() {
 
   return (
     <div className={styles.page}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.titleGroup}>
-          <h1 className={styles.title}>Chat</h1>
-          <StatusBadge status={status} />
-        </div>
-        <div className={styles.actions}>
-          <IconButton
-            icon={<Trash2 style={{ width: 14, height: 14 }} />}
-            aria-label="Clear history"
-            onClick={handleClearHistory}
-            variant="ghost"
-            size="sm"
-            disabled={messages.length === 0}
-          />
-          <IconButton
-            icon={<Plus style={{ width: 14, height: 14 }} />}
-            aria-label="New chat"
-            onClick={handleNewChat}
-            variant="ghost"
-            size="sm"
-          />
-        </div>
-      </div>
+      <PageToolbar
+        title="Chat"
+        titleBadge={<StatusBadge status={status} />}
+        noPadding
+        actions={
+          <>
+            <IconButton
+              icon={<Trash2 style={{ width: 14, height: 14 }} />}
+              aria-label="Clear history"
+              onClick={handleClearHistory}
+              variant="ghost"
+              size="sm"
+              disabled={messages.length === 0}
+            />
+            <IconButton
+              icon={<Plus style={{ width: 14, height: 14 }} />}
+              aria-label="New chat"
+              onClick={handleNewChat}
+              variant="ghost"
+              size="sm"
+            />
+          </>
+        }
+      />
 
       {/* Messages */}
       {messages.length === 0 && status !== 'thinking' ? (

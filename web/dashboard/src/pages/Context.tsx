@@ -1,5 +1,6 @@
 import { FileText, CheckCircle, Circle } from 'lucide-react';
 import { Badge, Loading, StatCard } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import { useContextDataFiles } from '@/hooks';
 import { fileDescriptions } from '@/lib/contextFiles';
 import styles from './Context.module.css';
@@ -16,12 +17,10 @@ export function Context() {
 
   return (
     <div className={styles.page}>
-      <div>
-        <h1 className={styles.pageTitle}>Context</h1>
-        <p className={styles.pageDesc}>
-          Manage workspace context files that shape AI behavior. Select a file from the sidebar to edit.
-        </p>
-      </div>
+      <PageToolbar
+        title="Context"
+        subtitle="Manage workspace context files that shape AI behavior. Select a file from the sidebar to edit."
+      />
 
       <div className={styles.statGrid}>
         <StatCard label="Total Files" value={total} icon={FileText} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />

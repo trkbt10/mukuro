@@ -74,7 +74,8 @@ export function ProviderStep({ onComplete }: Props) {
         {providers?.map((p) => (
           <div
             key={p.name}
-            className={`${styles.providerCard} ${selected === p.name ? styles.selected : ''}`}
+            className={styles.providerCard}
+            data-selected={selected === p.name || undefined}
             onClick={() => setSelected(p.name)}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

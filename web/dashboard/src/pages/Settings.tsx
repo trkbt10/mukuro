@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { RotateCcw, Bot, Cpu, KeyRound } from 'lucide-react';
 import { Badge, Loading, StatCard } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import { useAllSettings, useAiProviders } from '@/hooks';
 import styles from './Settings.module.css';
 
@@ -20,10 +21,10 @@ export function Settings() {
 
   return (
     <div className={styles.page}>
-      <div>
-        <h1 className={styles.pageTitle}>Settings</h1>
-        <p className={styles.pageDesc}>Configure your mukuro instance. Select a section from the sidebar to edit.</p>
-      </div>
+      <PageToolbar
+        title="Settings"
+        subtitle="Configure your mukuro instance. Select a section from the sidebar to edit."
+      />
 
       <div className={styles.statGrid}>
         <StatCard label="Providers" value={aiProviders?.length ?? 0} icon={KeyRound} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />

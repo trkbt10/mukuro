@@ -324,7 +324,7 @@ export function Dashboard() {
             {plugins.slice(0, 6).map((p) => (
               <Link key={p.id} to={`/plugins/${p.id}`} className={styles.pluginRow}>
                 <div className={styles.pluginInfo}>
-                  <div className={p.enabled ? styles.pluginDotOn : styles.pluginDotOff} />
+                  <div className={styles.pluginDot} data-enabled={p.enabled || undefined} />
                   <span className={styles.pluginName}>{p.name}</span>
                 </div>
                 <span className={styles.pluginVersion}>v{p.version}</span>

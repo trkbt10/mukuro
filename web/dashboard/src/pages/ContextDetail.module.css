@@ -1,7 +1,2 @@
 .page { composes: page from '@/styles/page.module.css'; }
-.header { composes: pageHeader from '@/styles/page.module.css'; }
-.titleGroup { composes: titleGroup from '@/styles/page.module.css'; }
-.pageTitle { composes: pageTitle from '@/styles/page.module.css'; }
-.pageDesc { composes: pageDesc from '@/styles/page.module.css'; }
-.actions { composes: actions from '@/styles/page.module.css'; }
 .emptyState { composes: emptyState from '@/styles/page.module.css'; }

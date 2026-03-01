@@ -61,7 +61,7 @@ export interface TextareaProps
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, helperText, id, className, ...props }, ref) => {
+  ({ label, error, helperText, id, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
@@ -74,7 +74,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={inputId}
-          className={`${styles.textarea}${error ? ` ${styles.textareaError}` : ''}${className ? ` ${className}` : ''}`}
+          className={styles.textarea}
+          data-error={error ? true : undefined}
           {...props}
         />
         {error && <span className={styles.error}>{error}</span>}

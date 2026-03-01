@@ -80,6 +80,7 @@
   /* Layout */
   --mk-sidebar-width: 200px;
   --mk-header-height: 36px;
+  --mk-page-toolbar-height: 56px;
   --mk-statusbar-height: 24px;
 
   /* react-editor-ui token overrides */

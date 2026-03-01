@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Puzzle, PackageCheck, Upload, Activity } from 'lucide-react';
-import { Button, Badge, Loading, Modal, toast, StatCard } from '@/components/ui';
+import { Button, Badge, Loading, Modal, toast, StatCard, ContentPanel } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import { usePlugins, useUploadPlugin } from '@/hooks';
 import styles from './Plugins.module.css';
 
@@ -37,20 +38,26 @@ export function Plugins() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.pageTitle}>Plugins</h1>
-          <p className={styles.pageDesc}>Manage installed plugins. Select one from the sidebar to view details.</p>
-        </div>
-        <Button size="sm" onClick={() => setUploadModalOpen(true)} leftIcon={<Upload style={{ width: 14, height: 14 }} />}>
-          Upload Plugin
-        </Button>
-      </div>
+      <PageToolbar
+        title="Plugins"
+        subtitle="Manage installed plugins. Select one from the sidebar to view details."
+        actions={
+          <Button size="sm" onClick={() => setUploadModalOpen(true)} leftIcon={<Upload style={{ width: 14, height: 14 }} />}>
+            Upload Plugin
+          </Button>
+        }
+      />
 
       <div className={styles.statGrid}>
-        <StatCard label="Total" value={total} icon={Puzzle} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
-        <StatCard label="Active" value={active} icon={Activity} iconBg="var(--mk-success-subtle)" iconColor="var(--mk-success)" />
-        <StatCard label="Built-in" value={builtin} icon={PackageCheck} iconBg="var(--mk-info-subtle)" iconColor="var(--mk-info)" />
+        <ContentPanel>
+          <StatCard label="Total" value={total} icon={Puzzle} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
+        </ContentPanel>
+        <ContentPanel>
+          <StatCard label="Active" value={active} icon={Activity} iconBg="var(--mk-success-subtle)" iconColor="var(--mk-success)" />
+        </ContentPanel>
+        <ContentPanel>
+          <StatCard label="Built-in" value={builtin} icon={PackageCheck} iconBg="var(--mk-info-subtle)" iconColor="var(--mk-info)" />
+        </ContentPanel>
       </div>
 
       {total > 0 && (

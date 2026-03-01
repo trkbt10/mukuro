@@ -26,6 +26,6 @@
   cursor: not-allowed;
 }
 
-.textareaError {
+.textarea[data-error] {
   border-color: var(--mk-error);
 }

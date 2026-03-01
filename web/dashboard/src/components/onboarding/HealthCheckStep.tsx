@@ -74,7 +74,7 @@ export function HealthCheckStep({ onComplete, onGoToStep }: Props) {
 
           return (
             <div key={check.label} className={styles.checkRow}>
-              <div className={`${styles.checkIcon} ${styles[check.status]}`}>
+              <div className={styles.checkIcon} data-status={check.status}>
                 <Icon style={{ width: 16, height: 16 }} />
               </div>
               <div className={styles.checkInfo}>

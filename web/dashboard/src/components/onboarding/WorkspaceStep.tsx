@@ -230,16 +230,22 @@ export function WorkspaceStep({ onComplete }: Props) {
       </p>
 
       <div className={styles.tabBar}>
-        {TAB_ORDER.map((name) => (
-          <button
-            key={name}
-            className={`${styles.tab} ${activeTab === name ? styles.activeTab : ''} ${saved.has(name) ? styles.savedTab : ''}`}
-            onClick={() => setActiveTab(name)}
-          >
-            {saved.has(name) && <Check style={{ width: 10, height: 10, marginRight: 4, display: 'inline' }} />}
-            {TAB_LABELS[name]}
-          </button>
-        ))}
+        {TAB_ORDER.map((name) => {
+          const isActive = activeTab === name;
+          const isSaved = saved.has(name);
+          return (
+            <button
+              key={name}
+              className={styles.tab}
+              data-active={isActive || undefined}
+              data-saved={isSaved || undefined}
+              onClick={() => setActiveTab(name)}
+            >
+              {isSaved && <Check style={{ width: 10, height: 10, marginRight: 4, display: 'inline' }} />}
+              {TAB_LABELS[name]}
+            </button>
+          );
+        })}
       </div>
 
       <div className={styles.tabContent} key={activeTab}>

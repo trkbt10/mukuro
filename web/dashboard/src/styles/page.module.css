@@ -123,3 +123,53 @@
   font-size: var(--mk-font-size-md);
   color: var(--mk-text-secondary);
 }
+
+/* ── Panel grid layouts ── */
+
+/* 2-column panel grid (responsive) */
+.panelGrid2 {
+  display: grid;
+  gap: var(--mk-space-lg);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 900px) {
+  .panelGrid2 { grid-template-columns: 1fr; }
+}
+
+/* 3-column panel grid (responsive) */
+.panelGrid3 {
+  display: grid;
+  gap: var(--mk-space-lg);
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 900px) {
+  .panelGrid3 { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 901px) and (max-width: 1200px) {
+  .panelGrid3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Property list inside panels */
+.propList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-md);
+}
+
+/* Toggle row at bottom of panel (with separator) */
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--mk-space-md);
+  margin-top: var(--mk-space-sm);
+  border-top: 1px solid var(--mk-border-default);
+}
+
+.toggleLabel {
+  font-size: var(--mk-font-size-md);
+  color: var(--mk-text-primary);
+}

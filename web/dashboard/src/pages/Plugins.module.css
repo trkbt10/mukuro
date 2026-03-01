@@ -1,16 +1,32 @@
 .page { composes: page from '@/styles/page.module.css'; }
-.header { composes: pageHeader from '@/styles/page.module.css'; align-items: center; }
-.pageTitle { composes: pageTitle from '@/styles/page.module.css'; }
-.pageDesc { composes: pageDesc from '@/styles/page.module.css'; }
 
-.statGrid {
-  display: grid;
-  gap: var(--mk-space-lg);
-  grid-template-columns: repeat(3, 1fr);
+.statGrid { composes: panelGrid3 from '@/styles/page.module.css'; }
+
+.pluginList {
+  display: flex;
+  flex-direction: column;
+  background: var(--mk-bg-surface);
+  border: 1px solid var(--mk-border-default);
+  border-radius: var(--mk-radius-lg);
+  overflow: hidden;
 }
 
-.pluginList { composes: itemList from '@/styles/page.module.css'; }
-.pluginRow { composes: itemRow from '@/styles/page.module.css'; }
+.pluginRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--mk-space-md) var(--mk-space-xl);
+  border-bottom: 1px solid var(--mk-border-subtle);
+  transition: background 0.1s ease;
+}
+
+.pluginRow:last-child {
+  border-bottom: none;
+}
+
+.pluginRow:hover {
+  background: var(--mk-bg-surface-hover);
+}
 
 .pluginInfo {
   display: flex;

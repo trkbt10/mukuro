@@ -10,6 +10,7 @@ import {
   PropertyRow,
   DeleteConfirmModal,
 } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import {
   useMessageProvider,
   useEnableMessageProvider,
@@ -75,48 +76,48 @@ export function ProviderDetail() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.titleRow}>
-        <div>
-          <div className={styles.titleGroup}>
-            <h1 className={styles.pageTitle}>{provider.name}</h1>
-            <Badge variant={getStatusVariant(provider.status)} size="sm">
-              {provider.status}
-            </Badge>
-          </div>
-          <p className={styles.providerId}>{provider.id}</p>
-        </div>
-        <div className={styles.actions}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleConnect}
-            leftIcon={
-              provider.status === 'connected'
-                ? <PlugZap style={{ width: 14, height: 14, color: 'var(--mk-success)' }} />
-                : <Plug style={{ width: 14, height: 14 }} />
-            }
-          >
-            {provider.status === 'connected' ? 'Disconnect' : 'Connect'}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => testProvider.mutate(provider.id)}
-            loading={testProvider.isPending}
-            leftIcon={<TestTube style={{ width: 14, height: 14 }} />}
-          >
-            Test
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => setDeleteModalOpen(true)}
-            leftIcon={<Trash2 style={{ width: 14, height: 14 }} />}
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
+      <PageToolbar
+        back="/providers"
+        title={provider.name}
+        titleBadge={
+          <Badge variant={getStatusVariant(provider.status)} size="sm">
+            {provider.status}
+          </Badge>
+        }
+        actions={
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleConnect}
+              leftIcon={
+                provider.status === 'connected'
+                  ? <PlugZap style={{ width: 14, height: 14, color: 'var(--mk-success)' }} />
+                  : <Plug style={{ width: 14, height: 14 }} />
+              }
+            >
+              {provider.status === 'connected' ? 'Disconnect' : 'Connect'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => testProvider.mutate(provider.id)}
+              loading={testProvider.isPending}
+              leftIcon={<TestTube style={{ width: 14, height: 14 }} />}
+            >
+              Test
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setDeleteModalOpen(true)}
+              leftIcon={<Trash2 style={{ width: 14, height: 14 }} />}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      />
 
       <div className={styles.grid}>
         <PanelSection title="Details">

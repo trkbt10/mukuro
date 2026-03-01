@@ -17,13 +17,11 @@
   }
 }
 
-.messageRowUser {
-  composes: messageRow;
+.messageRow[data-role="user"] {
   align-self: flex-end;
 }
 
-.messageRowAssistant {
-  composes: messageRow;
+.messageRow[data-role="assistant"] {
   align-self: flex-start;
 }
 
@@ -36,15 +34,13 @@
   word-break: break-word;
 }
 
-.bubbleUser {
-  composes: bubble;
+.bubble[data-role="user"] {
   background: var(--mk-accent);
   color: #fff;
   border-bottom-right-radius: var(--mk-radius-sm);
 }
 
-.bubbleAssistant {
-  composes: bubble;
+.bubble[data-role="assistant"] {
   background: var(--mk-bg-surface);
   border: 1px solid var(--mk-border-default);
   color: var(--mk-text-primary);

@@ -7,36 +7,6 @@
   overflow: hidden;
 }
 
-/* ── Header ── */
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--mk-space-lg) var(--mk-space-xl);
-  border-bottom: 1px solid var(--mk-border-subtle);
-  flex-shrink: 0;
-}
-
-.titleGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-md);
-}
-
-.title {
-  font-size: var(--mk-font-size-lg);
-  font-weight: 600;
-  color: var(--mk-text-primary);
-  margin: 0;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-sm);
-}
-
 /* ── Two-panel body ── */
 
 .body {
@@ -103,8 +73,7 @@
   background: var(--mk-bg-surface);
 }
 
-.dateItemSelected {
-  composes: dateItem;
+.dateItem[data-selected] {
   background: var(--mk-accent-subtle, rgba(99, 102, 241, 0.1));
   color: var(--mk-accent);
   font-weight: 500;
@@ -168,8 +137,7 @@
   background: var(--mk-bg-surface);
 }
 
-.sessionItemSelected {
-  composes: sessionItem;
+.sessionItem[data-selected] {
   background: var(--mk-accent-subtle, rgba(99, 102, 241, 0.1));
   color: var(--mk-accent);
 }

@@ -7,36 +7,6 @@
   overflow: hidden;
 }
 
-/* ── Header ── */
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--mk-space-lg) var(--mk-space-xl);
-  border-bottom: 1px solid var(--mk-border-subtle);
-  flex-shrink: 0;
-}
-
-.titleGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-md);
-}
-
-.title {
-  font-size: var(--mk-font-size-lg);
-  font-weight: 600;
-  color: var(--mk-text-primary);
-  margin: 0;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: var(--mk-space-sm);
-}
-
 /* ── Message list ── */
 
 .messageList {
@@ -78,40 +48,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.messageRowUser {
-  composes: messageRow;
-  align-self: flex-end;
-}
-
-.messageRowAssistant {
-  composes: messageRow;
-  align-self: flex-start;
-}
-
-.bubble {
-  padding: var(--mk-space-md) var(--mk-space-lg);
-  border-radius: var(--mk-radius-lg);
-  font-size: var(--mk-font-size-md);
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.bubbleUser {
-  composes: bubble;
-  background: var(--mk-accent);
-  color: #fff;
-  border-bottom-right-radius: var(--mk-radius-sm);
-}
-
-.bubbleAssistant {
-  composes: bubble;
-  background: var(--mk-bg-surface);
-  border: 1px solid var(--mk-border-default);
-  color: var(--mk-text-primary);
-  border-bottom-left-radius: var(--mk-radius-sm);
 }
 
 /* ── Markdown inside assistant bubbles ── */

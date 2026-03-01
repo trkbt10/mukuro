@@ -67,22 +67,23 @@ export function OnboardingWizard() {
 
           {/* Progress */}
           <div className={styles.progress}>
-            {STEPS.map((s, i) => (
-              <div key={s.key} className={styles.stepItem}>
-                <div
-                  className={`${styles.stepDot} ${i === step ? styles.active : ''} ${completedSteps.has(i) ? styles.completed : ''}`}
-                >
-                  {completedSteps.has(i) ? (
-                    <Check style={{ width: 12, height: 12 }} />
-                  ) : (
-                    i + 1
+            {STEPS.map((s, i) => {
+              const state = completedSteps.has(i) ? 'completed' : i === step ? 'active' : 'default';
+              return (
+                <div key={s.key} className={styles.stepItem}>
+                  <div className={styles.stepDot} data-state={state}>
+                    {completedSteps.has(i) ? (
+                      <Check style={{ width: 12, height: 12 }} />
+                    ) : (
+                      i + 1
+                    )}
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className={styles.stepLine} data-filled={completedSteps.has(i) || undefined} />
                   )}
                 </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`${styles.stepLine} ${completedSteps.has(i) ? styles.filled : ''}`} />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

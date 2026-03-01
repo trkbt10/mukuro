@@ -1,13 +1,11 @@
 import { Outlet } from 'react-router-dom';
 import { GridLayout, type PanelLayoutConfig, type LayerDefinition } from 'react-panel-layout';
 import { Sidebar } from './Sidebar';
-import { AppStatusBar } from './AppStatusBar';
 import styles from './Layout.module.css';
 
 const config: PanelLayoutConfig = {
   areas: [
     ['sidebar', 'main'],
-    ['statusbar', 'statusbar'],
   ],
   columns: [
     { size: '200px', resizable: true, minSize: 160, maxSize: 300 },
@@ -15,7 +13,6 @@ const config: PanelLayoutConfig = {
   ],
   rows: [
     { size: '1fr' },
-    { size: '24px' },
   ],
 };
 
@@ -37,11 +34,6 @@ export function Layout() {
           </main>
         </div>
       ),
-    },
-    {
-      id: 'statusbar',
-      gridArea: 'statusbar',
-      component: <AppStatusBar />,
     },
   ];
 

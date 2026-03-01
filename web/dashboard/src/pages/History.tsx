@@ -13,6 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { IconButton, Badge } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import { AssistantContent } from '@/components/chat';
 import { useHistoryNavigation, formatHistoryDate } from '@/hooks';
 import { formatTimestamp, extractRecordContent } from '@/lib/messages';
@@ -123,17 +124,17 @@ export function History() {
 
   return (
     <div className={styles.page}>
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.titleGroup}>
-          <h1 className={styles.title}>History</h1>
-          {h.dates && (
+      <PageToolbar
+        title="History"
+        titleBadge={
+          h.dates && (
             <Badge variant="default" size="sm">
               {h.dates.length} date{h.dates.length !== 1 ? 's' : ''}
             </Badge>
-          )}
-        </div>
-        <div className={styles.actions}>
+          )
+        }
+        noPadding
+        actions={
           <IconButton
             icon={<RefreshCw style={{ width: 14, height: 14 }} />}
             aria-label="Refresh"
@@ -141,8 +142,8 @@ export function History() {
             variant="ghost"
             size="sm"
           />
-        </div>
-      </div>
+        }
+      />
 
       <div className={styles.body}>
         {/* Left panel */}
@@ -186,7 +187,8 @@ export function History() {
                 return (
                   <div
                     key={`${d.year}-${d.month}-${d.day}`}
-                    className={isSelected ? styles.dateItemSelected : styles.dateItem}
+                    className={styles.dateItem}
+                    data-selected={isSelected || undefined}
                     onClick={() => h.selectDate(d.year, d.month, d.day)}
                   >
                     <span>{formatHistoryDate(d.year, d.month, d.day)}</span>
@@ -208,7 +210,8 @@ export function History() {
               {h.sessions.map(s => (
                 <div
                   key={s.session_id}
-                  className={h.selectedSessionId === s.session_id ? styles.sessionItemSelected : styles.sessionItem}
+                  className={styles.sessionItem}
+                  data-selected={h.selectedSessionId === s.session_id || undefined}
                   onClick={() => h.selectSession(s.session_id)}
                 >
                   <span className={styles.sessionId} title={s.session_id}>

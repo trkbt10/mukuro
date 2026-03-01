@@ -9,6 +9,7 @@ import {
   Loading,
   PanelSection,
 } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import {
   useAllSettings,
   useUpdateRetrySettings,
@@ -61,10 +62,10 @@ export function SettingsDetail() {
 
   return (
     <div className={styles.page}>
-      <div>
-        <h1 className={styles.pageTitle}>{meta.title}</h1>
-        <p className={styles.pageDesc}>{meta.desc}</p>
-      </div>
+      <PageToolbar
+        back="/settings"
+        title={meta.title}
+      />
 
       {section === 'retry' && settings && <RetrySection settings={settings.retry} />}
       {section === 'agent' && settings && <AgentSection settings={settings.agent} />}
@@ -170,10 +171,10 @@ function ProviderDetailPage({ providerName }: { providerName: string }) {
 
   return (
     <div className={styles.page}>
-      <div>
-        <h1 className={styles.pageTitle}>{providerName}</h1>
-        <p className={styles.pageDesc}>Provider connection, model selection, and inference settings</p>
-      </div>
+      <PageToolbar
+        back="/settings"
+        title={providerName}
+      />
 
       <ProviderConnectionSection providerName={providerName} provider={provider} />
       <ModelInferenceSection inferenceSettings={inferenceSettings ?? null} />

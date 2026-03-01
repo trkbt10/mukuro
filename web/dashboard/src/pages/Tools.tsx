@@ -1,5 +1,6 @@
 import { Wrench, Activity, Puzzle, Server } from 'lucide-react';
 import { Badge, Loading, StatCard, Toggle } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import { useTools, useEnableTool, useDisableTool } from '@/hooks';
 import styles from './Tools.module.css';
 
@@ -31,12 +32,10 @@ export function Tools() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.pageTitle}>Tools</h1>
-          <p className={styles.pageDesc}>Manage available tools for the agent. Enable or disable tools to control agent capabilities.</p>
-        </div>
-      </div>
+      <PageToolbar
+        title="Tools"
+        subtitle="Manage available tools for the agent. Enable or disable tools to control agent capabilities."
+      />
 
       <div className={styles.statGrid}>
         <StatCard label="Total" value={stats.total} icon={Wrench} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />

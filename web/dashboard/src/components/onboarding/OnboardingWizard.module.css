@@ -112,14 +112,14 @@
   border: 1px solid var(--mk-border-default);
 }
 
-.stepDot.active {
+.stepDot[data-state="active"] {
   background: var(--mk-accent);
   color: var(--mk-bg-base);
   border-color: var(--mk-accent);
   box-shadow: 0 0 12px -2px var(--mk-accent);
 }
 
-.stepDot.completed {
+.stepDot[data-state="completed"] {
   background: var(--mk-success);
   color: var(--mk-bg-base);
   border-color: var(--mk-success);
@@ -132,7 +132,7 @@
   transition: background 200ms ease;
 }
 
-.stepLine.filled {
+.stepLine[data-filled] {
   background: var(--mk-success);
 }
 
@@ -214,7 +214,7 @@
   border-color: var(--mk-text-muted);
 }
 
-.providerCard.selected {
+.providerCard[data-selected] {
   border-color: var(--mk-accent);
   background: var(--mk-accent-subtle);
   box-shadow: 0 0 0 1px var(--mk-accent);
@@ -258,12 +258,12 @@
   color: var(--mk-text-secondary);
 }
 
-.tab.activeTab {
+.tab[data-active] {
   color: var(--mk-accent);
   border-bottom-color: var(--mk-accent);
 }
 
-.tab.savedTab {
+.tab[data-saved]:not([data-active]) {
   color: var(--mk-success);
 }
 
@@ -329,17 +329,17 @@
   flex-shrink: 0;
 }
 
-.checkIcon.ok {
+.checkIcon[data-status="ok"] {
   background: var(--mk-success-subtle);
   color: var(--mk-success);
 }
 
-.checkIcon.warn {
+.checkIcon[data-status="warn"] {
   background: var(--mk-warning-subtle);
   color: var(--mk-warning);
 }
 
-.checkIcon.error {
+.checkIcon[data-status="error"] {
   background: var(--mk-error-subtle);
   color: var(--mk-error);
 }

@@ -12,6 +12,7 @@ import {
   toast,
   StatCard,
 } from '@/components/ui';
+import { PageToolbar } from '@/components/layout/PageToolbar';
 import {
   useMessageProviders,
   useMessageProviderTypes,
@@ -73,15 +74,15 @@ export function MessageProviders() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.pageTitle}>Message Providers</h1>
-          <p className={styles.pageDesc}>Manage messaging platform connections. Select one from the sidebar to view details.</p>
-        </div>
-        <Button size="sm" onClick={() => setAddModalOpen(true)} leftIcon={<Plus style={{ width: 14, height: 14 }} />}>
-          Add Provider
-        </Button>
-      </div>
+      <PageToolbar
+        title="Message Providers"
+        subtitle="Manage messaging platform connections. Select one from the sidebar to view details."
+        actions={
+          <Button size="sm" onClick={() => setAddModalOpen(true)} leftIcon={<Plus style={{ width: 14, height: 14 }} />}>
+            Add Provider
+          </Button>
+        }
+      />
 
       <div className={styles.statGrid}>
         <StatCard label="Total" value={total} icon={Radio} iconBg="var(--mk-accent-subtle)" iconColor="var(--mk-accent)" />
