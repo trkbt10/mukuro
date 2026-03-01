@@ -27,6 +27,7 @@ import {
   "trkbt10/mukuro/core/session" @session,
   "trkbt10/mukuro/core/scheduler",
   "trkbt10/mukuro/core/sse" @sse,
+  "trkbt10/mukuro/core/history" @history,
   "trkbt10/mukuro/core/model/protocol" @protocol,
   "trkbt10/mukuro/core/tool" @tool,
   "trkbt10/mukuro/core/types" @types,
@@ -87,5 +88,6 @@ options(
     "service_commands_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "service_e2e_native_test.mbt": [ "native" ],
     "ws_chat_handler.mbt": [ "native" ],
+    "ws_chat_handler_wbtest.mbt": [ "native" ],
   },
 )

@@ -1404,6 +1404,13 @@ int moonbit_unsetenv(const char* name_utf16) {
 }
 
 /*
+ * errno を取得
+ */
+int moonbit_get_errno(void) {
+    return errno;
+}
+
+/*
  * putsラッパー - MoonBit UTF-16LE文字列を受け取る
  */
 int moonbit_puts(const char* s_utf16) {

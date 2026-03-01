@@ -33,8 +33,34 @@ pub(all) struct HistoryRecord {
 ///|
 /// 履歴記録エラー
 pub(all) suberror HistoryError {
+  /// 一般的なI/Oエラー
   IoError(String)
+  /// ディレクトリ作成失敗
   DirectoryCreationFailed(String)
+  /// パーミッション不足
+  PermissionDenied(String)
+  /// ファイルが開けない
+  FileOpenFailed(path~ : String, reason~ : String)
+  /// 書き込み失敗
+  WriteFailed(expected~ : Int, actual~ : Int)
+  /// セッションが初期化されていない（open_session未呼び出し）
+  NotInitialized
+}
+
+///|
+pub impl Show for HistoryError with output(self, logger) {
+  match self {
+    IoError(msg) => logger.write_string("IoError: \{msg}")
+    DirectoryCreationFailed(path) =>
+      logger.write_string("DirectoryCreationFailed: \{path}")
+    PermissionDenied(path) => logger.write_string("PermissionDenied: \{path}")
+    FileOpenFailed(path~, reason~) =>
+      logger.write_string("FileOpenFailed: \{path} (\{reason})")
+    WriteFailed(expected~, actual~) =>
+      logger.write_string("WriteFailed: wrote \{actual}/\{expected} bytes")
+    NotInitialized =>
+      logger.write_string("NotInitialized: open_session was not called")
+  }
 }
 
 ///|

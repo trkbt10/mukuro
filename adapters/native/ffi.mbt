@@ -142,6 +142,10 @@ pub extern "C" fn c_setenv(
 #borrow(name)
 pub extern "C" fn c_unsetenv(name : CString) -> Int = "moonbit_unsetenv"
 
+///|
+/// errno を取得
+pub extern "C" fn c_get_errno() -> Int = "moonbit_get_errno"
+
 // ============================================================
 // 文字列変換ヘルパー
 // ============================================================

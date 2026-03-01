@@ -216,26 +216,33 @@ pub async fn ChatWsHandler::handle_connection(
   self.create_session()
   ws_send_session(ws, self.chat_id)
 
-  // Open history session and record SessionMeta if new
+  // Open history session - エラーは throw する（静かに失敗しない）
   let session_id = "web_chat:\{self.chat_id}"
   let timestamp = get_timestamp_ms()
-  let is_new_session = @agent.safe_open_session(
-    Some(self.history_recorder),
-    session_id,
-    timestamp,
-  )
-  if is_new_session == Some(true) {
-    // Record SessionMeta for new session
-    @agent.record_session_meta(
-      Some(self.history_recorder),
-      Some(global_clock),
+  let is_new_session = self.history_recorder.open_session(
+    session_id~,
+    timestamp~,
+  ) catch {
+    e => {
+      // Show trait を使ってエラーを文字列化
+      ws_send_error(ws, "History recording disabled: \{e}", Some("HISTORY_ERROR"))
+      false
+    }
+  }
+  if is_new_session {
+    // Record SessionMeta for new session - エラーも通知
+    let meta_record : @interfaces.HistoryRecord = {
       timestamp,
       session_id,
-      Json::object({
+      record_type: @interfaces.HistoryRecordType::SessionMeta,
+      payload: Json::object({
         "channel": Json::string("web_chat"),
         "chat_id": Json::string(self.chat_id),
       }),
-    )
+    }
+    self.history_recorder.record(record=meta_record) catch {
+      e => ws_send_error(ws, "Failed to record session meta: \{e}", Some("HISTORY_ERROR"))
+    }
   }
 
   // Message loop
@@ -265,5 +272,7 @@ pub async fn ChatWsHandler::handle_connection(
   }
 
   // Close history recorder on WebSocket disconnect
-  @agent.safe_close(Some(self.history_recorder))
+  self.history_recorder.close() catch {
+    _ => () // close 失敗は無視（接続切断時なので通知できない）
+  }
 }

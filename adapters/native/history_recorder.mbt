@@ -71,9 +71,16 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with open_session
     string_to_utf8_cstring("a"),
   )
   if handle == 0L {
-    raise @interfaces.HistoryError::IoError(
-      "Cannot open history file: \{file_path}",
-    )
+    // errno をチェックしてより具体的なエラーを返す
+    let errno_val = c_get_errno()
+    let reason = match errno_val {
+      13 => "permission denied"
+      2 => "no such file or directory"
+      28 => "no space left on device"
+      24 => "too many open files"
+      _ => "errno=\{errno_val}"
+    }
+    raise @interfaces.HistoryError::FileOpenFailed(path=file_path, reason~)
   }
   self.current_file_handle = handle
   self.current_file_path = file_path
@@ -87,17 +94,16 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with record(
   record~,
 ) -> Unit raise @interfaces.HistoryError {
   if self.current_file_handle == 0L {
-    raise @interfaces.HistoryError::IoError(
-      "History recorder not initialized",
-    )
+    raise @interfaces.HistoryError::NotInitialized
   }
   let data = @utf8.encode(@history.record_to_json_line(record) + "\n")
   let written = c_fwrite_handle(
     data, 1, data.length(), self.current_file_handle,
   )
   if written != data.length() {
-    raise @interfaces.HistoryError::IoError(
-      "Write failed: wrote \{written}/\{data.length()} bytes",
+    raise @interfaces.HistoryError::WriteFailed(
+      expected=data.length(),
+      actual=written,
     )
   }
   let _ = c_fflush_handle(self.current_file_handle)
