@@ -858,7 +858,7 @@ test "file existence: verify file is created on disk after record" {
   // 実際のファイルパスを計算
   let epoch_secs = timestamp / 1000L
   let (year, month, day) = @native.native_epoch_to_date(epoch_secs) catch {
-    e => fail("native_epoch_to_date failed: \{e}")
+    _ => fail("native_epoch_to_date failed")
   }
   let dir_path = @history.history_dir_for_date(data_dir, year, month, day)
   let (channel, chat_id) = @history.split_session_id(session_id)
