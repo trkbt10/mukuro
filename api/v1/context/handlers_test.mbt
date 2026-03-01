@@ -249,9 +249,9 @@ test "ContextFileType::filename returns correct filenames" {
 }
 
 ///|
-test "all_context_file_types returns all 6 types" {
+test "all_context_file_types returns all 7 types" {
   let types = all_context_file_types()
-  assert_eq(types.length(), 6)
+  assert_eq(types.length(), 7)
 }
 
 ///|

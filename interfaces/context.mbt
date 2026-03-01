@@ -22,6 +22,8 @@ pub(all) struct ContextFiles {
   identity : String?
   /// USER.md - ユーザー情報・好み
   user_context : String?
+  /// HEARTBEAT.md - 定期タスクチェックリスト
+  heartbeat : String?
 }
 
 ///|
@@ -33,6 +35,7 @@ pub fn ContextFiles::empty() -> ContextFiles {
     tools_config: None,
     identity: None,
     user_context: None,
+    heartbeat: None,
   }
 }
 

@@ -269,6 +269,7 @@ test "DefaultContextBuilder includes SOUL.md in system prompt" {
       tools_config: None,
       identity: None,
       user_context: None,
+      heartbeat: None,
     },
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
@@ -307,6 +308,7 @@ test "DefaultContextBuilder includes all context files" {
       tools_config: Some("Tools content"),
       identity: Some("Identity content"),
       user_context: Some("User content"),
+      heartbeat: None,
     },
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
@@ -332,6 +334,7 @@ test "ContextFiles::empty returns all None" {
   inspect(files.tools_config, content="None")
   inspect(files.identity, content="None")
   inspect(files.user_context, content="None")
+  inspect(files.heartbeat, content="None")
 }
 
 ///|
@@ -342,6 +345,7 @@ test "ContextFiles::has_soul returns true when soul is set" {
     tools_config: None,
     identity: None,
     user_context: None,
+    heartbeat: None,
   }
   inspect(files.has_soul(), content="true")
 }
@@ -354,6 +358,7 @@ test "ContextFiles::has_soul returns false when soul is empty" {
     tools_config: None,
     identity: None,
     user_context: None,
+    heartbeat: None,
   }
   inspect(files.has_soul(), content="false")
 }
@@ -366,6 +371,7 @@ test "ContextFiles::has_soul returns false when soul is None" {
     tools_config: None,
     identity: None,
     user_context: None,
+    heartbeat: None,
   }
   inspect(files.has_soul(), content="false")
 }
@@ -414,6 +420,7 @@ test "DefaultContextBuilder context_files ordering in system prompt" {
       tools_config: Some("TOOLS_MARKER"),
       identity: Some("IDENTITY_MARKER"),
       user_context: Some("USER_MARKER"),
+      heartbeat: None,
     },
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
@@ -468,6 +475,7 @@ test "SystemPromptMode::Replace preserves context_files sections" {
       tools_config: None,
       identity: Some("Identity info"),
       user_context: None,
+      heartbeat: None,
     },
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)

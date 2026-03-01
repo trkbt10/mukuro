@@ -11,6 +11,7 @@ pub(all) enum ContextFileType {
   Identity
   User
   Bootstrap
+  Heartbeat
 } derive(Eq, Show)
 
 ///|
@@ -23,6 +24,7 @@ pub fn ContextFileType::from_string(s : String) -> ContextFileType? {
     "identity" => Some(ContextFileType::Identity)
     "user" => Some(ContextFileType::User)
     "bootstrap" => Some(ContextFileType::Bootstrap)
+    "heartbeat" => Some(ContextFileType::Heartbeat)
     _ => None
   }
 }
@@ -37,6 +39,7 @@ pub fn ContextFileType::to_string(self : ContextFileType) -> String {
     ContextFileType::Identity => "identity"
     ContextFileType::User => "user"
     ContextFileType::Bootstrap => "bootstrap"
+    ContextFileType::Heartbeat => "heartbeat"
   }
 }
 
@@ -50,6 +53,7 @@ pub fn ContextFileType::filename(self : ContextFileType) -> String {
     ContextFileType::Identity => "IDENTITY.md"
     ContextFileType::User => "USER.md"
     ContextFileType::Bootstrap => "bootstrap.md"
+    ContextFileType::Heartbeat => "HEARTBEAT.md"
   }
 }
 
@@ -63,6 +67,7 @@ pub fn ContextFileType::description(self : ContextFileType) -> String {
     ContextFileType::Identity => "AI identity and name"
     ContextFileType::User => "User preferences and context"
     ContextFileType::Bootstrap => "Base system instructions"
+    ContextFileType::Heartbeat => "Periodic task checklist"
   }
 }
 
@@ -76,6 +81,7 @@ pub fn all_context_file_types() -> Array[ContextFileType] {
     ContextFileType::Agents,
     ContextFileType::Tools,
     ContextFileType::User,
+    ContextFileType::Heartbeat,
   ]
 }
 
@@ -134,6 +140,7 @@ pub fn ContextFileType::default_template(self : ContextFileType) -> String {
     ContextFileType::Agents => default_agents_template
     ContextFileType::Tools => default_tools_template
     ContextFileType::User => default_user_template
+    ContextFileType::Heartbeat => default_heartbeat_template
   }
 }
 
@@ -345,6 +352,34 @@ let default_user_template : String =
   #|---
   #|
   #|The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.
+
+///|
+let default_heartbeat_template : String =
+  #|# HEARTBEAT.md - Periodic Tasks
+  #|
+  #|_Keep this file empty (or with only comments) to skip heartbeat API calls._
+  #|
+  #|_Add tasks below when you want the agent to check something periodically._
+  #|
+  #|## Example Tasks
+  #|
+  #|```markdown
+  #|- [ ] Check for unread messages in #general
+  #|- [ ] Review pending pull requests
+  #|- [ ] Update daily notes with recent activity
+  #|```
+  #|
+  #|## How It Works
+  #|
+  #|When heartbeat is enabled, the agent will:
+  #|
+  #|1. Read this file at configured intervals
+  #|2. Process any active tasks listed here
+  #|3. Report status back to the control channel
+  #|
+  #|---
+  #|
+  #|_Define your recurring checks and reminders here._
 
 ///|
 /// All context files response
