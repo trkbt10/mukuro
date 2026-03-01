@@ -153,3 +153,225 @@ pub impl HistoryReader for NoOpHistoryReader with list_sessions(
 pub impl HistoryReader for NoOpHistoryReader with list_dates(_self) -> Array[(Int, Int, Int)] raise HistoryError {
   []
 }
+
+// ============================================================
+// History Metadata Store — SQLiteベースのセッションメタデータ管理
+// ============================================================
+
+///|
+/// セッションメタデータ
+/// SQLiteに保存されるセッションの要約情報
+pub(all) struct SessionMetadata {
+  /// セッション識別子（channel:chat_id 形式）
+  session_id : String
+  /// チャンネル名
+  channel : String
+  /// チャットID
+  chat_id : String
+  /// ユーザー指定または自動生成のタイトル
+  title : String?
+  /// 最初のユーザーメッセージ（プレビュー用）
+  first_message : String?
+  /// 総メッセージ数
+  message_count : Int
+  /// ユーザーメッセージ数
+  user_message_count : Int
+  /// アシスタントメッセージ数
+  assistant_message_count : Int
+  /// ツール呼び出し数
+  tool_call_count : Int
+  /// セッション作成時刻（Unix epoch ミリ秒）
+  created_at : Int64
+  /// 最終更新時刻（Unix epoch ミリ秒）
+  updated_at : Int64
+  /// JSONLファイルのパス（高速 read_session 用）
+  file_path : String
+  /// 使用モデル名
+  model_name : String?
+}
+
+///|
+/// メタデータストアエラー
+pub(all) suberror MetadataStoreError {
+  /// データベース操作エラー
+  DatabaseError(String)
+  /// セッションが見つからない
+  NotFound(String)
+  /// 無効なデータ
+  InvalidData(String)
+}
+
+///|
+pub impl Show for MetadataStoreError with output(self, logger) {
+  match self {
+    DatabaseError(msg) => logger.write_string("DatabaseError: \{msg}")
+    NotFound(id) => logger.write_string("NotFound: \{id}")
+    InvalidData(msg) => logger.write_string("InvalidData: \{msg}")
+  }
+}
+
+///|
+/// 履歴メタデータストア トレイト
+/// セッションのメタデータをSQLiteで管理する
+pub(open) trait HistoryMetadataStore {
+  /// データベースを開く（スキーマ作成含む）
+  open(Self) -> Unit raise MetadataStoreError
+
+  /// セッションメタデータを upsert（新規または更新）
+  upsert(Self, metadata~ : SessionMetadata) -> Unit raise MetadataStoreError
+
+  /// session_id でメタデータを取得
+  get(Self, session_id~ : String) -> SessionMetadata? raise MetadataStoreError
+
+  /// メッセージカウントをインクリメント
+  increment_counts(
+    Self,
+    session_id~ : String,
+    user~ : Int,
+    assistant~ : Int,
+    tool~ : Int
+  ) -> Unit raise MetadataStoreError
+
+  /// タイトルを更新
+  update_title(Self, session_id~ : String, title~ : String) -> Unit raise MetadataStoreError
+
+  /// first_message を設定（未設定の場合のみ）
+  set_first_message(Self, session_id~ : String, message~ : String) -> Unit raise MetadataStoreError
+
+  /// 日付別セッション一覧（メタデータ付き）
+  list_by_date(
+    Self,
+    year~ : Int,
+    month~ : Int,
+    day~ : Int
+  ) -> Array[SessionMetadata] raise MetadataStoreError
+
+  /// 最近のセッション一覧
+  list_recent(
+    Self,
+    limit~ : Int,
+    offset~ : Int
+  ) -> Array[SessionMetadata] raise MetadataStoreError
+
+  /// 全文検索
+  search(Self, query~ : String, limit~ : Int) -> Array[SessionMetadata] raise MetadataStoreError
+
+  /// セッション削除
+  delete(Self, session_id~ : String) -> Unit raise MetadataStoreError
+
+  /// データベースを閉じる
+  close(Self) -> Unit
+}
+
+///|
+/// 何もしないNoOp実装（テスト用、無効化用）
+pub struct NoOpMetadataStore {}
+
+///|
+pub fn NoOpMetadataStore::new() -> NoOpMetadataStore {
+  NoOpMetadataStore::{  }
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with open(_self) -> Unit raise MetadataStoreError {
+  // no-op
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with upsert(
+  _self,
+  metadata~,
+) -> Unit raise MetadataStoreError {
+  ignore(metadata)
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with get(
+  _self,
+  session_id~,
+) -> SessionMetadata? raise MetadataStoreError {
+  ignore(session_id)
+  None
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with increment_counts(
+  _self,
+  session_id~,
+  user~,
+  assistant~,
+  tool~,
+) -> Unit raise MetadataStoreError {
+  ignore(session_id)
+  ignore(user)
+  ignore(assistant)
+  ignore(tool)
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with update_title(
+  _self,
+  session_id~,
+  title~,
+) -> Unit raise MetadataStoreError {
+  ignore(session_id)
+  ignore(title)
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with set_first_message(
+  _self,
+  session_id~,
+  message~,
+) -> Unit raise MetadataStoreError {
+  ignore(session_id)
+  ignore(message)
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with list_by_date(
+  _self,
+  year~,
+  month~,
+  day~,
+) -> Array[SessionMetadata] raise MetadataStoreError {
+  ignore(year)
+  ignore(month)
+  ignore(day)
+  []
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with list_recent(
+  _self,
+  limit~,
+  offset~,
+) -> Array[SessionMetadata] raise MetadataStoreError {
+  ignore(limit)
+  ignore(offset)
+  []
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with search(
+  _self,
+  query~,
+  limit~,
+) -> Array[SessionMetadata] raise MetadataStoreError {
+  ignore(query)
+  ignore(limit)
+  []
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with delete(
+  _self,
+  session_id~,
+) -> Unit raise MetadataStoreError {
+  ignore(session_id)
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with close(_self) -> Unit {
+  // no-op
+}

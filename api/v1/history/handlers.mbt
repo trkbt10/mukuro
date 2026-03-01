@@ -6,11 +6,21 @@
 /// History state holder
 pub(all) struct HistoryState {
   reader : &@interfaces.HistoryReader
+  metadata_store : (&@interfaces.HistoryMetadataStore)?
 }
 
 ///|
 pub fn HistoryState::new(reader : &@interfaces.HistoryReader) -> HistoryState {
-  { reader, }
+  { reader, metadata_store: None }
+}
+
+///|
+/// メタデータストア付きでステートを作成
+pub fn HistoryState::new_with_metadata_store(
+  reader : &@interfaces.HistoryReader,
+  metadata_store : &@interfaces.HistoryMetadataStore,
+) -> HistoryState {
+  { reader, metadata_store: Some(metadata_store) }
 }
 
 ///|
@@ -115,6 +125,24 @@ fn handle_list_sessions(
   let day = @core_history.parse_int_string(day_str)
   match (year, month, day) {
     (Some(y), Some(m), Some(d)) => {
+      // メタデータストアがあればそちらを使う
+      match state.metadata_store {
+        Some(store) => {
+          let metas = store.list_by_date(year=y, month=m, day=d) catch {
+            _ =>
+              return @api.error_response(
+                500, "internal_error", "Failed to list sessions from metadata",
+              )
+          }
+          let summaries : Array[Json] = []
+          for meta in metas {
+            summaries.push(session_summary_from_metadata(meta).to_json())
+          }
+          return @api.json_response(200, { "data": Json::array(summaries) })
+        }
+        None => ()
+      }
+      // フォールバック: ファイルシステムから取得
       let filenames = state.reader.list_sessions(year=y, month=m, day=d) catch {
         _ =>
           return @api.error_response(
@@ -133,6 +161,13 @@ fn handle_list_sessions(
                 filename,
                 started_at: epoch_secs,
                 record_count: 0,
+                title: None,
+                first_message: None,
+                message_count: 0,
+                user_message_count: 0,
+                assistant_message_count: 0,
+                tool_call_count: 0,
+                model_name: None,
               }.to_json(),
             )
           None => ()
