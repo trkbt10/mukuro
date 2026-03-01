@@ -24,3 +24,4 @@ node_modules/
 dist/
 bun.lock
 *.tsbuildinfo
+test-results/
