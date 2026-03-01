@@ -70,16 +70,6 @@ const char* moonbit_get_exe_path(void) {
     return "";
 }
 
-
-/*
- * stderrを取得する
- * MoonBitからは直接グローバル変数にアクセスできないため、
- * 関数経由で取得する
- */
-FILE* moonbit_get_stderr(void) {
-    return stderr;
-}
-
 /*
  * シグナル受信フラグ
  * 0: シグナル未受信
@@ -865,6 +855,62 @@ int moonbit_ipc_client_request(
 }
 
 /*
+ * IPCクライアントでリクエスト送信 - UTF-8 Bytes版
+ */
+int moonbit_ipc_client_request_bytes(
+    int token_pid,
+    int session_id,
+    int command,
+    const unsigned char* client_id_utf8,
+    unsigned char* response_buf,
+    int response_buf_len
+) {
+    if (!response_buf || response_buf_len <= 0) return -1;
+
+    char socket_path[1024];
+    if (get_default_ipc_socket_path(socket_path, sizeof(socket_path)) != 0) return -1;
+
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) return -1;
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path) - 1);
+
+    if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+        close(fd);
+        return -1;
+    }
+
+    char req[256];
+    const char* command_text = "status";
+    char client_id[64] = "cli-unknown";
+    if (client_id_utf8) {
+        strncpy(client_id, (const char*)client_id_utf8, sizeof(client_id) - 1);
+        client_id[sizeof(client_id) - 1] = '\0';
+        sanitize_client_id(client_id);
+    }
+    if (command == 2) {
+        command_text = "stop";
+    }
+    snprintf(req, sizeof(req), "%d %d %s %s\n", token_pid, session_id, command_text, client_id);
+    if (write(fd, req, strlen(req)) < 0) {
+        close(fd);
+        return -1;
+    }
+
+    ssize_t n = read(fd, (char*)response_buf, response_buf_len - 1);
+    if (n < 0) {
+        close(fd);
+        return -1;
+    }
+    response_buf[n] = '\0';
+    close(fd);
+    return (int)n;
+}
+
+/*
  * 直近IPCリクエストのclient_idを取得する
  */
 int moonbit_ipc_get_last_client_id(char* response_buf, int response_buf_len) {
@@ -1138,6 +1184,90 @@ int moonbit_append_gateway_auth_audit_detail(
 }
 
 /*
+ * IPC/Control API認証監査ログ（詳細）を追記する - UTF-8 Bytes版
+ */
+int moonbit_append_gateway_auth_audit_detail_bytes(
+    int64_t now,
+    int event,
+    int value,
+    const unsigned char* source_utf8,
+    const unsigned char* client_id_utf8,
+    int session_id,
+    const unsigned char* reason_utf8,
+    int token_age_sec,
+    int64_t blocked_until
+) {
+    char source[32] = "unknown";
+    char client_id[96] = "unknown";
+    char reason[64] = "unknown";
+    if (source_utf8) {
+        strncpy(source, (const char*)source_utf8, sizeof(source) - 1);
+        source[sizeof(source) - 1] = '\0';
+    }
+    if (client_id_utf8) {
+        strncpy(client_id, (const char*)client_id_utf8, sizeof(client_id) - 1);
+        client_id[sizeof(client_id) - 1] = '\0';
+    }
+    if (reason_utf8) {
+        strncpy(reason, (const char*)reason_utf8, sizeof(reason) - 1);
+        reason[sizeof(reason) - 1] = '\0';
+    }
+    sanitize_client_id(client_id);
+
+    if (event == 1 && strcmp(source, "ipc") == 0 && strcmp(reason, "unauthorized") == 0) {
+        if (now - g_last_auth_failure_audit_at < 2) {
+            return 0;
+        }
+        g_last_auth_failure_audit_at = now;
+    }
+
+    char path[1024];
+    if (get_default_gateway_auth_log_path(path, sizeof(path)) != 0) {
+        return -1;
+    }
+
+    char* copy = strdup(path);
+    if (!copy) return -1;
+    char* last_slash = strrchr(copy, '/');
+    if (last_slash && last_slash != copy) {
+        *last_slash = '\0';
+        mkdir(copy, 0755);
+    }
+    free(copy);
+
+    FILE* f = fopen(path, "a");
+    if (!f) return -1;
+
+    const char* event_text = "unknown";
+    if (event == 1) {
+        event_text = "auth_failed";
+    } else if (event == 2) {
+        event_text = "rate_limited_start";
+    } else if (event == 3) {
+        event_text = "rate_limited_end";
+    } else if (event == 4) {
+        event_text = "forbidden";
+    }
+
+    fprintf(
+        f,
+        "{\"ts\":%lld,\"event\":\"%s\",\"source\":\"%s\",\"client_id\":\"%s\",\"session_id\":%d,\"reason\":\"%s\",\"value\":%d,\"token_age_sec\":%d,\"blocked_until\":%lld}\n",
+        (long long)now,
+        event_text,
+        source,
+        client_id,
+        session_id,
+        reason,
+        value,
+        token_age_sec,
+        (long long)blocked_until
+    );
+    fclose(f);
+    chmod(path, 0600);
+    return 0;
+}
+
+/*
  * UTF-16LE文字列（MoonBit native）から完全なUTF-8 C文字列に変換するヘルパー
  * UTF-8の全範囲をサポート
  */
@@ -1191,37 +1321,6 @@ static int utf16le_to_utf8(const char* utf16, char* out, int max_len) {
     out[i] = '\0';
 
     return i > 0 ? i : -1;
-}
-
-/*
- * Convert MoonBit UTF-16LE string to UTF-8 C string in a buffer
- * src_utf16: UTF-16LE encoded MoonBit string
- * dst: output buffer for UTF-8 string
- * dst_len: size of output buffer
- * returns: length of converted string, or -1 on error
- */
-int moonbit_string_to_cstring(const char* src_utf16, char* dst, int dst_len) {
-    return utf16le_to_utf8(src_utf16, dst, dst_len);
-}
-
-/*
- * popenラッパー - MoonBit UTF-16LE文字列を受け取る
- * command: UTF-16LEエンコードされたコマンド文字列
- * mode: UTF-16LEエンコードされたモード文字列 ("r" or "w")
- * returns: FILEポインタ、失敗時はNULL
- */
-FILE* moonbit_popen(const char* command_utf16, const char* mode_utf16) {
-    char command[8192];
-    char mode[8];
-
-    if (utf16le_to_utf8(command_utf16, command, sizeof(command)) < 0) {
-        return NULL;
-    }
-    if (utf16le_to_utf8(mode_utf16, mode, sizeof(mode)) < 0) {
-        return NULL;
-    }
-
-    return popen(command, mode);
 }
 
 /*
@@ -1289,28 +1388,343 @@ int moonbit_fflush_handle(int64_t handle) {
     return fflush(f);
 }
 
+/* ============================================================
+ * UTF-8 Bytes versions (Pattern B)
+ * These take null-terminated UTF-8 bytes directly from MoonBit
+ * ============================================================ */
+
 /*
- * pcloseラッパー
+ * access with UTF-8 bytes
  */
-int moonbit_pclose(FILE* stream) {
-    return pclose(stream);
+int moonbit_access_bytes(const unsigned char* path, int mode) {
+    return access((const char*)path, mode);
 }
 
 /*
- * fopenラッパー - MoonBit UTF-16LE文字列を受け取る
+ * remove with UTF-8 bytes
  */
-FILE* moonbit_fopen(const char* path_utf16, const char* mode_utf16) {
-    char path[1024];
-    char mode[8];
+int moonbit_remove_bytes(const unsigned char* path) {
+    return remove((const char*)path);
+}
 
-    if (utf16le_to_utf8(path_utf16, path, sizeof(path)) < 0) {
-        return NULL;
+/*
+ * mkdir with UTF-8 bytes
+ */
+int moonbit_mkdir_bytes(const unsigned char* path, int mode) {
+    return mkdir((const char*)path, (mode_t)mode);
+}
+
+/*
+ * mkdir recursive with UTF-8 bytes
+ */
+int moonbit_mkdir_recursive_bytes(const unsigned char* path, int mode) {
+    char tmp[1024];
+    strncpy(tmp, (const char*)path, sizeof(tmp) - 1);
+    tmp[sizeof(tmp) - 1] = '\0';
+
+    for (char* p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = '\0';
+            if (mkdir(tmp, (mode_t)mode) != 0 && errno != EEXIST) {
+                struct stat st;
+                if (stat(tmp, &st) != 0 || !S_ISDIR(st.st_mode)) {
+                    return -1;
+                }
+            }
+            *p = '/';
+        }
     }
-    if (utf16le_to_utf8(mode_utf16, mode, sizeof(mode)) < 0) {
-        return NULL;
+    if (mkdir(tmp, (mode_t)mode) != 0 && errno != EEXIST) {
+        struct stat st;
+        if (stat(tmp, &st) != 0 || !S_ISDIR(st.st_mode)) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/*
+ * list_dir with UTF-8 bytes input, UTF-16LE output
+ * Note: Output format remains UTF-16LE for MoonBit String compatibility
+ */
+int moonbit_list_dir_bytes(const unsigned char* path, char* buffer, int buffer_len) {
+    if (!path || !buffer || buffer_len <= 0) return -1;
+
+    DIR* dir = opendir((const char*)path);
+    if (!dir) return -1;
+
+    int written = 0;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        int name_len = (int)strlen(entry->d_name);
+        int needed = (name_len + 1) * 2;
+        if (written + needed >= buffer_len) break;
+
+        for (int i = 0; i < name_len; i++) {
+            buffer[written++] = (unsigned char)entry->d_name[i];
+            buffer[written++] = 0;
+        }
+        buffer[written++] = '\n';
+        buffer[written++] = 0;
+    }
+    closedir(dir);
+    return written;
+}
+
+/*
+ * setenv with UTF-8 bytes
+ */
+int moonbit_setenv_bytes(const unsigned char* name, const unsigned char* value, int overwrite) {
+    return setenv((const char*)name, (const char*)value, overwrite);
+}
+
+/*
+ * unsetenv with UTF-8 bytes
+ */
+int moonbit_unsetenv_bytes(const unsigned char* name) {
+    return unsetenv((const char*)name);
+}
+
+/*
+ * system with UTF-8 bytes
+ */
+int moonbit_system_bytes(const unsigned char* command) {
+    return system((const char*)command);
+}
+
+/*
+ * write_pid_file with UTF-8 bytes
+ */
+int moonbit_write_pid_file_bytes(const unsigned char* path, int pid) {
+    const char* p = (const char*)path;
+
+    // Create parent directory
+    char* path_copy = strdup(p);
+    if (!path_copy) return -1;
+
+    char* last_slash = strrchr(path_copy, '/');
+    if (last_slash && last_slash != path_copy) {
+        *last_slash = '\0';
+        mkdir(path_copy, 0755);
+    }
+    free(path_copy);
+
+    FILE* f = fopen(p, "w");
+    if (!f) return -1;
+
+    fprintf(f, "%d\n", pid);
+    fclose(f);
+    return 0;
+}
+
+/*
+ * write_text_file with UTF-8 bytes
+ */
+int moonbit_write_text_file_bytes(const unsigned char* path, const unsigned char* content) {
+    const char* p = (const char*)path;
+
+    char* path_copy = strdup(p);
+    if (!path_copy) return -1;
+
+    char* last_slash = strrchr(path_copy, '/');
+    if (last_slash && last_slash != path_copy) {
+        *last_slash = '\0';
+        mkdir(path_copy, 0755);
+    }
+    free(path_copy);
+
+    FILE* f = fopen(p, "w");
+    if (!f) return -1;
+    if (fputs((const char*)content, f) < 0) {
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+    return 0;
+}
+
+/*
+ * read_text_file with UTF-8 bytes
+ */
+int moonbit_read_text_file_bytes(const unsigned char* path, unsigned char* buffer, int buffer_len) {
+    if (!buffer || buffer_len <= 0) return -1;
+
+    FILE* f = fopen((const char*)path, "r");
+    if (!f) return -1;
+
+    size_t n = fread(buffer, 1, (size_t)buffer_len, f);
+    if (ferror(f)) {
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+    return (int)n;
+}
+
+/*
+ * read_pid_file with UTF-8 bytes
+ */
+int moonbit_read_pid_file_bytes(const unsigned char* path) {
+    FILE* f = fopen((const char*)path, "r");
+    if (!f) return -1;
+
+    int pid = -1;
+    if (fscanf(f, "%d", &pid) != 1) {
+        pid = -1;
+    }
+    fclose(f);
+    return pid;
+}
+
+/*
+ * file_exists with UTF-8 bytes
+ */
+int moonbit_file_exists_bytes(const unsigned char* path) {
+    return access((const char*)path, F_OK) == 0 ? 1 : 0;
+}
+
+/*
+ * remove_file with UTF-8 bytes
+ */
+int moonbit_remove_file_bytes(const unsigned char* path) {
+    return remove((const char*)path);
+}
+
+/*
+ * chmod_file with UTF-8 bytes
+ */
+int moonbit_chmod_file_bytes(const unsigned char* path, int mode) {
+    return chmod((const char*)path, (mode_t)mode);
+}
+
+/*
+ * spawn_daemon with UTF-8 bytes
+ */
+int moonbit_spawn_daemon_bytes(const unsigned char* pid_path_utf8) {
+    char exe_path[1024];
+    char pid_path_abs[1024];
+    const char* pid_path = (const char*)pid_path_utf8;
+
+    // Convert relative path to absolute
+    if (pid_path[0] == '/') {
+        strncpy(pid_path_abs, pid_path, sizeof(pid_path_abs) - 1);
+        pid_path_abs[sizeof(pid_path_abs) - 1] = '\0';
+    } else {
+        char cwd[768];
+        if (!getcwd(cwd, sizeof(cwd))) {
+            fprintf(stderr, "spawn_daemon: getcwd failed\n");
+            return -1;
+        }
+        snprintf(pid_path_abs, sizeof(pid_path_abs), "%s/%s", cwd, pid_path);
     }
 
-    return fopen(path, mode);
+    const char* current_exe = moonbit_get_exe_path();
+    if (!current_exe || current_exe[0] == '\0') {
+        fprintf(stderr, "spawn_daemon: failed to resolve executable path\n");
+        return -1;
+    }
+    strncpy(exe_path, current_exe, sizeof(exe_path) - 1);
+    exe_path[sizeof(exe_path) - 1] = '\0';
+
+    char* argv_direct[] = { exe_path, "--daemon-child", pid_path_abs, NULL };
+    char** argv = argv_direct;
+    const char* base = strrchr(exe_path, '/');
+    base = base ? (base + 1) : exe_path;
+    if (strcmp(base, "moon") == 0) {
+        return -2;
+    }
+
+    posix_spawnattr_t attr;
+    posix_spawn_file_actions_t file_actions;
+
+    if (posix_spawnattr_init(&attr) != 0) return -1;
+    if (posix_spawn_file_actions_init(&file_actions) != 0) {
+        posix_spawnattr_destroy(&attr);
+        return -1;
+    }
+
+#ifdef POSIX_SPAWN_SETSID
+    posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETSID);
+#endif
+
+    int devnull = open("/dev/null", O_RDWR);
+    if (devnull >= 0) {
+        posix_spawn_file_actions_adddup2(&file_actions, devnull, STDIN_FILENO);
+        posix_spawn_file_actions_adddup2(&file_actions, devnull, STDOUT_FILENO);
+        posix_spawn_file_actions_adddup2(&file_actions, devnull, STDERR_FILENO);
+        posix_spawn_file_actions_addclose(&file_actions, devnull);
+    }
+
+    pid_t child_pid;
+    int spawn_result = posix_spawn(&child_pid, exe_path, &file_actions, &attr, argv, environ);
+
+    posix_spawnattr_destroy(&attr);
+    posix_spawn_file_actions_destroy(&file_actions);
+    if (devnull >= 0) close(devnull);
+
+    if (spawn_result != 0) {
+        fprintf(stderr, "spawn_daemon: posix_spawn failed with %d\n", spawn_result);
+        return -1;
+    }
+
+    // Wait for PID file (max 5 seconds)
+    for (int i = 0; i < 50; i++) {
+        usleep(100 * 1000);
+        if (access(pid_path_abs, F_OK) == 0) {
+            FILE* f = fopen(pid_path_abs, "r");
+            if (f) {
+                int written_pid = -1;
+                if (fscanf(f, "%d", &written_pid) == 1 && written_pid > 0) {
+                    fclose(f);
+                    if (kill(written_pid, 0) == 0) {
+                        return written_pid;
+                    }
+                }
+                fclose(f);
+            }
+        }
+    }
+
+    fprintf(stderr, "spawn_daemon: timeout waiting for daemon startup\n");
+    kill(child_pid, SIGTERM);
+    return -1;
+}
+
+/*
+ * daemon_child_init with UTF-8 bytes
+ */
+int moonbit_daemon_child_init_bytes(const unsigned char* pid_path_utf8) {
+    const char* pid_path = (const char*)pid_path_utf8;
+
+    setsid();
+    moonbit_setup_signal_handlers();
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+
+    // Create parent directory
+    char* path_copy = strdup(pid_path);
+    if (path_copy) {
+        char* last_slash = strrchr(path_copy, '/');
+        if (last_slash && last_slash != path_copy) {
+            *last_slash = '\0';
+            mkdir(path_copy, 0755);
+        }
+        free(path_copy);
+    }
+
+    // Write PID file
+    pid_t my_pid = getpid();
+    FILE* f = fopen(pid_path, "w");
+    if (!f) return -1;
+    fprintf(f, "%d\n", my_pid);
+    fclose(f);
+
+    return 0;
 }
 
 /*
@@ -1353,27 +1767,6 @@ int moonbit_mkdir(const char* path_utf16, int mode) {
 }
 
 /*
- * getenvラッパー - 結果をUTF-16LEで返す
- * name_utf16: UTF-16LEエンコードされた環境変数名
- * buffer: UTF-16LE出力バッファ
- * buffer_len: バッファサイズ（バイト）
- * returns: 書き込んだバイト数、環境変数がない場合は0、エラー時は-1
- */
-int moonbit_getenv_utf16(const char* name_utf16, char* buffer, int buffer_len) {
-    if (!name_utf16 || !buffer || buffer_len <= 0) return -1;
-
-    char name[256];
-    if (utf16le_to_utf8(name_utf16, name, sizeof(name)) < 0) {
-        return -1;
-    }
-
-    const char* value = getenv(name);
-    if (!value) return 0;
-
-    return ascii_to_utf16le_bytes(value, buffer, buffer_len);
-}
-
-/*
  * setenvラッパー - MoonBit UTF-16LE文字列を受け取る
  */
 int moonbit_setenv(const char* name_utf16, const char* value_utf16, int overwrite) {
@@ -1411,43 +1804,16 @@ int moonbit_get_errno(void) {
 }
 
 /*
- * putsラッパー - MoonBit UTF-16LE文字列を受け取る
+ * systemラッパー - MoonBit UTF-16LE文字列を受け取る
  */
-int moonbit_puts(const char* s_utf16) {
-    char s[8192];
+int moonbit_system(const char* command_utf16) {
+    char command[8192];
 
-    if (utf16le_to_utf8(s_utf16, s, sizeof(s)) < 0) {
+    if (utf16le_to_utf8(command_utf16, command, sizeof(command)) < 0) {
         return -1;
     }
 
-    return puts(s);
-}
-
-/*
- * fputsラッパー - MoonBit UTF-16LE文字列を受け取る
- */
-int moonbit_fputs(const char* s_utf16, FILE* stream) {
-    char s[8192];
-
-    if (utf16le_to_utf8(s_utf16, s, sizeof(s)) < 0) {
-        return -1;
-    }
-
-    return fputs(s, stream);
-}
-
-/*
- * stdinを取得する
- */
-FILE* moonbit_get_stdin(void) {
-    return stdin;
-}
-
-/*
- * stdoutを取得する
- */
-FILE* moonbit_get_stdout(void) {
-    return stdout;
+    return system(command);
 }
 
 /*
@@ -1497,14 +1863,6 @@ int moonbit_write_stderr(const unsigned char* data, int len) {
  */
 int moonbit_fflush_stdout(void) {
     return fflush(stdout);
-}
-
-/*
- * fflush wrapper (arbitrary FILE*)
- */
-int moonbit_fflush(FILE* stream) {
-    if (!stream) return -1;
-    return fflush(stream);
 }
 
 /*

@@ -42,14 +42,14 @@ fn create_context_data_io() -> @api_context.ContextDataIO {
       }
     },
     write: fn(path, content) {
-      @native.c_write_text_file(
-        @native.string_to_cstring(path),
-        @native.string_to_cstring(content),
+      @native.c_write_text_file_bytes(
+        @native.string_to_utf8_cstring(path),
+        @native.string_to_utf8_cstring(content),
       ) ==
       0
     },
     delete: fn(path) {
-      @native.c_remove_file(@native.string_to_cstring(path)) == 0
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(path)) == 0
     },
     get_dir: fn() { get_workspace_context_dir() },
   }
@@ -240,14 +240,14 @@ fn append_control_api_auth_audit(
   reason : String,
 ) -> Unit {
   ignore(
-    @native.c_append_gateway_auth_audit_detail(
+    @native.c_append_gateway_auth_audit_detail_bytes(
       @native.c_time(),
       event,
       value,
-      @native.string_to_cstring("control_api"),
-      @native.string_to_cstring(client_id),
+      @native.string_to_utf8_cstring("control_api"),
+      @native.string_to_utf8_cstring(client_id),
       -1,
-      @native.string_to_cstring(reason),
+      @native.string_to_utf8_cstring(reason),
       -1,
       -1,
     ),

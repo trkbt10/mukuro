@@ -16,9 +16,9 @@ pub fn execute_onboard_impl(
 ) -> CliResult {
   ignore(api_key)
   let resolved_output_path = resolve_onboard_output_path(output_path)
-  if @native.c_write_text_file(
-      @native.string_to_cstring(resolved_output_path),
-      @native.string_to_cstring(config_json),
+  if @native.c_write_text_file_bytes(
+      @native.string_to_utf8_cstring(resolved_output_path),
+      @native.string_to_utf8_cstring(config_json),
     ) !=
     0 {
     return CliResult::Error("Failed to write configuration file")

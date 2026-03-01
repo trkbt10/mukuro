@@ -42,16 +42,16 @@ fn execute_service_install(opts : ServiceInstallOptions) -> CliResult {
 /// Detect platform using native checks
 fn detect_platform_native() -> ServicePlatform {
   // Check for macOS by testing for /Library
-  let macos_check = @native.c_access(
-    @native.string_to_cstring("/Library"),
+  let macos_check = @native.c_access_bytes(
+    @native.string_to_utf8_cstring("/Library"),
     @native.f_ok,
   )
   if macos_check == 0 {
     return ServicePlatform::MacOS
   }
   // Check for Linux by testing for /etc/systemd
-  let linux_check = @native.c_access(
-    @native.string_to_cstring("/etc/systemd"),
+  let linux_check = @native.c_access_bytes(
+    @native.string_to_utf8_cstring("/etc/systemd"),
     @native.f_ok,
   )
   if linux_check == 0 {
@@ -66,16 +66,16 @@ fn install_launchd_service(config : ServiceConfig) -> CliResult {
   let plist_content = generate_launchd_plist(config)
   let plist_path = get_launchd_plist_path(config.user_level)
   // Write plist file
-  let result = @native.c_write_text_file(
-    @native.string_to_cstring(plist_path),
-    @native.string_to_cstring(plist_content),
+  let result = @native.c_write_text_file_bytes(
+    @native.string_to_utf8_cstring(plist_path),
+    @native.string_to_utf8_cstring(plist_content),
   )
   if result != 0 {
     return CliResult::Error("Failed to write plist file: \{plist_path}")
   }
   // Load the service
   let load_cmd = "launchctl load \{plist_path}"
-  let load_result = @native.c_system(@native.string_to_cstring(load_cmd))
+  let load_result = @native.c_system_bytes(@native.string_to_utf8_cstring(load_cmd))
   if load_result != 0 {
     return CliResult::Error(
       "Failed to load service. Run: launchctl load \{plist_path}",
@@ -90,9 +90,9 @@ fn install_systemd_service(config : ServiceConfig) -> CliResult {
   let unit_content = generate_systemd_unit(config)
   let unit_path = get_systemd_unit_path(config.user_level)
   // Write unit file
-  let result = @native.c_write_text_file(
-    @native.string_to_cstring(unit_path),
-    @native.string_to_cstring(unit_content),
+  let result = @native.c_write_text_file_bytes(
+    @native.string_to_utf8_cstring(unit_path),
+    @native.string_to_utf8_cstring(unit_content),
   )
   if result != 0 {
     return CliResult::Error("Failed to write unit file: \{unit_path}")
@@ -103,7 +103,7 @@ fn install_systemd_service(config : ServiceConfig) -> CliResult {
   } else {
     "systemctl daemon-reload"
   }
-  ignore(@native.c_system(@native.string_to_cstring(reload_cmd)))
+  ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(reload_cmd)))
   // Enable service
   let enable_cmd = if config.user_level {
     "systemctl --user enable mukuro-gateway"
@@ -111,7 +111,7 @@ fn install_systemd_service(config : ServiceConfig) -> CliResult {
     "systemctl enable mukuro-gateway"
   }
   if config.auto_start {
-    ignore(@native.c_system(@native.string_to_cstring(enable_cmd)))
+    ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(enable_cmd)))
   }
   CliResult::Ok("Service installed successfully at \{unit_path}")
 }
@@ -133,20 +133,20 @@ fn execute_service_uninstall() -> CliResult {
 fn uninstall_launchd_service() -> CliResult {
   // Try user-level first
   let user_plist = get_launchd_plist_path(true)
-  let user_exists = @native.c_file_exists(@native.string_to_cstring(user_plist))
+  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_plist))
   if user_exists == 1 {
     let unload_cmd = "launchctl unload \{user_plist}"
-    ignore(@native.c_system(@native.string_to_cstring(unload_cmd)))
-    ignore(@native.c_remove_file(@native.string_to_cstring(user_plist)))
+    ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(unload_cmd)))
+    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(user_plist)))
     return CliResult::Ok("Service uninstalled from \{user_plist}")
   }
   // Try system-level
   let sys_plist = get_launchd_plist_path(false)
-  let sys_exists = @native.c_file_exists(@native.string_to_cstring(sys_plist))
+  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_plist))
   if sys_exists == 1 {
     let unload_cmd = "launchctl unload \{sys_plist}"
-    ignore(@native.c_system(@native.string_to_cstring(unload_cmd)))
-    ignore(@native.c_remove_file(@native.string_to_cstring(sys_plist)))
+    ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(unload_cmd)))
+    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(sys_plist)))
     return CliResult::Ok("Service uninstalled from \{sys_plist}")
   }
   CliResult::Error("Service not found")
@@ -157,43 +157,43 @@ fn uninstall_launchd_service() -> CliResult {
 fn uninstall_systemd_service() -> CliResult {
   // Try user-level first
   let user_unit = get_systemd_unit_path(true)
-  let user_exists = @native.c_file_exists(@native.string_to_cstring(user_unit))
+  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_unit))
   if user_exists == 1 {
     ignore(
-      @native.c_system(
-        @native.string_to_cstring("systemctl --user stop mukuro-gateway"),
+      @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl --user stop mukuro-gateway"),
       ),
     )
     ignore(
-      @native.c_system(
-        @native.string_to_cstring("systemctl --user disable mukuro-gateway"),
+      @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl --user disable mukuro-gateway"),
       ),
     )
-    ignore(@native.c_remove_file(@native.string_to_cstring(user_unit)))
+    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(user_unit)))
     ignore(
-      @native.c_system(
-        @native.string_to_cstring("systemctl --user daemon-reload"),
+      @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl --user daemon-reload"),
       ),
     )
     return CliResult::Ok("Service uninstalled from \{user_unit}")
   }
   // Try system-level
   let sys_unit = get_systemd_unit_path(false)
-  let sys_exists = @native.c_file_exists(@native.string_to_cstring(sys_unit))
+  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_unit))
   if sys_exists == 1 {
     ignore(
-      @native.c_system(
-        @native.string_to_cstring("systemctl stop mukuro-gateway"),
+      @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl stop mukuro-gateway"),
       ),
     )
     ignore(
-      @native.c_system(
-        @native.string_to_cstring("systemctl disable mukuro-gateway"),
+      @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl disable mukuro-gateway"),
       ),
     )
-    ignore(@native.c_remove_file(@native.string_to_cstring(sys_unit)))
+    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(sys_unit)))
     ignore(
-      @native.c_system(@native.string_to_cstring("systemctl daemon-reload")),
+      @native.c_system_bytes(@native.string_to_utf8_cstring("systemctl daemon-reload")),
     )
     return CliResult::Ok("Service uninstalled from \{sys_unit}")
   }
@@ -207,7 +207,7 @@ fn execute_service_start() -> CliResult {
   match platform {
     ServicePlatform::MacOS => {
       let cmd = "launchctl start \{service_name}"
-      let result = @native.c_system(@native.string_to_cstring(cmd))
+      let result = @native.c_system_bytes(@native.string_to_utf8_cstring(cmd))
       if result == 0 {
         CliResult::Ok("Service started")
       } else {
@@ -217,19 +217,19 @@ fn execute_service_start() -> CliResult {
     ServicePlatform::Linux => {
       // Try user-level first
       let user_unit = get_systemd_unit_path(true)
-      let user_exists = @native.c_file_exists(
-        @native.string_to_cstring(user_unit),
+      let user_exists = @native.c_file_exists_bytes(
+        @native.string_to_utf8_cstring(user_unit),
       )
       if user_exists == 1 {
-        let result = @native.c_system(
-          @native.string_to_cstring("systemctl --user start mukuro-gateway"),
+        let result = @native.c_system_bytes(
+          @native.string_to_utf8_cstring("systemctl --user start mukuro-gateway"),
         )
         if result == 0 {
           return CliResult::Ok("Service started (user)")
         }
       }
-      let result = @native.c_system(
-        @native.string_to_cstring("systemctl start mukuro-gateway"),
+      let result = @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl start mukuro-gateway"),
       )
       if result == 0 {
         CliResult::Ok("Service started (system)")
@@ -248,7 +248,7 @@ fn execute_service_stop() -> CliResult {
   match platform {
     ServicePlatform::MacOS => {
       let cmd = "launchctl stop \{service_name}"
-      let result = @native.c_system(@native.string_to_cstring(cmd))
+      let result = @native.c_system_bytes(@native.string_to_utf8_cstring(cmd))
       if result == 0 {
         CliResult::Ok("Service stopped")
       } else {
@@ -258,19 +258,19 @@ fn execute_service_stop() -> CliResult {
     ServicePlatform::Linux => {
       // Try user-level first
       let user_unit = get_systemd_unit_path(true)
-      let user_exists = @native.c_file_exists(
-        @native.string_to_cstring(user_unit),
+      let user_exists = @native.c_file_exists_bytes(
+        @native.string_to_utf8_cstring(user_unit),
       )
       if user_exists == 1 {
-        let result = @native.c_system(
-          @native.string_to_cstring("systemctl --user stop mukuro-gateway"),
+        let result = @native.c_system_bytes(
+          @native.string_to_utf8_cstring("systemctl --user stop mukuro-gateway"),
         )
         if result == 0 {
           return CliResult::Ok("Service stopped (user)")
         }
       }
-      let result = @native.c_system(
-        @native.string_to_cstring("systemctl stop mukuro-gateway"),
+      let result = @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl stop mukuro-gateway"),
       )
       if result == 0 {
         CliResult::Ok("Service stopped (system)")
@@ -334,8 +334,8 @@ fn get_service_status() -> ServiceStatus {
 fn get_launchd_status() -> ServiceStatus {
   let user_plist = get_launchd_plist_path(true)
   let sys_plist = get_launchd_plist_path(false)
-  let user_exists = @native.c_file_exists(@native.string_to_cstring(user_plist))
-  let sys_exists = @native.c_file_exists(@native.string_to_cstring(sys_plist))
+  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_plist))
+  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_plist))
   if user_exists != 1 && sys_exists != 1 {
     return {
       installed: false,
@@ -360,8 +360,8 @@ fn get_launchd_status() -> ServiceStatus {
 fn get_systemd_status() -> ServiceStatus {
   let user_unit = get_systemd_unit_path(true)
   let sys_unit = get_systemd_unit_path(false)
-  let user_exists = @native.c_file_exists(@native.string_to_cstring(user_unit))
-  let sys_exists = @native.c_file_exists(@native.string_to_cstring(sys_unit))
+  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_unit))
+  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_unit))
   if user_exists != 1 && sys_exists != 1 {
     return {
       installed: false,
@@ -391,13 +391,13 @@ fn execute_service_logs(opts : ServiceLogsOptions) -> CliResult {
       } else {
         "log show --predicate 'subsystem == \"com.mukuro.gateway\"' --last \{opts.lines}m"
       }
-      ignore(@native.c_system(@native.string_to_cstring(cmd)))
+      ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(cmd)))
       CliResult::Ok("")
     }
     ServicePlatform::Linux => {
       let user_unit = get_systemd_unit_path(true)
-      let user_exists = @native.c_file_exists(
-        @native.string_to_cstring(user_unit),
+      let user_exists = @native.c_file_exists_bytes(
+        @native.string_to_utf8_cstring(user_unit),
       )
       let base_cmd = if user_exists == 1 {
         "journalctl --user -u mukuro-gateway"
@@ -409,7 +409,7 @@ fn execute_service_logs(opts : ServiceLogsOptions) -> CliResult {
       } else {
         "\{base_cmd} -n \{opts.lines}"
       }
-      ignore(@native.c_system(@native.string_to_cstring(cmd)))
+      ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(cmd)))
       CliResult::Ok("")
     }
     _ => CliResult::Error("Log viewing not supported on this platform")

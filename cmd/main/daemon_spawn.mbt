@@ -38,7 +38,7 @@ fn execute_daemon_start(
 
   // posix_spawn でデーモンプロセスを起動
   // 子プロセスは --daemon-child <pid_path> 引数で起動される
-  let daemon_pid = @native.c_spawn_daemon(@native.string_to_cstring(pid_path))
+  let daemon_pid = @native.c_spawn_daemon_bytes(@native.string_to_utf8_cstring(pid_path))
 
   if daemon_pid == -2 {
     return CliResult::Error(

@@ -3,16 +3,16 @@
 
 ///|
 fn write_text(path : String, content : String) -> Bool {
-  @native.c_write_text_file(
-    @native.string_to_cstring(path),
-    @native.string_to_cstring(content),
+  @native.c_write_text_file_bytes(
+    @native.string_to_utf8_cstring(path),
+    @native.string_to_utf8_cstring(content),
   ) ==
   0
 }
 
 ///|
 fn cleanup_file(path : String) -> Unit {
-  ignore(@native.c_remove_file(@native.string_to_cstring(path)))
+  ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(path)))
 }
 
 ///|

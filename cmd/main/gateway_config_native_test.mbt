@@ -15,22 +15,22 @@ let test_config_dir : String = "/tmp/mukuro-test"
 
 ///|
 fn ensure_test_dir() -> Unit {
-  ignore(@native.c_mkdir(@native.string_to_cstring(test_config_dir), 493))
+  ignore(@native.c_mkdir_bytes(@native.string_to_utf8_cstring(test_config_dir), 493))
 }
 
 ///|
 fn write_test_config(path : String, json : String) -> Bool {
   ensure_test_dir()
-  let result = @native.c_write_text_file(
-    @native.string_to_cstring(path),
-    @native.string_to_cstring(json),
+  let result = @native.c_write_text_file_bytes(
+    @native.string_to_utf8_cstring(path),
+    @native.string_to_utf8_cstring(json),
   )
   result == 0
 }
 
 ///|
 fn cleanup_test_file(path : String) -> Unit {
-  ignore(@native.c_remove_file(@native.string_to_cstring(path)))
+  ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(path)))
 }
 
 ///|

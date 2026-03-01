@@ -15,8 +15,8 @@ fn fixture_path(relative : String) -> String {
 fn read_fixture(path : String) -> String raise {
   let buffer_len = 131072
   let buffer = Bytes::new(buffer_len)
-  let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(path),
+  let read_len = @native.c_read_text_file_bytes(
+    @native.string_to_utf8_cstring(path),
     buffer,
     buffer_len,
   )

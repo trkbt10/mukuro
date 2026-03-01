@@ -1,8 +1,8 @@
 ///|
 fn write_text_file(path : String, content : String) -> Unit {
-  let result = @native.c_write_text_file(
-    @native.string_to_cstring(path),
-    @native.string_to_cstring(content),
+  let result = @native.c_write_text_file_bytes(
+    @native.string_to_utf8_cstring(path),
+    @native.string_to_utf8_cstring(content),
   )
   if result != 0 {
     abort("failed to write test config")
@@ -11,7 +11,7 @@ fn write_text_file(path : String, content : String) -> Unit {
 
 ///|
 fn remove_file(path : String) -> Unit {
-  ignore(@native.c_remove_file(@native.string_to_cstring(path)))
+  ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(path)))
 }
 
 ///|

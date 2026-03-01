@@ -7,8 +7,8 @@ fn read_config_text_impl(
 ) -> String raise @interfaces.ControlError {
   let buffer_len = 65536
   let buffer = Bytes::new(buffer_len)
-  let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(path),
+  let read_len = @native.c_read_text_file_bytes(
+    @native.string_to_utf8_cstring(path),
     buffer,
     buffer_len,
   )

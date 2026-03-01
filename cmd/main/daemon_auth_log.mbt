@@ -25,8 +25,8 @@ fn parse_auth_log_int64_field(obj : Map[String, Json], key : String) -> Int64? {
 fn read_auth_log_text() -> String? {
   let buffer_len = 262144
   let buffer = Bytes::new(buffer_len)
-  let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(daemon_auth_log_path()),
+  let read_len = @native.c_read_text_file_bytes(
+    @native.string_to_utf8_cstring(daemon_auth_log_path()),
     buffer,
     buffer_len,
   )

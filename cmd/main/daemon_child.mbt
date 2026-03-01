@@ -32,14 +32,14 @@ fn append_auth_audit_detail(
   blocked_until : Int64,
 ) -> Unit {
   ignore(
-    @native.c_append_gateway_auth_audit_detail(
+    @native.c_append_gateway_auth_audit_detail_bytes(
       now,
       event,
       value,
-      @native.string_to_cstring(source),
-      @native.string_to_cstring(client_id),
+      @native.string_to_utf8_cstring(source),
+      @native.string_to_utf8_cstring(client_id),
       session_id,
-      @native.string_to_cstring(reason),
+      @native.string_to_utf8_cstring(reason),
       token_age_sec,
       blocked_until,
     ),
@@ -50,8 +50,8 @@ fn append_auth_audit_detail(
 /// --daemon-child 引数で起動された場合のデーモン子プロセス処理
 pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   // デーモン子プロセスとして初期化（setsid, PIDファイル書き込み）
-  let init_result = @native.c_daemon_child_init(
-    @native.string_to_cstring(pid_path),
+  let init_result = @native.c_daemon_child_init_bytes(
+    @native.string_to_utf8_cstring(pid_path),
   )
   if init_result != 0 {
     // エラー時は即座に終了
@@ -63,7 +63,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   let config_path = startup.runtime_model_config_path
   let config_text = read_config_text_impl(config_path) catch {
     _ => {
-      @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
       @native.c_exit(1)
       return CliResult::Exit(1)
     }
@@ -72,7 +72,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     config_text,
   ) catch {
     _ => {
-      @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
       @native.c_exit(1)
       return CliResult::Exit(1)
     }
@@ -84,7 +84,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   }
   let start_ok = global_gateway.status().state.is_running()
   if !start_ok {
-    @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
     @native.c_exit(1)
     return CliResult::Exit(1)
   }
@@ -114,14 +114,14 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   let mut auth_rate_limited_until : Int64 = 0
   let mut last_snapshot_uptime = -1
   if @native.c_write_gateway_token_record(token, session_id, started_at) != 0 {
-    @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
     @native.c_exit(1)
     return CliResult::Exit(1)
   }
 
   let ipc_start = @native.c_ipc_server_start()
   if ipc_start != 0 {
-    @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
     @native.c_exit(1)
     return CliResult::Exit(1)
   }
@@ -231,12 +231,12 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   let signal = if startup.control_api {
     if !@native.setup_signal_handlers() {
       @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
-      @native.c_remove_file(
-        @native.string_to_cstring(@control.default_gateway_token_path()),
+      @native.c_remove_file_bytes(
+        @native.string_to_utf8_cstring(@control.default_gateway_token_path()),
       )
       |> ignore
       @native.c_ipc_server_cleanup() |> ignore
-      @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
       @native.c_exit(1)
       return CliResult::Exit(1)
     }
@@ -259,12 +259,12 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     ) catch {
       _ => {
         @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
-        @native.c_remove_file(
-          @native.string_to_cstring(@control.default_gateway_token_path()),
+        @native.c_remove_file_bytes(
+          @native.string_to_utf8_cstring(@control.default_gateway_token_path()),
         )
         |> ignore
         @native.c_ipc_server_cleanup() |> ignore
-        @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+        @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
         @native.c_exit(1)
         return CliResult::Exit(1)
       }
@@ -286,12 +286,12 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
 
   // PIDファイルを削除
   @native.c_write_gateway_snapshot(self_pid, 0, 0) |> ignore
-  @native.c_remove_file(
-    @native.string_to_cstring(@control.default_gateway_token_path()),
+  @native.c_remove_file_bytes(
+    @native.string_to_utf8_cstring(@control.default_gateway_token_path()),
   )
   |> ignore
   @native.c_ipc_server_cleanup() |> ignore
-  @native.c_remove_file(@native.string_to_cstring(pid_path)) |> ignore
+  @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
 
   // 正常終了
   @native.c_exit(0)

@@ -867,11 +867,11 @@ test "file existence: verify file is created on disk after record" {
   )
 
   // ディレクトリ存在確認
-  let dir_exists = @native.c_file_exists(@native.string_to_cstring(dir_path)) == 1
+  let dir_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(dir_path)) == 1
   assert_true(dir_exists, msg="Directory should exist: \{dir_path}")
 
   // ファイル存在確認
-  let file_exists = @native.c_file_exists(@native.string_to_cstring(file_path)) == 1
+  let file_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(file_path)) == 1
   assert_true(file_exists, msg="File should exist: \{file_path}")
 
   // ファイル内容確認
@@ -1141,7 +1141,7 @@ test "E2E: verify actual file creation with exact production pattern" {
   )
 
   // ファイル存在確認（FFI直接使用）
-  let file_exists = @native.c_file_exists(@native.string_to_cstring(file_path))
+  let file_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(file_path))
   if file_exists != 1 {
     fail("E2E CRITICAL: File does not exist at: \{file_path}")
   }

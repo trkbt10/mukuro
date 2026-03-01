@@ -85,9 +85,9 @@ fn write_daemon_startup_config(
     },
   }
   let text = payload.stringify()
-  @native.c_write_text_file(
-    @native.string_to_cstring(daemon_startup_config_path()),
-    @native.string_to_cstring(text),
+  @native.c_write_text_file_bytes(
+    @native.string_to_utf8_cstring(daemon_startup_config_path()),
+    @native.string_to_utf8_cstring(text),
   ) ==
   0
 }
@@ -181,8 +181,8 @@ fn parse_daemon_startup_config(content : String) -> DaemonStartupConfig {
 fn load_daemon_startup_config() -> DaemonStartupConfig {
   let buffer_len = 65536
   let buffer = Bytes::new(buffer_len)
-  let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(daemon_startup_config_path()),
+  let read_len = @native.c_read_text_file_bytes(
+    @native.string_to_utf8_cstring(daemon_startup_config_path()),
     buffer,
     buffer_len,
   )

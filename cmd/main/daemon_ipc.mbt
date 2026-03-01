@@ -16,11 +16,11 @@ fn daemon_ipc_request(command : String) -> String? {
     return None
   }
   let session_id = @native.c_read_gateway_session_id()
-  let read_len = @native.c_ipc_client_request(
+  let read_len = @native.c_ipc_client_request_bytes(
     token,
     session_id,
     command_code,
-    @native.string_to_cstring(current_cli_client_id()),
+    @native.string_to_utf8_cstring(current_cli_client_id()),
     buffer,
     512,
   )

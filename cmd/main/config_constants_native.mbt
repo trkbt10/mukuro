@@ -11,7 +11,7 @@ pub fn default_runtime_config_path() -> String {
 ///|
 /// 設定ファイルが存在するか確認
 pub fn runtime_config_exists(path : String) -> Bool {
-  @native.c_file_exists(@native.string_to_cstring(path)) == 1
+  @native.c_file_exists_bytes(@native.string_to_utf8_cstring(path)) == 1
 }
 
 ///|

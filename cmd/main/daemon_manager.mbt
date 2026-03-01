@@ -15,14 +15,14 @@ fn NativePidManager::new(pid_path~ : String) -> NativePidManager {
 
 ///|
 fn NativePidManager::exists(self : NativePidManager) -> Bool {
-  @native.c_file_exists(@native.string_to_cstring(self.pid_path)) == 1
+  @native.c_file_exists_bytes(@native.string_to_utf8_cstring(self.pid_path)) == 1
 }
 
 ///|
 fn NativePidManager::read_pid(
   self : NativePidManager,
 ) -> Int raise @control.DaemonError {
-  let pid = @native.c_read_pid_file(@native.string_to_cstring(self.pid_path))
+  let pid = @native.c_read_pid_file_bytes(@native.string_to_utf8_cstring(self.pid_path))
   if pid < 0 {
     raise @control.DaemonError::PidFileReadError(
       "Failed to read PID file: \{self.pid_path}",
@@ -35,7 +35,7 @@ fn NativePidManager::read_pid(
 fn NativePidManager::remove_pid(
   self : NativePidManager,
 ) -> Unit raise @control.DaemonError {
-  let result = @native.c_remove_file(@native.string_to_cstring(self.pid_path))
+  let result = @native.c_remove_file_bytes(@native.string_to_utf8_cstring(self.pid_path))
   if result != 0 {
     raise @control.DaemonError::PidFileWriteError(
       "Failed to remove PID file: \{self.pid_path}",
@@ -105,16 +105,16 @@ pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus {
   match status {
     @control.DaemonStatus::Stale(_) => {
       // stale検知時は運用アーティファクトをクリーンアップ
-      @native.c_remove_file(
-        @native.string_to_cstring(@control.default_ipc_socket_path()),
+      @native.c_remove_file_bytes(
+        @native.string_to_utf8_cstring(@control.default_ipc_socket_path()),
       )
       |> ignore
-      @native.c_remove_file(
-        @native.string_to_cstring(@control.default_gateway_state_path()),
+      @native.c_remove_file_bytes(
+        @native.string_to_utf8_cstring(@control.default_gateway_state_path()),
       )
       |> ignore
-      @native.c_remove_file(
-        @native.string_to_cstring(@control.default_gateway_token_path()),
+      @native.c_remove_file_bytes(
+        @native.string_to_utf8_cstring(@control.default_gateway_token_path()),
       )
       |> ignore
       status

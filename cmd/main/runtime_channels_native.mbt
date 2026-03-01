@@ -19,8 +19,8 @@ let runtime_channels_cell : RuntimeChannelsCell = {
 fn read_runtime_config_text(path : String) -> String? {
   let buffer_len = 65536
   let buffer = Bytes::new(buffer_len)
-  let read_len = @native.c_read_text_file(
-    @native.string_to_cstring(path),
+  let read_len = @native.c_read_text_file_bytes(
+    @native.string_to_utf8_cstring(path),
     buffer,
     buffer_len,
   )
