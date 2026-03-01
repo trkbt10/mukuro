@@ -12,15 +12,17 @@ fn get_event_timestamp(clock : &@interfaces.Clock?, fallback : Int64) -> Int64 {
 }
 
 ///|
-/// 履歴レコーダーを安全に初期化する（失敗は無視）
-fn safe_init_session(
+/// 履歴レコーダーを安全に開く（失敗は無視）
+/// 戻り値: true = 新規セッション、false = 継続セッション、None = レコーダーなし
+pub fn safe_open_session(
   recorder : &@interfaces.HistoryRecorder?,
   session_id : String,
   timestamp : Int64,
-) -> Unit {
+) -> Bool? {
   match recorder {
-    Some(r) => r.init_session(session_id~, timestamp~) catch { _ => () }
-    None => ()
+    Some(r) =>
+      Some(r.open_session(session_id~, timestamp~) catch { _ => true })
+    None => None
   }
 }
 
@@ -37,10 +39,10 @@ fn safe_record(
 }
 
 ///|
-/// 履歴レコーダーを安全にフラッシュする（失敗は無視）
-fn safe_flush(recorder : &@interfaces.HistoryRecorder?) -> Unit {
+/// 履歴レコーダーを安全に閉じる（失敗は無視）
+pub fn safe_close(recorder : &@interfaces.HistoryRecorder?) -> Unit {
   match recorder {
-    Some(r) => r.flush() catch { _ => () }
+    Some(r) => r.close() catch { _ => () }
     None => ()
   }
 }
@@ -56,29 +58,9 @@ fn tool_result_content(result : @types.ToolResult) -> (String, String) {
 }
 
 ///|
-/// SessionStart を記録
-fn record_session_start(
-  hr : &@interfaces.HistoryRecorder?,
-  clock : &@interfaces.Clock?,
-  fallback_ts : Int64,
-  sid : String,
-  channel : String,
-  chat_id : String,
-) -> Unit {
-  safe_record(hr, {
-    timestamp: get_event_timestamp(clock, fallback_ts),
-    session_id: sid,
-    record_type: @interfaces.HistoryRecordType::SessionStart,
-    payload: Json::object({
-      "channel": Json::string(channel),
-      "chat_id": Json::string(chat_id),
-    }),
-  })
-}
-
-///|
 /// SessionMeta を記録（モデル名、設定値、システムプロンプト、ツール一覧等）
-fn record_session_meta(
+/// セッション開始時に ChatWsHandler から1回だけ呼ばれる
+pub fn record_session_meta(
   hr : &@interfaces.HistoryRecorder?,
   clock : &@interfaces.Clock?,
   fallback_ts : Int64,
@@ -177,29 +159,7 @@ fn record_tool_result(
 }
 
 ///|
-/// SessionEnd を記録してフラッシュ
-fn record_session_end(
-  hr : &@interfaces.HistoryRecorder?,
-  clock : &@interfaces.Clock?,
-  fallback_ts : Int64,
-  sid : String,
-  reason : String,
-  iterations : Int,
-) -> Unit {
-  safe_record(hr, {
-    timestamp: get_event_timestamp(clock, fallback_ts),
-    session_id: sid,
-    record_type: @interfaces.HistoryRecordType::SessionEnd,
-    payload: Json::object({
-      "reason": Json::string(reason),
-      "iterations": Json::number(iterations.to_double()),
-    }),
-  })
-  safe_flush(hr)
-}
-
-///|
-/// Error を記録してフラッシュ
+/// Error を記録（close は呼ばない — セッション管理は呼び出し側の責務）
 fn record_error(
   hr : &@interfaces.HistoryRecorder?,
   clock : &@interfaces.Clock?,
@@ -213,26 +173,4 @@ fn record_error(
     record_type: @interfaces.HistoryRecordType::Error,
     payload: Json::object({ "message": Json::string(message) }),
   })
-  safe_flush(hr)
-}
-
-///|
-/// RateLimit Error を記録してフラッシュ
-fn record_rate_limit_error(
-  hr : &@interfaces.HistoryRecorder?,
-  clock : &@interfaces.Clock?,
-  fallback_ts : Int64,
-  sid : String,
-  retry_after : Int,
-) -> Unit {
-  safe_record(hr, {
-    timestamp: get_event_timestamp(clock, fallback_ts),
-    session_id: sid,
-    record_type: @interfaces.HistoryRecordType::Error,
-    payload: Json::object({
-      "message": Json::string("Rate limited"),
-      "retry_after": Json::number(retry_after.to_double()),
-    }),
-  })
-  safe_flush(hr)
 }

@@ -12,30 +12,18 @@ pub(all) enum ChatWsMessageType {
 } derive(Eq, Show)
 
 ///|
-/// Chat WebSocket handler dependencies
-pub(all) struct ChatWsDeps {
-  /// Session store for managing chat sessions
-  session_store : &@interfaces.SessionStore
-  /// Agent handler: process inbound message and return response
-  agent_handler : async (@types.InboundEnvelope) -> @types.OutboundMessage raise
-  /// Generate unique chat_id
-  generate_chat_id : () -> String
-  /// Get current timestamp in milliseconds
-  get_timestamp : () -> Int64
-}
-
-///|
 /// Chat WebSocket handler
 pub struct ChatWsHandler {
-  deps : ChatWsDeps
   chat_id : String
+  history_recorder : &@interfaces.HistoryRecorder
 }
 
 ///|
 /// Create new chat WebSocket handler
-pub fn ChatWsHandler::new(deps : ChatWsDeps) -> ChatWsHandler {
-  let chat_id = (deps.generate_chat_id)()
-  { deps, chat_id }
+pub fn ChatWsHandler::new() -> ChatWsHandler {
+  let chat_id = generate_ws_chat_id()
+  let history_recorder = create_session_history_recorder()
+  { chat_id, history_recorder }
 }
 
 ///|
@@ -131,16 +119,21 @@ async fn ws_send_pong(ws : @async_ws.Conn) -> Unit {
 }
 
 ///|
+fn get_timestamp_ms() -> Int64 {
+  @native.c_time() * 1000
+}
+
+///|
 /// Create session in session store
 fn ChatWsHandler::create_session(self : ChatWsHandler) -> Unit {
-  let timestamp = (self.deps.get_timestamp)()
+  let timestamp = get_timestamp_ms()
   let key = @types.SessionKey::new(
     channel="web_chat",
     chat_id=self.chat_id,
     user_id=None,
   )
   let session = @types.Session::new(key, timestamp)
-  self.deps.session_store.save(session) catch { _ => () }
+  global_session_store.save(session) catch { _ => () }
 }
 
 ///|
@@ -152,6 +145,7 @@ async fn ChatWsHandler::handle_send(
   sender_name : String?,
 ) -> Unit {
   ws_send_status(ws, "thinking")
+  let timestamp = get_timestamp_ms()
   let envelope : @types.InboundEnvelope = {
     channel: "web_chat",
     chat_id: self.chat_id,
@@ -160,20 +154,18 @@ async fn ChatWsHandler::handle_send(
     content,
     message_type: @types.MessageType::Text,
     metadata: {},
-    timestamp: (self.deps.get_timestamp)(),
+    timestamp,
   }
-  let outbound = (self.deps.agent_handler)(envelope) catch {
+  let outbound = handle_inbound_with_agent_loop_async(
+    envelope,
+    Some(self.history_recorder),
+  ) catch {
     e => {
       ws_send_error(ws, "Agent handler failed: \{e}", None)
       return
     }
   }
-  ws_send_message(
-    ws,
-    "assistant",
-    outbound.content,
-    (self.deps.get_timestamp)(),
-  )
+  ws_send_message(ws, "assistant", outbound.content, get_timestamp_ms())
 }
 
 ///|
@@ -187,7 +179,7 @@ async fn ChatWsHandler::handle_load_history(
     chat_id=self.chat_id,
     user_id=None,
   )
-  let session = self.deps.session_store.get(key) catch { _ => None }
+  let session = global_session_store.get(key) catch { _ => None }
   let messages : Array[Json] = []
   match session {
     Some(s) =>
@@ -224,6 +216,28 @@ pub async fn ChatWsHandler::handle_connection(
   self.create_session()
   ws_send_session(ws, self.chat_id)
 
+  // Open history session and record SessionMeta if new
+  let session_id = "web_chat:\{self.chat_id}"
+  let timestamp = get_timestamp_ms()
+  let is_new_session = @agent.safe_open_session(
+    Some(self.history_recorder),
+    session_id,
+    timestamp,
+  )
+  if is_new_session == Some(true) {
+    // Record SessionMeta for new session
+    @agent.record_session_meta(
+      Some(self.history_recorder),
+      Some(global_clock),
+      timestamp,
+      session_id,
+      Json::object({
+        "channel": Json::string("web_chat"),
+        "chat_id": Json::string(self.chat_id),
+      }),
+    )
+  }
+
   // Message loop
   for {
     let msg = ws.recv() catch {
@@ -249,4 +263,7 @@ pub async fn ChatWsHandler::handle_connection(
       @async_ws.Binary => ws_send_error(ws, "Binary messages not supported", None)
     }
   }
+
+  // Close history recorder on WebSocket disconnect
+  @agent.safe_close(Some(self.history_recorder))
 }

@@ -702,7 +702,7 @@ async fn handle_control_api_dispatch_async(
   let auth = @interfaces.AuthContext::token_only(parse_bearer_token(headers))
   match envelope {
     Some(env) => {
-      let outbound = handle_inbound_with_agent_loop_async(env) catch {
+      let outbound = handle_inbound_with_agent_loop_async(env, None) catch {
         e =>
           match e {
             @agent.AgentLoopError::ModelCallFailed(msg) =>
@@ -768,7 +768,7 @@ pub async fn run_control_api_server_with_tick_blocking(
             _ => return
           }
           defer ws.close()
-          let handler = create_chat_ws_handler()
+          let handler = ChatWsHandler::new()
           handler.handle_connection(ws) catch { _ => () }
           return
         }
@@ -865,14 +865,3 @@ fn generate_ws_chat_id() -> String {
   }
 }
 
-///|
-/// Create ChatWsHandler with dependencies
-fn create_chat_ws_handler() -> @control.ChatWsHandler {
-  let deps : @control.ChatWsDeps = {
-    session_store: global_session_store,
-    agent_handler: async fn(envelope) { handle_inbound_with_agent_loop_async(envelope) },
-    generate_chat_id: generate_ws_chat_id,
-    get_timestamp: fn() { @native.c_time() * 1000 },
-  }
-  @control.ChatWsHandler::new(deps)
-}

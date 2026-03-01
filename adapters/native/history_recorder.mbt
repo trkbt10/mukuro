@@ -28,12 +28,12 @@ pub fn NativeHistoryRecorder::new(base_dir~ : String) -> NativeHistoryRecorder {
 }
 
 ///|
-pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with init_session(
+pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with open_session(
   self,
   session_id~,
   timestamp~,
-) -> Unit raise @interfaces.HistoryError {
-  // 既存セッションがあればフラッシュ
+) -> Bool raise @interfaces.HistoryError {
+  // 既存セッションがあればクローズ
   if self.initialized && self.current_file_handle != 0L {
     let _ = c_fclose_handle(self.current_file_handle)
     self.current_file_handle = 0L
@@ -54,11 +54,16 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with init_session
   let safe_chat_id = @history.sanitize_path_segment(chat_id)
   let file_prefix = "\{safe_channel}-\{safe_chat_id}-"
   // 既存のセッションファイルがあれば追記、なければ新規作成
-  let file_path = match native_find_file_with_prefix(dir_path, file_prefix, ".jsonl") {
-    Some(existing) => existing
+  let (file_path, is_new_session) = match native_find_file_with_prefix(
+    dir_path, file_prefix, ".jsonl",
+  ) {
+    Some(existing) => (existing, false)
     None =>
-      @history.history_file_path(
-        self.base_dir, channel, chat_id, year, month, day, epoch_secs,
+      (
+        @history.history_file_path(
+          self.base_dir, channel, chat_id, year, month, day, epoch_secs,
+        ),
+        true,
       )
   }
   let handle = c_fopen_handle(
@@ -73,6 +78,7 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with init_session
   self.current_file_handle = handle
   self.current_file_path = file_path
   self.initialized = true
+  is_new_session
 }
 
 ///|
@@ -98,7 +104,7 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with record(
 }
 
 ///|
-pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with flush(self) -> Unit raise @interfaces.HistoryError {
+pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with close(self) -> Unit raise @interfaces.HistoryError {
   if self.current_file_handle != 0L {
     let _ = c_fclose_handle(self.current_file_handle)
     self.current_file_handle = 0L

@@ -1,9 +1,8 @@
 ///|
 /// 履歴レコード種別
+/// Codex 互換のイベントベースモデル
 pub(all) enum HistoryRecordType {
-  /// セッション開始
-  SessionStart
-  /// セッションメタデータ（モデル名、設定値、システムプロンプト等）
+  /// セッションメタデータ（セッション開始時に1回だけ記録）
   SessionMeta
   /// ユーザーメッセージ
   UserMessage
@@ -13,8 +12,6 @@ pub(all) enum HistoryRecordType {
   ToolCall
   /// ツール実行結果
   ToolResult
-  /// セッション終了
-  SessionEnd
   /// エラー
   Error
 } derive(Show, Eq)
@@ -44,12 +41,14 @@ pub(all) suberror HistoryError {
 /// 履歴レコーダー トレイト
 /// セッション中のイベントを永続化する
 pub(open) trait HistoryRecorder {
-  /// セッション用の履歴ファイルを初期化
-  init_session(Self, session_id~ : String, timestamp~ : Int64) -> Unit raise HistoryError
+  /// セッション用の履歴ファイルを開く
+  /// 既存ファイルがあれば追記モード、なければ新規作成
+  /// 戻り値: true = 新規セッション、false = 継続セッション
+  open_session(Self, session_id~ : String, timestamp~ : Int64) -> Bool raise HistoryError
   /// レコードを追記する
   record(Self, record~ : HistoryRecord) -> Unit raise HistoryError
-  /// セッション終了時のフラッシュ
-  flush(Self) -> Unit raise HistoryError
+  /// セッション終了時にファイルを閉じる
+  close(Self) -> Unit raise HistoryError
 }
 
 ///|
@@ -73,13 +72,14 @@ pub fn NoOpHistoryRecorder::new() -> NoOpHistoryRecorder {
 }
 
 ///|
-pub impl HistoryRecorder for NoOpHistoryRecorder with init_session(
+pub impl HistoryRecorder for NoOpHistoryRecorder with open_session(
   _self,
   session_id~,
   timestamp~,
-) -> Unit raise HistoryError {
+) -> Bool raise HistoryError {
   ignore(session_id)
   ignore(timestamp)
+  true // 常に新規セッションとして扱う
 }
 
 ///|
@@ -88,7 +88,7 @@ pub impl HistoryRecorder for NoOpHistoryRecorder with record(_self, record~) -> 
 }
 
 ///|
-pub impl HistoryRecorder for NoOpHistoryRecorder with flush(_self) -> Unit raise HistoryError {
+pub impl HistoryRecorder for NoOpHistoryRecorder with close(_self) -> Unit raise HistoryError {
   // no-op
 }
 

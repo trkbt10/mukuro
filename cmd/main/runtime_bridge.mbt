@@ -154,38 +154,53 @@ pub fn register_builtin_tools() -> Unit {
 }
 
 ///|
-let global_model_orchestrator : RuntimeModelOrchestrator = RuntimeModelOrchestrator::default()
+/// グローバル ProviderResolver
+let global_provider_resolver : ConfigProviderResolver = ConfigProviderResolver::new()
 
 ///|
-/// RuntimeModelConfig から AgentLoopOptions を構築する
-/// config の model 値を反映し、デフォルト値との乖離を防ぐ
+///|
+let global_model_orchestrator : RuntimeModelOrchestrator = RuntimeModelOrchestrator::new(
+  global_provider_resolver,
+)
+
+///|
+/// api_v1_settings_state から AgentLoopOptions を構築する
+/// config の全値を反映し、デフォルト値との乖離を防ぐ
 fn build_agent_loop_options_from_config() -> @agent.AgentLoopOptions {
-  let cfg = load_runtime_model_config()
+  let config = match api_v1_settings_state.get_config() {
+    Some(c) => c
+    None => return @agent.AgentLoopOptions::default()
+  }
   let defaults = @agent.AgentLoopOptions::default()
+  let model_name = if config.providers.length() > 0 {
+    config.providers[0].default_model
+  } else {
+    ""
+  }
   {
-    max_iterations: defaults.max_iterations,
+    max_iterations: config.agent.max_iterations,
     model_options: {
-      model_name: cfg.model,
-      temperature: defaults.model_options.temperature,
-      max_tokens: defaults.model_options.max_tokens,
-      stop_sequences: defaults.model_options.stop_sequences,
+      model_name,
+      temperature: config.agent.model_options.temperature,
+      max_tokens: config.agent.model_options.max_tokens,
+      stop_sequences: config.agent.model_options.stop_sequences,
     },
-    timeout_ms: defaults.timeout_ms,
+    timeout_ms: config.agent.timeout_ms,
     retry_config: defaults.retry_config,
   }
 }
 
 ///|
 /// セッションごとに独立した履歴レコーダーを生成する
-/// グローバル共有レコーダーでは並行セッションでファイルハンドルが衝突するため、
-/// 各ディスパッチ呼び出しで新しいインスタンスを作る
-fn create_session_history_recorder() -> &@interfaces.HistoryRecorder? {
-  Some(@native.NativeHistoryRecorder::new(base_dir=@config.data_dir()))
+/// ChatWsHandler が保持し、セッションのライフサイクルを管理する
+pub fn create_session_history_recorder() -> &@interfaces.HistoryRecorder {
+  @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
 }
 
 ///|
 async fn handle_inbound_with_agent_loop(
   envelope : @types.InboundEnvelope,
+  history_recorder : &@interfaces.HistoryRecorder?,
 ) -> @types.OutboundMessage {
   let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
   let options = build_agent_loop_options_from_config()
@@ -196,7 +211,7 @@ async fn handle_inbound_with_agent_loop(
     model_orchestrator: global_model_orchestrator,
     tool_registry: global_tool_registry,
     outbound_dispatcher: global_outbound_dispatcher,
-    history_recorder: create_session_history_recorder(),
+    history_recorder,
     clock: Some(global_clock),
   }
   @agent.run_agent_loop(enriched_envelope, options, deps)
@@ -205,6 +220,7 @@ async fn handle_inbound_with_agent_loop(
 ///|
 pub async fn handle_inbound_with_agent_loop_async(
   envelope : @types.InboundEnvelope,
+  history_recorder : &@interfaces.HistoryRecorder?,
 ) -> @types.OutboundMessage {
   let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
   let options = build_agent_loop_options_from_config()
@@ -214,8 +230,10 @@ pub async fn handle_inbound_with_agent_loop_async(
     context_builder: global_context_builder,
     tool_registry: global_tool_registry,
     outbound_dispatcher: global_outbound_dispatcher,
-    model_invoke: runtime_model_invoke_async,
-    history_recorder: create_session_history_recorder(),
+    model_invoke: async fn(messages, tools, options) {
+      runtime_model_invoke_async(global_provider_resolver, messages, tools, options)
+    },
+    history_recorder,
     clock: Some(global_clock),
   }
   @agent.run_agent_loop_async(enriched_envelope, options, deps)
@@ -232,7 +250,9 @@ pub fn create_global_gateway(version : String) -> @control.Gateway {
     outbound_dispatcher=Some(global_outbound_dispatcher),
     time_provider=None,
     agent_handler=Some(
-      @control.AgentHandler::new(handler=handle_inbound_with_agent_loop),
+      @control.AgentHandler::new(handler=async fn(envelope) {
+        handle_inbound_with_agent_loop(envelope, None)
+      }),
     ),
     version~,
   )

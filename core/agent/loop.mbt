@@ -260,35 +260,6 @@ fn extract_context_overrides(
 }
 
 ///|
-/// SessionMeta 用のペイロードを構築する
-fn build_session_meta_payload(
-  options : AgentLoopOptions,
-  bootstrap : String,
-  tool_definitions : Array[@types.ToolDefinition],
-) -> Json {
-  let entries : Map[String, Json] = {}
-  entries["model"] = Json::string(options.model_options.model_name)
-  entries["max_iterations"] = Json::number(
-    options.max_iterations.to_double(),
-  )
-  match options.model_options.temperature {
-    Some(t) => entries["temperature"] = Json::number(t)
-    None => entries["temperature"] = Json::null()
-  }
-  match options.model_options.max_tokens {
-    Some(n) => entries["max_tokens"] = Json::number(n.to_double())
-    None => entries["max_tokens"] = Json::null()
-  }
-  if bootstrap.length() > 0 {
-    entries["system_prompt"] = Json::string(bootstrap)
-  }
-  entries["tools"] = Json::array(
-    tool_definitions.map(fn(td) { Json::string(td.name) }),
-  )
-  Json::object(entries)
-}
-
-///|
 /// エージェントループを実行 (async)
 /// 入力メッセージを処理し、モデル呼び出しとツール実行を反復して応答を生成する
 pub async fn run_agent_loop(
@@ -311,9 +282,6 @@ pub async fn run_agent_loop(
   } catch {
     e => raise AgentLoopError::SessionError(e.to_string())
   }
-  // 履歴: 初期化 + SessionStart
-  safe_init_session(hr, sid, ts)
-  record_session_start(hr, clk, ts, sid, envelope.channel, envelope.chat_id)
   // 3. ループコンテキスト初期化
   let ctx = AgentLoopContext::new()
   ctx.set_state(AgentState::Processing(envelope))
@@ -332,10 +300,7 @@ pub async fn run_agent_loop(
   ctx.messages = deps.context_builder.build(context_input)
   // 5. ツール定義取得
   let tool_definitions = deps.tool_registry.list_definitions()
-  // 履歴: SessionMeta + UserMessage（ツール定義取得後に記録）
-  record_session_meta(hr, clk, ts, sid, build_session_meta_payload(
-    options, overrides.bootstrap, tool_definitions,
-  ))
+  // 履歴: UserMessage を記録
   record_user_message(hr, clk, ts, sid, envelope.content)
   // 6. エージェントループ
   while not(ctx.is_max_iterations(options.max_iterations)) {
@@ -357,10 +322,7 @@ pub async fn run_agent_loop(
         record_error(hr, clk, ts, sid, msg)
         raise AgentLoopError::ModelCallFailed(msg)
       }
-      other => {
-        safe_flush(hr)
-        raise other
-      }
+      other => raise other
     }
     match response {
       @types.ModelResponse::Text(content) => {
@@ -374,13 +336,9 @@ pub async fn run_agent_loop(
           @types.ModelMessage::Assistant(content~, tool_calls=None),
         )
         deps.session_store.save(session) catch {
-          e => {
-            safe_flush(hr)
-            raise AgentLoopError::SessionError(e.to_string())
-          }
+          e => raise AgentLoopError::SessionError(e.to_string())
         }
         ctx.set_state(AgentState::Completed)
-        record_session_end(hr, clk, ts, sid, "completed", ctx.iteration)
         let outbound : @types.OutboundMessage = {
           channel: envelope.channel,
           chat_id: envelope.chat_id,
@@ -417,7 +375,7 @@ pub async fn run_agent_loop(
         raise AgentLoopError::ModelCallFailed(msg)
       }
       @types.ModelResponse::RateLimited(retry_after~) => {
-        record_rate_limit_error(hr, clk, ts, sid, retry_after)
+        record_error(hr, clk, ts, sid, "Rate limited: retry_after=\{retry_after}")
         raise AgentLoopError::RateLimitExceeded(
           retry_count=retry_state.attempt,
           last_retry_after=retry_after,
@@ -426,7 +384,7 @@ pub async fn run_agent_loop(
     }
   }
   // 最大反復回数に達した
-  record_session_end(hr, clk, ts, sid, "max_iterations", options.max_iterations)
+  record_error(hr, clk, ts, sid, "Max iterations reached: \{options.max_iterations}")
   raise AgentLoopError::MaxIterationsReached(options.max_iterations)
 }
 
@@ -627,9 +585,6 @@ pub async fn run_agent_loop_async(
   } catch {
     e => raise AgentLoopError::SessionError(e.to_string())
   }
-  // 履歴: 初期化 + SessionStart
-  safe_init_session(hr, sid, ts)
-  record_session_start(hr, clk, ts, sid, envelope.channel, envelope.chat_id)
   // 3. ループコンテキスト初期化
   let ctx = AgentLoopContext::new()
   ctx.set_state(AgentState::Processing(envelope))
@@ -648,10 +603,7 @@ pub async fn run_agent_loop_async(
   ctx.messages = deps.context_builder.build(context_input)
   // 5. ツール定義取得
   let tool_definitions = deps.tool_registry.list_definitions()
-  // 履歴: SessionMeta + UserMessage（ツール定義取得後に記録）
-  record_session_meta(hr, clk, ts, sid, build_session_meta_payload(
-    options, overrides.bootstrap, tool_definitions,
-  ))
+  // 履歴: UserMessage を記録
   record_user_message(hr, clk, ts, sid, envelope.content)
   // 6. 非同期エージェントループ
   while not(ctx.is_max_iterations(options.max_iterations)) {
@@ -670,10 +622,7 @@ pub async fn run_agent_loop_async(
         record_error(hr, clk, ts, sid, msg)
         raise AgentLoopError::ModelCallFailed(msg)
       }
-      other => {
-        safe_flush(hr)
-        raise other
-      }
+      other => raise other
     }
     match response {
       @types.ModelResponse::Text(content) => {
@@ -687,13 +636,9 @@ pub async fn run_agent_loop_async(
           @types.ModelMessage::Assistant(content~, tool_calls=None),
         )
         deps.session_store.save(session) catch {
-          e => {
-            safe_flush(hr)
-            raise AgentLoopError::SessionError(e.to_string())
-          }
+          e => raise AgentLoopError::SessionError(e.to_string())
         }
         ctx.set_state(AgentState::Completed)
-        record_session_end(hr, clk, ts, sid, "completed", ctx.iteration)
         let outbound : @types.OutboundMessage = {
           channel: envelope.channel,
           chat_id: envelope.chat_id,
@@ -732,7 +677,7 @@ pub async fn run_agent_loop_async(
         raise AgentLoopError::ModelCallFailed(msg)
       }
       @types.ModelResponse::RateLimited(retry_after~) => {
-        record_rate_limit_error(hr, clk, ts, sid, retry_after)
+        record_error(hr, clk, ts, sid, "Rate limited: retry_after=\{retry_after}")
         raise AgentLoopError::RateLimitExceeded(
           retry_count=options.retry_config.max_retries,
           last_retry_after=retry_after,
@@ -741,7 +686,7 @@ pub async fn run_agent_loop_async(
     }
   }
   // 最大反復回数に達した
-  record_session_end(hr, clk, ts, sid, "max_iterations", options.max_iterations)
+  record_error(hr, clk, ts, sid, "Max iterations reached: \{options.max_iterations}")
   raise AgentLoopError::MaxIterationsReached(options.max_iterations)
 }
 

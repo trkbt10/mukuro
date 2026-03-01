@@ -6,13 +6,11 @@
 /// HistoryRecordType を JSONL type 文字列に変換
 pub fn record_type_to_string(rt : @interfaces.HistoryRecordType) -> String {
   match rt {
-    SessionStart => "session_start"
     SessionMeta => "session_meta"
     UserMessage => "user_message"
     AssistantMessage => "assistant_message"
     ToolCall => "tool_call"
     ToolResult => "tool_result"
-    SessionEnd => "session_end"
     Error => "error"
   }
 }
@@ -21,13 +19,11 @@ pub fn record_type_to_string(rt : @interfaces.HistoryRecordType) -> String {
 /// JSONL type 文字列から HistoryRecordType に変換
 pub fn string_to_record_type(s : String) -> @interfaces.HistoryRecordType? {
   match s {
-    "session_start" => Some(@interfaces.HistoryRecordType::SessionStart)
     "session_meta" => Some(@interfaces.HistoryRecordType::SessionMeta)
     "user_message" => Some(@interfaces.HistoryRecordType::UserMessage)
     "assistant_message" => Some(@interfaces.HistoryRecordType::AssistantMessage)
     "tool_call" => Some(@interfaces.HistoryRecordType::ToolCall)
     "tool_result" => Some(@interfaces.HistoryRecordType::ToolResult)
-    "session_end" => Some(@interfaces.HistoryRecordType::SessionEnd)
     "error" => Some(@interfaces.HistoryRecordType::Error)
     _ => None
   }

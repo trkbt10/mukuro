@@ -1,10 +1,6 @@
 ///|
 test "record_type_to_string - all variants" {
   assert_eq(
-    record_type_to_string(@interfaces.HistoryRecordType::SessionStart),
-    "session_start",
-  )
-  assert_eq(
     record_type_to_string(@interfaces.HistoryRecordType::SessionMeta),
     "session_meta",
   )
@@ -25,10 +21,6 @@ test "record_type_to_string - all variants" {
     "tool_result",
   )
   assert_eq(
-    record_type_to_string(@interfaces.HistoryRecordType::SessionEnd),
-    "session_end",
-  )
-  assert_eq(
     record_type_to_string(@interfaces.HistoryRecordType::Error),
     "error",
   )
@@ -36,10 +28,6 @@ test "record_type_to_string - all variants" {
 
 ///|
 test "string_to_record_type - all variants" {
-  assert_eq(
-    string_to_record_type("session_start"),
-    Some(@interfaces.HistoryRecordType::SessionStart),
-  )
   assert_eq(
     string_to_record_type("session_meta"),
     Some(@interfaces.HistoryRecordType::SessionMeta),
@@ -59,10 +47,6 @@ test "string_to_record_type - all variants" {
   assert_eq(
     string_to_record_type("tool_result"),
     Some(@interfaces.HistoryRecordType::ToolResult),
-  )
-  assert_eq(
-    string_to_record_type("session_end"),
-    Some(@interfaces.HistoryRecordType::SessionEnd),
   )
   assert_eq(
     string_to_record_type("error"),
@@ -116,14 +100,13 @@ test "record_to_json_line - session_meta roundtrip" {
 }
 
 ///|
-test "record_to_json_line - session_start is valid JSON" {
+test "record_to_json_line - user_message is valid JSON" {
   let record : @interfaces.HistoryRecord = {
     timestamp: 1709164800000L,
     session_id: "web_chat:abc123",
-    record_type: @interfaces.HistoryRecordType::SessionStart,
+    record_type: @interfaces.HistoryRecordType::UserMessage,
     payload: Json::object({
-      "channel": Json::string("web_chat"),
-      "chat_id": Json::string("abc123"),
+      "content": Json::string("hello world"),
     }),
   }
   let line = record_to_json_line(record)
@@ -141,7 +124,7 @@ test "record_to_json_line - session_start is valid JSON" {
         _ => fail("Expected sid to be String")
       }
       match obj.get("type") {
-        Some(String(s)) => assert_eq(s, "session_start")
+        Some(String(s)) => assert_eq(s, "user_message")
         _ => fail("Expected type to be String")
       }
     }
@@ -209,12 +192,12 @@ test "record_to_json_line - escapes special characters" {
 ///|
 test "parse_json_to_record - valid line" {
   let line =
-    #|{"ts":1709164800000,"sid":"web_chat:abc","type":"session_start","payload":{"channel":"web_chat"}}
+    #|{"ts":1709164800000,"sid":"web_chat:abc","type":"session_meta","payload":{"model":"claude-sonnet-4"}}
   match parse_json_to_record(line) {
     Some(record) => {
       assert_eq(record.timestamp, 1709164800000L)
       assert_eq(record.session_id, "web_chat:abc")
-      assert_eq(record.record_type, @interfaces.HistoryRecordType::SessionStart)
+      assert_eq(record.record_type, @interfaces.HistoryRecordType::SessionMeta)
     }
     None => fail("Expected Some record")
   }
@@ -365,19 +348,20 @@ test "parse_history_filename - empty string returns None" {
 test "NoOpHistoryRecorder - does nothing without error" {
   let recorder = @interfaces.NoOpHistoryRecorder::new()
   let hr : &@interfaces.HistoryRecorder = recorder
-  hr.init_session(session_id="test", timestamp=1000L) catch {
-    _ => fail("init_session should not fail")
+  let is_new = hr.open_session(session_id="test", timestamp=1000L) catch {
+    _ => fail("open_session should not fail")
   }
+  assert_true(is_new)
   hr.record(record={
     timestamp: 1000L,
     session_id: "test",
-    record_type: @interfaces.HistoryRecordType::SessionStart,
+    record_type: @interfaces.HistoryRecordType::SessionMeta,
     payload: Json::null(),
   }) catch {
     _ => fail("record should not fail")
   }
-  hr.flush() catch {
-    _ => fail("flush should not fail")
+  hr.close() catch {
+    _ => fail("close should not fail")
   }
 }
 
