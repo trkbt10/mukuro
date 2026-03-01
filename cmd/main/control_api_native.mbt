@@ -761,6 +761,17 @@ pub async fn run_control_api_server_with_tick_blocking(
     defer server.close()
     group.spawn_bg(no_wait=true, allow_failure=true, () => {
       server.run_forever((req, body_reader, conn) => {
+        // Check for WebSocket upgrade to /ws/chat
+        if req.path == "/ws/chat" && is_websocket_upgrade(req.headers) {
+          let http_req = to_async_http_request(req)
+          let ws = @async_ws.from_http_server(http_req, conn.inner) catch {
+            _ => return
+          }
+          defer ws.close()
+          let handler = create_chat_ws_handler()
+          handler.handle_connection(ws) catch { _ => () }
+          return
+        }
         let body_data = @io.Reader::read_all(body_reader) catch {
           _ => {
             conn.send_response(400, "Bad Request", extra_headers={
@@ -803,4 +814,65 @@ pub async fn run_control_api_server_with_tick_blocking(
       }
     }
   })
+}
+
+// =============================================================================
+// WebSocket Chat Helpers
+// =============================================================================
+
+///|
+/// Check if request is a WebSocket upgrade
+fn is_websocket_upgrade(headers : Map[String, String]) -> Bool {
+  let upgrade = match headers.get("upgrade") {
+    Some(u) => Some(u)
+    None => headers.get("Upgrade")
+  }
+  let connection = match headers.get("connection") {
+    Some(c) => Some(c)
+    None => headers.get("Connection")
+  }
+  match (upgrade, connection) {
+    (Some(u), Some(c)) =>
+      u.to_lower() == "websocket" && c.to_lower().contains("upgrade")
+    _ => false
+  }
+}
+
+///|
+/// Convert @xhttp.Request to @async_http.Request for WebSocket upgrade
+fn to_async_http_request(req : @xhttp.Request) -> @async_http.Request {
+  let meth = match req.meth {
+    @xhttp.RequestMethod::Get => @async_http.RequestMethod::Get
+    @xhttp.RequestMethod::Post => @async_http.RequestMethod::Post
+    @xhttp.RequestMethod::Put => @async_http.RequestMethod::Put
+    @xhttp.RequestMethod::Delete => @async_http.RequestMethod::Delete
+    @xhttp.RequestMethod::Head => @async_http.RequestMethod::Head
+    @xhttp.RequestMethod::Options => @async_http.RequestMethod::Options
+    @xhttp.RequestMethod::Patch => @async_http.RequestMethod::Patch
+    @xhttp.RequestMethod::Trace => @async_http.RequestMethod::Trace
+    @xhttp.RequestMethod::Connect => @async_http.RequestMethod::Connect
+  }
+  @async_http.Request::{ meth, path: req.path, headers: req.headers }
+}
+
+///|
+/// Generate UUID v4 for chat_id
+fn generate_ws_chat_id() -> String {
+  let random = @random.Rand::new()
+  let bytes = Bytes::makei(16, fn(_i) { random.uint(limit=256U).to_byte() })
+  @uuid.from_bytes(bytes).as_version(@uuid.V4).to_string() catch {
+    _ => abort("unreachable: 16-byte UUID input is always valid")
+  }
+}
+
+///|
+/// Create ChatWsHandler with dependencies
+fn create_chat_ws_handler() -> @control.ChatWsHandler {
+  let deps : @control.ChatWsDeps = {
+    session_store: global_session_store,
+    agent_handler: async fn(envelope) { handle_inbound_with_agent_loop_async(envelope) },
+    generate_chat_id: generate_ws_chat_id,
+    get_timestamp: fn() { @native.c_time() * 1000 },
+  }
+  @control.ChatWsHandler::new(deps)
 }

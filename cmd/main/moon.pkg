@@ -1,9 +1,13 @@
 import {
   "moonbitlang/async",
   "moonbitlang/async/io",
+  "moonbitlang/async/http" @async_http,
+  "moonbitlang/async/websocket" @async_ws,
   "moonbitlang/core/env",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/core/json",
+  "moonbitlang/core/random",
+  "moonbitlang/x/uuid",
   "mizchi/x/http" @xhttp,
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/api/v1" @api,

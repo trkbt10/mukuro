@@ -5,8 +5,18 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8" @utf8,
   "trkbt10/mukuro/lib/bytes" @bytes,
+  "moonbitlang/async/io",
+  "moonbitlang/async/websocket" @async_ws,
 }
 
 import {
   "moonbitlang/async",
 } for "test"
+
+options(
+  targets: {
+    "ws_chat_handler.mbt": [ "native" ],
+    "ws_chat_handler_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "ws_chat_handler_test.mbt": [ "native" ],
+  },
+)
