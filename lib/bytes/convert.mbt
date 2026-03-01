@@ -19,12 +19,9 @@ pub fn encode_utf8(s : String) -> Bytes {
 }
 
 /// null終端UTF-8バイト列の生成（C FFI用）
+/// NOTE: Bytes::from_iter は FFI で破損するため使用禁止 (CLAUDE.md 参照)
 pub fn to_utf8_cstring(s : String) -> Bytes {
   let utf8 = @utf8.encode(s)
-  let arr : Array[Byte] = Array::new(capacity=utf8.length() + 1)
-  for b in utf8 {
-    arr.push(b)
-  }
-  arr.push(b'\x00')
-  Bytes::from_iter(arr.iter())
+  let len = utf8.length()
+  Bytes::makei(len + 1, fn(i) { if i < len { utf8[i] } else { b'\x00' } })
 }

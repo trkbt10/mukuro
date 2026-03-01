@@ -1,5 +1,6 @@
 /// BytesView から Bytes へのコピー
-/// Bytes::from_iter(buffer[:len].iter()) の置換
+/// NOTE: Bytes::from_iter は FFI で破損するため使用禁止 (CLAUDE.md 参照)
 pub fn copy_slice(view : BytesView) -> Bytes {
-  Bytes::from_iter(view.iter())
+  let len = view.length()
+  Bytes::makei(len, fn(i) { view[i] })
 }
