@@ -720,7 +720,21 @@ async fn handle_control_api_dispatch_async(
   let auth = @interfaces.AuthContext::token_only(parse_bearer_token(headers))
   match envelope {
     Some(env) => {
-      let outbound = handle_inbound_with_agent_loop_async(env, None) catch {
+      // Create history recorder for this dispatch
+      let history_recorder = create_session_history_recorder()
+      let session_id = "\{env.channel}:\{env.chat_id}"
+      let timestamp = @native.c_time() * 1000
+      // Open session (warn on errors - history is best-effort but should be visible)
+      let _ = history_recorder.open_session(session_id~, timestamp~) catch {
+        e => {
+          println("WARN [dispatch] History open_session failed: \{e}")
+          true
+        }
+      }
+      let outbound = handle_inbound_with_agent_loop_async(
+        env,
+        Some(history_recorder),
+      ) catch {
         e =>
           match e {
             @agent.AgentLoopError::ModelCallFailed(msg) =>
@@ -737,6 +751,8 @@ async fn handle_control_api_dispatch_async(
               )
           }
       }
+      // Close history recorder
+      history_recorder.close() catch { _ => () }
       gateway.dispatch_outbound(auth~, message=outbound) catch {
         e => return control_error_to_response(e)
       }

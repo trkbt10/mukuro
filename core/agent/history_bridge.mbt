@@ -12,7 +12,7 @@ fn get_event_timestamp(clock : &@interfaces.Clock?, fallback : Int64) -> Int64 {
 }
 
 ///|
-/// 履歴レコーダーを安全に開く（失敗は無視）
+/// 履歴レコーダーを安全に開く（失敗はログ出力）
 /// 戻り値: true = 新規セッション、false = 継続セッション、None = レコーダーなし
 pub fn safe_open_session(
   recorder : &@interfaces.HistoryRecorder?,
@@ -21,19 +21,33 @@ pub fn safe_open_session(
 ) -> Bool? {
   match recorder {
     Some(r) =>
-      Some(r.open_session(session_id~, timestamp~) catch { _ => true })
+      Some(
+        r.open_session(session_id~, timestamp~) catch {
+          e => {
+            // 警告出力 - サイレントキャッチは検知遅延の原因になる
+            println("WARN [history] open_session failed: \{e}")
+            true
+          }
+        },
+      )
     None => None
   }
 }
 
 ///|
-/// 履歴レコードを安全に記録する（失敗は無視）
+/// 履歴レコードを安全に記録する（失敗はログ出力）
 fn safe_record(
   recorder : &@interfaces.HistoryRecorder?,
   record : @interfaces.HistoryRecord,
 ) -> Unit {
   match recorder {
-    Some(r) => r.record(record~) catch { _ => () }
+    Some(r) =>
+      r.record(record~) catch {
+        e => {
+          // 警告出力 - サイレントキャッチは検知遅延の原因になる
+          println("WARN [history] record failed: \{e}")
+        }
+      }
     None => ()
   }
 }

@@ -216,7 +216,7 @@ pub async fn ChatWsHandler::handle_connection(
   self.create_session()
   ws_send_session(ws, self.chat_id)
 
-  // Open history session - エラーは throw する（静かに失敗しない）
+  // Open history session
   let session_id = "web_chat:\{self.chat_id}"
   let timestamp = get_timestamp_ms()
   let is_new_session = self.history_recorder.open_session(
@@ -224,7 +224,6 @@ pub async fn ChatWsHandler::handle_connection(
     timestamp~,
   ) catch {
     e => {
-      // Show trait を使ってエラーを文字列化
       ws_send_error(ws, "History recording disabled: \{e}", Some("HISTORY_ERROR"))
       false
     }

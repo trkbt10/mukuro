@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { MUKURO_DEFAULT_HOST, MUKURO_DEFAULT_PORT } from '../config';
 
 export interface ChatMessage {
   id: string;
@@ -30,8 +31,9 @@ export function useChat() {
     function connect() {
       if (disposed) return;
 
-      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const ws = new WebSocket(`${protocol}//${location.host}/ws/chat`);
+      // Connect directly to the backend WebSocket
+      const wsUrl = `ws://${MUKURO_DEFAULT_HOST}:${MUKURO_DEFAULT_PORT}/ws/chat`;
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       setStatus('connecting');
       setChatId(null);
