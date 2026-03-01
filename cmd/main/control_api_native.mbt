@@ -103,6 +103,7 @@ fn get_api_v1_router() -> @api.ApiRouter {
         @api_chat.ChatState::new(
           global_session_store,
           history_reader=history_reader,
+          get_timestamp=fn() { @native.c_time() * 1000 },
         ),
       ),
     ),
@@ -602,6 +603,10 @@ pub async fn handle_control_api_request(
         Some(resp) => return resp
         None => ()
       }
+    }
+    // Async intercept: onboard context generation via LLM
+    if meth_str == "POST" && path == "/api/v1/onboard/generate" {
+      return try_onboard_generate(body)
     }
     let ctx = @api.ApiRequestContext::new(
       meth=meth_str,

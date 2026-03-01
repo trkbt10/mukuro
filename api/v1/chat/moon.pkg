@@ -2,4 +2,6 @@ import {
   "trkbt10/mukuro/api/v1" @api,
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/types" @types,
+  "moonbitlang/core/random" @random,
+  "moonbitlang/x/uuid" @uuid,
 }

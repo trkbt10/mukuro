@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useChat, getChatId, resetChatId } from './useChat';
+import { useChat } from './useChat';
 
 // ---------------------------------------------------------------------------
 // Mock WebSocket
@@ -76,7 +76,6 @@ beforeEach(() => {
   vi.spyOn(crypto, 'randomUUID').mockImplementation(
     () => `uuid-${++uuidCounter}` as `${string}-${string}-${string}-${string}-${string}`,
   );
-  localStorage.clear();
   vi.useFakeTimers();
 });
 
@@ -101,135 +100,94 @@ function latestWs(): MockWebSocket {
  * Simulate the full connection handshake:
  * 1. Flush deferred connect (setTimeout)
  * 2. WebSocket opens
- * 3. Server sends { type: 'status', status: 'ready' }
+ * 3. Server sends { type: 'session', chat_id: '...' }
  * 4. Client sets 'connected' and sends load_history
  */
-async function setupConnected(chatId = 'chat-1') {
-  const hook = renderHook(({ id }) => useChat(id), {
-    initialProps: { id: chatId },
-  });
+async function setupConnected(chatId = 'server-chat-id') {
+  const hook = renderHook(() => useChat());
   await flushConnect();
   await act(async () => {
     latestWs().simulateOpen();
   });
   await act(async () => {
-    latestWs().simulateMessage({ type: 'status', status: 'ready' });
+    latestWs().simulateMessage({ type: 'session', chat_id: chatId });
   });
   return hook;
 }
-
-// ---------------------------------------------------------------------------
-// getChatId / resetChatId
-// ---------------------------------------------------------------------------
-
-describe('getChatId', () => {
-  it('generates and persists a new id', () => {
-    const id = getChatId();
-    expect(id).toBe('uuid-1');
-    expect(localStorage.getItem('mukuro_chat_id')).toBe('uuid-1');
-  });
-
-  it('returns existing id from localStorage', () => {
-    localStorage.setItem('mukuro_chat_id', 'existing-id');
-    expect(getChatId()).toBe('existing-id');
-  });
-});
-
-describe('resetChatId', () => {
-  it('creates a new id and overwrites storage', () => {
-    localStorage.setItem('mukuro_chat_id', 'old-id');
-    const newId = resetChatId();
-    expect(newId).toBe('uuid-1');
-    expect(localStorage.getItem('mukuro_chat_id')).toBe('uuid-1');
-  });
-});
 
 // ---------------------------------------------------------------------------
 // useChat – connection lifecycle
 // ---------------------------------------------------------------------------
 
 describe('useChat', () => {
-  it('starts in connecting status', () => {
-    const { result } = renderHook(() => useChat('chat-1'));
+  it('starts in connecting status with null chatId', () => {
+    const { result } = renderHook(() => useChat());
     expect(result.current.status).toBe('connecting');
+    expect(result.current.chatId).toBeNull();
   });
 
   it('defers WebSocket creation with setTimeout (StrictMode safety)', () => {
-    renderHook(() => useChat('chat-1'));
+    renderHook(() => useChat());
     // WebSocket should NOT be created synchronously
     expect(MockWebSocket.instances).toHaveLength(0);
   });
 
   it('creates WebSocket after microtask flush', async () => {
-    renderHook(() => useChat('chat-1'));
+    renderHook(() => useChat());
     await flushConnect();
     expect(MockWebSocket.instances).toHaveLength(1);
     expect(latestWs().url).toContain('/ws/chat');
   });
 
-  it('stays in connecting after open (waits for ready)', async () => {
-    const { result } = renderHook(() => useChat('chat-1'));
+  it('stays in connecting after open (waits for session)', async () => {
+    const { result } = renderHook(() => useChat());
     await flushConnect();
 
     await act(async () => {
       latestWs().simulateOpen();
     });
 
-    // Should NOT be 'connected' yet — waiting for probe result
+    // Should NOT be 'connected' yet — waiting for session message
     expect(result.current.status).toBe('connecting');
+    expect(result.current.chatId).toBeNull();
   });
 
-  it('transitions to connected on ready status', async () => {
-    const { result } = renderHook(() => useChat('chat-1'));
+  it('transitions to connected on session message', async () => {
+    const { result } = renderHook(() => useChat());
     await flushConnect();
 
     await act(async () => {
       latestWs().simulateOpen();
     });
     await act(async () => {
-      latestWs().simulateMessage({ type: 'status', status: 'ready' });
+      latestWs().simulateMessage({ type: 'session', chat_id: 'test-chat-id' });
     });
 
     expect(result.current.status).toBe('connected');
+    expect(result.current.chatId).toBe('test-chat-id');
   });
 
-  it('sends load_history after receiving ready status', async () => {
-    renderHook(() => useChat('chat-1'));
+  it('sends load_history after receiving session message', async () => {
+    renderHook(() => useChat());
     await flushConnect();
 
     await act(async () => {
       latestWs().simulateOpen();
     });
 
-    // No load_history yet — still waiting for probe
+    // No load_history yet — still waiting for session
     expect(latestWs().sent).toHaveLength(0);
 
     await act(async () => {
-      latestWs().simulateMessage({ type: 'status', status: 'ready' });
+      latestWs().simulateMessage({ type: 'session', chat_id: 'test-chat-id' });
     });
 
     const sent = JSON.parse(latestWs().sent[0]);
-    expect(sent).toEqual({ type: 'load_history', chat_id: 'chat-1' });
-  });
-
-  it('also accepts "connected" status (for cli.js compat)', async () => {
-    const { result } = renderHook(() => useChat('chat-1'));
-    await flushConnect();
-
-    await act(async () => {
-      latestWs().simulateOpen();
-    });
-    await act(async () => {
-      latestWs().simulateMessage({ type: 'status', status: 'connected' });
-    });
-
-    expect(result.current.status).toBe('connected');
-    const sent = JSON.parse(latestWs().sent[0]);
-    expect(sent.type).toBe('load_history');
+    expect(sent).toEqual({ type: 'load_history' });
   });
 
   it('closes WebSocket on unmount', async () => {
-    const { unmount } = renderHook(() => useChat('chat-1'));
+    const { unmount } = renderHook(() => useChat());
     await flushConnect();
 
     unmount();
@@ -237,7 +195,7 @@ describe('useChat', () => {
   });
 
   it('cancels deferred connect on immediate unmount (StrictMode)', () => {
-    const { unmount } = renderHook(() => useChat('chat-1'));
+    const { unmount } = renderHook(() => useChat());
     // Unmount before the setTimeout fires
     unmount();
     vi.advanceTimersByTime(10);
@@ -252,7 +210,7 @@ describe('useChat', () => {
 
 describe('useChat auth_error', () => {
   it('sets auth_error status on error with code "auth"', async () => {
-    const { result } = renderHook(() => useChat('chat-1'));
+    const { result } = renderHook(() => useChat());
     await flushConnect();
 
     await act(async () => {
@@ -271,7 +229,7 @@ describe('useChat auth_error', () => {
   });
 
   it('sets generic error status on error without auth code', async () => {
-    const { result } = renderHook(() => useChat('chat-1'));
+    const { result } = renderHook(() => useChat());
     await flushConnect();
 
     await act(async () => {
@@ -287,6 +245,25 @@ describe('useChat auth_error', () => {
 
     expect(result.current.status).toBe('error');
     expect(result.current.errorMsg).toBe('Cannot reach mukuro backend');
+  });
+
+  it('sets error status on session creation failure', async () => {
+    const { result } = renderHook(() => useChat());
+    await flushConnect();
+
+    await act(async () => {
+      latestWs().simulateOpen();
+    });
+    await act(async () => {
+      latestWs().simulateMessage({
+        type: 'error',
+        error: 'Failed to create session',
+        code: 'session',
+      });
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.errorMsg).toBe('Failed to create session');
   });
 });
 
@@ -395,11 +372,10 @@ describe('useChat sendMessage', () => {
     expect(result.current.messages[0].role).toBe('user');
     expect(result.current.messages[0].content).toBe('hello');
 
-    // WebSocket send (index 0 = load_history from ready, index 1 = user message)
+    // WebSocket send (index 0 = load_history from session, index 1 = user message)
     const sent = JSON.parse(latestWs().sent[1]);
     expect(sent).toEqual({
       type: 'send',
-      chat_id: 'chat-1',
       content: 'hello',
     });
 
@@ -418,6 +394,23 @@ describe('useChat sendMessage', () => {
     expect(result.current.messages).toHaveLength(0);
     // Only the load_history from connection
     expect(latestWs().sent).toHaveLength(1);
+  });
+
+  it('does not send before session is established', async () => {
+    const { result } = renderHook(() => useChat());
+    await flushConnect();
+    await act(async () => {
+      latestWs().simulateOpen();
+    });
+
+    // Try to send before session message
+    await act(async () => {
+      result.current.sendMessage('hello');
+    });
+
+    // Should not send because chatId is null
+    expect(result.current.messages).toHaveLength(0);
+    expect(latestWs().sent).toHaveLength(0);
   });
 });
 
@@ -451,7 +444,7 @@ describe('useChat clearMessages', () => {
 
 describe('useChat reconnection', () => {
   it('reconnects with exponential backoff on close', async () => {
-    const { result } = renderHook(() => useChat('chat-1'));
+    const { result } = renderHook(() => useChat());
     await flushConnect();
     await act(async () => {
       latestWs().simulateOpen();
@@ -462,6 +455,7 @@ describe('useChat reconnection', () => {
       latestWs().simulateClose();
     });
     expect(result.current.status).toBe('disconnected');
+    expect(result.current.chatId).toBeNull();
     expect(MockWebSocket.instances).toHaveLength(1);
 
     // Advance 999ms → should NOT reconnect yet
@@ -495,7 +489,7 @@ describe('useChat reconnection', () => {
   });
 
   it('resets backoff counter on successful connection', async () => {
-    renderHook(() => useChat('chat-1'));
+    renderHook(() => useChat());
     await flushConnect();
 
     // Open then close → first reconnect at 1s
@@ -514,7 +508,7 @@ describe('useChat reconnection', () => {
     await act(async () => {
       latestWs().simulateOpen();
     });
-    // Note: status is still 'connecting' until 'ready' from probe,
+    // Note: status is still 'connecting' until session message,
     // but reconnect counter was already reset in onopen.
 
     // Close again → should reconnect at 1s (not 2s) because counter was reset
@@ -528,7 +522,7 @@ describe('useChat reconnection', () => {
   });
 
   it('cancels pending reconnect on unmount', async () => {
-    const { unmount } = renderHook(() => useChat('chat-1'));
+    const { unmount } = renderHook(() => useChat());
     await flushConnect();
     await act(async () => {
       latestWs().simulateOpen();
@@ -544,42 +538,16 @@ describe('useChat reconnection', () => {
     // No new WebSocket should be created after unmount
     expect(MockWebSocket.instances).toHaveLength(1);
   });
-});
 
-// ---------------------------------------------------------------------------
-// useChat – chatId change
-// ---------------------------------------------------------------------------
+  it('clears chatId on disconnect', async () => {
+    const { result } = await setupConnected('test-chat-id');
+    expect(result.current.chatId).toBe('test-chat-id');
 
-describe('useChat chatId change', () => {
-  it('reconnects when chatId changes', async () => {
-    const { rerender } = renderHook(({ id }) => useChat(id), {
-      initialProps: { id: 'chat-1' },
-    });
-    await flushConnect();
     await act(async () => {
-      latestWs().simulateOpen();
+      latestWs().simulateClose();
     });
-    await act(async () => {
-      latestWs().simulateMessage({ type: 'status', status: 'ready' });
-    });
-    expect(MockWebSocket.instances).toHaveLength(1);
 
-    // Change chatId
-    rerender({ id: 'chat-2' });
-    // Old WS should be closed
-    expect(MockWebSocket.instances[0].closed).toBe(true);
-
-    await flushConnect();
-    expect(MockWebSocket.instances).toHaveLength(2);
-
-    // New connection sends load_history with new chatId after ready
-    await act(async () => {
-      latestWs().simulateOpen();
-    });
-    await act(async () => {
-      latestWs().simulateMessage({ type: 'status', status: 'ready' });
-    });
-    const sent = JSON.parse(latestWs().sent[0]);
-    expect(sent.chat_id).toBe('chat-2');
+    expect(result.current.chatId).toBeNull();
+    expect(result.current.status).toBe('disconnected');
   });
 });

@@ -8,18 +8,13 @@ import {
 } from 'lucide-react';
 import { IconButton } from '@/components/ui';
 import { MessageBubble, StatusBadge, ThinkingIndicator } from '@/components/chat';
-import {
-  useChat,
-  getChatId,
-  resetChatId,
-} from '@/hooks/useChat';
+import { useChat } from '@/hooks/useChat';
 import { getClient } from '@/lib/client';
 import styles from './Chat.module.css';
 
 export function Chat() {
-  const [chatId, setChatId] = useState(getChatId);
-  const { messages, status, errorMsg, sendMessage, clearMessages } =
-    useChat(chatId);
+  const { chatId, messages, status, errorMsg, sendMessage, clearMessages } =
+    useChat();
   const [input, setInput] = useState('');
   const composingRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -62,12 +57,13 @@ export function Chat() {
   );
 
   const handleNewChat = useCallback(() => {
-    const newId = resetChatId();
+    // Reconnect WebSocket to get a new session from the backend
     clearMessages();
-    setChatId(newId);
+    window.location.reload();
   }, [clearMessages]);
 
   const handleClearHistory = useCallback(async () => {
+    if (!chatId) return;
     try {
       await getClient().chat.deleteSession(chatId);
       clearMessages();

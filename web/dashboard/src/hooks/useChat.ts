@@ -15,24 +15,8 @@ export type ChatStatus =
   | 'error'
   | 'auth_error';
 
-const CHAT_ID_KEY = 'mukuro_chat_id';
-
-export function getChatId(): string {
-  let id = localStorage.getItem(CHAT_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(CHAT_ID_KEY, id);
-  }
-  return id;
-}
-
-export function resetChatId(): string {
-  const id = crypto.randomUUID();
-  localStorage.setItem(CHAT_ID_KEY, id);
-  return id;
-}
-
-export function useChat(chatId: string) {
+export function useChat() {
+  const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<ChatStatus>('connecting');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -50,10 +34,11 @@ export function useChat(chatId: string) {
       const ws = new WebSocket(`${protocol}//${location.host}/ws/chat`);
       wsRef.current = ws;
       setStatus('connecting');
+      setChatId(null);
 
       ws.onopen = () => {
         if (disposed) { ws.close(); return; }
-        // Don't set 'connected' yet — wait for probe result ('ready' or 'error')
+        // Don't set 'connected' yet — wait for session message
         setErrorMsg(null);
         reconnectRef.current = 0;
       };
@@ -63,6 +48,15 @@ export function useChat(chatId: string) {
         const msg = JSON.parse(event.data);
 
         switch (msg.type) {
+          case 'session':
+            // Backend assigned us a chat_id
+            setChatId(msg.chat_id);
+            setStatus('connected');
+            setErrorMsg(null);
+            // Load history for this session (server will use ws.chatId)
+            ws.send(JSON.stringify({ type: 'load_history' }));
+            break;
+
           case 'message':
             setMessages((prev) => [
               ...prev,
@@ -94,17 +88,13 @@ export function useChat(chatId: string) {
 
           case 'status':
             if (msg.status === 'thinking') setStatus('thinking');
-            else if (msg.status === 'ready' || msg.status === 'connected') {
-              setStatus('connected');
-              setErrorMsg(null);
-              // Now that probe passed, load history
-              ws.send(JSON.stringify({ type: 'load_history', chat_id: chatId }));
-            }
             break;
 
           case 'error':
             if (msg.code === 'auth') {
               setStatus('auth_error');
+            } else if (msg.code === 'session') {
+              setStatus('error');
             } else {
               setStatus('error');
             }
@@ -117,6 +107,7 @@ export function useChat(chatId: string) {
         if (disposed) return;
         setStatus('disconnected');
         wsRef.current = null;
+        setChatId(null);
 
         const delay = Math.min(1000 * 2 ** reconnectRef.current, 30_000);
         reconnectRef.current++;
@@ -139,11 +130,11 @@ export function useChat(chatId: string) {
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [chatId]);
+  }, []);
 
   const sendMessage = useCallback(
     (content: string) => {
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+      if (!chatId || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
       setMessages((prev) => [
         ...prev,
@@ -155,8 +146,9 @@ export function useChat(chatId: string) {
         },
       ]);
 
+      // chat_id is managed by the server, no need to send it
       wsRef.current.send(
-        JSON.stringify({ type: 'send', chat_id: chatId, content }),
+        JSON.stringify({ type: 'send', content }),
       );
       setStatus('thinking');
       setErrorMsg(null);
@@ -168,5 +160,5 @@ export function useChat(chatId: string) {
     setMessages([]);
   }, []);
 
-  return { messages, status, errorMsg, sendMessage, clearMessages };
+  return { chatId, messages, status, errorMsg, sendMessage, clearMessages };
 }

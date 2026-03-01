@@ -8,6 +8,8 @@
 pub(all) struct ChatState {
   session_store : &@interfaces.SessionStore
   history_reader : (&@interfaces.HistoryReader)?
+  history_recorder : (&@interfaces.HistoryRecorder)?
+  get_timestamp : (() -> Int64)?
 }
 
 ///|
@@ -15,14 +17,19 @@ pub(all) struct ChatState {
 pub fn ChatState::new(
   session_store : &@interfaces.SessionStore,
   history_reader? : &@interfaces.HistoryReader,
+  history_recorder? : &@interfaces.HistoryRecorder,
+  get_timestamp? : () -> Int64,
 ) -> ChatState {
-  { session_store, history_reader }
+  { session_store, history_reader, history_recorder, get_timestamp }
 }
 
 ///|
 /// Create chat handlers
 pub fn create_chat_handlers(state : ChatState) -> @api.ChatApiHandlers {
   {
+    create_session: @api.RouteHandler(fn(ctx) {
+      handle_create_session(state, ctx)
+    }),
     list_sessions: @api.RouteHandler(fn(ctx) {
       handle_list_sessions(state, ctx)
     }),
@@ -34,6 +41,41 @@ pub fn create_chat_handlers(state : ChatState) -> @api.ChatApiHandlers {
       handle_resume_session(state, ctx)
     }),
   }
+}
+
+///|
+/// Generate UUID v4 for chat_id
+fn generate_chat_id() -> String {
+  let random = @random.Rand::new()
+  let bytes = Bytes::makei(16, fn(_i) { random.uint(limit=256U).to_byte() })
+  @uuid.from_bytes(bytes).as_version(@uuid.V4).to_string() catch {
+    _ => abort("unreachable: 16-byte UUID input is always valid")
+  }
+}
+
+///|
+/// POST /chat/sessions - Create new chat session
+fn handle_create_session(
+  state : ChatState,
+  _ctx : @api.ApiRequestContext,
+) -> @api.ApiResponse {
+  let chat_id = generate_chat_id()
+  let timestamp = match state.get_timestamp {
+    Some(f) => f()
+    None => 0L
+  }
+  let key = @types.SessionKey::new(channel="web_chat", chat_id~, user_id=None)
+  let session = @types.Session::new(key, timestamp)
+  state.session_store.save(session) catch {
+    _ =>
+      return @api.error_response(
+        500, "internal_error", "Failed to create session",
+      )
+  }
+  // Note: HistoryRecorder initialization is handled by the agent loop
+  // when the first message arrives, not here. This avoids creating
+  // empty history files for sessions that never receive messages.
+  @api.json_response(200, { "data": { "chat_id": Json::string(chat_id) } })
 }
 
 ///|

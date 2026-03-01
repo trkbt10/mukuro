@@ -108,6 +108,8 @@ pub(all) struct ConfigApiHandlers {
 ///|
 /// Chat API handlers interface
 pub(all) struct ChatApiHandlers {
+  /// POST /chat/sessions - create new chat session
+  create_session : RouteHandler
   /// GET /chat/sessions - list web chat sessions
   list_sessions : RouteHandler
   /// GET /chat/sessions/{chat_id}/history - get session history
@@ -548,10 +550,11 @@ fn route_chat_endpoint(
   let segments = ctx.segments
   // /chat/sessions
   if segments.length() == 2 && segments[1] == "sessions" {
-    if meth == "GET" {
-      return (handlers.list_sessions.0)(ctx)
+    match meth {
+      "GET" => return (handlers.list_sessions.0)(ctx)
+      "POST" => return (handlers.create_session.0)(ctx)
+      _ => return error_response(405, "method_not_allowed", "Method not allowed")
     }
-    return error_response(405, "method_not_allowed", "Method not allowed")
   }
   // /chat/resume
   if segments.length() == 2 && segments[1] == "resume" {

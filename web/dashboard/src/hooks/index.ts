@@ -50,6 +50,7 @@ export {
   useGatewayHealthReady,
 } from './useGateway';
 
+export { useOnboarding, type OnboardingState } from './useOnboarding';
 export { useResponsiveColumns } from './useResponsiveColumns';
 export { useDashboardLayout } from './useDashboardLayout';
 export { useEditMode } from './useEditMode';
@@ -73,8 +74,6 @@ export {
 
 export {
   useChat,
-  getChatId,
-  resetChatId,
   type ChatMessage,
   type ChatStatus,
 } from './useChat';

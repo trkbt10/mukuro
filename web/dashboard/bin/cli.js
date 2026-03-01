@@ -91,11 +91,15 @@ function buildHeaders() {
 
 async function handleChatMessage(ws, msg) {
   if (msg.type === 'send') {
+    if (!ws.chatId) {
+      ws.send(JSON.stringify({ type: 'error', error: 'Session not initialized' }));
+      return;
+    }
     ws.send(JSON.stringify({ type: 'status', status: 'thinking' }));
 
     const envelope = {
       channel: 'web_chat',
-      chat_id: msg.chat_id,
+      chat_id: ws.chatId,  // Use server-assigned chat_id
       sender_id: 'dashboard_user',
       sender_name: msg.sender_name || 'User',
       content: msg.content,
@@ -142,9 +146,13 @@ async function handleChatMessage(ws, msg) {
       clearTimeout(timeout);
     }
   } else if (msg.type === 'load_history') {
+    if (!ws.chatId) {
+      ws.send(JSON.stringify({ type: 'error', error: 'Session not initialized' }));
+      return;
+    }
     try {
       const response = await fetch(
-        `${apiUrl}/api/v1/chat/sessions/${encodeURIComponent(msg.chat_id)}/history`,
+        `${apiUrl}/api/v1/chat/sessions/${encodeURIComponent(ws.chatId)}/history`,
         { headers: buildHeaders() },
       );
       const result = await response.json();
@@ -170,9 +178,8 @@ async function handleChatMessage(ws, msg) {
   }
 }
 
-wss.on('connection', (ws) => {
-  ws.send(JSON.stringify({ type: 'status', status: 'connected' }));
-
+wss.on('connection', async (ws) => {
+  // Set up message handler first so errors during session creation don't leave orphaned connections
   ws.on('message', async (raw) => {
     try {
       const msg = JSON.parse(raw.toString());
@@ -184,6 +191,40 @@ wss.on('connection', (ws) => {
       }));
     }
   });
+
+  try {
+    // Create a new session via the backend API
+    const response = await fetch(`${apiUrl}/api/v1/chat/sessions`, {
+      method: 'POST',
+      headers: buildHeaders(),
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      ws.send(JSON.stringify({
+        type: 'error',
+        error: result.message || 'Failed to create session',
+        code: response.status === 401 ? 'auth' : 'session',
+      }));
+      return;
+    }
+
+    // Store chat_id on the WebSocket connection
+    ws.chatId = result.data.chat_id;
+
+    // Send session info to frontend
+    ws.send(JSON.stringify({
+      type: 'session',
+      chat_id: ws.chatId,
+    }));
+
+  } catch (err) {
+    ws.send(JSON.stringify({
+      type: 'error',
+      error: `Failed to create session: ${err.message}`,
+      code: 'session',
+    }));
+  }
 });
 
 // Handle WebSocket upgrades

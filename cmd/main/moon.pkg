@@ -59,6 +59,8 @@ options(
     "gateway_config_native_test.mbt": [ "native" ],
     "gateway_config_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "onboard_native.mbt": [ "native" ],
+    "onboard_api_native.mbt": [ "native" ],
+    "onboard_api_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "onboard_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "plugin_transport_native.mbt": [ "native" ],
     "plugin_transport_stub.mbt": [ "js", "wasm", "wasm-gc" ],
