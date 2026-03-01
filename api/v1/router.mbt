@@ -57,14 +57,18 @@ pub(all) struct PluginApiHandlers {
 ///|
 /// Context API handlers interface
 pub(all) struct ContextApiHandlers {
-  /// GET /context - list all context files
-  list : RouteHandler
-  /// GET /context/{name} - get context file
-  get : RouteHandler
-  /// PUT /context/{name} - update context file
-  update : RouteHandler
-  /// DELETE /context/{name} - delete context file
-  delete : RouteHandler
+  /// GET /context/data - list all context data files
+  data_list : RouteHandler
+  /// GET /context/data/{name} - get context data file
+  data_get : RouteHandler
+  /// PUT /context/data/{name} - update context data file
+  data_update : RouteHandler
+  /// DELETE /context/data/{name} - delete context data file
+  data_delete : RouteHandler
+  /// GET /context/templates - list all templates
+  templates_list : RouteHandler
+  /// GET /context/templates/{name} - get template
+  templates_get : RouteHandler
 }
 
 ///|
@@ -336,24 +340,81 @@ fn route_context_endpoint(
 ) -> ApiResponse {
   let meth = ctx.http_method.to_upper()
   let segments = ctx.segments
-  // /context - list all
+  // /context - index
   if segments.length() == 1 {
     if meth == "GET" {
-      return (handlers.list.0)(ctx)
+      return json_response(200, {
+        "endpoints": Json::array([
+          Json::string("/api/v1/context/data"),
+          Json::string("/api/v1/context/templates"),
+        ]),
+      })
     }
     return error_response(405, "method_not_allowed", "Method not allowed")
   }
-  // /context/{name}
+  // /context/data or /context/templates
+  if segments.length() >= 2 {
+    let sub = segments[1]
+    match sub {
+      "data" => route_context_data_endpoint(handlers, ctx)
+      "templates" => route_context_templates_endpoint(handlers, ctx)
+      _ => error_response(404, "not_found", "Unknown context sub-endpoint: /context/\{sub}")
+    }
+  } else {
+    error_response(404, "not_found", "Unknown context endpoint")
+  }
+}
+
+///|
+/// Route /context/data/* endpoints
+fn route_context_data_endpoint(
+  handlers : ContextApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /context/data - list all
   if segments.length() == 2 {
+    if meth == "GET" {
+      return (handlers.data_list.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /context/data/{name}
+  if segments.length() == 3 {
     match meth {
-      "GET" => return (handlers.get.0)(ctx)
-      "PUT" => return (handlers.update.0)(ctx)
-      "DELETE" => return (handlers.delete.0)(ctx)
-      _ =>
-        return error_response(405, "method_not_allowed", "Method not allowed")
+      "GET" => return (handlers.data_get.0)(ctx)
+      "PUT" => return (handlers.data_update.0)(ctx)
+      "DELETE" => return (handlers.data_delete.0)(ctx)
+      _ => return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
-  error_response(404, "not_found", "Unknown context endpoint")
+  error_response(404, "not_found", "Unknown context data endpoint")
+}
+
+///|
+/// Route /context/templates/* endpoints
+fn route_context_templates_endpoint(
+  handlers : ContextApiHandlers,
+  ctx : ApiRequestContext,
+) -> ApiResponse {
+  let meth = ctx.http_method.to_upper()
+  let segments = ctx.segments
+  // /context/templates - list all
+  if segments.length() == 2 {
+    if meth == "GET" {
+      return (handlers.templates_list.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  // /context/templates/{name}
+  if segments.length() == 3 {
+    if meth == "GET" {
+      return (handlers.templates_get.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
+  }
+  error_response(404, "not_found", "Unknown context templates endpoint")
 }
 
 ///|

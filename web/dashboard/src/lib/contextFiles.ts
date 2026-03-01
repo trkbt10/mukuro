@@ -5,6 +5,7 @@ export const fileDescriptions: Record<string, string> = {
   agents: 'Workspace handbook and guidelines',
   tools: 'Local tools and environment configuration',
   user: 'User preferences and context',
+  heartbeat: 'Periodic task checklist',
 };
 
 export const filePlaceholders: Record<string, string> = {
@@ -14,4 +15,5 @@ export const filePlaceholders: Record<string, string> = {
   agents: 'Workspace handbook and guidelines for agent behavior...',
   tools: 'Local tools and environment configuration...',
   user: 'User preferences and personal context...',
+  heartbeat: 'Periodic task checklist for scheduled checks...',
 };

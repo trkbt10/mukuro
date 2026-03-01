@@ -8,22 +8,26 @@ import type { HttpClient } from '../client.js';
 export class ContextApi {
   constructor(private readonly http: HttpClient) {}
 
+  // ============================================================
+  // Data Endpoints (/context/data/*)
+  // ============================================================
+
   /**
-   * List all context files
+   * List all context data files
    */
-  async list(): Promise<ContextFileResponse[]> {
+  async listData(): Promise<ContextFileResponse[]> {
     const res = await this.http.get<ApiResponse<ContextFilesListResponse>>(
-      '/context'
+      '/context/data'
     );
     return res.data?.files ?? [];
   }
 
   /**
-   * Get a specific context file by name
+   * Get a specific context data file by name
    */
-  async get(name: string): Promise<ContextFileResponse> {
+  async getData(name: string): Promise<ContextFileResponse> {
     const res = await this.http.get<ApiResponse<ContextFileResponse>>(
-      `/context/${encodeURIComponent(name)}`
+      `/context/data/${encodeURIComponent(name)}`
     );
     if (!res.data) {
       throw new Error(`Context file not found: ${name}`);
@@ -32,11 +36,11 @@ export class ContextApi {
   }
 
   /**
-   * Update a context file's content
+   * Update a context data file's content
    */
-  async update(name: string, content: string): Promise<ContextFileResponse> {
+  async updateData(name: string, content: string): Promise<ContextFileResponse> {
     const res = await this.http.put<ApiResponse<ContextFileResponse>>(
-      `/context/${encodeURIComponent(name)}`,
+      `/context/data/${encodeURIComponent(name)}`,
       { content }
     );
     if (!res.data) {
@@ -46,9 +50,36 @@ export class ContextApi {
   }
 
   /**
-   * Delete a context file
+   * Delete a context data file
    */
-  async delete(name: string): Promise<void> {
-    await this.http.delete(`/context/${encodeURIComponent(name)}`);
+  async deleteData(name: string): Promise<void> {
+    await this.http.delete(`/context/data/${encodeURIComponent(name)}`);
+  }
+
+  // ============================================================
+  // Template Endpoints (/context/templates/*)
+  // ============================================================
+
+  /**
+   * List all templates
+   */
+  async listTemplates(): Promise<ContextFileResponse[]> {
+    const res = await this.http.get<ApiResponse<ContextFilesListResponse>>(
+      '/context/templates'
+    );
+    return res.data?.files ?? [];
+  }
+
+  /**
+   * Get a specific template by name
+   */
+  async getTemplate(name: string): Promise<ContextFileResponse> {
+    const res = await this.http.get<ApiResponse<ContextFileResponse>>(
+      `/context/templates/${encodeURIComponent(name)}`
+    );
+    if (!res.data) {
+      throw new Error(`Template not found: ${name}`);
+    }
+    return res.data;
   }
 }

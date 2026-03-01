@@ -111,7 +111,45 @@ pub fn ContextFileResponse::to_json(self : ContextFileResponse) -> Json {
 }
 
 ///|
-/// Create from file type and content
+/// Create from file type and content (for data endpoint)
+/// Returns empty content if file doesn't exist
+pub fn ContextFileResponse::from_data(
+  file_type : ContextFileType,
+  content : String?,
+) -> ContextFileResponse {
+  let (actual_content, exists) = match content {
+    Some(c) => (c, true)
+    None => ("", false)
+  }
+  {
+    name: file_type.to_string(),
+    filename: file_type.filename(),
+    description: file_type.description(),
+    content: actual_content,
+    exists,
+    is_default: false,
+  }
+}
+
+///|
+/// Create from file type with template content
+/// Template always exists
+pub fn ContextFileResponse::from_template(
+  file_type : ContextFileType,
+  content : String,
+) -> ContextFileResponse {
+  {
+    name: file_type.to_string(),
+    filename: file_type.filename(),
+    description: file_type.description(),
+    content,
+    exists: true,
+    is_default: true,
+  }
+}
+
+///|
+/// Create from file type and content (legacy - for backwards compatibility)
 pub fn ContextFileResponse::from_type(
   file_type : ContextFileType,
   content : String?,

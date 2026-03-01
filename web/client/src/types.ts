@@ -84,7 +84,7 @@ export type PluginPermissionType =
 // Context File Types
 // ============================================================================
 
-export type ContextFileName = 'soul' | 'identity' | 'bootstrap' | 'agents' | 'tools' | 'user';
+export type ContextFileName = 'soul' | 'identity' | 'bootstrap' | 'agents' | 'tools' | 'user' | 'heartbeat';
 
 export interface ContextFileResponse {
   name: ContextFileName;

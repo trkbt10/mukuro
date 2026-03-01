@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Save, Check, Sparkles, PenLine } from 'lucide-react';
 import { Button, Input, Textarea } from '@/components/ui';
-import { useContextFiles, useUpdateContextFile } from '@/hooks';
+import { useContextDataFiles, useUpdateContextDataFile } from '@/hooks';
 import { fileDescriptions, filePlaceholders } from '@/lib/contextFiles';
 import { getClient } from '@/lib/client';
 import type { ContextFileName } from '@mukuro/client';
@@ -21,6 +21,7 @@ const TAB_LABELS: Record<ContextFileName, string> = {
   agents: 'AGENTS',
   tools: 'TOOLS',
   bootstrap: 'BOOTSTRAP',
+  heartbeat: 'HEARTBEAT',
 };
 
 // ── Interview answers ──
@@ -35,8 +36,8 @@ interface InterviewAnswers {
 // ── Component ──
 
 export function WorkspaceStep({ onComplete }: Props) {
-  const { data: contextFiles } = useContextFiles();
-  const updateFile = useUpdateContextFile();
+  const { data: contextFiles } = useContextDataFiles();
+  const updateFile = useUpdateContextDataFile();
   const gen = useMutation({
     mutationFn: (answers: InterviewAnswers) =>
       getClient().onboard.generate({
@@ -63,7 +64,8 @@ export function WorkspaceStep({ onComplete }: Props) {
     if (!contextFiles) return;
     const initial: Partial<Record<ContextFileName, string>> = {};
     for (const file of contextFiles) {
-      if (file.exists && !file.is_default) {
+      // With new data API, exists=true means file has custom content
+      if (file.exists) {
         initial[file.name] = file.content;
       }
     }
@@ -88,7 +90,8 @@ export function WorkspaceStep({ onComplete }: Props) {
   // ── Editor logic ──
   const currentFile = contextFiles?.find((f) => f.name === activeTab);
   const currentDraft = drafts[activeTab] ?? '';
-  const isDirty = currentDraft !== (currentFile?.exists && !currentFile.is_default ? currentFile.content : '');
+  // With new data API, exists=true means file has custom content
+  const isDirty = currentDraft !== (currentFile?.exists ? currentFile.content : '');
 
   const handleDraftChange = (value: string) => {
     setDrafts((prev) => ({ ...prev, [activeTab]: value }));

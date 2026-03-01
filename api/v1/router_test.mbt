@@ -37,10 +37,12 @@ fn make_router_with_handlers() -> ApiRouter {
     update_settings: RouteHandler(dummy_handler),
   }
   let context_handlers : ContextApiHandlers = {
-    list: RouteHandler(dummy_handler),
-    get: RouteHandler(dummy_handler),
-    update: RouteHandler(dummy_handler),
-    delete: RouteHandler(dummy_handler),
+    data_list: RouteHandler(dummy_handler),
+    data_get: RouteHandler(dummy_handler),
+    data_update: RouteHandler(dummy_handler),
+    data_delete: RouteHandler(dummy_handler),
+    templates_list: RouteHandler(dummy_handler),
+    templates_get: RouteHandler(dummy_handler),
   }
   let settings_handlers : SettingsApiHandlers = {
     get_all: RouteHandler(dummy_handler),
@@ -164,37 +166,66 @@ test "router routes POST /api/v1/plugins/{id}/reload" {
 }
 
 // =============================================================================
-// Context Routes
+// Context Data Routes
 // =============================================================================
 
 ///|
-test "router routes GET /api/v1/context" {
+test "router routes GET /api/v1/context returns index" {
   let router = make_router_with_handlers()
   let ctx = make_ctx("GET", "/api/v1/context", "viewer", "")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
+  assert_true(resp.body.contains("endpoints"))
 }
 
 ///|
-test "router routes GET /api/v1/context/{name}" {
+test "router routes GET /api/v1/context/data" {
   let router = make_router_with_handlers()
-  let ctx = make_ctx("GET", "/api/v1/context/soul", "viewer", "")
+  let ctx = make_ctx("GET", "/api/v1/context/data", "viewer", "")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
 }
 
 ///|
-test "router routes PUT /api/v1/context/{name}" {
+test "router routes GET /api/v1/context/data/{name}" {
   let router = make_router_with_handlers()
-  let ctx = make_ctx("PUT", "/api/v1/context/soul", "operator", "{}")
+  let ctx = make_ctx("GET", "/api/v1/context/data/soul", "viewer", "")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
 }
 
 ///|
-test "router routes DELETE /api/v1/context/{name}" {
+test "router routes PUT /api/v1/context/data/{name}" {
   let router = make_router_with_handlers()
-  let ctx = make_ctx("DELETE", "/api/v1/context/soul", "admin", "")
+  let ctx = make_ctx("PUT", "/api/v1/context/data/soul", "operator", "{}")
+  let resp = router.route(ctx)
+  assert_eq(resp.status, 200)
+}
+
+///|
+test "router routes DELETE /api/v1/context/data/{name}" {
+  let router = make_router_with_handlers()
+  let ctx = make_ctx("DELETE", "/api/v1/context/data/soul", "admin", "")
+  let resp = router.route(ctx)
+  assert_eq(resp.status, 200)
+}
+
+// =============================================================================
+// Context Template Routes
+// =============================================================================
+
+///|
+test "router routes GET /api/v1/context/templates" {
+  let router = make_router_with_handlers()
+  let ctx = make_ctx("GET", "/api/v1/context/templates", "viewer", "")
+  let resp = router.route(ctx)
+  assert_eq(resp.status, 200)
+}
+
+///|
+test "router routes GET /api/v1/context/templates/{name}" {
+  let router = make_router_with_handlers()
+  let ctx = make_ctx("GET", "/api/v1/context/templates/soul", "viewer", "")
   let resp = router.route(ctx)
   assert_eq(resp.status, 200)
 }

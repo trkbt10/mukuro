@@ -27,8 +27,8 @@ let api_v1_providers_state : @api_providers.ProviderManagerState = @api_provider
 let api_v1_tools_state : @api_tools.ToolManagerState = @api_tools.ToolManagerState::new()
 
 ///|
-/// Create context file I/O interface
-fn create_context_file_io() -> @api_context.ContextFileIO {
+/// Create context data I/O interface
+fn create_context_data_io() -> @api_context.ContextDataIO {
   {
     read: fn(path) {
       match read_text_file_optional(path) {
@@ -56,9 +56,27 @@ fn create_context_file_io() -> @api_context.ContextFileIO {
 }
 
 ///|
+/// Create template resolver interface
+fn create_template_resolver() -> @api_context.TemplateResolver {
+  {
+    read_installed: fn(filename) {
+      // Read template from install directory
+      let install_dir = @config.config_dir() + "/templates"
+      let path = install_dir + "/" + filename
+      read_text_file_optional(path)
+    },
+    get_embedded: fn(file_type) {
+      // Return embedded fallback template based on file type
+      file_type.default_template()
+    },
+  }
+}
+
+///|
 /// Global context state
 let api_v1_context_state : @api_context.ContextState = @api_context.ContextState::new(
-  create_context_file_io(),
+  create_context_data_io(),
+  create_template_resolver(),
 )
 
 ///|
@@ -856,9 +874,47 @@ fn to_async_http_request(req : @xhttp.Request) -> @async_http.Request {
 }
 
 ///|
-/// Generate UUID v4 for chat_id
+/// グローバルカウンター（UUID生成ごとにインクリメント）
+let ws_chat_id_counter : Ref[Int] = { val: 0 }
+
+///|
+/// Generate UUID v4 for chat_id using non-deterministic seed
+/// Uses system time, PID, and a counter to ensure uniqueness
 fn generate_ws_chat_id() -> String {
-  let random = @random.Rand::new()
+  // シードを構築: 時刻 + PID + カウンター
+  let now = @native.c_time()
+  let pid = @native.c_getpid()
+  ws_chat_id_counter.val = ws_chat_id_counter.val + 1
+  let counter = ws_chat_id_counter.val
+
+  // 32バイトのシードを作成（makei で各バイトを計算）
+  let seed = Bytes::makei(32, fn(i) {
+    match i {
+      // 時刻（8バイト）
+      0 => (now & 0xFFL).to_byte()
+      1 => ((now >> 8) & 0xFFL).to_byte()
+      2 => ((now >> 16) & 0xFFL).to_byte()
+      3 => ((now >> 24) & 0xFFL).to_byte()
+      4 => ((now >> 32) & 0xFFL).to_byte()
+      5 => ((now >> 40) & 0xFFL).to_byte()
+      6 => ((now >> 48) & 0xFFL).to_byte()
+      7 => ((now >> 56) & 0xFFL).to_byte()
+      // PID（4バイト）
+      8 => (pid & 0xFF).to_byte()
+      9 => ((pid >> 8) & 0xFF).to_byte()
+      10 => ((pid >> 16) & 0xFF).to_byte()
+      11 => ((pid >> 24) & 0xFF).to_byte()
+      // カウンター（4バイト）
+      12 => (counter & 0xFF).to_byte()
+      13 => ((counter >> 8) & 0xFF).to_byte()
+      14 => ((counter >> 16) & 0xFF).to_byte()
+      15 => ((counter >> 24) & 0xFF).to_byte()
+      // 残りはゼロ
+      _ => b'\x00'
+    }
+  })
+
+  let random = @random.Rand::chacha8(seed~)
   let bytes = Bytes::makei(16, fn(_i) { random.uint(limit=256U).to_byte() })
   @uuid.from_bytes(bytes).as_version(@uuid.V4).to_string() catch {
     _ => abort("unreachable: 16-byte UUID input is always valid")

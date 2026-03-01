@@ -1,11 +1,11 @@
 import { FileText, CheckCircle, Circle } from 'lucide-react';
 import { Badge, Loading, StatCard } from '@/components/ui';
-import { useContextFiles } from '@/hooks';
+import { useContextDataFiles } from '@/hooks';
 import { fileDescriptions } from '@/lib/contextFiles';
 import styles from './Context.module.css';
 
 export function Context() {
-  const { data: contextFiles, isLoading } = useContextFiles();
+  const { data: contextFiles, isLoading } = useContextDataFiles();
 
   if (isLoading) {
     return <Loading message="Loading context files..." />;

@@ -28,11 +28,12 @@ import {
   Wifi,
   WifiOff,
   Loader2,
+  HeartPulse,
 } from 'lucide-react';
 import { TreeItem } from 'react-editor-ui';
 import { LayerItem } from 'react-editor-ui/LayerItem';
 import { Badge, IconButton, Toggle } from '@/components/ui';
-import { usePlugins, useEnablePlugin, useDisablePlugin, useMessageProviders, useContextFiles, useAiProviders } from '@/hooks';
+import { usePlugins, useEnablePlugin, useDisablePlugin, useMessageProviders, useContextDataFiles, useAiProviders } from '@/hooks';
 import { useConnection, type ConnectionStatus } from '@/hooks/useConnection';
 import styles from './Sidebar.module.css';
 
@@ -46,6 +47,7 @@ const contextFileIcons: Record<string, React.ReactNode> = {
   agents: <Bot style={smallIcon} />,
   tools: <Wrench style={smallIcon} />,
   user: <UserCircle style={smallIcon} />,
+  heartbeat: <HeartPulse style={smallIcon} />,
 };
 
 const settingSections = [
@@ -132,7 +134,7 @@ export function Sidebar() {
   const enablePlugin = useEnablePlugin();
   const disablePlugin = useDisablePlugin();
   const { data: providers, refetch: refetchProviders } = useMessageProviders();
-  const { data: contextFiles } = useContextFiles();
+  const { data: contextFiles } = useContextDataFiles();
   const { data: aiProviders } = useAiProviders();
 
   const [expanded, setExpanded] = useState<Set<string>>(() => {

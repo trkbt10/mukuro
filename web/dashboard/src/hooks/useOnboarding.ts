@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useAiProviders, useContextFiles, useMessageProviders, useConnection } from '@/hooks';
+import { useAiProviders, useContextDataFiles, useMessageProviders, useConnection } from '@/hooks';
 
 const DISMISS_KEY = 'mukuro-onboarding-dismissed';
 
@@ -19,7 +19,7 @@ export interface OnboardingState {
 export function useOnboarding(): OnboardingState {
   const { data: connection } = useConnection();
   const { data: providers, isLoading: providersLoading } = useAiProviders();
-  const { data: contextFiles, isLoading: contextLoading } = useContextFiles();
+  const { data: contextFiles, isLoading: contextLoading } = useContextDataFiles();
   const { data: messageProviders, isLoading: channelsLoading } = useMessageProviders();
 
   const [dismissed, setDismissed] = useState(
@@ -48,7 +48,8 @@ export function useOnboarding(): OnboardingState {
     if (!contextFiles) return true;
     const soul = contextFiles.find((f) => f.name === 'soul');
     const identity = contextFiles.find((f) => f.name === 'identity');
-    return !soul?.exists || soul.is_default || !identity?.exists || identity.is_default;
+    // With new data API, exists=false means file doesn't have custom content
+    return !soul?.exists || !identity?.exists;
   }, [contextFiles]);
 
   const needsChannel = useMemo(

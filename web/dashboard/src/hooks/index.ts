@@ -21,11 +21,16 @@ export {
 } from './usePluginActions';
 
 export {
-  useContextFiles,
-  useContextFile,
-  useUpdateContextFile,
-  useDeleteContextFile,
+  useContextDataFiles,
+  useContextDataFile,
+  useUpdateContextDataFile,
+  useDeleteContextDataFile,
+  useContextTemplates,
+  useContextTemplate,
 } from './useContext';
+
+export { useContextEditor } from './useContextEditor';
+export { useEditableContent } from './useEditableContent';
 
 export {
   useAllSettings,
