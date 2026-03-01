@@ -239,6 +239,7 @@ fn parse_context_files(
     tools_config: get_string_or_none("tools_config"),
     identity: get_string_or_none("identity"),
     user_context: get_string_or_none("user_context"),
+    heartbeat: get_string_or_none("heartbeat"),
   }
 }
 
