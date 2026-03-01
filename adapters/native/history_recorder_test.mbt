@@ -12,7 +12,7 @@ fn test_timestamp() -> Int64 {
 test "NativeHistoryRecorder creates file on open_session" {
   // Use PID + counter for uniqueness
   let base_dir = "/tmp/mukuro_h1_\{c_getpid()}"
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()
   let is_new = recorder.open_session(
@@ -20,7 +20,7 @@ test "NativeHistoryRecorder creates file on open_session" {
     timestamp~,
   ) catch {
     e => {
-      let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+      let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
       fail("open_session failed: \{e}")
     }
   }
@@ -32,13 +32,13 @@ test "NativeHistoryRecorder creates file on open_session" {
   assert_true(entries.length() > 0)
   let has_jsonl = entries.iter().any(fn(e) { e.has_suffix(".jsonl") })
   assert_true(has_jsonl)
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
 }
 
 ///|
 test "NativeHistoryRecorder writes record to file" {
   let base_dir = "/tmp/mukuro_h2_\{c_getpid()}"
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()
   let _ = recorder.open_session(
@@ -46,7 +46,7 @@ test "NativeHistoryRecorder writes record to file" {
     timestamp~,
   ) catch {
     e => {
-      let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+      let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
       fail("open_session failed: \{e}")
     }
   }
@@ -70,19 +70,19 @@ test "NativeHistoryRecorder writes record to file" {
   assert_true(content.length() > 0)
   assert_true(content.contains("user_message"))
   assert_true(content.contains("Hello, world!"))
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
 }
 
 ///|
 test "NativeHistoryRecorder read-write round-trip via Reader" {
   let base_dir = "/tmp/mukuro_h3_\{c_getpid()}"
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()
   let session_id = "web_chat:roundtrip_unique_123"
   let is_new = recorder.open_session(session_id~, timestamp~) catch {
     e => {
-      let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+      let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
       fail("open_session failed: \{e}")
     }
   }
@@ -112,7 +112,7 @@ test "NativeHistoryRecorder read-write round-trip via Reader" {
   assert_eq(records.length(), 2)
   assert_true(records[0].record_type is @interfaces.HistoryRecordType::SessionMeta)
   assert_true(records[1].record_type is @interfaces.HistoryRecordType::UserMessage)
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
 }
 
 ///|
@@ -137,13 +137,13 @@ test "NativeHistoryRecorder raises NotInitialized when not open" {
 ///|
 test "NativeHistoryRecorder flushes after each record" {
   let base_dir = "/tmp/mukuro_h5_\{c_getpid()}"
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()
   let session_id = "flush_test:chat1"
   let _ = recorder.open_session(session_id~, timestamp~) catch {
     e => {
-      let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+      let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
       fail("open_session failed: \{e}")
     }
   }
@@ -165,5 +165,5 @@ test "NativeHistoryRecorder flushes after each record" {
   }
   assert_true(content.contains("First"))
   recorder.close() catch { _ => () }
-  let _ = c_system(string_to_cstring("rm -rf \{base_dir}"))
+  let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
 }

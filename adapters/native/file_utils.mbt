@@ -13,13 +13,12 @@ pub let dir_permission : Int = 493
 ///|
 /// ディレクトリ内のエントリ名一覧を取得する
 pub fn native_list_dir_entries(dir_path : String) -> Array[String] {
-  if c_access(string_to_cstring(dir_path), f_ok) != 0 {
+  let path_bytes = string_to_utf8_cstring(dir_path)
+  if c_access_bytes(path_bytes, f_ok) != 0 {
     return []
   }
   let buffer = Bytes::new(65536)
-  let bytes_read = c_list_dir(
-    string_to_cstring(dir_path), buffer, buffer.length(),
-  )
+  let bytes_read = c_list_dir_bytes(path_bytes, buffer, buffer.length())
   if bytes_read <= 0 {
     return []
   }

@@ -64,7 +64,7 @@ pub impl @interfaces.FileStore for NativeFileStore with write_file(
 ///|
 pub impl @interfaces.FileStore for NativeFileStore with exists(self, path~) {
   let resolved = self.resolve_path(path) catch { _ => return false }
-  c_access(string_to_cstring(resolved), f_ok) == 0
+  c_access_bytes(string_to_utf8_cstring(resolved), f_ok) == 0
 }
 
 ///|
@@ -73,7 +73,7 @@ pub impl @interfaces.FileStore for NativeFileStore with remove_file(self, path~)
     FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
-  let result = c_remove(string_to_cstring(resolved))
+  let result = c_remove_bytes(string_to_utf8_cstring(resolved))
   if result != 0 {
     raise FileSystemError::IoError("Cannot remove file: \{resolved}")
   }
@@ -85,7 +85,7 @@ pub impl @interfaces.FileStore for NativeFileStore with create_dir(self, path~) 
     FileSystemError::InvalidPath(msg) => raise FileSystemError::InvalidPath(msg)
     e => raise e
   }
-  let result = c_mkdir(string_to_cstring(resolved), dir_permission)
+  let result = c_mkdir_bytes(string_to_utf8_cstring(resolved), dir_permission)
   if result != 0 {
     raise FileSystemError::IoError("Cannot create directory: \{resolved}")
   }
@@ -98,7 +98,8 @@ pub impl @interfaces.FileStore for NativeFileStore with list_dir(self, path~) {
     e => raise e
   }
   let entries = native_list_dir_entries(resolved)
-  if entries.length() == 0 && c_access(string_to_cstring(resolved), f_ok) != 0 {
+  if entries.length() == 0 &&
+    c_access_bytes(string_to_utf8_cstring(resolved), f_ok) != 0 {
     raise FileSystemError::IoError("Cannot list directory: \{resolved}")
   }
   entries

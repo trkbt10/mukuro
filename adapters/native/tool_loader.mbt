@@ -23,14 +23,16 @@ pub fn create_tool_loader_io() -> @tool.ToolLoaderIO {
       let tools_dir = get_tools_dir()
       let dirs : Array[String] = []
       // Create tools directory if it doesn't exist (dir_permission = 0o755)
-      let _ = c_mkdir_recursive(string_to_cstring(tools_dir), dir_permission)
+      let _ = c_mkdir_recursive_bytes(
+        string_to_utf8_cstring(tools_dir), dir_permission,
+      )
       // List subdirectories (entries that have a tool.json file inside)
       let entries = native_list_dir_entries(tools_dir)
       for entry in entries {
         if not(entry.has_prefix(".")) {
           // Check if tool.json exists in this subdirectory
           let manifest_path = tools_dir + "/" + entry + "/tool.json"
-          if c_access(string_to_cstring(manifest_path), f_ok) == 0 {
+          if c_access_bytes(string_to_utf8_cstring(manifest_path), f_ok) == 0 {
             dirs.push(entry)
           }
         }

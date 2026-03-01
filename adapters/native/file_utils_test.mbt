@@ -9,7 +9,7 @@ test "read_file_bytes returns empty bytes for empty file" {
     _ => fail("read failed")
   }
   assert_eq(data.length(), 0)
-  let _ = c_remove(string_to_cstring(path))
+  let _ = c_remove_bytes(string_to_utf8_cstring(path))
 }
 
 ///|
@@ -24,7 +24,7 @@ test "read_file_bytes round-trip small data" {
   for i = 0; i < 256; i = i + 1 {
     assert_eq(read_back[i], original[i])
   }
-  let _ = c_remove(string_to_cstring(path))
+  let _ = c_remove_bytes(string_to_utf8_cstring(path))
 }
 
 ///|
@@ -41,7 +41,7 @@ test "read_file_bytes handles exactly one chunk (64KB)" {
   assert_eq(read_back[0], original[0])
   assert_eq(read_back[size - 1], original[size - 1])
   assert_eq(read_back[size / 2], original[size / 2])
-  let _ = c_remove(string_to_cstring(path))
+  let _ = c_remove_bytes(string_to_utf8_cstring(path))
 }
 
 ///|
@@ -61,7 +61,7 @@ test "read_file_bytes handles multi-chunk (>64KB)" {
   assert_eq(read_back[65535], original[65535])
   assert_eq(read_back[65536], original[65536])
   assert_eq(read_back[65537], original[65537])
-  let _ = c_remove(string_to_cstring(path))
+  let _ = c_remove_bytes(string_to_utf8_cstring(path))
 }
 
 ///|
@@ -81,7 +81,7 @@ test "read_file_bytes handles 3-chunk file (>128KB)" {
     assert_eq(read_back[i], original[i])
     i = i + 10000
   }
-  let _ = c_remove(string_to_cstring(path))
+  let _ = c_remove_bytes(string_to_utf8_cstring(path))
 }
 
 ///|
@@ -101,7 +101,7 @@ test "write and read text round-trip" {
     _ => fail("read failed")
   }
   assert_eq(read_back, content)
-  let _ = c_remove(string_to_cstring(path))
+  let _ = c_remove_bytes(string_to_utf8_cstring(path))
 }
 
 ///|
@@ -115,5 +115,5 @@ test "append text adds to existing file" {
     _ => fail("read failed")
   }
   assert_eq(read_back, "first\nsecond\n")
-  let _ = c_remove(string_to_cstring(path))
+  let _ = c_remove_bytes(string_to_utf8_cstring(path))
 }
