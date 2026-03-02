@@ -1,0 +1,29 @@
+{
+  "_comment": "Response for two-phase turn 3: model responds with text after multiple tool calls",
+  "_scenario": "User asks 'Which file is larger?' after two tool call cycles (ls, then ls -la)",
+  "id": "resp_01kjpjga87f9yb9cj3k2t3188s",
+  "object": "response",
+  "status": "completed",
+  "created_at": 1772431616,
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_01kjpjga87f9zbssyffpb9rd51",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "`file2.txt` is larger—200 bytes versus 100 bytes for `file1.txt`.",
+          "annotations": []
+        }
+      ]
+    }
+  ],
+  "model": "openai/gpt-oss-20b",
+  "usage": {
+    "input_tokens": 312,
+    "output_tokens": 49,
+    "total_tokens": 361
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "_comment": "Request demonstrating chained tool calls: after first tool result, model makes second tool call",
+  "_scenario": "1. User: 'List files and show first file content' -> 2. Model: shell(ls) -> 3. ToolResult: file list -> 4. This request expects Model to call shell(cat README.md)",
+  "model": "openai/gpt-oss-20b",
+  "input": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "List files and then show me the content of the first file"},
+    {
+      "type": "function_call",
+      "call_id": "fc_001",
+      "name": "shell",
+      "arguments": "{\"command\":\"ls\"}",
+      "status": "completed"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "fc_001",
+      "output": "README.md\nconfig.json\nmain.py"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "shell",
+      "description": "Execute shell commands",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {"type": "string", "description": "The command to execute"}
+        },
+        "required": ["command"]
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}

@@ -211,7 +211,27 @@ fn update_metadata_for_record(
       store.increment_counts(session_id~, user=0, assistant=0, tool=1) catch {
         _ => ()
       }
-    _ => () // SessionMeta, ToolResult, Error は無視
+    @interfaces.HistoryRecordType::SessionMeta => {
+      // SessionMeta から model_name を抽出して SQLite に保存
+      let model = extract_model_from_payload(record.payload)
+      if model.length() > 0 {
+        store.update_model_name(session_id~, model_name=model) catch { _ => () }
+      }
+    }
+    _ => () // ToolResult, Error は無視
+  }
+}
+
+///|
+/// PayloadからmodelフィールドのString値を抽出
+fn extract_model_from_payload(payload : Json) -> String {
+  match payload {
+    Object(obj) =>
+      match obj.get("model") {
+        Some(String(s)) => s
+        _ => ""
+      }
+    _ => ""
   }
 }
 

@@ -254,6 +254,9 @@ pub(open) trait HistoryMetadataStore {
   /// セッション削除
   delete(Self, session_id~ : String) -> Unit raise MetadataStoreError
 
+  /// モデル名を更新
+  update_model_name(Self, session_id~ : String, model_name~ : String) -> Unit raise MetadataStoreError
+
   /// データベースを閉じる
   close(Self) -> Unit
 }
@@ -361,6 +364,16 @@ pub impl HistoryMetadataStore for NoOpMetadataStore with delete(
   session_id~,
 ) -> Unit raise MetadataStoreError {
   ignore(session_id)
+}
+
+///|
+pub impl HistoryMetadataStore for NoOpMetadataStore with update_model_name(
+  _self,
+  session_id~,
+  model_name~,
+) -> Unit raise MetadataStoreError {
+  ignore(session_id)
+  ignore(model_name)
 }
 
 ///|

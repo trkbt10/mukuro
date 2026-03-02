@@ -84,3 +84,44 @@ pub fn temp_dir() -> String {
 pub fn temp_dir_for(app_name : String) -> String {
   temp_dir() + "/" + app_name
 }
+
+///|
+/// 絶対パスを相対パスに変換（base_dir prefix を除去）
+/// e.g. "/Users/.../mukuro/history/2026/03/02/file.jsonl" → "history/2026/03/02/file.jsonl"
+pub fn to_relative_path(file_path : String, base_dir : String) -> String {
+  // base_dir が "/" で終わらない場合は "/" を付加してプレフィックスチェック
+  let prefix = if base_dir.has_suffix("/") {
+    base_dir
+  } else {
+    "\{base_dir}/"
+  }
+  if file_path.has_prefix(prefix) {
+    // prefix を除去して相対パスに
+    let sb = StringBuilder::new()
+    let chars = file_path.to_array()
+    for i = prefix.length(); i < chars.length(); i = i + 1 {
+      sb.write_char(chars[i])
+    }
+    sb.to_string()
+  } else {
+    // 既に相対パスまたは異なる base_dir の場合はそのまま
+    file_path
+  }
+}
+
+///|
+/// 相対パスを絶対パスに変換（base_dir を prefix として結合）
+/// e.g. "history/2026/03/02/file.jsonl" → "/Users/.../mukuro/history/2026/03/02/file.jsonl"
+/// 既に絶対パス（"/" で始まる）の場合はそのまま返す（レガシーデータ互換）
+pub fn to_absolute_path(file_path : String, base_dir : String) -> String {
+  // 既に絶対パスの場合はそのまま
+  if file_path.has_prefix("/") {
+    return file_path
+  }
+  // base_dir が "/" で終わる場合はそのまま結合、そうでなければ "/" を追加
+  if base_dir.has_suffix("/") {
+    "\{base_dir}\{file_path}"
+  } else {
+    "\{base_dir}/\{file_path}"
+  }
+}

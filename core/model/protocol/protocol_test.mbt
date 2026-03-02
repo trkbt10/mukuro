@@ -1247,3 +1247,175 @@ test "regression: two_phase_conversation_with_tool_call_responses_api" {
     _ => fail("Expected input and tools arrays")
   }
 }
+
+///|
+/// Regression test for chained tool calls: multiple tool calls in sequence
+test "regression: chained_toolcalls_responses_api" {
+  // Scenario: User asks for file list + content, model makes two tool calls
+  // 1. shell(ls) -> result -> 2. shell(cat README.md) -> result -> 3. text response
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::System("You are a helpful assistant."),
+    @types.ModelMessage::User(
+      content="List files and then show me the content of the first file",
+      name=None,
+    ),
+    // First tool call
+    @types.ModelMessage::Assistant(
+      content="",
+      tool_calls=Some([
+        @types.ToolCallRequest::new(
+          id="fc_001",
+          name="shell",
+          arguments={ "command": "ls" },
+        ),
+      ]),
+    ),
+    @types.ModelMessage::ToolResult(
+      tool_call_id="fc_001",
+      content="README.md\nconfig.json\nmain.py",
+    ),
+    // Second tool call (chained)
+    @types.ModelMessage::Assistant(
+      content="",
+      tool_calls=Some([
+        @types.ToolCallRequest::new(
+          id="fc_002",
+          name="shell",
+          arguments={ "command": "cat README.md" },
+        ),
+      ]),
+    ),
+    @types.ModelMessage::ToolResult(
+      tool_call_id="fc_002",
+      content="# My Project\n\nThis is a sample project.",
+    ),
+  ]
+  let tools : Array[@types.ToolDefinition] = [
+    @types.ToolDefinition::new(
+      name="shell",
+      description="Execute shell commands",
+      parameters={
+        "type": "object",
+        "properties": { "command": { "type": "string" } },
+        "required": ["command"],
+      },
+    ),
+  ]
+  let body = build_responses_api_body("openai/gpt-oss-20b", messages, tools)
+  let s = body.stringify()
+  // Verify both function_calls are present
+  let fc_001_count = count_occurrences(s, "fc_001")
+  let fc_002_count = count_occurrences(s, "fc_002")
+  inspect(fc_001_count, content="2") // call_id appears in function_call and function_call_output
+  inspect(fc_002_count, content="2")
+  // Verify function_call_output for both
+  let output_count = count_occurrences(s, "function_call_output")
+  inspect(output_count, content="2")
+  // Parse and verify input items count
+  let body_json = @json.parse(s) catch { _ => return fail("Invalid JSON") }
+  match body_json {
+    { "input": Array(items), .. } => {
+      // system + user + fc1 + fc1_output + fc2 + fc2_output = 6 items
+      inspect(items.length(), content="6")
+    }
+    _ => fail("Expected input array")
+  }
+}
+
+///|
+/// Helper to count substring occurrences
+fn count_occurrences(haystack : String, needle : String) -> Int {
+  let mut count = 0
+  let mut pos = 0
+  let haystack_chars = haystack.to_array()
+  let needle_chars = needle.to_array()
+  while pos <= haystack_chars.length() - needle_chars.length() {
+    let mut match_found = true
+    for i in 0..<needle_chars.length() {
+      if haystack_chars[pos + i] != needle_chars[i] {
+        match_found = false
+        break
+      }
+    }
+    if match_found {
+      count = count + 1
+      pos = pos + needle_chars.length()
+    } else {
+      pos = pos + 1
+    }
+  }
+  count
+}
+
+///|
+/// Test parsing chained tool call response from Groq Responses API
+test "parse_responses_api_response - chained_toolcall" {
+  // Response fixture: model makes second tool call after first result
+  let json_str =
+    #|{
+    #|  "id": "resp_01kjpjhcmse1kb4tmmt55r04bb",
+    #|  "object": "response",
+    #|  "status": "completed",
+    #|  "output": [
+    #|    {
+    #|      "type": "function_call",
+    #|      "id": "fc_e85599c2-2f7a-4864-b0bb-9fb740ee5bde",
+    #|      "status": "completed",
+    #|      "call_id": "fc_e85599c2-2f7a-4864-b0bb-9fb740ee5bde",
+    #|      "name": "shell",
+    #|      "arguments": "{\"command\":\"cat README.md\"}"
+    #|    }
+    #|  ],
+    #|  "model": "openai/gpt-oss-20b"
+    #|}
+  let json = @json.parse(json_str) catch { _ => return fail("Invalid JSON") }
+  let response = parse_responses_api_response(json)
+  match response {
+    @types.ModelResponse::ToolCalls(calls) => {
+      inspect(calls.length(), content="1")
+      inspect(calls[0].name, content="shell")
+      inspect(
+        calls[0].arguments.stringify().contains("cat README.md"),
+        content="true",
+      )
+    }
+    _ => fail("Expected ToolCalls response")
+  }
+}
+
+///|
+/// Test parsing final text response after chained tool calls
+test "parse_responses_api_response - chained_final_text" {
+  // Response fixture: final text response after two tool call cycles
+  let json_str =
+    #|{
+    #|  "id": "resp_01kjpjhqhnfhhbmdpq77agxz22",
+    #|  "object": "response",
+    #|  "status": "completed",
+    #|  "output": [
+    #|    {
+    #|      "type": "message",
+    #|      "id": "msg_01kjpjhqhnfhj8yy8eey0nmnem",
+    #|      "status": "completed",
+    #|      "role": "assistant",
+    #|      "content": [
+    #|        {
+    #|          "type": "output_text",
+    #|          "text": "**Files:**\n1. README.md\n2. config.json",
+    #|          "annotations": []
+    #|        }
+    #|      ]
+    #|    }
+    #|  ],
+    #|  "model": "openai/gpt-oss-20b"
+    #|}
+  let json = @json.parse(json_str) catch { _ => return fail("Invalid JSON") }
+  let response = parse_responses_api_response(json)
+  match response {
+    @types.ModelResponse::Text(content) => {
+      inspect(content.contains("README.md"), content="true")
+      inspect(content.contains("config.json"), content="true")
+    }
+    _ => fail("Expected Text response")
+  }
+}

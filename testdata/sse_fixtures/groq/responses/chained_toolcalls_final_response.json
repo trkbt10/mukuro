@@ -1,0 +1,29 @@
+{
+  "_comment": "Final response in chained tool calls: text summary after two completed tool calls",
+  "_scenario": "Model summarizes file list and README.md content in final text response",
+  "id": "resp_01kjpjhqhnfhhbmdpq77agxz22",
+  "object": "response",
+  "status": "completed",
+  "created_at": 1772431662,
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_01kjpjhqhnfhj8yy8eey0nmnem",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "**Files in the current directory:**\n1. `README.md`\n2. `config.json`\n3. `main.py`\n\n**Content of the first file (`README.md`):**\n\n```markdown\n# My Project\n\nThis is a sample project.\n\n## Features\n- Feature 1\n- Feature 2\n```",
+          "annotations": []
+        }
+      ]
+    }
+  ],
+  "model": "openai/gpt-oss-20b",
+  "usage": {
+    "input_tokens": 220,
+    "output_tokens": 176,
+    "total_tokens": 396
+  }
+}

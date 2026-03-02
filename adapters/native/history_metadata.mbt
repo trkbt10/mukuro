@@ -116,6 +116,9 @@ pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with up
         "Failed to prepare upsert statement",
       )
   }
+  // file_path を相対パスに変換して保存（ポータビリティのため）
+  let base_dir = @config.data_dir()
+  let relative_path = @dirs.to_relative_path(metadata.file_path, base_dir)
   // バインド
   let values : Array[@sqlite.SqlValue] = [
     text_value(metadata.session_id),
@@ -129,7 +132,7 @@ pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with up
     @sqlite.SqlValue::Int64(metadata.tool_call_count.to_int64()),
     @sqlite.SqlValue::Int64(metadata.created_at),
     @sqlite.SqlValue::Int64(metadata.updated_at),
-    text_value(metadata.file_path),
+    text_value(relative_path),
     text_or_null(metadata.model_name),
   ]
   if not(stmt.bind_all(values)) {
@@ -445,6 +448,40 @@ pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with de
 }
 
 ///|
+pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with update_model_name(
+  self,
+  session_id~,
+  model_name~,
+) -> Unit raise @interfaces.MetadataStoreError {
+  let db = self.get_db() catch { e => raise e }
+  let sql =
+    #|UPDATE session_metadata SET model_name = ?, updated_at = ? WHERE session_id = ?
+  let stmt = match db.prepare(sql) {
+    Some(s) => s
+    None =>
+      raise @interfaces.MetadataStoreError::DatabaseError(
+        "Failed to prepare update_model_name statement",
+      )
+  }
+  let values : Array[@sqlite.SqlValue] = [
+    text_value(model_name),
+    @sqlite.SqlValue::Int64(current_timestamp_ms()),
+    text_value(session_id),
+  ]
+  if not(stmt.bind_all(values)) {
+    stmt.finalize()
+    raise @interfaces.MetadataStoreError::DatabaseError("Failed to bind values")
+  }
+  if not(stmt.execute()) {
+    stmt.finalize()
+    raise @interfaces.MetadataStoreError::DatabaseError(
+      "Failed to execute update_model_name",
+    )
+  }
+  stmt.finalize()
+}
+
+///|
 pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with close(
   self,
 ) -> Unit {
@@ -526,9 +563,12 @@ fn get_int64(value : @sqlite.SqlValue) -> Int64 {
 
 ///|
 /// 結果行からSessionMetadataを読み取る
+/// file_path は相対パスから絶対パスに復元される（レガシーの絶対パスはそのまま）
 fn read_session_metadata(
   stmt : @sqlite.Statement,
 ) -> @interfaces.SessionMetadata {
+  let stored_path = get_text(stmt.column(11))
+  let base_dir = @config.data_dir()
   @interfaces.SessionMetadata::{
     session_id: get_text(stmt.column(0)),
     channel: get_text(stmt.column(1)),
@@ -541,7 +581,7 @@ fn read_session_metadata(
     tool_call_count: get_int64(stmt.column(8)).to_int(),
     created_at: get_int64(stmt.column(9)),
     updated_at: get_int64(stmt.column(10)),
-    file_path: get_text(stmt.column(11)),
+    file_path: @dirs.to_absolute_path(stored_path, base_dir),
     model_name: get_text_or_none(stmt.column(12)),
   }
 }
@@ -763,19 +803,6 @@ fn extract_content_from_payload(payload : Json) -> String {
   match payload {
     Object(obj) =>
       match obj.get("content") {
-        Some(String(s)) => s
-        _ => ""
-      }
-    _ => ""
-  }
-}
-
-///|
-/// PayloadからmodelフィールドのString値を抽出
-fn extract_model_from_payload(payload : Json) -> String {
-  match payload {
-    Object(obj) =>
-      match obj.get("model") {
         Some(String(s)) => s
         _ => ""
       }

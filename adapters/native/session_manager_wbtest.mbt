@@ -604,3 +604,268 @@ test "reconstruct_session_from_history: simple conversation without tools" {
     _ => fail("Expected Assistant message at index 3")
   }
 }
+
+///|
+/// 回帰テスト: チェーンされたツールコール（複数回のツール呼び出し）
+/// シナリオ: User → ToolCall1 → Result1 → ToolCall2 → Result2 → TextResponse
+test "reconstruct_session_from_history: chained_tool_calls" {
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_1",
+    user_id=None,
+  )
+  let records : Array[@interfaces.HistoryRecord] = [
+    // User: ファイル一覧と最初のファイルの内容を見せて
+    {
+      timestamp: 1000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::UserMessage,
+      payload: Json::object({
+        "content": Json::string(
+          "List files and then show me the content of the first file",
+        ),
+      }),
+    },
+    // Assistant: 1回目のツールコール (ls)
+    {
+      timestamp: 2000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::AssistantMessage,
+      payload: Json::object({
+        "content": Json::string(""),
+        "has_tool_calls": Json::boolean(true),
+      }),
+    },
+    {
+      timestamp: 2001L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::ToolCall,
+      payload: Json::object({
+        "call_id": Json::string("fc_001"),
+        "tool_name": Json::string("shell"),
+        "arguments": Json::object({ "command": Json::string("ls") }),
+      }),
+    },
+    // ToolResult: ファイルリスト
+    {
+      timestamp: 3000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::ToolResult,
+      payload: Json::object({
+        "call_id": Json::string("fc_001"),
+        "content": Json::string("README.md\nconfig.json\nmain.py"),
+      }),
+    },
+    // Assistant: 2回目のツールコール (cat README.md) - チェーン
+    {
+      timestamp: 4000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::AssistantMessage,
+      payload: Json::object({
+        "content": Json::string(""),
+        "has_tool_calls": Json::boolean(true),
+      }),
+    },
+    {
+      timestamp: 4001L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::ToolCall,
+      payload: Json::object({
+        "call_id": Json::string("fc_002"),
+        "tool_name": Json::string("shell"),
+        "arguments": Json::object({ "command": Json::string("cat README.md") }),
+      }),
+    },
+    // ToolResult: ファイル内容
+    {
+      timestamp: 5000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::ToolResult,
+      payload: Json::object({
+        "call_id": Json::string("fc_002"),
+        "content": Json::string("# My Project\n\nThis is a sample project."),
+      }),
+    },
+    // Assistant: 最終テキスト応答
+    {
+      timestamp: 6000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::AssistantMessage,
+      payload: Json::object({
+        "content": Json::string("Here are the files and the README content..."),
+        "has_tool_calls": Json::boolean(false),
+      }),
+    },
+  ]
+  let session = reconstruct_session_from_history(key, records)
+
+  // 6 messages: User, Assistant(tc1), ToolResult1, Assistant(tc2), ToolResult2, Assistant(text)
+  assert_eq(session.history.length(), 6)
+
+  // 1番目: User
+  match session.history[0] {
+    @types.ModelMessage::User(content~, ..) =>
+      assert_eq(
+        content,
+        "List files and then show me the content of the first file",
+      )
+    _ => fail("Expected User message at index 0")
+  }
+
+  // 2番目: Assistant with tool_calls (fc_001)
+  match session.history[1] {
+    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+      assert_eq(content, "")
+      match tool_calls {
+        Some(calls) => {
+          assert_eq(calls.length(), 1)
+          assert_eq(calls[0].id, "fc_001")
+          assert_eq(calls[0].name, "shell")
+        }
+        None => fail("Expected tool_calls for fc_001")
+      }
+    }
+    _ => fail("Expected Assistant message at index 1")
+  }
+
+  // 3番目: ToolResult (fc_001)
+  match session.history[2] {
+    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+      assert_eq(tool_call_id, "fc_001")
+      assert_true(content.contains("README.md"))
+    }
+    _ => fail("Expected ToolResult at index 2")
+  }
+
+  // 4番目: Assistant with tool_calls (fc_002) - チェーンされた2回目
+  match session.history[3] {
+    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+      assert_eq(content, "")
+      match tool_calls {
+        Some(calls) => {
+          assert_eq(calls.length(), 1)
+          assert_eq(calls[0].id, "fc_002")
+          assert_eq(calls[0].name, "shell")
+        }
+        None => fail("Expected tool_calls for fc_002")
+      }
+    }
+    _ => fail("Expected Assistant message at index 3")
+  }
+
+  // 5番目: ToolResult (fc_002)
+  match session.history[4] {
+    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+      assert_eq(tool_call_id, "fc_002")
+      assert_true(content.contains("My Project"))
+    }
+    _ => fail("Expected ToolResult at index 4")
+  }
+
+  // 6番目: Assistant (final text)
+  match session.history[5] {
+    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+      assert_true(content.contains("files"))
+      assert_true(tool_calls is None)
+    }
+    _ => fail("Expected Assistant message at index 5")
+  }
+}
+
+///|
+/// 回帰テスト: 2ターン目のフォローアップ質問
+/// シナリオ: Turn1(User→TC→Result→Text) → Turn2(User follow-up)
+/// これは元のバグ「2ターン目で ModelCallFailed」の再現テスト
+test "reconstruct_session_from_history: two_phase_with_follow_up" {
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_1",
+    user_id=None,
+  )
+  let records : Array[@interfaces.HistoryRecord] = [
+    // Turn 1: User asks
+    {
+      timestamp: 1000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::UserMessage,
+      payload: Json::object({ "content": Json::string("List files") }),
+    },
+    // Turn 1: Assistant calls tool
+    {
+      timestamp: 2000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::AssistantMessage,
+      payload: Json::object({
+        "content": Json::string(""),
+        "has_tool_calls": Json::boolean(true),
+      }),
+    },
+    {
+      timestamp: 2001L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::ToolCall,
+      payload: Json::object({
+        "call_id": Json::string("fc_abc123"),
+        "tool_name": Json::string("shell"),
+        "arguments": Json::object({ "command": Json::string("ls") }),
+      }),
+    },
+    // Turn 1: Tool result
+    {
+      timestamp: 3000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::ToolResult,
+      payload: Json::object({
+        "call_id": Json::string("fc_abc123"),
+        "content": Json::string("file1.txt\nfile2.txt"),
+      }),
+    },
+    // Turn 1: Assistant text response (after tool)
+    {
+      timestamp: 4000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::AssistantMessage,
+      payload: Json::object({
+        "content": Json::string("Here are the files: file1.txt, file2.txt"),
+        "has_tool_calls": Json::boolean(false),
+      }),
+    },
+    // Turn 2: User follow-up (THIS IS WHERE THE BUG OCCURRED)
+    {
+      timestamp: 5000L,
+      session_id: "test:chat_1",
+      record_type: @interfaces.HistoryRecordType::UserMessage,
+      payload: Json::object({
+        "content": Json::string("Now show details with ls -la"),
+      }),
+    },
+  ]
+  let session = reconstruct_session_from_history(key, records)
+
+  // 5 messages: User, Assistant(tc), ToolResult, Assistant(text), User(follow-up)
+  assert_eq(session.history.length(), 5)
+
+  // 重要: 2番目の AssistantMessage に tool_calls が正しく復元されていること
+  match session.history[1] {
+    @types.ModelMessage::Assistant(tool_calls~, ..) =>
+      match tool_calls {
+        Some(calls) => {
+          assert_eq(calls.length(), 1)
+          assert_eq(calls[0].id, "fc_abc123")
+          assert_eq(calls[0].name, "shell")
+        }
+        None =>
+          fail(
+            "CRITICAL: tool_calls is None! This causes 'Tools should have a name' error",
+          )
+      }
+    _ => fail("Expected Assistant message at index 1")
+  }
+
+  // 最後のメッセージがフォローアップ User
+  match session.history[4] {
+    @types.ModelMessage::User(content~, ..) =>
+      assert_eq(content, "Now show details with ls -la")
+    _ => fail("Expected User message at index 4")
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "_comment": "Response for two-phase turn 2: model responds with another tool call after receiving first tool result",
+  "_scenario": "User asks 'show details with ls -la' after previous tool call + result",
+  "id": "resp_01kjpjfwe5fp2a5hhgk3a6w97k",
+  "object": "response",
+  "status": "completed",
+  "created_at": 1772431602,
+  "output": [
+    {
+      "type": "function_call",
+      "id": "fc_2c8d9405-f156-438d-ae79-34c4a17c070c",
+      "status": "completed",
+      "call_id": "fc_2c8d9405-f156-438d-ae79-34c4a17c070c",
+      "name": "shell",
+      "arguments": "{\"command\":\"ls -la\"}"
+    }
+  ],
+  "model": "openai/gpt-oss-20b",
+  "usage": {
+    "input_tokens": 173,
+    "output_tokens": 47,
+    "total_tokens": 220
+  }
+}

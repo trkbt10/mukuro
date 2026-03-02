@@ -1,0 +1,24 @@
+{
+  "_comment": "Response for chained tool calls: model makes second tool call after receiving first tool result",
+  "_scenario": "After receiving 'ls' output, model calls 'cat README.md' to show file content",
+  "id": "resp_01kjpjhcmse1kb4tmmt55r04bb",
+  "object": "response",
+  "status": "completed",
+  "created_at": 1772431651,
+  "output": [
+    {
+      "type": "function_call",
+      "id": "fc_e85599c2-2f7a-4864-b0bb-9fb740ee5bde",
+      "status": "completed",
+      "call_id": "fc_e85599c2-2f7a-4864-b0bb-9fb740ee5bde",
+      "name": "shell",
+      "arguments": "{\"command\":\"cat README.md\"}"
+    }
+  ],
+  "model": "openai/gpt-oss-20b",
+  "usage": {
+    "input_tokens": 173,
+    "output_tokens": 65,
+    "total_tokens": 238
+  }
+}
