@@ -30,7 +30,7 @@ fn main {
   )
 
   // Demo: list available tools
-  let tools = @defs.get_all_tool_definitions()
+  let tools = @tools.all_tool_definitions()
   platform.log(@interfaces.LogLevel::Info, "Available tools: \{tools.length()}")
   for tool in tools {
     platform.log(
@@ -40,14 +40,14 @@ fn main {
   }
 
   // Demo: test datetime tool
-  let datetime_result = @builtin.execute_datetime_tool({ "action": "now" })
+  let datetime_result = @tools.execute_datetime({ "action": "now" })
   match datetime_result.status {
-    @defs.ToolResultStatus::Success =>
+    @tools.ToolResultStatus::Success =>
       platform.log(
         @interfaces.LogLevel::Info,
         "Current time: \{datetime_result.data}",
       )
-    @defs.ToolResultStatus::Error =>
+    @tools.ToolResultStatus::Error =>
       match datetime_result.error_message {
         Some(msg) =>
           platform.log(@interfaces.LogLevel::Error, "Datetime error: \{msg}")

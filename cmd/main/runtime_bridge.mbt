@@ -71,6 +71,30 @@ let global_session_resolver : @session.ConfigurableSessionResolver = @session.Co
 let global_session_store : InMemorySessionStore = InMemorySessionStore::new()
 
 ///|
+/// SQLite メタデータストア（グローバル共有）
+/// open() は initialize_metadata_store() で呼ばれる
+let global_metadata_store : @native.NativeHistoryMetadataStore = @native.NativeHistoryMetadataStore::new(
+  @native.default_metadata_db_path(),
+)
+
+///|
+/// メタデータストアの初期化（サーバー起動時に呼ぶ）
+pub fn initialize_metadata_store() -> Unit {
+  global_metadata_store.open() catch {
+    e => println("Warning: Failed to open metadata store: \{e}")
+  }
+}
+
+///|
+/// 統合セッションマネージャー（History = Source of Truth）
+/// JSONL を唯一の source of truth とし、Session はそのビューとして扱う
+let global_session_manager : @native.NativeSessionManager = @native.NativeSessionManager::new_with_metadata_store(
+  base_dir=@config.data_dir(),
+  cache_max_size=100,
+  metadata_store=global_metadata_store,
+)
+
+///|
 let global_route_resolver : @channels.RouteResolver = @channels.RouteResolver::new(
   default_strategy=@session.SessionStrategy::PerAgentBinding,
 )
@@ -97,12 +121,12 @@ let global_clock : @native.NativeClock = @native.NativeClock::new()
 
 ///|
 /// グローバル共有 MemoryStore（API層とエージェントループで共有）
-let global_memory_store : @builtin.MemoryStore = @builtin.MemoryStore::new()
+let global_memory_store : @tools.MemoryStore = @tools.MemoryStore::new()
 
 ///|
 /// ビルトインツール用のToolExecutorアダプタ
 struct BuiltinToolExecutorAdapter {
-  tool_context : @builtin.BuiltinToolContext
+  tool_context : @tools.BuiltinToolContext
 }
 
 ///|
@@ -113,29 +137,19 @@ pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
   context~,
 ) {
   ignore(context)
-  let result = match @builtin.execute_builtin_tool(
-    self.tool_context,
-    tool_name,
-    arguments,
-  ) {
+  let result = match
+    @tools.execute_builtin_tool(self.tool_context, tool_name, arguments) {
     Some(r) => r
-    None =>
-      match @devtools.execute_devtool(tool_name, arguments) {
-        Some(r) => r
-        None =>
-          return @types.ToolResult::Error(
-            message="Unknown tool: \{tool_name}",
-          )
-      }
+    None => return @types.ToolResult::Error(message="Unknown tool: \{tool_name}")
   }
   match result.status {
-    @defs.ToolResultStatus::Success =>
+    @tools.ToolResultStatus::Success =>
       @types.ToolResult::Success(content=result.data.stringify())
-    @defs.ToolResultStatus::Error =>
+    @tools.ToolResultStatus::Error =>
       @types.ToolResult::Error(
         message=result.error_message.unwrap_or("Tool execution failed"),
       )
-    @defs.ToolResultStatus::RequiresConfirmation =>
+    @tools.ToolResultStatus::RequiresConfirmation =>
       @types.ToolResult::Success(content=result.data.stringify())
   }
 }
@@ -143,12 +157,13 @@ pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
 ///|
 /// ビルトインツールをグローバルレジストリに登録
 pub fn register_builtin_tools() -> Unit {
-  let tool_ctx = @builtin.BuiltinToolContext::with_memory(
-    global_memory_store,
-    fn(msg) { global_outbound_dispatcher.sent_messages.push(msg) },
-  )
+  let tool_ctx = @tools.BuiltinToolContext::with_memory(global_memory_store, fn(
+    msg,
+  ) {
+    global_outbound_dispatcher.sent_messages.push(msg)
+  })
   let executor : BuiltinToolExecutorAdapter = { tool_context: tool_ctx }
-  for definition in @defs.get_all_tool_definitions() {
+  for definition in @tools.all_tool_definitions() {
     global_tool_registry.register(definition, executor)
   }
 }
@@ -192,12 +207,16 @@ fn build_agent_loop_options_from_config() -> @agent.AgentLoopOptions {
 ///|
 /// セッションごとに独立した履歴レコーダーを生成する
 /// ChatWsHandler が保持し、セッションのライフサイクルを管理する
+/// メタデータストア付きで作成し、SQLite にもデータを記録する
 pub fn create_session_history_recorder() -> &@interfaces.HistoryRecorder {
-  @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
+  @native.NativeHistoryRecorder::new_with_metadata_store(
+    base_dir=@config.data_dir(),
+    metadata_store=global_metadata_store,
+  )
 }
 
 ///|
-async fn handle_inbound_with_agent_loop(
+pub async fn handle_inbound_with_agent_loop(
   envelope : @types.InboundEnvelope,
   history_recorder : &@interfaces.HistoryRecorder?,
 ) -> @types.OutboundMessage {
@@ -212,30 +231,9 @@ async fn handle_inbound_with_agent_loop(
     outbound_dispatcher: global_outbound_dispatcher,
     history_recorder,
     clock: Some(global_clock),
+    session_manager: Some(global_session_manager),
   }
   @agent.run_agent_loop(enriched_envelope, options, deps)
-}
-
-///|
-pub async fn handle_inbound_with_agent_loop_async(
-  envelope : @types.InboundEnvelope,
-  history_recorder : &@interfaces.HistoryRecorder?,
-) -> @types.OutboundMessage {
-  let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
-  let options = build_agent_loop_options_from_config()
-  let deps : @agent.AsyncAgentDependencies = {
-    session_resolver: global_session_resolver,
-    session_store: global_session_store,
-    context_builder: global_context_builder,
-    tool_registry: global_tool_registry,
-    outbound_dispatcher: global_outbound_dispatcher,
-    model_invoke: async fn(messages, tools, options) {
-      runtime_model_invoke_async(global_provider_resolver, messages, tools, options)
-    },
-    history_recorder,
-    clock: Some(global_clock),
-  }
-  @agent.run_agent_loop_async(enriched_envelope, options, deps)
 }
 
 ///|

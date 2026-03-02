@@ -169,4 +169,3 @@ fn parse_jsonrpc_response(json : Json) -> @interfaces.JsonRpcResponse? {
     _ => None
   }
 }
-

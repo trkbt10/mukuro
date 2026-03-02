@@ -20,7 +20,7 @@ pub fn ToolManagerState::new() -> ToolManagerState {
 pub fn ToolManagerState::set_tool(
   self : ToolManagerState,
   id : String,
-  state : @interfaces.ToolState
+  state : @interfaces.ToolState,
 ) -> Unit {
   self.tools[id] = state
 }
@@ -29,7 +29,7 @@ pub fn ToolManagerState::set_tool(
 /// Get tool state
 pub fn ToolManagerState::get_tool(
   self : ToolManagerState,
-  id : String
+  id : String,
 ) -> @interfaces.ToolState? {
   self.tools.get(id)
 }
@@ -38,7 +38,7 @@ pub fn ToolManagerState::get_tool(
 /// Remove tool state
 pub fn ToolManagerState::remove_tool_state(
   self : ToolManagerState,
-  id : String
+  id : String,
 ) -> Unit {
   self.tools.remove(id)
 }
@@ -46,7 +46,7 @@ pub fn ToolManagerState::remove_tool_state(
 ///|
 /// List all tool states
 pub fn ToolManagerState::list_tools(
-  self : ToolManagerState
+  self : ToolManagerState,
 ) -> Array[@interfaces.ToolState] {
   self.tools.values().collect()
 }
@@ -56,7 +56,7 @@ pub fn ToolManagerState::list_tools(
 pub fn ToolManagerState::set_tool_enabled(
   self : ToolManagerState,
   id : String,
-  enabled : Bool
+  enabled : Bool,
 ) -> Bool {
   match self.tools.get(id) {
     Some(state) => {
@@ -72,7 +72,7 @@ pub fn ToolManagerState::set_tool_enabled(
 pub fn ToolManagerState::set_tool_status(
   self : ToolManagerState,
   id : String,
-  status : @interfaces.ToolStatus
+  status : @interfaces.ToolStatus,
 ) -> Bool {
   match self.tools.get(id) {
     Some(state) => {
@@ -87,7 +87,7 @@ pub fn ToolManagerState::set_tool_status(
 /// Check if tool is builtin (source is Plugin("builtin"))
 pub fn ToolManagerState::is_builtin(
   self : ToolManagerState,
-  id : String
+  id : String,
 ) -> Bool {
   match self.tools.get(id) {
     Some(state) => state.source.is_builtin()
@@ -98,7 +98,7 @@ pub fn ToolManagerState::is_builtin(
 ///|
 /// Count tools by source type
 pub fn ToolManagerState::count_by_source(
-  self : ToolManagerState
+  self : ToolManagerState,
 ) -> Map[String, Int] {
   let counts : Map[String, Int] = {}
   for _, state in self.tools {

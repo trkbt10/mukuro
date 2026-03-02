@@ -125,9 +125,7 @@ test "load_user_defined_tools skips invalid manifests" {
 test "load_tool_from_manifest parses valid content" {
   let content =
     #|{"id": "test-tool", "name": "Test Tool", "description": "A test"}
-  let state = try {
-    load_tool_from_manifest(content)
-  } catch {
+  let state = load_tool_from_manifest(content) catch {
     _ => fail("Expected success")
   }
   assert_eq(state.id, "test-tool")

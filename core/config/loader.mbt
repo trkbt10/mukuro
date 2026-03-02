@@ -136,9 +136,7 @@ fn parse_model_options(
   obj : Map[String, Json],
 ) -> @types.ModelOptions raise @interfaces.ConfigError {
   let model_name = match
-    @config_json_accessors.string_field_or_default(
-      obj, "model_name", "",
-    ) {
+    @config_json_accessors.string_field_or_default(obj, "model_name", "") {
     Ok(v) => v
     Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
   }

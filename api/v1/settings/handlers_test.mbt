@@ -229,7 +229,9 @@ test "handle_update_provider updates use_responses_api" {
     agent: @types.AgentConfig::default(),
     providers: [
       @types.ProviderConfig::new(
-        name="groq", api_key=None, default_model="llama-3.3-70b",
+        name="groq",
+        api_key=None,
+        default_model="llama-3.3-70b",
       ),
     ],
     fallback: @types.FallbackConfig::new(),

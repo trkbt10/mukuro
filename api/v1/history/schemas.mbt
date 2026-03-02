@@ -129,7 +129,9 @@ pub impl ToJson for HistoryRecordJson with to_json(self) {
 
 ///|
 /// HistoryRecord → HistoryRecordJson 変換
-pub fn history_record_to_json(record : @interfaces.HistoryRecord) -> HistoryRecordJson {
+pub fn history_record_to_json(
+  record : @interfaces.HistoryRecord,
+) -> HistoryRecordJson {
   {
     timestamp: record.timestamp,
     record_type: @core_history.record_type_to_string(record.record_type),

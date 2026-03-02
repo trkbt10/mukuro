@@ -302,12 +302,7 @@ pub(all) struct MukuroConfig {
 ///|
 /// ModelOptionsのデフォルト値
 pub fn ModelOptions::default() -> ModelOptions {
-  {
-    model_name: "",
-    temperature: None,
-    max_tokens: None,
-    stop_sequences: None,
-  }
+  { model_name: "", temperature: None, max_tokens: None, stop_sequences: None }
 }
 
 ///|

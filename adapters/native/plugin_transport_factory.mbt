@@ -30,7 +30,9 @@ pub fn NativeTransportFactory::create_handler(
   manifest : @interfaces.PluginManifest,
 ) -> &@interfaces.PluginTransportHandler raise @interfaces.PluginError {
   self.create_handler_with_auth(
-    manifest, self.default_auth_token, self.default_token_header,
+    manifest,
+    self.default_auth_token,
+    self.default_token_header,
   )
 }
 

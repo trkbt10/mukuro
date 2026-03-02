@@ -6,7 +6,7 @@
 /// History state holder
 pub(all) struct HistoryState {
   reader : &@interfaces.HistoryReader
-  metadata_store : (&@interfaces.HistoryMetadataStore)?
+  metadata_store : &@interfaces.HistoryMetadataStore?
 }
 
 ///|
@@ -27,15 +27,11 @@ pub fn HistoryState::new_with_metadata_store(
 /// Create history API handlers
 pub fn create_history_handlers(state : HistoryState) -> @api.HistoryApiHandlers {
   {
-    list_dates: @api.RouteHandler(fn(ctx) {
-      handle_list_dates(state, ctx)
-    }),
+    list_dates: @api.RouteHandler(fn(ctx) { handle_list_dates(state, ctx) }),
     list_sessions: @api.RouteHandler(fn(ctx) {
       handle_list_sessions(state, ctx)
     }),
-    get_session: @api.RouteHandler(fn(ctx) {
-      handle_get_session(state, ctx)
-    }),
+    get_session: @api.RouteHandler(fn(ctx) { handle_get_session(state, ctx) }),
   }
 }
 
@@ -177,9 +173,7 @@ fn handle_list_sessions(
     }
     _ =>
       @api.error_response(
-        400,
-        "invalid_param",
-        "year, month, day must be valid integers",
+        400, "invalid_param", "year, month, day must be valid integers",
       )
   }
 }

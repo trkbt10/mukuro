@@ -156,8 +156,8 @@ pub fn encode(s : String) -> String {
 fn split_first(s : String, delim : Char) -> (String, String?) {
   for i, c in s {
     if c == delim {
-      let before = try { s[:i].to_string() } catch { _ => return (s, None) }
-      let after = try { s[(i + 1):].to_string() } catch { _ => return (before, Some("")) }
+      let before = s[:i].to_string() catch { _ => return (s, None) }
+      let after = s[i + 1:].to_string() catch { _ => return (before, Some("")) }
       return (before, Some(after))
     }
   }
@@ -203,8 +203,8 @@ fn hex_byte(b : Int) -> String {
   let hex_chars = "0123456789ABCDEF"
   let high = (b >> 4) & 0x0F
   let low = b & 0x0F
-  let h = try { hex_chars[high:high+1].to_string() } catch { _ => "0" }
-  let l = try { hex_chars[low:low+1].to_string() } catch { _ => "0" }
+  let h = hex_chars[high:high + 1].to_string() catch { _ => "0" }
+  let l = hex_chars[low:low + 1].to_string() catch { _ => "0" }
   h + l
 }
 

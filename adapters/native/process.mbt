@@ -97,7 +97,8 @@ fn build_command(
 /// popen でコマンドを実行し、stdout と終了コードを返す
 fn run_popen(cmd : String) -> @interfaces.ProcessResult raise ProcessError {
   let handle = c_popen_handle(
-    string_to_utf8_cstring(cmd), string_to_utf8_cstring("r"),
+    string_to_utf8_cstring(cmd),
+    string_to_utf8_cstring("r"),
   )
   if handle == 0L {
     raise ProcessError::ExecutionFailed("Failed to execute: \{cmd}")

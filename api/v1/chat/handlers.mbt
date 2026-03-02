@@ -2,25 +2,25 @@
 /// Chat API Handlers
 /// HTTP handlers for /api/v1/chat/* endpoints
 /// Manages web chat sessions and conversation history
+///
+/// History is the source of truth - all operations go through SessionManager
 
 ///|
-/// Chat state holder
+/// Chat state holder - uses SessionManager as the single source of truth
 pub(all) struct ChatState {
-  session_store : &@interfaces.SessionStore
-  history_reader : (&@interfaces.HistoryReader)?
-  history_recorder : (&@interfaces.HistoryRecorder)?
+  /// SessionManager: History (JSONL) を唯一の source of truth として使用
+  session_manager : &@interfaces.SessionManager
+  /// タイムスタンプ取得関数
   get_timestamp : (() -> Int64)?
 }
 
 ///|
-/// Create new chat state
-pub fn ChatState::new(
-  session_store : &@interfaces.SessionStore,
-  history_reader? : &@interfaces.HistoryReader,
-  history_recorder? : &@interfaces.HistoryRecorder,
+/// Create new chat state with SessionManager
+pub fn ChatState::new_with_session_manager(
+  session_manager : &@interfaces.SessionManager,
   get_timestamp? : () -> Int64,
 ) -> ChatState {
-  { session_store, history_reader, history_recorder, get_timestamp }
+  { session_manager, get_timestamp }
 }
 
 ///|
@@ -65,16 +65,13 @@ fn handle_create_session(
     None => 0L
   }
   let key = @types.SessionKey::new(channel="web_chat", chat_id~, user_id=None)
-  let session = @types.Session::new(key, timestamp)
-  state.session_store.save(session) catch {
+  // SessionManager 経由でセッション作成（History に永続化される）
+  let _ = state.session_manager.get_or_create(key, now=timestamp) catch {
     _ =>
       return @api.error_response(
         500, "internal_error", "Failed to create session",
       )
   }
-  // Note: HistoryRecorder initialization is handled by the agent loop
-  // when the first message arrives, not here. This avoids creating
-  // empty history files for sessions that never receive messages.
   @api.json_response(200, { "data": { "chat_id": Json::string(chat_id) } })
 }
 
@@ -84,7 +81,8 @@ fn handle_list_sessions(
   state : ChatState,
   _ctx : @api.ApiRequestContext,
 ) -> @api.ApiResponse {
-  let keys = state.session_store.list_keys() catch {
+  // SessionManager から全キーを取得（History から読み込み）
+  let keys = state.session_manager.list_keys() catch {
     _ =>
       return @api.error_response(
         500, "internal_error", "Failed to list sessions",
@@ -93,7 +91,7 @@ fn handle_list_sessions(
   let sessions : Array[Json] = []
   for key in keys {
     if key.channel == "web_chat" {
-      let session = state.session_store.get(key) catch { _ => continue }
+      let session = state.session_manager.get(key) catch { _ => continue }
       match session {
         Some(s) =>
           sessions.push({
@@ -121,7 +119,8 @@ fn handle_get_history(
   }
   let chat_id = ctx.segments[2]
   let key = @types.SessionKey::new(channel="web_chat", chat_id~, user_id=None)
-  let session = state.session_store.get(key) catch {
+  // SessionManager.get() は History (JSONL) から読み込んで Session を構築
+  let session = state.session_manager.get(key) catch {
     _ =>
       return @api.error_response(
         500, "internal_error", "Failed to retrieve session",
@@ -152,7 +151,7 @@ fn handle_delete_session(
   }
   let chat_id = ctx.segments[2]
   let key = @types.SessionKey::new(channel="web_chat", chat_id~, user_id=None)
-  state.session_store.delete(key) catch {
+  state.session_manager.delete(key) catch {
     _ =>
       return @api.error_response(
         500, "internal_error", "Failed to delete session",
@@ -163,17 +162,12 @@ fn handle_delete_session(
 
 ///|
 /// POST /chat/resume - Resume from history session
+/// session_id から元の chat_id を抽出し、そのまま返す
+/// History が source of truth なので、新しい chat_id は生成しない
 fn handle_resume_session(
   state : ChatState,
   ctx : @api.ApiRequestContext,
 ) -> @api.ApiResponse {
-  let reader = match state.history_reader {
-    Some(r) => r
-    None =>
-      return @api.error_response(
-        501, "not_implemented", "History reader not configured",
-      )
-  }
   // Parse body for session_id
   let obj = match @api.require_json_object(ctx.body) {
     Ok(o) => o
@@ -183,71 +177,31 @@ fn handle_resume_session(
     Ok(s) => s
     Err(resp) => return resp
   }
-  // Read history records
-  let records = reader.read_session(session_id~) catch {
-    _ =>
-      return @api.error_response(
-        500, "internal_error", "Failed to read history session",
-      )
-  }
-  if records.length() == 0 {
+  // session_id から channel と chat_id を抽出
+  // session_id の形式: "channel:chat_id" (例: "web_chat:abc-123")
+  let (channel, chat_id) = @history.split_session_id(session_id)
+  if channel.length() == 0 || chat_id.length() == 0 {
     return @api.error_response(
-      404, "not_found", "Session not found or empty: \{session_id}",
+      400,
+      "bad_request",
+      "Invalid session_id format: \{session_id}",
     )
   }
-  // Reconstruct messages from history records
-  let messages : Array[@types.ModelMessage] = []
-  for record in records {
-    match record.record_type {
-      @interfaces.HistoryRecordType::UserMessage => {
-        let content = match record.payload {
-          Object(obj) =>
-            match obj.get("content") {
-              Some(String(s)) => s
-              _ => continue
-            }
-          String(s) => s
-          _ => continue
-        }
-        messages.push(@types.ModelMessage::User(content~, name=None))
-      }
-      @interfaces.HistoryRecordType::AssistantMessage => {
-        let content = match record.payload {
-          Object(obj) =>
-            match obj.get("content") {
-              Some(String(s)) => s
-              _ => continue
-            }
-          String(s) => s
-          _ => continue
-        }
-        messages.push(
-          @types.ModelMessage::Assistant(content~, tool_calls=None),
-        )
-      }
-      _ => () // Skip tool calls, session start/end, errors
-    }
-  }
-  // Create new session with resumed history
-  // Use first record's timestamp as a base to generate a unique chat_id
-  let base_ts = records[0].timestamp
-  let chat_id = "resumed_\{base_ts}"
-  let key = @types.SessionKey::new(
-    channel="web_chat",
-    chat_id~,
-    user_id=None,
-  )
-  let session = @types.Session::new(key, base_ts)
-  for msg in messages {
-    session.add_message(msg)
-  }
-  state.session_store.save(session) catch {
+  // SessionManager.get() で History から Session を読み込み
+  let key = @types.SessionKey::new(channel~, chat_id~, user_id=None)
+  let session = state.session_manager.get(key) catch {
     _ =>
       return @api.error_response(
-        500, "internal_error", "Failed to save resumed session",
+        500, "internal_error", "Failed to read session from history",
       )
   }
-  @api.json_response(200, { "data": { "chat_id": chat_id.to_json() } })
+  match session {
+    Some(_) =>
+      // セッションが存在 - 元の chat_id をそのまま返す
+      @api.json_response(200, { "data": { "chat_id": chat_id.to_json() } })
+    None =>
+      @api.error_response(404, "not_found", "Session not found: \{session_id}")
+  }
 }
 
 ///|

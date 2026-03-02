@@ -428,9 +428,7 @@ test "handle_invoke_action calls action and returns result" {
     @api.json_response(200, { "echo": params })
   })
   let ctx = make_ctx(
-    "POST",
-    "/api/v1/plugins/test/actions/echo",
-    "{\"msg\":\"hi\"}",
+    "POST", "/api/v1/plugins/test/actions/echo", "{\"msg\":\"hi\"}",
   )
   let resp = handle_invoke_action(state, ctx)
   assert_eq(resp.status, 200)
@@ -440,11 +438,7 @@ test "handle_invoke_action calls action and returns result" {
 ///|
 test "handle_invoke_action returns 404 for unknown plugin" {
   let state = PluginManagerState::new()
-  let ctx = make_ctx(
-    "POST",
-    "/api/v1/plugins/unknown/actions/test",
-    "{}",
-  )
+  let ctx = make_ctx("POST", "/api/v1/plugins/unknown/actions/test", "{}")
   let resp = handle_invoke_action(state, ctx)
   assert_eq(resp.status, 404)
 }
@@ -453,11 +447,7 @@ test "handle_invoke_action returns 404 for unknown plugin" {
 test "handle_invoke_action returns 404 for unknown action" {
   let state = PluginManagerState::new()
   state.set_plugin("test", make_test_plugin_state("test"))
-  let ctx = make_ctx(
-    "POST",
-    "/api/v1/plugins/test/actions/missing",
-    "{}",
-  )
+  let ctx = make_ctx("POST", "/api/v1/plugins/test/actions/missing", "{}")
   let resp = handle_invoke_action(state, ctx)
   assert_eq(resp.status, 404)
   assert_true(resp.body.contains("action_not_found"))
@@ -474,11 +464,7 @@ test "handle_invoke_action returns 400 for disabled plugin" {
   state.register_action("test", "echo", fn(_params) {
     @api.json_response(200, { "ok": true })
   })
-  let ctx = make_ctx(
-    "POST",
-    "/api/v1/plugins/test/actions/echo",
-    "{}",
-  )
+  let ctx = make_ctx("POST", "/api/v1/plugins/test/actions/echo", "{}")
   let resp = handle_invoke_action(state, ctx)
   assert_eq(resp.status, 400)
   assert_true(resp.body.contains("plugin_disabled"))

@@ -94,7 +94,7 @@ pub(all) struct ToolDetailResponse {
 ///|
 /// Convert ToolState to ToolDetailResponse
 pub fn ToolDetailResponse::from_state(
-  state : @interfaces.ToolState
+  state : @interfaces.ToolState,
 ) -> ToolDetailResponse {
   let status_message = match state.status {
     @interfaces.ToolStatus::Error(msg) => Some(msg)

@@ -220,11 +220,7 @@ pub fn parse_history_filename(filename : String) -> (String, String, Int64)? {
   }
   let prefix = prefix_buf.to_string()
   // epoch_secs をパース
-  let epoch_secs = try {
-    @strconv.parse_int64(epoch_str)
-  } catch {
-    _ => return None
-  }
+  let epoch_secs = @strconv.parse_int64(epoch_str) catch { _ => return None }
   // prefix の最初の '-' で channel と chat_id を分離
   let mut first_dash = -1
   let prefix_chars = prefix.to_array()

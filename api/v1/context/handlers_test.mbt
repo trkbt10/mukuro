@@ -51,7 +51,9 @@ fn MockTemplateStorage::new() -> MockTemplateStorage {
 }
 
 ///|
-fn create_mock_template_resolver(storage : MockTemplateStorage) -> TemplateResolver {
+fn create_mock_template_resolver(
+  storage : MockTemplateStorage,
+) -> TemplateResolver {
   {
     read_installed: fn(filename) { storage.templates.get(filename) },
     get_embedded: fn(file_type) { file_type.default_template() },
@@ -81,7 +83,10 @@ fn make_test_ctx(
 test "handle_data_list returns all context file types" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/data", "")
   let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data"] }
@@ -102,7 +107,10 @@ test "handle_data_list shows existing files" {
   let storage = MockFileStorage::new(".mukuro")
   storage.files[".mukuro/SOUL.md"] = "Be kind"
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/data", "")
   let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data"] }
@@ -121,10 +129,16 @@ test "handle_data_get returns file content" {
   let storage = MockFileStorage::new(".mukuro")
   storage.files[".mukuro/SOUL.md"] = "Soul content here"
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/data/soul", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "soul"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "soul"],
+  }
   let resp = (handlers.data_get.0)(ctx2)
   assert_eq(resp.status, 200)
   assert_true(resp.body.contains("Soul content here"))
@@ -135,10 +149,16 @@ test "handle_data_get returns file content" {
 test "handle_data_get returns empty for non-existent file" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/data/soul", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "soul"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "soul"],
+  }
   let resp = (handlers.data_get.0)(ctx2)
   assert_eq(resp.status, 200)
   assert_true(resp.body.contains("\"exists\":false"))
@@ -150,10 +170,16 @@ test "handle_data_get returns empty for non-existent file" {
 test "handle_data_get returns 404 for invalid file type" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/data/invalid", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "invalid"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "invalid"],
+  }
   let resp = (handlers.data_get.0)(ctx2)
   assert_eq(resp.status, 404)
   assert_true(resp.body.contains("Unknown context file"))
@@ -163,7 +189,10 @@ test "handle_data_get returns 404 for invalid file type" {
 test "handle_data_get returns 400 when name is missing" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/data", "")
   let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data"] }
@@ -179,12 +208,18 @@ test "handle_data_get returns 400 when name is missing" {
 test "handle_data_update writes file content" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx(
     "PUT", "/api/v1/context/data/soul", "{\"content\":\"New soul content\"}",
   )
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "soul"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "soul"],
+  }
   let resp = (handlers.data_update.0)(ctx2)
   assert_eq(resp.status, 200)
   assert_true(resp.body.contains("ok"))
@@ -196,10 +231,16 @@ test "handle_data_update writes file content" {
 test "handle_data_update returns 400 for missing content" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("PUT", "/api/v1/context/data/soul", "{}")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "soul"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "soul"],
+  }
   let resp = (handlers.data_update.0)(ctx2)
   assert_eq(resp.status, 400)
   assert_true(resp.body.contains("content"))
@@ -209,12 +250,18 @@ test "handle_data_update returns 400 for missing content" {
 test "handle_data_update returns 404 for invalid file type" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx(
     "PUT", "/api/v1/context/data/invalid", "{\"content\":\"test\"}",
   )
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "invalid"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "invalid"],
+  }
   let resp = (handlers.data_update.0)(ctx2)
   assert_eq(resp.status, 404)
 }
@@ -228,10 +275,16 @@ test "handle_data_delete removes file" {
   let storage = MockFileStorage::new(".mukuro")
   storage.files[".mukuro/SOUL.md"] = "Soul content"
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("DELETE", "/api/v1/context/data/soul", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "soul"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "soul"],
+  }
   let resp = (handlers.data_delete.0)(ctx2)
   assert_eq(resp.status, 200)
   // File should be removed
@@ -242,10 +295,16 @@ test "handle_data_delete removes file" {
 test "handle_data_delete returns 404 for invalid file type" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("DELETE", "/api/v1/context/data/invalid", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "data", "invalid"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "data", "invalid"],
+  }
   let resp = (handlers.data_delete.0)(ctx2)
   assert_eq(resp.status, 404)
 }
@@ -258,10 +317,16 @@ test "handle_data_delete returns 404 for invalid file type" {
 test "handle_templates_list returns all templates" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/templates", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "templates"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "templates"],
+  }
   let resp = (handlers.templates_list.0)(ctx2)
   assert_eq(resp.status, 200)
   // Should contain all file types with template content
@@ -275,10 +340,16 @@ test "handle_templates_list uses installed templates when available" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
   templates.templates["SOUL.md"] = "Custom installed template"
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/templates", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "templates"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "templates"],
+  }
   let resp = (handlers.templates_list.0)(ctx2)
   assert_eq(resp.status, 200)
   assert_true(resp.body.contains("Custom installed template"))
@@ -292,10 +363,16 @@ test "handle_templates_list uses installed templates when available" {
 test "handle_templates_get returns embedded template" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/templates/soul", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "templates", "soul"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "templates", "soul"],
+  }
   let resp = (handlers.templates_get.0)(ctx2)
   assert_eq(resp.status, 200)
   // Should contain embedded template content
@@ -309,10 +386,16 @@ test "handle_templates_get prefers installed template" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
   templates.templates["SOUL.md"] = "Custom installed soul template"
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/templates/soul", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "templates", "soul"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "templates", "soul"],
+  }
   let resp = (handlers.templates_get.0)(ctx2)
   assert_eq(resp.status, 200)
   assert_true(resp.body.contains("Custom installed soul template"))
@@ -322,10 +405,16 @@ test "handle_templates_get prefers installed template" {
 test "handle_templates_get returns 404 for invalid template" {
   let storage = MockFileStorage::new(".mukuro")
   let templates = MockTemplateStorage::new()
-  let state = ContextState::new(create_mock_data_io(storage), create_mock_template_resolver(templates))
+  let state = ContextState::new(
+    create_mock_data_io(storage),
+    create_mock_template_resolver(templates),
+  )
   let handlers = create_context_handlers(state)
   let ctx = make_test_ctx("GET", "/api/v1/context/templates/invalid", "")
-  let ctx2 : @api.ApiRequestContext = { ..ctx, segments: ["context", "templates", "invalid"] }
+  let ctx2 : @api.ApiRequestContext = {
+    ..ctx,
+    segments: ["context", "templates", "invalid"],
+  }
   let resp = (handlers.templates_get.0)(ctx2)
   assert_eq(resp.status, 404)
   assert_true(resp.body.contains("Unknown template"))
@@ -399,10 +488,7 @@ test "ContextFileResponse::from_data produces correct response" {
 
 ///|
 test "ContextFileResponse::from_data returns empty when no content" {
-  let resp = ContextFileResponse::from_data(
-    ContextFileType::Soul,
-    None,
-  )
+  let resp = ContextFileResponse::from_data(ContextFileType::Soul, None)
   let json = resp.to_json()
   let json_str = json.stringify()
   assert_true(json_str.contains("\"content\":\"\""))

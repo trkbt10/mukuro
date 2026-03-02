@@ -25,7 +25,9 @@ test "NativeHistoryRecorder creates file on open_session" {
     }
   }
   assert_true(is_new)
-  recorder.close() catch { _ => () }
+  recorder.close() catch {
+    _ => ()
+  }
   // Verify file was created
   let dir = "\{base_dir}/history/2026/03/01"
   let entries = native_list_dir_entries(dir)
@@ -56,8 +58,12 @@ test "NativeHistoryRecorder writes record to file" {
     record_type: @interfaces.HistoryRecordType::UserMessage,
     payload: { "content": "Hello, world!" },
   }
-  recorder.record(record~) catch { e => fail("record failed: \{e}") }
-  recorder.close() catch { _ => () }
+  recorder.record(record~) catch {
+    e => fail("record failed: \{e}")
+  }
+  recorder.close() catch {
+    _ => ()
+  }
   // Read back the file content
   let dir = "\{base_dir}/history/2026/03/01"
   let entries = native_list_dir_entries(dir)
@@ -94,7 +100,9 @@ test "NativeHistoryRecorder read-write round-trip via Reader" {
     record_type: @interfaces.HistoryRecordType::SessionMeta,
     payload: { "channel": "web_chat", "chat_id": "roundtrip_unique_123" },
   }
-  recorder.record(record=meta_record) catch { e => fail("record failed: \{e}") }
+  recorder.record(record=meta_record) catch {
+    e => fail("record failed: \{e}")
+  }
   // Write UserMessage
   let user_record : @interfaces.HistoryRecord = {
     timestamp: timestamp + 1000L,
@@ -102,16 +110,24 @@ test "NativeHistoryRecorder read-write round-trip via Reader" {
     record_type: @interfaces.HistoryRecordType::UserMessage,
     payload: { "content": "Test message" },
   }
-  recorder.record(record=user_record) catch { e => fail("record failed: \{e}") }
-  recorder.close() catch { _ => () }
+  recorder.record(record=user_record) catch {
+    e => fail("record failed: \{e}")
+  }
+  recorder.close() catch {
+    _ => ()
+  }
   // Read back via NativeHistoryReader
   let reader = NativeHistoryReader::new(base_dir~)
   let records = reader.read_session(session_id~) catch {
     e => fail("read_session failed: \{e}")
   }
   assert_eq(records.length(), 2)
-  assert_true(records[0].record_type is @interfaces.HistoryRecordType::SessionMeta)
-  assert_true(records[1].record_type is @interfaces.HistoryRecordType::UserMessage)
+  assert_true(
+    records[0].record_type is @interfaces.HistoryRecordType::SessionMeta,
+  )
+  assert_true(
+    records[1].record_type is @interfaces.HistoryRecordType::UserMessage,
+  )
   let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
 }
 
@@ -154,7 +170,9 @@ test "NativeHistoryRecorder flushes after each record" {
     record_type: @interfaces.HistoryRecordType::UserMessage,
     payload: { "content": "First" },
   }
-  recorder.record(record=record1) catch { e => fail("record failed: \{e}") }
+  recorder.record(record=record1) catch {
+    e => fail("record failed: \{e}")
+  }
   // Read immediately (before close) to verify flush
   let dir = "\{base_dir}/history/2026/03/01"
   let entries = native_list_dir_entries(dir)
@@ -164,6 +182,8 @@ test "NativeHistoryRecorder flushes after each record" {
     _ => fail("read failed")
   }
   assert_true(content.contains("First"))
-  recorder.close() catch { _ => () }
+  recorder.close() catch {
+    _ => ()
+  }
   let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
 }

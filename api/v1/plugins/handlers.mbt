@@ -447,10 +447,7 @@ pub fn handle_list_actions(
       let action_names = state.list_actions(plugin_id)
       let json_names : Array[Json] = action_names.map(fn(n) { Json::string(n) })
       @api.json_response(200, {
-        "data": {
-          "plugin_id": plugin_id,
-          "actions": Json::array(json_names),
-        },
+        "data": { "plugin_id": plugin_id, "actions": Json::array(json_names) },
       })
     }
   }
@@ -473,11 +470,15 @@ pub fn handle_invoke_action(
     Some(plugin_state) =>
       if not(plugin_state.enabled) {
         @api.error_response(
-          400, "plugin_disabled", "Plugin '\{plugin_id}' is disabled",
+          400,
+          "plugin_disabled",
+          "Plugin '\{plugin_id}' is disabled",
         )
       } else {
         let params : Json = if ctx.body.length() > 0 {
-          @json.parse(ctx.body) catch { _ => Json::object({}) }
+          @json.parse(ctx.body) catch {
+            _ => Json::object({})
+          }
         } else {
           Json::object({})
         }

@@ -1108,3 +1108,142 @@ test "regression: no tool_choice when tools empty" {
   let resp_body = build_responses_api_body("gpt-4", messages, empty_tools)
   inspect(resp_body.stringify().contains("tool_choice"), content="false")
 }
+
+///|
+/// Regression test for two-phase conversation with tool calls
+/// Simulates: User -> Assistant(tool_call) -> ToolResult -> User(follow-up)
+/// This pattern failed with Groq Responses API: "Tools should have a name!"
+test "regression: two_phase_conversation_with_tool_call_openai_chat" {
+  // Phase 1: Initial exchange with tool call
+  // Phase 2: Follow-up question after tool result
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::System("You are a helpful assistant."),
+    // Turn 1: User asks
+    @types.ModelMessage::User(content="List files in current directory", name=None),
+    // Turn 1: Assistant responds with tool call
+    @types.ModelMessage::Assistant(
+      content="",
+      tool_calls=Some([
+        @types.ToolCallRequest::new(
+          id="call_abc123",
+          name="shell",
+          arguments={ "command": "ls" },
+        ),
+      ]),
+    ),
+    // Turn 1: Tool result
+    @types.ModelMessage::ToolResult(
+      tool_call_id="call_abc123",
+      content="file1.txt\nfile2.txt\ndir1",
+    ),
+    // Turn 2: User follow-up (THIS IS WHERE IT FAILED)
+    @types.ModelMessage::User(content="Now show details with ls -la", name=None),
+  ]
+  let tools : Array[@types.ToolDefinition] = [
+    @types.ToolDefinition::new(
+      name="shell",
+      description="Execute shell commands",
+      parameters={
+        "type": "object",
+        "properties": { "command": { "type": "string" } },
+        "required": ["command"],
+      },
+    ),
+  ]
+  let body = build_openai_chat_body("openai/gpt-oss-20b", messages, tools)
+  let s = body.stringify()
+  // Verify structure
+  inspect(s.contains("\"model\":\"openai/gpt-oss-20b\""), content="true")
+  inspect(s.contains("\"messages\""), content="true")
+  inspect(s.contains("\"tools\""), content="true")
+  inspect(s.contains("\"tool_choice\":\"auto\""), content="true")
+  // Verify tool call in assistant message
+  inspect(s.contains("\"tool_calls\""), content="true")
+  inspect(s.contains("\"id\":\"call_abc123\""), content="true")
+  inspect(s.contains("\"name\":\"shell\""), content="true")
+  // Verify tool result
+  inspect(s.contains("\"role\":\"tool\""), content="true")
+  inspect(s.contains("\"tool_call_id\":\"call_abc123\""), content="true")
+  // Verify tools have name
+  inspect(s.contains("\"function\":{\"name\":\"shell\""), content="true")
+  // Verify follow-up user message exists
+  let body_json = @json.parse(s) catch { _ => return fail("Invalid JSON") }
+  match body_json {
+    { "messages": Array(msgs), .. } => {
+      // Should have 5 messages
+      inspect(msgs.length(), content="5")
+      // Last message should be user follow-up
+      match msgs[4] {
+        { "role": String("user"), "content": String(content), .. } =>
+          inspect(content, content="Now show details with ls -la")
+        _ => fail("Last message should be user follow-up")
+      }
+    }
+    _ => fail("Expected messages array")
+  }
+}
+
+///|
+/// Regression test for two-phase conversation with Responses API format
+test "regression: two_phase_conversation_with_tool_call_responses_api" {
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::System("You are a helpful assistant."),
+    @types.ModelMessage::User(content="List files", name=None),
+    @types.ModelMessage::Assistant(
+      content="",
+      tool_calls=Some([
+        @types.ToolCallRequest::new(
+          id="fc_xyz789",
+          name="shell",
+          arguments={ "command": "ls" },
+        ),
+      ]),
+    ),
+    @types.ModelMessage::ToolResult(
+      tool_call_id="fc_xyz789",
+      content="a.txt\nb.txt",
+    ),
+    @types.ModelMessage::User(content="Show details", name=None),
+  ]
+  let tools : Array[@types.ToolDefinition] = [
+    @types.ToolDefinition::new(
+      name="shell",
+      description="Execute shell commands",
+      parameters={
+        "type": "object",
+        "properties": { "command": { "type": "string" } },
+      },
+    ),
+  ]
+  let body = build_responses_api_body("openai/gpt-oss-20b", messages, tools)
+  let s = body.stringify()
+  // Verify Responses API structure
+  inspect(s.contains("\"model\":\"openai/gpt-oss-20b\""), content="true")
+  inspect(s.contains("\"input\""), content="true")
+  inspect(s.contains("\"tools\""), content="true")
+  inspect(s.contains("\"tool_choice\":\"auto\""), content="true")
+  // Verify function_call in input
+  inspect(s.contains("\"type\":\"function_call\""), content="true")
+  inspect(s.contains("\"call_id\":\"fc_xyz789\""), content="true")
+  inspect(s.contains("\"name\":\"shell\""), content="true")
+  // Verify function_call_output
+  inspect(s.contains("\"type\":\"function_call_output\""), content="true")
+  // Verify tools have name at top level (Responses API format)
+  inspect(s.contains("\"type\":\"function\",\"name\":\"shell\""), content="true")
+  // Parse and verify structure
+  let body_json = @json.parse(s) catch { _ => return fail("Invalid JSON") }
+  match body_json {
+    { "input": Array(items), "tools": Array(tool_defs), .. } => {
+      // Verify tools have name
+      for tool_def in tool_defs {
+        match tool_def {
+          { "name": String(name), .. } => inspect(name.length() > 0, content="true")
+          _ => fail("Tool definition missing name")
+        }
+      }
+      // Count input items
+      inspect(items.length() > 0, content="true")
+    }
+    _ => fail("Expected input and tools arrays")
+  }
+}

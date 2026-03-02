@@ -24,7 +24,8 @@ pub fn create_tool_loader_io() -> @tool.ToolLoaderIO {
       let dirs : Array[String] = []
       // Create tools directory if it doesn't exist (dir_permission = 0o755)
       let _ = c_mkdir_recursive_bytes(
-        string_to_utf8_cstring(tools_dir), dir_permission,
+        string_to_utf8_cstring(tools_dir),
+        dir_permission,
       )
       // List subdirectories (entries that have a tool.json file inside)
       let entries = native_list_dir_entries(tools_dir)

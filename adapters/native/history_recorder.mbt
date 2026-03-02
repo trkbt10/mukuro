@@ -15,7 +15,7 @@ pub struct NativeHistoryRecorder {
   mut session_id : String
   mut initialized : Bool
   /// メタデータストア（オプション）
-  metadata_store : (&@interfaces.HistoryMetadataStore)?
+  metadata_store : &@interfaces.HistoryMetadataStore?
   /// 最初のユーザーメッセージかどうか
   mut is_first_user_message : Bool
 }
@@ -78,14 +78,19 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with open_session
   let safe_chat_id = @history.sanitize_path_segment(chat_id)
   let file_prefix = "\{safe_channel}-\{safe_chat_id}-"
   // 既存のセッションファイルがあれば追記、なければ新規作成
-  let (file_path, is_new_session) = match native_find_file_with_prefix(
-    dir_path, file_prefix, ".jsonl",
-  ) {
+  let (file_path, is_new_session) = match
+    native_find_file_with_prefix(dir_path, file_prefix, ".jsonl") {
     Some(existing) => (existing, false)
     None =>
       (
         @history.history_file_path(
-          self.base_dir, channel, chat_id, year, month, day, epoch_secs,
+          self.base_dir,
+          channel,
+          chat_id,
+          year,
+          month,
+          day,
+          epoch_secs,
         ),
         true,
       )
@@ -128,7 +133,9 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with open_session
         file_path,
         model_name: None,
       }
-      store.upsert(metadata~) catch { _ => () } // メタデータ更新失敗は無視
+      store.upsert(metadata~) catch {
+        _ => ()
+      } // メタデータ更新失敗は無視
     }
     None => ()
   }
@@ -145,7 +152,10 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with record(
   }
   let data = @utf8.encode(@history.record_to_json_line(record) + "\n")
   let written = c_fwrite_handle(
-    data, 1, data.length(), self.current_file_handle,
+    data,
+    1,
+    data.length(),
+    self.current_file_handle,
   )
   if written != data.length() {
     raise @interfaces.HistoryError::WriteFailed(
@@ -156,9 +166,8 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with record(
   let _ = c_fflush_handle(self.current_file_handle)
   // メタデータストアがあればカウント更新
   match self.metadata_store {
-    Some(store) => {
+    Some(store) =>
       update_metadata_for_record(store, self.session_id, record, self)
-    }
     None => ()
   }
 }
@@ -188,20 +197,20 @@ fn update_metadata_for_record(
           } else {
             content
           }
-          store.set_first_message(session_id~, message=trimmed) catch { _ => () }
+          store.set_first_message(session_id~, message=trimmed) catch {
+            _ => ()
+          }
         }
       }
     }
-    @interfaces.HistoryRecordType::AssistantMessage => {
+    @interfaces.HistoryRecordType::AssistantMessage =>
       store.increment_counts(session_id~, user=0, assistant=1, tool=0) catch {
         _ => ()
       }
-    }
-    @interfaces.HistoryRecordType::ToolCall => {
+    @interfaces.HistoryRecordType::ToolCall =>
       store.increment_counts(session_id~, user=0, assistant=0, tool=1) catch {
         _ => ()
       }
-    }
     _ => () // SessionMeta, ToolResult, Error は無視
   }
 }
@@ -248,7 +257,7 @@ pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder with close(self) 
 pub struct NativeHistoryReader {
   base_dir : String
   /// メタデータストア（オプション）
-  metadata_store : (&@interfaces.HistoryMetadataStore)?
+  metadata_store : &@interfaces.HistoryMetadataStore?
 }
 
 ///|
@@ -333,7 +342,9 @@ pub impl @interfaces.HistoryReader for NativeHistoryReader with list_sessions(
 }
 
 ///|
-pub impl @interfaces.HistoryReader for NativeHistoryReader with list_dates(self) -> Array[(Int, Int, Int)] raise @interfaces.HistoryError {
+pub impl @interfaces.HistoryReader for NativeHistoryReader with list_dates(self) -> Array[
+  (Int, Int, Int),
+] raise @interfaces.HistoryError {
   let dates : Array[(Int, Int, Int)] = []
   let history_root = "\{self.base_dir}/history"
   for year_name in native_list_dir_entries(history_root) {

@@ -43,10 +43,9 @@ fn safe_record(
   match recorder {
     Some(r) =>
       r.record(record~) catch {
-        e => {
+        e =>
           // 警告出力 - サイレントキャッチは検知遅延の原因になる
           println("WARN [history] record failed: \{e}")
-        }
       }
     None => ()
   }

@@ -96,7 +96,9 @@ fn write_daemon_startup_config(
 fn parse_daemon_startup_config(content : String) -> DaemonStartupConfig {
   let root_json : Json = @json.parse(content) catch {
     _ => {
-      println("Warning: Failed to parse daemon startup config JSON, using defaults")
+      println(
+        "Warning: Failed to parse daemon startup config JSON, using defaults",
+      )
       return daemon_startup_default()
     }
   }

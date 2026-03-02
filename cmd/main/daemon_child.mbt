@@ -63,7 +63,8 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   let config_path = startup.runtime_model_config_path
   let config_text = read_config_text_impl(config_path) catch {
     _ => {
-      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+      |> ignore
       @native.c_exit(1)
       return CliResult::Exit(1)
     }
@@ -72,11 +73,14 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     config_text,
   ) catch {
     _ => {
-      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+      |> ignore
       @native.c_exit(1)
       return CliResult::Exit(1)
     }
   }
+  // SQLite メタデータストアの初期化（履歴検索用）
+  initialize_metadata_store()
   init_api_v1_state(mukuro_config, config_path)
   bootstrap_runtime_channels_from_config(config_path)
   global_gateway.start(config=startup.gateway_config) catch {
@@ -84,7 +88,8 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   }
   let start_ok = global_gateway.status().state.is_running()
   if !start_ok {
-    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+    |> ignore
     @native.c_exit(1)
     return CliResult::Exit(1)
   }
@@ -114,14 +119,16 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   let mut auth_rate_limited_until : Int64 = 0
   let mut last_snapshot_uptime = -1
   if @native.c_write_gateway_token_record(token, session_id, started_at) != 0 {
-    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+    |> ignore
     @native.c_exit(1)
     return CliResult::Exit(1)
   }
 
   let ipc_start = @native.c_ipc_server_start()
   if ipc_start != 0 {
-    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+    @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+    |> ignore
     @native.c_exit(1)
     return CliResult::Exit(1)
   }
@@ -236,7 +243,8 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
       )
       |> ignore
       @native.c_ipc_server_cleanup() |> ignore
-      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+      |> ignore
       @native.c_exit(1)
       return CliResult::Exit(1)
     }
@@ -264,7 +272,8 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
         )
         |> ignore
         @native.c_ipc_server_cleanup() |> ignore
-        @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+        @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+        |> ignore
         @native.c_exit(1)
         return CliResult::Exit(1)
       }
@@ -291,7 +300,8 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   )
   |> ignore
   @native.c_ipc_server_cleanup() |> ignore
-  @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path)) |> ignore
+  @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
+  |> ignore
 
   // 正常終了
   @native.c_exit(0)

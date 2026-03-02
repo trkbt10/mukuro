@@ -15,7 +15,9 @@ pub struct NativeHistoryMetadataStore {
 
 ///|
 /// メタデータストアを作成
-pub fn NativeHistoryMetadataStore::new(db_path : String) -> NativeHistoryMetadataStore {
+pub fn NativeHistoryMetadataStore::new(
+  db_path : String,
+) -> NativeHistoryMetadataStore {
   NativeHistoryMetadataStore::{ db_path, db: None }
 }
 
@@ -136,7 +138,9 @@ pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with up
   }
   if not(stmt.execute()) {
     stmt.finalize()
-    raise @interfaces.MetadataStoreError::DatabaseError("Failed to execute upsert")
+    raise @interfaces.MetadataStoreError::DatabaseError(
+      "Failed to execute upsert",
+    )
   }
   stmt.finalize()
 }
@@ -161,7 +165,9 @@ pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with ge
   }
   if not(stmt.bind(1, text_value(session_id))) {
     stmt.finalize()
-    raise @interfaces.MetadataStoreError::DatabaseError("Failed to bind session_id")
+    raise @interfaces.MetadataStoreError::DatabaseError(
+      "Failed to bind session_id",
+    )
   }
   if stmt.step() {
     let metadata = read_session_metadata(stmt)
@@ -425,11 +431,15 @@ pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with de
   }
   if not(stmt.bind(1, text_value(session_id))) {
     stmt.finalize()
-    raise @interfaces.MetadataStoreError::DatabaseError("Failed to bind session_id")
+    raise @interfaces.MetadataStoreError::DatabaseError(
+      "Failed to bind session_id",
+    )
   }
   if not(stmt.execute()) {
     stmt.finalize()
-    raise @interfaces.MetadataStoreError::DatabaseError("Failed to execute delete")
+    raise @interfaces.MetadataStoreError::DatabaseError(
+      "Failed to execute delete",
+    )
   }
   stmt.finalize()
 }
@@ -516,7 +526,9 @@ fn get_int64(value : @sqlite.SqlValue) -> Int64 {
 
 ///|
 /// 結果行からSessionMetadataを読み取る
-fn read_session_metadata(stmt : @sqlite.Statement) -> @interfaces.SessionMetadata {
+fn read_session_metadata(
+  stmt : @sqlite.Statement,
+) -> @interfaces.SessionMetadata {
   @interfaces.SessionMetadata::{
     session_id: get_text(stmt.column(0)),
     channel: get_text(stmt.column(1)),
@@ -565,7 +577,11 @@ fn current_timestamp_ms() -> Int64 {
 ///|
 /// 日付からタイムスタンプ範囲を計算（UTC）
 /// 戻り値: (start_ms, end_ms) — start <= ts < end
-fn date_to_timestamp_range(year : Int, month : Int, day : Int) -> (Int64, Int64) {
+fn date_to_timestamp_range(
+  year : Int,
+  month : Int,
+  day : Int,
+) -> (Int64, Int64) {
   // 簡易計算: 各月の日数を考慮した経過日数からタイムスタンプを算出
   // 1970-01-01 00:00:00 UTC = 0
   let days_since_epoch = days_from_epoch(year, month, day)
@@ -585,7 +601,9 @@ fn days_from_epoch(year : Int, month : Int, day : Int) -> Int64 {
     days = days + year_days
   }
   // 月の計算
-  let days_in_month : FixedArray[Int] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  let days_in_month : FixedArray[Int] = [
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+  ]
   for m = 1; m < month; m = m + 1 {
     let d = days_in_month[m - 1]
     days = days + d.to_int64()
@@ -639,7 +657,9 @@ pub fn rebuild_metadata_from_jsonl(
         for filename in native_list_dir_entries(day_path) {
           if filename.has_suffix(".jsonl") {
             let file_path = "\{day_path}/\{filename}"
-            if process_jsonl_for_migration(store, file_path, filename, year, month, day) {
+            if process_jsonl_for_migration(
+                store, file_path, filename, year, month, day,
+              ) {
               count = count + 1
             }
           }
@@ -687,7 +707,11 @@ fn process_jsonl_for_migration(
                 let msg = extract_content_from_payload(record.payload)
                 if msg.length() > 0 {
                   first_message = Some(
-                    if msg.length() > 100 { trim_string(msg, 100) } else { msg },
+                    if msg.length() > 100 {
+                      trim_string(msg, 100)
+                    } else {
+                      msg
+                    },
                   )
                 }
               }
@@ -727,7 +751,9 @@ fn process_jsonl_for_migration(
     file_path,
     model_name,
   }
-  store.upsert(metadata~) catch { _ => return false }
+  store.upsert(metadata~) catch {
+    _ => return false
+  }
   true
 }
 
@@ -756,4 +782,3 @@ fn extract_model_from_payload(payload : Json) -> String {
     _ => ""
   }
 }
-

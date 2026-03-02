@@ -61,7 +61,7 @@ pub fn ToolState::builtin(
   id~ : String,
   name~ : String,
   description~ : String,
-  parameters~ : Json
+  parameters~ : Json,
 ) -> ToolState {
   {
     id,
@@ -81,7 +81,7 @@ pub fn ToolState::user_defined(
   id~ : String,
   name~ : String,
   description~ : String,
-  parameters~ : Json
+  parameters~ : Json,
 ) -> ToolState {
   {
     id,
@@ -101,7 +101,7 @@ pub fn ToolState::from_plugin(
   plugin_id~ : String,
   capability~ : String,
   description~ : String,
-  parameters~ : Json
+  parameters~ : Json,
 ) -> ToolState {
   let id = "\{plugin_id}.\{capability}"
   {
@@ -122,7 +122,7 @@ pub fn ToolState::from_mcp(
   server_id~ : String,
   tool_name~ : String,
   description~ : String,
-  parameters~ : Json
+  parameters~ : Json,
 ) -> ToolState {
   let id = "\{server_id}.\{tool_name}"
   {
@@ -187,4 +187,3 @@ pub(open) trait DynamicToolManager {
   /// Check if a tool exists
   has_tool(Self, id~ : String) -> Bool
 }
-

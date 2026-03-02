@@ -1,8 +1,7 @@
 import {
   "trkbt10/mukuro/adapters/native" @adapter_native,
   "trkbt10/mukuro/core/types" @types,
-  "trkbt10/mukuro/tools/defs" @defs,
-  "trkbt10/mukuro/tools/builtin" @builtin,
+  "trkbt10/mukuro/core/tools" @tools,
   "trkbt10/mukuro/interfaces" @interfaces,
   "moonbitlang/core/json",
 }

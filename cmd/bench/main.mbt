@@ -303,6 +303,7 @@ async fn main {
     outbound_dispatcher,
     history_recorder: None,
     clock: None,
+    session_manager: None,
   }
   let options = @agent.AgentLoopOptions::default()
 

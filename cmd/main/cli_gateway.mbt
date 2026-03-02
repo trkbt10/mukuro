@@ -76,6 +76,9 @@ async fn execute_gateway_start(opts : GatewayStartOptions) -> CliResult {
   }
   let status = global_gateway.status()
 
+  // SQLite メタデータストアの初期化（履歴検索用）
+  initialize_metadata_store()
+
   // API v1 state を初期化（設定読み込み）
   let config_text = read_config_text_impl(config_path) catch {
     _ => return CliResult::Error(config_not_found_message(config_path))

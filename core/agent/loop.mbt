@@ -136,10 +136,13 @@ pub(all) struct AgentDependencies {
   model_orchestrator : &@interfaces.ModelOrchestrator
   tool_registry : &@interfaces.ToolRegistry
   outbound_dispatcher : &@interfaces.OutboundDispatcher
-  /// 履歴レコーダー（None=記録しない）
+  /// 履歴レコーダー（None=記録しない）- session_manager がある場合は無視
   history_recorder : &@interfaces.HistoryRecorder?
   /// イベント時刻取得用（None=envelope.timestamp にフォールバック）
   clock : &@interfaces.Clock?
+  /// 統合セッションマネージャー（History = Source of Truth）
+  /// 指定された場合、session_store + history_recorder を置換する
+  session_manager : &@interfaces.SessionManager?
 }
 
 ///|
@@ -270,14 +273,24 @@ pub async fn run_agent_loop(
   let hr = deps.history_recorder
   let clk = deps.clock
   let ts = envelope.timestamp
+  let sm = deps.session_manager
   // 1. セッション解決
   let session_key = deps.session_resolver.resolve(envelope)
   let sid = session_key.to_string()
   // 2. セッション取得または作成
+  // session_manager がある場合は History を source of truth として使用
   let session = try {
-    match deps.session_store.get(session_key) {
-      Some(s) => s
-      None => @types.Session::new(session_key, envelope.timestamp)
+    match sm {
+      Some(mgr) =>
+        mgr.get_or_create(session_key, now=envelope.timestamp) catch {
+          e => raise AgentLoopError::SessionError(e.to_string())
+        }
+      None =>
+        // フォールバック: 旧 session_store を使用
+        match deps.session_store.get(session_key) {
+          Some(s) => s
+          None => @types.Session::new(session_key, envelope.timestamp)
+        }
     }
   } catch {
     e => raise AgentLoopError::SessionError(e.to_string())
@@ -300,8 +313,19 @@ pub async fn run_agent_loop(
   ctx.messages = deps.context_builder.build(context_input)
   // 5. ツール定義取得
   let tool_definitions = deps.tool_registry.list_definitions()
-  // 履歴: UserMessage を記録
-  record_user_message(hr, clk, ts, sid, envelope.content)
+  // 履歴: UserMessage を記録 (モデル呼び出し前に記録)
+  match sm {
+    Some(mgr) =>
+      mgr.append_user_message(
+        session_key,
+        content=envelope.content,
+        name=None,
+        timestamp=ts,
+      ) catch {
+        _ => ()
+      }
+    None => record_user_message(hr, clk, ts, sid, envelope.content)
+  }
   // 6. エージェントループ
   while not(ctx.is_max_iterations(options.max_iterations)) {
     ctx.set_state(AgentState::WaitingForModel)
@@ -327,16 +351,31 @@ pub async fn run_agent_loop(
     match response {
       @types.ModelResponse::Text(content) => {
         ctx.set_state(AgentState::SendingResponse)
-        record_assistant_message(hr, clk, ts, sid, content)
-        // セッション更新
-        session.add_message(
-          @types.ModelMessage::User(content=envelope.content, name=None),
-        )
-        session.add_message(
-          @types.ModelMessage::Assistant(content~, tool_calls=None),
-        )
-        deps.session_store.save(session) catch {
-          e => raise AgentLoopError::SessionError(e.to_string())
+        // AssistantMessage を記録 - session_manager がある場合は一貫して使用
+        match sm {
+          Some(mgr) =>
+            // SessionManager 経由で History + キャッシュ同時更新
+            mgr.append_assistant_message(
+              session_key,
+              content~,
+              tool_calls=None,
+              timestamp=ts,
+            ) catch {
+              _ => ()
+            }
+          None => {
+            // フォールバック: 旧方式
+            record_assistant_message(hr, clk, ts, sid, content)
+            session.add_message(
+              @types.ModelMessage::User(content=envelope.content, name=None),
+            )
+            session.add_message(
+              @types.ModelMessage::Assistant(content~, tool_calls=None),
+            )
+            deps.session_store.save(session) catch {
+              e => raise AgentLoopError::SessionError(e.to_string())
+            }
+          }
         }
         ctx.set_state(AgentState::Completed)
         let outbound : @types.OutboundMessage = {
@@ -353,29 +392,100 @@ pub async fn run_agent_loop(
         ctx.add_message(
           @types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
         )
+        // AssistantMessage を History + cache に記録（tool_calls 付き）
+        // これがないと、セッション再構築時に tool_calls が失われ、
+        // Responses API で "Tools should have a name!" エラーが発生する
+        match sm {
+          Some(mgr) =>
+            mgr.append_assistant_message(
+              session_key,
+              content="",
+              tool_calls=Some(calls),
+              timestamp=ts,
+            ) catch {
+              _ => ()
+            }
+          None =>
+            // 旧方式: 履歴ブリッジ経由で AssistantMessage を記録
+            record_assistant_message(hr, clk, ts, sid, "")
+        }
         for call in calls {
           ctx.set_state(
             AgentState::ExecutingTool(tool_name=call.name, call_id=call.id),
           )
           ctx.record_tool_call(call)
-          record_tool_call(hr, clk, ts, sid, call.id, call.name, call.arguments)
+          // ToolCall 記録 - session_manager がある場合はそれを使用
+          match sm {
+            Some(mgr) =>
+              mgr.record_tool_call(
+                session_key,
+                call_id=call.id,
+                tool_name=call.name,
+                arguments=call.arguments,
+                timestamp=ts,
+              ) catch {
+                _ => ()
+              }
+            None =>
+              record_tool_call(
+                hr,
+                clk,
+                ts,
+                sid,
+                call.id,
+                call.name,
+                call.arguments,
+              )
+          }
           let tool_result = execute_tool_call(call, session, envelope, deps) catch {
             e =>
               @types.ToolResult::Error(
                 message="Tool execution failed: \{e.to_string()}",
               )
           }
-          record_tool_result(hr, clk, ts, sid, call.id, tool_result)
+          // ToolResult 記録 - session_manager がある場合はそれを使用
+          match sm {
+            Some(mgr) => {
+              let result_content = match tool_result {
+                @types.ToolResult::Success(content~) => content
+                @types.ToolResult::Error(message~) => message
+                @types.ToolResult::RequiresAction(next_tool~, ..) => next_tool
+              }
+              mgr.record_tool_result(
+                session_key,
+                call_id=call.id,
+                content=result_content,
+                timestamp=ts,
+              ) catch {
+                _ => ()
+              }
+            }
+            None => record_tool_result(hr, clk, ts, sid, call.id, tool_result)
+          }
           ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
         }
         continue
       }
       @types.ModelResponse::ModelError(msg) => {
-        record_error(hr, clk, ts, sid, msg)
+        // Error 記録 - session_manager がある場合はそれを使用
+        match sm {
+          Some(mgr) =>
+            mgr.record_error(session_key, message=msg, timestamp=ts) catch {
+              _ => ()
+            }
+          None => record_error(hr, clk, ts, sid, msg)
+        }
         raise AgentLoopError::ModelCallFailed(msg)
       }
       @types.ModelResponse::RateLimited(retry_after~) => {
-        record_error(hr, clk, ts, sid, "Rate limited: retry_after=\{retry_after}")
+        let err_msg = "Rate limited: retry_after=\{retry_after}"
+        match sm {
+          Some(mgr) =>
+            mgr.record_error(session_key, message=err_msg, timestamp=ts) catch {
+              _ => ()
+            }
+          None => record_error(hr, clk, ts, sid, err_msg)
+        }
         raise AgentLoopError::RateLimitExceeded(
           retry_count=retry_state.attempt,
           last_retry_after=retry_after,
@@ -384,7 +494,14 @@ pub async fn run_agent_loop(
     }
   }
   // 最大反復回数に達した
-  record_error(hr, clk, ts, sid, "Max iterations reached: \{options.max_iterations}")
+  let max_iter_msg = "Max iterations reached: \{options.max_iterations}"
+  match sm {
+    Some(mgr) =>
+      mgr.record_error(session_key, message=max_iter_msg, timestamp=ts) catch {
+        _ => ()
+      }
+    None => record_error(hr, clk, ts, sid, max_iter_msg)
+  }
   raise AgentLoopError::MaxIterationsReached(options.max_iterations)
 }
 
@@ -478,232 +595,5 @@ pub async fn single_model_call(
 ) -> @types.ModelResponse raise AgentLoopError {
   model_orchestrator.call(messages~, tools=[], options~) catch {
     e => raise AgentLoopError::ModelCallFailed(e.to_string())
-  }
-}
-
-// ============================================================================
-// Async Agent Loop Implementation
-// ============================================================================
-
-///|
-/// 非同期エージェントループの依存関係
-pub(all) struct AsyncAgentDependencies {
-  session_resolver : &@interfaces.SessionResolver
-  session_store : &@interfaces.SessionStore
-  context_builder : &@interfaces.ContextBuilder
-  tool_registry : &@interfaces.ToolRegistry
-  outbound_dispatcher : &@interfaces.OutboundDispatcher
-  /// モデル呼び出し関数（async関数を受け取る）
-  model_invoke : async (
-    Array[@types.ModelMessage],
-    Array[@types.ToolDefinition],
-    @types.ModelOptions,
-  ) -> @types.ModelResponse
-  /// 履歴レコーダー（None=記録しない）
-  history_recorder : &@interfaces.HistoryRecorder?
-  /// イベント時刻取得用（None=envelope.timestamp にフォールバック）
-  clock : &@interfaces.Clock?
-}
-
-///|
-/// リトライ付きモデル呼び出し（async版）
-/// 実際に @async.sleep() で遅延を適用する
-pub async fn call_model_with_retry_async(
-  model_invoke : async (
-    Array[@types.ModelMessage],
-    Array[@types.ToolDefinition],
-    @types.ModelOptions,
-  ) -> @types.ModelResponse,
-  messages : Array[@types.ModelMessage],
-  tools : Array[@types.ToolDefinition],
-  options : @types.ModelOptions,
-  retry_config : RetryConfig,
-) -> @types.ModelResponse raise AgentLoopError {
-  let retry_state = RetryState::new(retry_config)
-  // リトライループ
-  while true {
-    let response = model_invoke(messages, tools, options) catch {
-      e => raise AgentLoopError::ModelCallFailed(e.to_string())
-    }
-    match response {
-      @types.ModelResponse::RateLimited(retry_after~) =>
-        // レート制限 - リトライ可能か確認
-        if retry_config.retry_on_rate_limit &&
-          retry_state.can_retry(retry_config) {
-          retry_state.set_retry_after(retry_after)
-          let delay_ms = retry_state.next_delay_ms
-          retry_state.increment(retry_config)
-          // 実際に遅延を適用
-          @async.sleep(delay_ms) catch {
-            e => raise AgentLoopError::ModelCallFailed("Sleep cancelled: \{e}")
-          }
-          continue
-        } else {
-          // リトライ上限に達した
-          return response
-        }
-      @types.ModelResponse::ModelError(msg) =>
-        // 一部のエラーはリトライ可能
-        if is_retryable_error(msg) && retry_state.can_retry(retry_config) {
-          let delay_ms = retry_state.next_delay_ms
-          retry_state.increment(retry_config)
-          // 実際に遅延を適用
-          @async.sleep(delay_ms) catch {
-            e => raise AgentLoopError::ModelCallFailed("Sleep cancelled: \{e}")
-          }
-          continue
-        } else {
-          return response
-        }
-      _ => return response
-    }
-  }
-  // 到達不能
-  @types.ModelResponse::ModelError("Unexpected retry loop exit")
-}
-
-///|
-/// 非同期エージェントループを実行
-/// 入力メッセージを処理し、モデル呼び出しとツール実行を反復して応答を生成する
-pub async fn run_agent_loop_async(
-  envelope : @types.InboundEnvelope,
-  options : AgentLoopOptions,
-  deps : AsyncAgentDependencies,
-) -> @types.OutboundMessage raise AgentLoopError {
-  let hr = deps.history_recorder
-  let clk = deps.clock
-  let ts = envelope.timestamp
-  // 1. セッション解決
-  let session_key = deps.session_resolver.resolve(envelope)
-  let sid = session_key.to_string()
-  // 2. セッション取得または作成
-  let session = try {
-    match deps.session_store.get(session_key) {
-      Some(s) => s
-      None => @types.Session::new(session_key, envelope.timestamp)
-    }
-  } catch {
-    e => raise AgentLoopError::SessionError(e.to_string())
-  }
-  // 3. ループコンテキスト初期化
-  let ctx = AgentLoopContext::new()
-  ctx.set_state(AgentState::Processing(envelope))
-  // 4. コンテキスト構築
-  let overrides = extract_context_overrides(envelope)
-  let context_input : @interfaces.ContextInput = {
-    session_history: session.history,
-    memory_context: overrides.memory_context,
-    skills: overrides.skills,
-    bootstrap: overrides.bootstrap,
-    current_message: envelope,
-    system_prompt_config: None,
-    is_first_message: session.history.is_empty(),
-    context_files: overrides.context_files,
-  }
-  ctx.messages = deps.context_builder.build(context_input)
-  // 5. ツール定義取得
-  let tool_definitions = deps.tool_registry.list_definitions()
-  // 履歴: UserMessage を記録
-  record_user_message(hr, clk, ts, sid, envelope.content)
-  // 6. 非同期エージェントループ
-  while not(ctx.is_max_iterations(options.max_iterations)) {
-    ctx.set_state(AgentState::WaitingForModel)
-    ctx.increment_iteration()
-    // モデル呼び出し（リトライロジック付き）
-    // flush ガード: model_invoke 例外時もファイルハンドルを閉じる
-    let response = call_model_with_retry_async(
-      deps.model_invoke,
-      ctx.messages,
-      tool_definitions,
-      options.model_options,
-      options.retry_config,
-    ) catch {
-      AgentLoopError::ModelCallFailed(msg) => {
-        record_error(hr, clk, ts, sid, msg)
-        raise AgentLoopError::ModelCallFailed(msg)
-      }
-      other => raise other
-    }
-    match response {
-      @types.ModelResponse::Text(content) => {
-        ctx.set_state(AgentState::SendingResponse)
-        record_assistant_message(hr, clk, ts, sid, content)
-        // セッション更新
-        session.add_message(
-          @types.ModelMessage::User(content=envelope.content, name=None),
-        )
-        session.add_message(
-          @types.ModelMessage::Assistant(content~, tool_calls=None),
-        )
-        deps.session_store.save(session) catch {
-          e => raise AgentLoopError::SessionError(e.to_string())
-        }
-        ctx.set_state(AgentState::Completed)
-        let outbound : @types.OutboundMessage = {
-          channel: envelope.channel,
-          chat_id: envelope.chat_id,
-          content,
-          reply_to: None,
-          attachments: None,
-          options: None,
-        }
-        return outbound
-      }
-      @types.ModelResponse::ToolCalls(calls) => {
-        ctx.add_message(
-          @types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
-        )
-        for call in calls {
-          ctx.set_state(
-            AgentState::ExecutingTool(tool_name=call.name, call_id=call.id),
-          )
-          ctx.record_tool_call(call)
-          record_tool_call(hr, clk, ts, sid, call.id, call.name, call.arguments)
-          let tool_result = execute_tool_call_async(
-            call, session, envelope, deps,
-          ) catch {
-            e =>
-              @types.ToolResult::Error(
-                message="Tool execution failed: \{e.to_string()}",
-              )
-          }
-          record_tool_result(hr, clk, ts, sid, call.id, tool_result)
-          ctx.add_message(@tool.tool_result_to_message(call.id, tool_result))
-        }
-        continue
-      }
-      @types.ModelResponse::ModelError(msg) => {
-        record_error(hr, clk, ts, sid, msg)
-        raise AgentLoopError::ModelCallFailed(msg)
-      }
-      @types.ModelResponse::RateLimited(retry_after~) => {
-        record_error(hr, clk, ts, sid, "Rate limited: retry_after=\{retry_after}")
-        raise AgentLoopError::RateLimitExceeded(
-          retry_count=options.retry_config.max_retries,
-          last_retry_after=retry_after,
-        )
-      }
-    }
-  }
-  // 最大反復回数に達した
-  record_error(hr, clk, ts, sid, "Max iterations reached: \{options.max_iterations}")
-  raise AgentLoopError::MaxIterationsReached(options.max_iterations)
-}
-
-///|
-/// ツール呼び出しを実行（async版用）
-async fn execute_tool_call_async(
-  call : @types.ToolCallRequest,
-  session : @types.Session,
-  envelope : @types.InboundEnvelope,
-  deps : AsyncAgentDependencies,
-) -> @types.ToolResult {
-  let context : @types.ToolContext = { session, envelope, config: {} }
-  match deps.tool_registry.get_executor(call.name) {
-    Some(executor) =>
-      executor.execute(tool_name=call.name, arguments=call.arguments, context~) catch {
-        e => @types.ToolResult::Error(message=e.to_string())
-      }
-    None => @types.ToolResult::Error(message="Tool not found: \{call.name}")
   }
 }

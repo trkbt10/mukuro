@@ -15,14 +15,17 @@ fn NativePidManager::new(pid_path~ : String) -> NativePidManager {
 
 ///|
 fn NativePidManager::exists(self : NativePidManager) -> Bool {
-  @native.c_file_exists_bytes(@native.string_to_utf8_cstring(self.pid_path)) == 1
+  @native.c_file_exists_bytes(@native.string_to_utf8_cstring(self.pid_path)) ==
+  1
 }
 
 ///|
 fn NativePidManager::read_pid(
   self : NativePidManager,
 ) -> Int raise @control.DaemonError {
-  let pid = @native.c_read_pid_file_bytes(@native.string_to_utf8_cstring(self.pid_path))
+  let pid = @native.c_read_pid_file_bytes(
+    @native.string_to_utf8_cstring(self.pid_path),
+  )
   if pid < 0 {
     raise @control.DaemonError::PidFileReadError(
       "Failed to read PID file: \{self.pid_path}",
@@ -35,7 +38,9 @@ fn NativePidManager::read_pid(
 fn NativePidManager::remove_pid(
   self : NativePidManager,
 ) -> Unit raise @control.DaemonError {
-  let result = @native.c_remove_file_bytes(@native.string_to_utf8_cstring(self.pid_path))
+  let result = @native.c_remove_file_bytes(
+    @native.string_to_utf8_cstring(self.pid_path),
+  )
   if result != 0 {
     raise @control.DaemonError::PidFileWriteError(
       "Failed to remove PID file: \{self.pid_path}",

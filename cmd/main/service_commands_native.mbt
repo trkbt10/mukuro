@@ -75,7 +75,9 @@ fn install_launchd_service(config : ServiceConfig) -> CliResult {
   }
   // Load the service
   let load_cmd = "launchctl load \{plist_path}"
-  let load_result = @native.c_system_bytes(@native.string_to_utf8_cstring(load_cmd))
+  let load_result = @native.c_system_bytes(
+    @native.string_to_utf8_cstring(load_cmd),
+  )
   if load_result != 0 {
     return CliResult::Error(
       "Failed to load service. Run: launchctl load \{plist_path}",
@@ -133,20 +135,28 @@ fn execute_service_uninstall() -> CliResult {
 fn uninstall_launchd_service() -> CliResult {
   // Try user-level first
   let user_plist = get_launchd_plist_path(true)
-  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_plist))
+  let user_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(user_plist),
+  )
   if user_exists == 1 {
     let unload_cmd = "launchctl unload \{user_plist}"
     ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(unload_cmd)))
-    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(user_plist)))
+    ignore(
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(user_plist)),
+    )
     return CliResult::Ok("Service uninstalled from \{user_plist}")
   }
   // Try system-level
   let sys_plist = get_launchd_plist_path(false)
-  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_plist))
+  let sys_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(sys_plist),
+  )
   if sys_exists == 1 {
     let unload_cmd = "launchctl unload \{sys_plist}"
     ignore(@native.c_system_bytes(@native.string_to_utf8_cstring(unload_cmd)))
-    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(sys_plist)))
+    ignore(
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(sys_plist)),
+    )
     return CliResult::Ok("Service uninstalled from \{sys_plist}")
   }
   CliResult::Error("Service not found")
@@ -157,7 +167,9 @@ fn uninstall_launchd_service() -> CliResult {
 fn uninstall_systemd_service() -> CliResult {
   // Try user-level first
   let user_unit = get_systemd_unit_path(true)
-  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_unit))
+  let user_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(user_unit),
+  )
   if user_exists == 1 {
     ignore(
       @native.c_system_bytes(
@@ -166,10 +178,14 @@ fn uninstall_systemd_service() -> CliResult {
     )
     ignore(
       @native.c_system_bytes(
-        @native.string_to_utf8_cstring("systemctl --user disable mukuro-gateway"),
+        @native.string_to_utf8_cstring(
+          "systemctl --user disable mukuro-gateway",
+        ),
       ),
     )
-    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(user_unit)))
+    ignore(
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(user_unit)),
+    )
     ignore(
       @native.c_system_bytes(
         @native.string_to_utf8_cstring("systemctl --user daemon-reload"),
@@ -179,7 +195,9 @@ fn uninstall_systemd_service() -> CliResult {
   }
   // Try system-level
   let sys_unit = get_systemd_unit_path(false)
-  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_unit))
+  let sys_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(sys_unit),
+  )
   if sys_exists == 1 {
     ignore(
       @native.c_system_bytes(
@@ -191,9 +209,13 @@ fn uninstall_systemd_service() -> CliResult {
         @native.string_to_utf8_cstring("systemctl disable mukuro-gateway"),
       ),
     )
-    ignore(@native.c_remove_file_bytes(@native.string_to_utf8_cstring(sys_unit)))
     ignore(
-      @native.c_system_bytes(@native.string_to_utf8_cstring("systemctl daemon-reload")),
+      @native.c_remove_file_bytes(@native.string_to_utf8_cstring(sys_unit)),
+    )
+    ignore(
+      @native.c_system_bytes(
+        @native.string_to_utf8_cstring("systemctl daemon-reload"),
+      ),
     )
     return CliResult::Ok("Service uninstalled from \{sys_unit}")
   }
@@ -222,7 +244,9 @@ fn execute_service_start() -> CliResult {
       )
       if user_exists == 1 {
         let result = @native.c_system_bytes(
-          @native.string_to_utf8_cstring("systemctl --user start mukuro-gateway"),
+          @native.string_to_utf8_cstring(
+            "systemctl --user start mukuro-gateway",
+          ),
         )
         if result == 0 {
           return CliResult::Ok("Service started (user)")
@@ -334,8 +358,12 @@ fn get_service_status() -> ServiceStatus {
 fn get_launchd_status() -> ServiceStatus {
   let user_plist = get_launchd_plist_path(true)
   let sys_plist = get_launchd_plist_path(false)
-  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_plist))
-  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_plist))
+  let user_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(user_plist),
+  )
+  let sys_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(sys_plist),
+  )
   if user_exists != 1 && sys_exists != 1 {
     return {
       installed: false,
@@ -360,8 +388,12 @@ fn get_launchd_status() -> ServiceStatus {
 fn get_systemd_status() -> ServiceStatus {
   let user_unit = get_systemd_unit_path(true)
   let sys_unit = get_systemd_unit_path(false)
-  let user_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(user_unit))
-  let sys_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(sys_unit))
+  let user_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(user_unit),
+  )
+  let sys_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(sys_unit),
+  )
   if user_exists != 1 && sys_exists != 1 {
     return {
       installed: false,

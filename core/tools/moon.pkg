@@ -1,0 +1,30 @@
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/lib/bytes" @bytes,
+  "moonbitlang/core/json",
+  "moonbitlang/core/string",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/async" @async,
+  "moonbitlang/x/time" @xtime,
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
+
+options(
+  "native-stub": [ "time_stub.c", "native_stubs.c" ],
+  targets: {
+    "datetime_time_js.mbt": [ "js" ],
+    "datetime_time_native.mbt": [ "native" ],
+    "datetime_time_wasm.mbt": [ "wasm", "wasm-gc" ],
+    "shell_native.mbt": [ "native" ],
+    "shell_js.mbt": [ "js" ],
+    "filesystem_native.mbt": [ "native" ],
+    "filesystem_js.mbt": [ "js" ],
+    "web_native.mbt": [ "native" ],
+    "web_js.mbt": [ "js" ],
+    "tools_wbtest.mbt": [ "native" ],
+  },
+)

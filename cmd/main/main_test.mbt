@@ -254,7 +254,9 @@ async test "execute_onboard success with interpolated config" {
   // Cleanup test file
   ignore(
     @native.c_remove_file_bytes(
-      @native.string_to_utf8_cstring("/tmp/mukuro-test/onboard-test-config.json"),
+      @native.string_to_utf8_cstring(
+        "/tmp/mukuro-test/onboard-test-config.json",
+      ),
     ),
   )
 }

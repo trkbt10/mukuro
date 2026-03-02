@@ -51,8 +51,12 @@ pub fn create_context_handlers(state : ContextState) -> @api.ContextApiHandlers 
     data_get: @api.RouteHandler(fn(ctx) { handle_data_get(state, ctx) }),
     data_update: @api.RouteHandler(fn(ctx) { handle_data_update(state, ctx) }),
     data_delete: @api.RouteHandler(fn(ctx) { handle_data_delete(state, ctx) }),
-    templates_list: @api.RouteHandler(fn(ctx) { handle_templates_list(state, ctx) }),
-    templates_get: @api.RouteHandler(fn(ctx) { handle_templates_get(state, ctx) }),
+    templates_list: @api.RouteHandler(fn(ctx) {
+      handle_templates_list(state, ctx)
+    }),
+    templates_get: @api.RouteHandler(fn(ctx) {
+      handle_templates_get(state, ctx)
+    }),
   }
 }
 
@@ -216,9 +220,7 @@ fn handle_templates_get(
 ) -> @api.ApiResponse {
   // segments: ["context", "templates", "{name}"]
   if ctx.segments.length() < 3 {
-    return @api.error_response(
-      400, "bad_request", "Template name is required",
-    )
+    return @api.error_response(400, "bad_request", "Template name is required")
   }
   let name = ctx.segments[2]
   match ContextFileType::from_string(name) {
@@ -242,7 +244,10 @@ fn handle_templates_get(
 
 ///|
 /// Build full file path for a context data file
-fn build_data_file_path(state : ContextState, file_type : ContextFileType) -> String {
+fn build_data_file_path(
+  state : ContextState,
+  file_type : ContextFileType,
+) -> String {
   let dir = (state.data_io.get_dir)()
   let filename = file_type.filename()
   let needs_slash = dir.length() > 0 && not(dir.has_suffix("/"))
@@ -255,7 +260,10 @@ fn build_data_file_path(state : ContextState, file_type : ContextFileType) -> St
 
 ///|
 /// Resolve template: try installed file first, fall back to embedded
-fn resolve_template(state : ContextState, file_type : ContextFileType) -> String {
+fn resolve_template(
+  state : ContextState,
+  file_type : ContextFileType,
+) -> String {
   let filename = file_type.filename()
   match (state.templates.read_installed)(filename) {
     Some(content) => content

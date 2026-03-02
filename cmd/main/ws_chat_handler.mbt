@@ -13,21 +13,20 @@ pub(all) enum ChatWsMessageType {
 
 ///|
 /// Chat WebSocket handler
+/// SessionManager を source of truth として使用
 pub struct ChatWsHandler {
   chat_id : String
-  history_recorder : &@interfaces.HistoryRecorder
 }
 
 ///|
 /// Create new chat WebSocket handler
 /// If resume_chat_id is provided, use it instead of generating a new one
-pub fn ChatWsHandler::new(resume_chat_id~ : String? = None) -> ChatWsHandler {
+pub fn ChatWsHandler::new(resume_chat_id? : String? = None) -> ChatWsHandler {
   let chat_id = match resume_chat_id {
     Some(id) => id
     None => generate_ws_chat_id()
   }
-  let history_recorder = create_session_history_recorder()
-  { chat_id, history_recorder }
+  { chat_id, }
 }
 
 ///|
@@ -35,7 +34,9 @@ pub fn ChatWsHandler::new(resume_chat_id~ : String? = None) -> ChatWsHandler {
 pub fn parse_chat_ws_message(
   text : String,
 ) -> (ChatWsMessageType, String?, String?) {
-  let json : Json = @json.parse(text) catch { _ => return (Unknown, None, None) }
+  let json : Json = @json.parse(text) catch {
+    _ => return (Unknown, None, None)
+  }
   match json {
     Object(obj) => {
       let msg_type = match obj.get("type") {
@@ -61,7 +62,9 @@ pub fn parse_chat_ws_message(
 ///|
 /// Send JSON message over WebSocket
 async fn ws_send_json(ws : @async_ws.Conn, json : Json) -> Unit {
-  ws.send_text(json.stringify()) catch { _ => () }
+  ws.send_text(json.stringify()) catch {
+    _ => ()
+  }
 }
 
 ///|
@@ -128,16 +131,30 @@ fn get_timestamp_ms() -> Int64 {
 }
 
 ///|
-/// Create session in session store
-fn ChatWsHandler::create_session(self : ChatWsHandler) -> Unit {
-  let timestamp = get_timestamp_ms()
+/// Create or reuse session using SessionManager
+/// SessionManager reads from History (JSONL) as source of truth
+/// Returns true if this is an existing (resumed) session
+fn ChatWsHandler::ensure_session(self : ChatWsHandler) -> Bool {
   let key = @types.SessionKey::new(
     channel="web_chat",
     chat_id=self.chat_id,
     user_id=None,
   )
-  let session = @types.Session::new(key, timestamp)
-  global_session_store.save(session) catch { _ => () }
+  // Check if session already exists in History (source of truth)
+  let existing = global_session_manager.get(key) catch { _ => None }
+  match existing {
+    Some(_) => true // Session exists (loaded from History), don't overwrite
+    None => {
+      // Create new session via SessionManager
+      let timestamp = get_timestamp_ms()
+      ignore(
+        global_session_manager.get_or_create(key, now=timestamp) catch {
+          _ => @types.Session::new(key, timestamp)
+        },
+      )
+      false
+    }
+  }
 }
 
 ///|
@@ -160,10 +177,8 @@ async fn ChatWsHandler::handle_send(
     metadata: {},
     timestamp,
   }
-  let outbound = handle_inbound_with_agent_loop_async(
-    envelope,
-    Some(self.history_recorder),
-  ) catch {
+  // SessionManager handles all history recording - no separate recorder needed
+  let outbound = handle_inbound_with_agent_loop(envelope, None) catch {
     e => {
       ws_send_error(ws, "Agent handler failed: \{e}", None)
       return
@@ -174,6 +189,7 @@ async fn ChatWsHandler::handle_send(
 
 ///|
 /// Handle "load_history" message
+/// Uses SessionManager which reads from History (JSONL) as source of truth
 async fn ChatWsHandler::handle_load_history(
   self : ChatWsHandler,
   ws : @async_ws.Conn,
@@ -183,7 +199,8 @@ async fn ChatWsHandler::handle_load_history(
     chat_id=self.chat_id,
     user_id=None,
   )
-  let session = global_session_store.get(key) catch { _ => None }
+  // SessionManager.get() reads from History (JSONL) and materializes Session
+  let session = global_session_manager.get(key) catch { _ => None }
   let messages : Array[Json] = []
   match session {
     Some(s) =>
@@ -197,7 +214,8 @@ async fn ChatWsHandler::handle_load_history(
                   "content": content.to_json(),
                   "name": n.to_json(),
                 })
-              None => messages.push({ "role": "user", "content": content.to_json() })
+              None =>
+                messages.push({ "role": "user", "content": content.to_json() })
             }
           @types.ModelMessage::Assistant(content~, ..) =>
             messages.push({ "role": "assistant", "content": content.to_json() })
@@ -216,37 +234,9 @@ pub async fn ChatWsHandler::handle_connection(
   self : ChatWsHandler,
   ws : @async_ws.Conn,
 ) -> Unit {
-  // Create session and send assignment
-  self.create_session()
+  // Create or reuse session via SessionManager (records SessionMeta for new sessions)
+  let _ = self.ensure_session()
   ws_send_session(ws, self.chat_id)
-
-  // Open history session
-  let session_id = "web_chat:\{self.chat_id}"
-  let timestamp = get_timestamp_ms()
-  let is_new_session = self.history_recorder.open_session(
-    session_id~,
-    timestamp~,
-  ) catch {
-    e => {
-      ws_send_error(ws, "History recording disabled: \{e}", Some("HISTORY_ERROR"))
-      false
-    }
-  }
-  if is_new_session {
-    // Record SessionMeta for new session - エラーも通知
-    let meta_record : @interfaces.HistoryRecord = {
-      timestamp,
-      session_id,
-      record_type: @interfaces.HistoryRecordType::SessionMeta,
-      payload: Json::object({
-        "channel": Json::string("web_chat"),
-        "chat_id": Json::string(self.chat_id),
-      }),
-    }
-    self.history_recorder.record(record=meta_record) catch {
-      e => ws_send_error(ws, "Failed to record session meta: \{e}", Some("HISTORY_ERROR"))
-    }
-  }
 
   // Message loop
   for {
@@ -270,12 +260,18 @@ pub async fn ChatWsHandler::handle_connection(
           Unknown => ws_send_error(ws, "Unknown message type", None)
         }
       }
-      @async_ws.Binary => ws_send_error(ws, "Binary messages not supported", None)
+      @async_ws.Binary =>
+        ws_send_error(ws, "Binary messages not supported", None)
     }
   }
 
-  // Close history recorder on WebSocket disconnect
-  self.history_recorder.close() catch {
-    _ => () // close 失敗は無視（接続切断時なので通知できない）
+  // Close session via SessionManager on WebSocket disconnect
+  let key = @types.SessionKey::new(
+    channel="web_chat",
+    chat_id=self.chat_id,
+    user_id=None,
+  )
+  global_session_manager.close_session(key) catch {
+    _ => ()
   }
 }

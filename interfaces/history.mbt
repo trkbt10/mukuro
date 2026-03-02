@@ -150,7 +150,9 @@ pub impl HistoryReader for NoOpHistoryReader with list_sessions(
 }
 
 ///|
-pub impl HistoryReader for NoOpHistoryReader with list_dates(_self) -> Array[(Int, Int, Int)] raise HistoryError {
+pub impl HistoryReader for NoOpHistoryReader with list_dates(_self) -> Array[
+  (Int, Int, Int),
+] raise HistoryError {
   []
 }
 
@@ -229,7 +231,7 @@ pub(open) trait HistoryMetadataStore {
     session_id~ : String,
     user~ : Int,
     assistant~ : Int,
-    tool~ : Int
+    tool~ : Int,
   ) -> Unit raise MetadataStoreError
 
   /// タイトルを更新
@@ -239,19 +241,12 @@ pub(open) trait HistoryMetadataStore {
   set_first_message(Self, session_id~ : String, message~ : String) -> Unit raise MetadataStoreError
 
   /// 日付別セッション一覧（メタデータ付き）
-  list_by_date(
-    Self,
-    year~ : Int,
-    month~ : Int,
-    day~ : Int
-  ) -> Array[SessionMetadata] raise MetadataStoreError
+  list_by_date(Self, year~ : Int, month~ : Int, day~ : Int) -> Array[
+    SessionMetadata,
+  ] raise MetadataStoreError
 
   /// 最近のセッション一覧
-  list_recent(
-    Self,
-    limit~ : Int,
-    offset~ : Int
-  ) -> Array[SessionMetadata] raise MetadataStoreError
+  list_recent(Self, limit~ : Int, offset~ : Int) -> Array[SessionMetadata] raise MetadataStoreError
 
   /// 全文検索
   search(Self, query~ : String, limit~ : Int) -> Array[SessionMetadata] raise MetadataStoreError
@@ -286,10 +281,7 @@ pub impl HistoryMetadataStore for NoOpMetadataStore with upsert(
 }
 
 ///|
-pub impl HistoryMetadataStore for NoOpMetadataStore with get(
-  _self,
-  session_id~,
-) -> SessionMetadata? raise MetadataStoreError {
+pub impl HistoryMetadataStore for NoOpMetadataStore with get(_self, session_id~) -> SessionMetadata? raise MetadataStoreError {
   ignore(session_id)
   None
 }

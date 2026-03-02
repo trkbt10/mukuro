@@ -29,4 +29,3 @@ pub impl @interfaces.Clock for NativeClock with now_seconds(self) {
   ignore(self)
   c_time()
 }
-

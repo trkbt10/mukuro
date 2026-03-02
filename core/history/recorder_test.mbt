@@ -105,9 +105,7 @@ test "record_to_json_line - user_message is valid JSON" {
     timestamp: 1709164800000L,
     session_id: "web_chat:abc123",
     record_type: @interfaces.HistoryRecordType::UserMessage,
-    payload: Json::object({
-      "content": Json::string("hello world"),
-    }),
+    payload: Json::object({ "content": Json::string("hello world") }),
   }
   let line = record_to_json_line(record)
   let json : Json = @json.parse(line) catch {
@@ -377,8 +375,6 @@ test "NoOpHistoryReader - returns empty arrays" {
     _ => fail("list_sessions should not fail")
   }
   assert_eq(sessions.length(), 0)
-  let dates = hr.list_dates() catch {
-    _ => fail("list_dates should not fail")
-  }
+  let dates = hr.list_dates() catch { _ => fail("list_dates should not fail") }
   assert_eq(dates.length(), 0)
 }

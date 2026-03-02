@@ -24,7 +24,11 @@ test "c_setenv_bytes overwrites existing value" {
   let name = "MUKURO_FFI_ENV_OVERWRITE"
   let name_bytes = @native.string_to_utf8_cstring(name)
   // Set initial
-  let _ = @native.c_setenv_bytes(name_bytes, @native.string_to_utf8_cstring("initial"), 1)
+  let _ = @native.c_setenv_bytes(
+    name_bytes,
+    @native.string_to_utf8_cstring("initial"),
+    1,
+  )
   // Overwrite
   let result = @native.c_setenv_bytes(
     name_bytes,

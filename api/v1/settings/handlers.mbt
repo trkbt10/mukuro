@@ -515,4 +515,3 @@ fn handle_update_model_inference(
       }
   }
 }
-

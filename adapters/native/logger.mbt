@@ -63,7 +63,9 @@ fn output_line(output : LogOutput, line : String) -> Unit {
       let _ = c_write_stderr(data, data.length())
     }
     LogOutput::File(path) =>
-      native_append_file_text(path, line + "\n") catch { _ => () }
+      native_append_file_text(path, line + "\n") catch {
+        _ => ()
+      }
   }
 }
 

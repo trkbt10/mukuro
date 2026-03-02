@@ -118,11 +118,9 @@ fn get_api_v1_router() -> @api.ApiRouter {
     ),
     chat_handlers: Some(
       @api_chat.create_chat_handlers(
-        @api_chat.ChatState::new(
-          global_session_store,
-          history_reader=history_reader,
-          get_timestamp=fn() { @native.c_time() * 1000 },
-        ),
+        @api_chat.ChatState::new_with_session_manager(global_session_manager, get_timestamp=fn() {
+          @native.c_time() * 1000
+        }),
       ),
     ),
     history_handlers: Some(
@@ -130,9 +128,7 @@ fn get_api_v1_router() -> @api.ApiRouter {
         @api_history.HistoryState::new(history_reader),
       ),
     ),
-    tool_handlers: Some(
-      @api_tools.create_tool_handlers(api_v1_tools_state),
-    ),
+    tool_handlers: Some(@api_tools.create_tool_handlers(api_v1_tools_state)),
   }
 }
 
@@ -153,7 +149,7 @@ pub fn init_api_v1_state(
     ),
   )
   // ビルトインツールをツール状態に登録（source: Plugin("builtin")）
-  for def in @defs.get_all_tool_definitions() {
+  for def in @tools.all_tool_definitions() {
     api_v1_tools_state.set_tool(
       def.name,
       @interfaces.ToolState::builtin(
@@ -185,7 +181,9 @@ fn persist_config_to_file(config : @types.MukuroConfig, path : String) -> Unit {
 ///|
 /// Write config content to file
 fn write_config_file(path : String, content : String) -> Unit {
-  @native.native_write_file_text(path, content) catch { _ => () }
+  @native.native_write_file_text(path, content) catch {
+    _ => ()
+  }
 }
 
 ///|
@@ -537,14 +535,10 @@ async fn fetch_live_provider_models(
 ///|
 /// Async handler for GET /api/v1/settings/providers/{name}/models.
 /// Fetches live models from the provider API. Returns empty array on failure.
-async fn try_fetch_provider_models(
-  path : String,
-) -> ControlApiResponse? {
+async fn try_fetch_provider_models(path : String) -> ControlApiResponse? {
   let views = path.split("/").collect()
   // ["", "api", "v1", "settings", "providers", "{name}", "models"]
-  if views.length() < 7 ||
-    views[4] != "providers" ||
-    views[6] != "models" {
+  if views.length() < 7 || views[4] != "providers" || views[6] != "models" {
     return None
   }
   let provider_name = views[5].to_string()
@@ -720,21 +714,8 @@ async fn handle_control_api_dispatch_async(
   let auth = @interfaces.AuthContext::token_only(parse_bearer_token(headers))
   match envelope {
     Some(env) => {
-      // Create history recorder for this dispatch
-      let history_recorder = create_session_history_recorder()
-      let session_id = "\{env.channel}:\{env.chat_id}"
-      let timestamp = @native.c_time() * 1000
-      // Open session (warn on errors - history is best-effort but should be visible)
-      let _ = history_recorder.open_session(session_id~, timestamp~) catch {
-        e => {
-          println("WARN [dispatch] History open_session failed: \{e}")
-          true
-        }
-      }
-      let outbound = handle_inbound_with_agent_loop_async(
-        env,
-        Some(history_recorder),
-      ) catch {
+      // SessionManager handles all history recording - no separate recorder needed
+      let outbound = handle_inbound_with_agent_loop(env, None) catch {
         e =>
           match e {
             @agent.AgentLoopError::ModelCallFailed(msg) =>
@@ -751,8 +732,6 @@ async fn handle_control_api_dispatch_async(
               )
           }
       }
-      // Close history recorder
-      history_recorder.close() catch { _ => () }
       gateway.dispatch_outbound(auth~, message=outbound) catch {
         e => return control_error_to_response(e)
       }
@@ -805,7 +784,9 @@ pub async fn run_control_api_server_with_tick_blocking(
           // Extract chat_id query parameter for resume
           let resume_chat_id = @url.get_param(req.path, "chat_id")
           let handler = ChatWsHandler::new(resume_chat_id~)
-          handler.handle_connection(ws) catch { _ => () }
+          handler.handle_connection(ws) catch {
+            _ => ()
+          }
           return
         }
         let body_data = @io.Reader::read_all(body_reader) catch {
@@ -938,4 +919,3 @@ fn generate_ws_chat_id() -> String {
     _ => abort("unreachable: 16-byte UUID input is always valid")
   }
 }
-

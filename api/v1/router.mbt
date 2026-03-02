@@ -358,7 +358,12 @@ fn route_context_endpoint(
     match sub {
       "data" => route_context_data_endpoint(handlers, ctx)
       "templates" => route_context_templates_endpoint(handlers, ctx)
-      _ => error_response(404, "not_found", "Unknown context sub-endpoint: /context/\{sub}")
+      _ =>
+        error_response(
+          404,
+          "not_found",
+          "Unknown context sub-endpoint: /context/\{sub}",
+        )
     }
   } else {
     error_response(404, "not_found", "Unknown context endpoint")
@@ -386,7 +391,8 @@ fn route_context_data_endpoint(
       "GET" => return (handlers.data_get.0)(ctx)
       "PUT" => return (handlers.data_update.0)(ctx)
       "DELETE" => return (handlers.data_delete.0)(ctx)
-      _ => return error_response(405, "method_not_allowed", "Method not allowed")
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
   error_response(404, "not_found", "Unknown context data endpoint")
@@ -614,7 +620,8 @@ fn route_chat_endpoint(
     match meth {
       "GET" => return (handlers.list_sessions.0)(ctx)
       "POST" => return (handlers.create_session.0)(ctx)
-      _ => return error_response(405, "method_not_allowed", "Method not allowed")
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
   // /chat/resume
@@ -650,8 +657,7 @@ fn ApiRouter::route_history(
   ctx : ApiRequestContext,
 ) -> ApiResponse {
   match self.history_handlers {
-    None =>
-      error_response(501, "not_implemented", "History API not configured")
+    None => error_response(501, "not_implemented", "History API not configured")
     Some(handlers) => route_history_endpoint(handlers, ctx)
   }
 }
@@ -692,7 +698,7 @@ fn route_history_endpoint(
 /// Route tool API requests
 fn ApiRouter::route_tools(
   self : ApiRouter,
-  ctx : ApiRequestContext
+  ctx : ApiRequestContext,
 ) -> ApiResponse {
   match self.tool_handlers {
     None => error_response(501, "not_implemented", "Tool API not configured")
@@ -704,7 +710,7 @@ fn ApiRouter::route_tools(
 /// Route tool endpoint
 fn route_tool_endpoint(
   handlers : ToolApiHandlers,
-  ctx : ApiRequestContext
+  ctx : ApiRequestContext,
 ) -> ApiResponse {
   let meth = ctx.http_method.to_upper()
   let segments = ctx.segments
@@ -720,7 +726,8 @@ fn route_tool_endpoint(
     match meth {
       "GET" => return (handlers.get.0)(ctx)
       "DELETE" => return (handlers.remove.0)(ctx)
-      _ => return error_response(405, "method_not_allowed", "Method not allowed")
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
   // /tools/{id}/enable, /tools/{id}/disable
@@ -729,7 +736,8 @@ fn route_tool_endpoint(
     match (meth, action) {
       ("PUT", "enable") => return (handlers.enable.0)(ctx)
       ("PUT", "disable") => return (handlers.disable.0)(ctx)
-      _ => return error_response(405, "method_not_allowed", "Method not allowed")
+      _ =>
+        return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
   error_response(404, "not_found", "Unknown tool endpoint")

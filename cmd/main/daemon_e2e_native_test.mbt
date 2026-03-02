@@ -3,7 +3,9 @@
 
 ///|
 fn cleanup_daemon_artifacts() -> Unit {
-  @native.c_remove_file_bytes(@native.string_to_utf8_cstring(@control.default_pid_path()))
+  @native.c_remove_file_bytes(
+    @native.string_to_utf8_cstring(@control.default_pid_path()),
+  )
   |> ignore
   @native.c_remove_file_bytes(
     @native.string_to_utf8_cstring(@control.default_ipc_socket_path()),

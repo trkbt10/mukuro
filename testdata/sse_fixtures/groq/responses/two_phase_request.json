@@ -1,0 +1,37 @@
+{
+  "_comment": "Two-phase conversation request: after tool call + result, user sends follow-up. This fixture demonstrates the CORRECT request format that mukuro should generate.",
+  "_scenario": "1. User: 'List files' -> 2. Model: function_call(shell) -> 3. ToolResult -> 4. User: 'Show details' -> This is the request for step 4",
+  "model": "openai/gpt-oss-20b",
+  "input": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "List files"},
+    {
+      "type": "function_call",
+      "call_id": "fc_abc123",
+      "name": "shell",
+      "arguments": "{\"command\":\"ls\"}",
+      "status": "completed"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "fc_abc123",
+      "output": "file1.txt\nfile2.txt"
+    },
+    {"role": "user", "content": "Now show details with ls -la"}
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "shell",
+      "description": "Execute shell commands",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {"type": "string", "description": "The command to execute"}
+        },
+        "required": ["command"]
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}

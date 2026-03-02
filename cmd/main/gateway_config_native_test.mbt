@@ -15,7 +15,9 @@ let test_config_dir : String = "/tmp/mukuro-test"
 
 ///|
 fn ensure_test_dir() -> Unit {
-  ignore(@native.c_mkdir_bytes(@native.string_to_utf8_cstring(test_config_dir), 493))
+  ignore(
+    @native.c_mkdir_bytes(@native.string_to_utf8_cstring(test_config_dir), 493),
+  )
 }
 
 ///|

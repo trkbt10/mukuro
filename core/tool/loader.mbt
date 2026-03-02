@@ -44,7 +44,9 @@ pub fn ToolManifest::from_json(json : Json) -> ToolManifest? {
 
 ///|
 /// Convert manifest to ToolState
-pub fn ToolManifest::to_tool_state(self : ToolManifest) -> @interfaces.ToolState {
+pub fn ToolManifest::to_tool_state(
+  self : ToolManifest,
+) -> @interfaces.ToolState {
   @interfaces.ToolState::user_defined(
     id=self.id,
     name=self.name,
@@ -64,7 +66,9 @@ pub(all) struct ToolLoaderIO {
 
 ///|
 /// Load all user-defined tools from tools directory
-pub fn load_user_defined_tools(io : ToolLoaderIO) -> Array[@interfaces.ToolState] {
+pub fn load_user_defined_tools(
+  io : ToolLoaderIO,
+) -> Array[@interfaces.ToolState] {
   let tools : Array[@interfaces.ToolState] = []
   let dirs = (io.list_tool_dirs)()
   for dir in dirs {
@@ -85,10 +89,13 @@ pub fn load_user_defined_tools(io : ToolLoaderIO) -> Array[@interfaces.ToolState
 ///|
 /// Load a single tool from manifest content
 pub fn load_tool_from_manifest(
-  content : String
+  content : String,
 ) -> @interfaces.ToolState raise @interfaces.ToolManagerError {
-  let json = @json.parse(content) catch { e =>
-    raise @interfaces.ToolManagerError::ManifestInvalid("JSON parse error: \{e}")
+  let json = @json.parse(content) catch {
+    e =>
+      raise @interfaces.ToolManagerError::ManifestInvalid(
+        "JSON parse error: \{e}",
+      )
   }
   match ToolManifest::from_json(json) {
     Some(manifest) => manifest.to_tool_state()

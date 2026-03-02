@@ -13,7 +13,7 @@ pub(all) struct ActionDefinition {
 
 ///|
 /// Get all memory-related API actions
-pub fn get_memory_actions(store : MemoryStore) -> Array[ActionDefinition] {
+pub fn get_memory_actions(store : @tools.MemoryStore) -> Array[ActionDefinition] {
   [
     {
       name: "memory.list",
@@ -40,12 +40,15 @@ pub fn get_memory_actions(store : MemoryStore) -> Array[ActionDefinition] {
         let key = match params {
           { "key": String(k), .. } => k
           _ =>
-            return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+            return @api.error_response(
+              400, "bad_request", "Missing 'key' parameter",
+            )
         }
         match store.get(key) {
           Some(value) =>
             @api.json_response(200, { "data": { "key": key, "value": value } })
-          None => @api.error_response(404, "not_found", "Key '\{key}' not found")
+          None =>
+            @api.error_response(404, "not_found", "Key '\{key}' not found")
         }
       },
     },
@@ -55,12 +58,16 @@ pub fn get_memory_actions(store : MemoryStore) -> Array[ActionDefinition] {
         let key = match params {
           { "key": String(k), .. } => k
           _ =>
-            return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+            return @api.error_response(
+              400, "bad_request", "Missing 'key' parameter",
+            )
         }
         let value = match params {
           { "value": v, .. } => v
           _ =>
-            return @api.error_response(400, "bad_request", "Missing 'value' parameter")
+            return @api.error_response(
+              400, "bad_request", "Missing 'value' parameter",
+            )
         }
         store.set(key, value)
         @api.json_response(200, { "ok": true, "key": key })
@@ -72,7 +79,9 @@ pub fn get_memory_actions(store : MemoryStore) -> Array[ActionDefinition] {
         let key = match params {
           { "key": String(k), .. } => k
           _ =>
-            return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+            return @api.error_response(
+              400, "bad_request", "Missing 'key' parameter",
+            )
         }
         let deleted = store.delete(key)
         @api.json_response(200, { "ok": true, "deleted": deleted })
@@ -90,7 +99,7 @@ pub fn get_memory_actions(store : MemoryStore) -> Array[ActionDefinition] {
 
 ///|
 /// Get all builtin actions
-pub fn get_all_builtin_actions(store : MemoryStore) -> Array[ActionDefinition] {
+pub fn get_all_builtin_actions(store : @tools.MemoryStore) -> Array[ActionDefinition] {
   // Currently only memory actions, but extensible
   get_memory_actions(store)
 }

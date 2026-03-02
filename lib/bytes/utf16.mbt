@@ -1,3 +1,4 @@
+///|
 /// UTF-16LE バッファを改行区切りの文字列配列にパース
 /// c_list_dir 出力の解析に使用
 pub fn parse_utf16le_lines(buffer : Bytes, len : Int) -> Array[String] {

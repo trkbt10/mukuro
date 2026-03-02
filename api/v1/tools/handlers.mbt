@@ -4,9 +4,7 @@
 
 ///|
 /// Create tool handlers with state
-pub fn create_tool_handlers(
-  state : ToolManagerState
-) -> @api.ToolApiHandlers {
+pub fn create_tool_handlers(state : ToolManagerState) -> @api.ToolApiHandlers {
   {
     list: @api.RouteHandler(fn(ctx) { handle_list(state, ctx) }),
     get: @api.RouteHandler(fn(ctx) { handle_get(state, ctx) }),
@@ -20,7 +18,7 @@ pub fn create_tool_handlers(
 /// GET /tools - List all tools
 fn handle_list(
   state : ToolManagerState,
-  _ctx : @api.ApiRequestContext
+  _ctx : @api.ApiRequestContext,
 ) -> @api.ApiResponse {
   let items : Array[Json] = []
   for _, tool_state in state.tools {
@@ -38,7 +36,7 @@ fn handle_list(
 /// GET /tools/{id} - Get tool details
 fn handle_get(
   state : ToolManagerState,
-  ctx : @api.ApiRequestContext
+  ctx : @api.ApiRequestContext,
 ) -> @api.ApiResponse {
   let segments = ctx.segments
   if segments.length() < 2 {
@@ -58,7 +56,7 @@ fn handle_get(
 /// PUT /tools/{id}/enable - Enable a tool
 fn handle_enable(
   state : ToolManagerState,
-  ctx : @api.ApiRequestContext
+  ctx : @api.ApiRequestContext,
 ) -> @api.ApiResponse {
   let segments = ctx.segments
   if segments.length() < 2 {
@@ -79,7 +77,7 @@ fn handle_enable(
 /// PUT /tools/{id}/disable - Disable a tool
 fn handle_disable(
   state : ToolManagerState,
-  ctx : @api.ApiRequestContext
+  ctx : @api.ApiRequestContext,
 ) -> @api.ApiResponse {
   let segments = ctx.segments
   if segments.length() < 2 {
@@ -100,7 +98,7 @@ fn handle_disable(
 /// DELETE /tools/{id} - Remove a tool (user-defined only)
 fn handle_remove(
   state : ToolManagerState,
-  ctx : @api.ApiRequestContext
+  ctx : @api.ApiRequestContext,
 ) -> @api.ApiResponse {
   let segments = ctx.segments
   if segments.length() < 2 {

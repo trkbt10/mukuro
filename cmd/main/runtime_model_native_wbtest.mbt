@@ -19,7 +19,9 @@ test "validate_provider_config rejects empty provider name" {
 ///|
 test "validate_provider_config rejects openai-compatible without base_url" {
   let p = @types.ProviderConfig::new(
-    name="groq", api_key=Some("key"), default_model="llama",
+    name="groq",
+    api_key=Some("key"),
+    default_model="llama",
   )
   match validate_provider_config(p) {
     Some(msg) => assert_true(msg.contains("base_url is required"))
@@ -81,7 +83,9 @@ test "validate_provider_config accepts valid openai-compatible provider" {
 ///|
 test "validate_provider_config rejects anthropic without api_key" {
   let p = @types.ProviderConfig::new(
-    name="anthropic", api_key=None, default_model="claude-sonnet-4-20250514",
+    name="anthropic",
+    api_key=None,
+    default_model="claude-sonnet-4-20250514",
   )
   match validate_provider_config(p) {
     Some(msg) => assert_true(msg.contains("api_key is required"))
@@ -92,7 +96,9 @@ test "validate_provider_config rejects anthropic without api_key" {
 ///|
 test "validate_provider_config rejects anthropic with empty api_key" {
   let p = @types.ProviderConfig::new(
-    name="anthropic", api_key=Some(""), default_model="claude-sonnet-4-20250514",
+    name="anthropic",
+    api_key=Some(""),
+    default_model="claude-sonnet-4-20250514",
   )
   match validate_provider_config(p) {
     Some(msg) => assert_true(msg.contains("api_key is required"))
@@ -103,7 +109,9 @@ test "validate_provider_config rejects anthropic with empty api_key" {
 ///|
 test "validate_provider_config rejects anthropic without model" {
   let p = @types.ProviderConfig::new(
-    name="anthropic", api_key=Some("sk-ant-test"), default_model="",
+    name="anthropic",
+    api_key=Some("sk-ant-test"),
+    default_model="",
   )
   match validate_provider_config(p) {
     Some(msg) => assert_true(msg.contains("model is required"))
@@ -235,7 +243,10 @@ async test "ModelOrchestrator::call returns error when providers empty" {
   api_v1_settings_state.config = saved
   match result {
     @types.ModelResponse::ModelError(msg) =>
-      assert_true(msg.contains("no providers configured") || msg.contains("not initialized"))
+      assert_true(
+        msg.contains("no providers configured") ||
+        msg.contains("not initialized"),
+      )
     _ => fail("expected ModelError")
   }
 }
@@ -247,7 +258,9 @@ async test "ModelOrchestrator::call returns error when provider validation fails
     agent: @types.AgentConfig::default(),
     providers: [
       @types.ProviderConfig::new(
-        name="groq", api_key=Some("key"), default_model="llama",
+        name="groq",
+        api_key=Some("key"),
+        default_model="llama",
       ),
     ],
     fallback: @types.FallbackConfig::new(),
@@ -319,7 +332,9 @@ async test "ModelOrchestrator::call reflects config updates immediately" {
     agent: @types.AgentConfig::default(),
     providers: [
       @types.ProviderConfig::new(
-        name="groq", api_key=Some("key"), default_model="llama",
+        name="groq",
+        api_key=Some("key"),
+        default_model="llama",
       ),
     ],
     fallback: @types.FallbackConfig::new(),

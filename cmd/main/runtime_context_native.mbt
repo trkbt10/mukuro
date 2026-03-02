@@ -7,7 +7,9 @@ struct WorkspaceContextDirCell {
 }
 
 ///|
-let workspace_context_dir_cell : WorkspaceContextDirCell = { path: @config.data_dir() }
+let workspace_context_dir_cell : WorkspaceContextDirCell = {
+  path: @config.data_dir(),
+}
 
 ///|
 pub fn set_workspace_context_dir_for_process(path : String) -> Unit {

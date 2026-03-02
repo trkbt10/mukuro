@@ -7,10 +7,10 @@
 async fn try_onboard_generate(body : String) -> ControlApiResponse {
   let json : Json = @json.parse(body) catch {
     _ =>
-      return json_response(
-        400,
-        { "error": "invalid_json", "message": "Invalid JSON body" },
-      )
+      return json_response(400, {
+        "error": "invalid_json",
+        "message": "Invalid JSON body",
+      })
   }
   let user_name = match json {
     { "user_name": String(v), .. } => v
@@ -29,25 +29,19 @@ async fn try_onboard_generate(body : String) -> ControlApiResponse {
     _ => ""
   }
   if user_name.is_empty() && work.is_empty() && personality.is_empty() {
-    return json_response(
-      400,
-      {
-        "error": "missing_input",
-        "message": "At least one of user_name, work, or personality is required",
-      },
-    )
+    return json_response(400, {
+      "error": "missing_input",
+      "message": "At least one of user_name, work, or personality is required",
+    })
   }
   // 設定済みプロバイダを取得（APIキーがあるもの）
   let config = match api_v1_settings_state.get_config() {
     Some(c) => c
     None =>
-      return json_response(
-        503,
-        {
-          "error": "not_configured",
-          "message": "No providers configured",
-        },
-      )
+      return json_response(503, {
+        "error": "not_configured",
+        "message": "No providers configured",
+      })
   }
   let mut provider : @types.ProviderConfig? = None
   for p in config.providers {
@@ -62,13 +56,10 @@ async fn try_onboard_generate(body : String) -> ControlApiResponse {
   let p = match provider {
     Some(p) => p
     None =>
-      return json_response(
-        503,
-        {
-          "error": "no_api_key",
-          "message": "No provider has an API key configured",
-        },
-      )
+      return json_response(503, {
+        "error": "no_api_key",
+        "message": "No provider has an API key configured",
+      })
   }
   let prompt = build_onboard_generation_prompt(
     user_name, work, personality, notes,
@@ -80,21 +71,15 @@ async fn try_onboard_generate(body : String) -> ControlApiResponse {
       json_response(200, { "data": files })
     }
     @types.ModelResponse::ModelError(msg) =>
-      json_response(
-        502,
-        {
-          "error": "llm_error",
-          "message": Json::string("LLM call failed: " + msg),
-        },
-      )
+      json_response(502, {
+        "error": "llm_error",
+        "message": Json::string("LLM call failed: " + msg),
+      })
     _ =>
-      json_response(
-        502,
-        {
-          "error": "llm_error",
-          "message": "Unexpected LLM response format",
-        },
-      )
+      json_response(502, {
+        "error": "llm_error",
+        "message": "Unexpected LLM response format",
+      })
   }
 }
 
@@ -201,14 +186,12 @@ async fn call_onboard_llm(
     user_agent="mukuro/0.1.0",
   )
   let body_bytes = @utf8.encode(body_json.stringify())
-  let response = http.do_request_async(
-    {
-      url,
-      http_method: @interfaces.HttpMethod::Post,
-      headers: req_headers,
-      body: Some(body_bytes),
-    },
-  ) catch {
+  let response = http.do_request_async({
+    url,
+    http_method: @interfaces.HttpMethod::Post,
+    headers: req_headers,
+    body: Some(body_bytes),
+  }) catch {
     _ => return @types.ModelResponse::ModelError("HTTP request failed")
   }
   if response.status < 200 || response.status >= 300 {
@@ -249,11 +232,11 @@ fn parse_onboard_generated_text(text : String) -> Json {
         match sv.find(close[:]) {
           Some(end) =>
             if end > content_start {
-              let content = (try {
-                sv[content_start:end].trim(chars=" \t\n\r").to_string()
-              } catch {
-                _ => ""
-              })
+              let content = sv[content_start:end]
+                .trim(chars=" \t\n\r")
+                .to_string() catch {
+                  _ => ""
+                }
               if content.length() > 0 {
                 files[name] = Json::string(content)
               }

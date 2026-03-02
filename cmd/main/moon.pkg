@@ -31,9 +31,8 @@ import {
   "trkbt10/mukuro/core/model/protocol" @protocol,
   "trkbt10/mukuro/core/tool" @tool,
   "trkbt10/mukuro/core/types" @types,
-  "trkbt10/mukuro/tools/defs" @defs,
+  "trkbt10/mukuro/core/tools" @tools,
   "trkbt10/mukuro/tools/builtin" @builtin,
-  "trkbt10/mukuro/devtools" @devtools,
   "trkbt10/mukuro/adapters/channels" @channels,
   "trkbt10/mukuro/adapters/native" @native,
   "trkbt10/mukuro/lib/bytes" @bytes,
@@ -44,7 +43,7 @@ warnings = "-29"
 
 options(
   "is-main": true,
-  link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
+  link: { "native": { "cc-flags": "-lsqlite3 -lpthread" } },
   targets: {
     "api_v1_e2e_native_test.mbt": [ "native" ],
     "config_constants_native.mbt": [ "native" ],
@@ -64,9 +63,9 @@ options(
     "gateway_config_native.mbt": [ "native" ],
     "gateway_config_native_test.mbt": [ "native" ],
     "gateway_config_stub.mbt": [ "js", "wasm", "wasm-gc" ],
-    "onboard_native.mbt": [ "native" ],
     "onboard_api_native.mbt": [ "native" ],
     "onboard_api_stub.mbt": [ "js", "wasm", "wasm-gc" ],
+    "onboard_native.mbt": [ "native" ],
     "onboard_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "plugin_transport_native.mbt": [ "native" ],
     "plugin_transport_stub.mbt": [ "js", "wasm", "wasm-gc" ],

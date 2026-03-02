@@ -236,19 +236,15 @@ test "full session lifecycle records all events" {
   // open → SessionMeta → UserMessage → ToolCall → ToolResult → AssistantMessage → close
   let is_new = safe_open_session(hr, sid, ts)
   inspect(is_new, content="Some(true)")
-  record_session_meta(hr, clk, ts, sid, Json::object({
-    "model": Json::string("claude-sonnet-4"),
-  }))
-  record_user_message(hr, clk, ts, sid, "what time is it?")
-  record_tool_call(
+  record_session_meta(
     hr,
     clk,
     ts,
     sid,
-    "call_1",
-    "get_time",
-    Json::object({}),
+    Json::object({ "model": Json::string("claude-sonnet-4") }),
   )
+  record_user_message(hr, clk, ts, sid, "what time is it?")
+  record_tool_call(hr, clk, ts, sid, "call_1", "get_time", Json::object({}))
   record_tool_result(
     hr,
     clk,

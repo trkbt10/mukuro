@@ -17,13 +17,7 @@ struct SpyHistoryRecorder {
 
 ///|
 fn SpyHistoryRecorder::new() -> SpyHistoryRecorder {
-  {
-    open_count: 0,
-    close_count: 0,
-    session_id: "",
-    records: [],
-    is_open: false,
-  }
+  { open_count: 0, close_count: 0, session_id: "", records: [], is_open: false }
 }
 
 ///|
@@ -60,6 +54,7 @@ impl @interfaces.HistoryRecorder for SpyHistoryRecorder with close(self) -> Unit
 // テスト: ChatWsHandler の履歴記録フロー
 // ============================================================
 
+///|
 test "history recording flow: open_session then record via trait object" {
   // ChatWsHandler と同じフローをシミュレート
   let spy = SpyHistoryRecorder::new()
@@ -89,7 +84,10 @@ test "history recording flow: open_session then record via trait object" {
     Json::object({ "channel": Json::string("web_chat") }),
   )
   assert_eq(spy.records.length(), 1)
-  assert_eq(spy.records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
+  assert_eq(
+    spy.records[0].record_type,
+    @interfaces.HistoryRecordType::SessionMeta,
+  )
 
   // 4. safe_close を呼ぶ
   @agent.safe_close(Some(history_recorder))
@@ -97,6 +95,7 @@ test "history recording flow: open_session then record via trait object" {
   assert_false(spy.is_open, msg="Recorder should be closed after close")
 }
 
+///|
 test "history recording: record fails if open_session not called" {
   let spy = SpyHistoryRecorder::new()
   let history_recorder : &@interfaces.HistoryRecorder = spy
@@ -115,6 +114,7 @@ test "history recording: record fails if open_session not called" {
   assert_eq(spy.records.length(), 0)
 }
 
+///|
 test "history recording: multiple records after open_session" {
   let spy = SpyHistoryRecorder::new()
   let history_recorder : &@interfaces.HistoryRecorder = spy
@@ -122,7 +122,11 @@ test "history recording: multiple records after open_session" {
   let timestamp = 1772330000000L
 
   // open_session
-  let _ = @agent.safe_open_session(Some(history_recorder), session_id, timestamp)
+  let _ = @agent.safe_open_session(
+    Some(history_recorder),
+    session_id,
+    timestamp,
+  )
 
   // 複数のレコードを記録
   @agent.record_session_meta(
@@ -137,13 +141,17 @@ test "history recording: multiple records after open_session" {
   // 代わりに safe_record 経由で検証するか、agent loop を通すテストが必要
 
   assert_eq(spy.records.length(), 1)
-  assert_eq(spy.records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
+  assert_eq(
+    spy.records[0].record_type,
+    @interfaces.HistoryRecordType::SessionMeta,
+  )
 }
 
 // ============================================================
 // テスト: NativeHistoryRecorder を使った実際のファイル書き込み
 // ============================================================
 
+///|
 test "NativeHistoryRecorder: ChatWsHandler flow simulation" {
   // 実際の NativeHistoryRecorder を使ってフローをテスト
   let base_dir = "/tmp/mukuro_test_ws_handler_\{@native.c_time()}"
@@ -194,6 +202,7 @@ test "NativeHistoryRecorder: ChatWsHandler flow simulation" {
 // プロダクションコードと同じパスを通る
 // ============================================================
 
+///|
 test "create_session_history_recorder: returned trait object should work" {
   // プロダクションコードと同じ create_session_history_recorder() を使う
   let history_recorder = create_session_history_recorder()
@@ -231,15 +240,21 @@ test "create_session_history_recorder: returned trait object should work" {
   }
 
   // SessionMeta が記録されているはず
-  assert_true(records.length() >= 1, msg="Should have at least 1 record from create_session_history_recorder")
+  assert_true(
+    records.length() >= 1,
+    msg="Should have at least 1 record from create_session_history_recorder",
+  )
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
 }
 
 // 構造体に trait object を格納した場合のテスト用ラッパー
+
+///|
 struct TraitObjectHolder {
   recorder : &@interfaces.HistoryRecorder
 }
 
+///|
 test "trait object in struct field: mutable state should persist" {
   // SpyRecorder を struct フィールドに格納して状態が保持されるか確認
   let spy = SpyHistoryRecorder::new()
@@ -254,7 +269,11 @@ test "trait object in struct field: mutable state should persist" {
     session_id,
     timestamp,
   )
-  assert_eq(is_new, Some(true), msg="open_session via holder should return Some(true)")
+  assert_eq(
+    is_new,
+    Some(true),
+    msg="open_session via holder should return Some(true)",
+  )
 
   // spy の状態を確認
   assert_eq(spy.open_count, 1, msg="spy.open_count should be 1")
@@ -271,18 +290,20 @@ test "trait object in struct field: mutable state should persist" {
   assert_eq(spy.records.length(), 1, msg="spy.records should have 1 record")
 }
 
+///|
 test "ChatWsHandler::new: history_recorder should be usable" {
   // 実際の ChatWsHandler::new() を使う
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
 
   // テスト用にユニークなセッションIDを生成（c_time() を含める）
   let unique_suffix = @native.c_time()
   let session_id = "web_chat:\{handler.chat_id}-test-\{unique_suffix}"
   let timestamp = 1772330000000L
 
-  // 1. handler.history_recorder を使って open_session
+  // 1. history_recorder を使って open_session
   let is_new = @agent.safe_open_session(
-    Some(handler.history_recorder),
+    Some(history_recorder),
     session_id,
     timestamp,
   )
@@ -293,12 +314,15 @@ test "ChatWsHandler::new: history_recorder should be usable" {
       fail(
         "open_session returned Some(false) - session_id=\{session_id}, handler.chat_id=\{handler.chat_id}",
       )
-    None => fail("open_session returned None - an error was caught by safe_open_session")
+    None =>
+      fail(
+        "open_session returned None - an error was caught by safe_open_session",
+      )
   }
 
   // 2. record_session_meta
   @agent.record_session_meta(
-    Some(handler.history_recorder),
+    Some(history_recorder),
     None,
     timestamp,
     session_id,
@@ -309,7 +333,7 @@ test "ChatWsHandler::new: history_recorder should be usable" {
   )
 
   // 3. close
-  @agent.safe_close(Some(handler.history_recorder))
+  @agent.safe_close(Some(history_recorder))
 
   // 4. 読み込んで検証
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
@@ -325,19 +349,21 @@ test "ChatWsHandler::new: history_recorder should be usable" {
 // テスト: handle_connection の完全なフローシミュレーション
 // ============================================================
 
+///|
 test "handle_connection flow: complete session lifecycle" {
   // handle_connection と同じフローをシミュレート
   let unique_suffix = @native.c_time()
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
   let session_id = "web_chat:\{handler.chat_id}-lifecycle-\{unique_suffix}"
   let timestamp = 1772330000000L
 
   // 1. create_session (handle_connection の最初で呼ばれる)
-  handler.create_session()
+  let _ = handler.ensure_session()
 
   // 2. safe_open_session (handle_connection で呼ばれる)
   let is_new_session = @agent.safe_open_session(
-    Some(handler.history_recorder),
+    Some(history_recorder),
     session_id,
     timestamp,
   )
@@ -350,7 +376,7 @@ test "handle_connection flow: complete session lifecycle" {
   // 3. record_session_meta (is_new_session == Some(true) の場合)
   if is_new_session == Some(true) {
     @agent.record_session_meta(
-      Some(handler.history_recorder),
+      Some(history_recorder),
       Some(global_clock),
       timestamp,
       session_id,
@@ -366,7 +392,7 @@ test "handle_connection flow: complete session lifecycle" {
   // agent loop 内での record_user_message, record_assistant_message を直接呼ぶ
 
   // 5. safe_close
-  @agent.safe_close(Some(handler.history_recorder))
+  @agent.safe_close(Some(history_recorder))
 
   // 6. 読み込んで検証
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
@@ -374,7 +400,10 @@ test "handle_connection flow: complete session lifecycle" {
     _ => fail("read_session should not fail")
   }
 
-  assert_true(records.length() >= 1, msg="lifecycle: Should have at least 1 record")
+  assert_true(
+    records.length() >= 1,
+    msg="lifecycle: Should have at least 1 record",
+  )
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
 }
 
@@ -382,6 +411,7 @@ test "handle_connection flow: complete session lifecycle" {
 // テスト: ファイルシステム上にファイルが作成されていることを確認
 // ============================================================
 
+///|
 test "file creation verification: history file should exist after recording" {
   let unique_suffix = @native.c_time()
   let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
@@ -395,7 +425,11 @@ test "file creation verification: history file should exist after recording" {
     session_id,
     timestamp,
   )
-  assert_eq(is_new, Some(true), msg="file-verify: open_session should return Some(true)")
+  assert_eq(
+    is_new,
+    Some(true),
+    msg="file-verify: open_session should return Some(true)",
+  )
 
   // record_session_meta
   @agent.record_session_meta(
@@ -414,17 +448,23 @@ test "file creation verification: history file should exist after recording" {
   let records = reader.read_session(session_id~) catch {
     _ => fail("read_session should not fail - file may not exist")
   }
-  assert_eq(records.length(), 1, msg="file-verify: Should have exactly 1 record")
+  assert_eq(
+    records.length(),
+    1,
+    msg="file-verify: Should have exactly 1 record",
+  )
 }
 
 // ============================================================
 // テスト: handle_send の実際のフローシミュレーション
 // ============================================================
 
+///|
 test "handle_send simulation: agent loop should record via passed history_recorder" {
   // 実際の ChatWsHandler と同じフローをシミュレート
   let unique_suffix = @native.c_time()
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
   let session_id = "web_chat:\{handler.chat_id}-send-sim-\{unique_suffix}"
   let timestamp = 1772330000000L
 
@@ -432,14 +472,14 @@ test "handle_send simulation: agent loop should record via passed history_record
   //    - safe_open_session
   //    - record_session_meta
   let is_new = @agent.safe_open_session(
-    Some(handler.history_recorder),
+    Some(history_recorder),
     session_id,
     timestamp,
   )
   assert_eq(is_new, Some(true), msg="send-sim: open should return Some(true)")
 
   @agent.record_session_meta(
-    Some(handler.history_recorder),
+    Some(history_recorder),
     Some(global_clock),
     timestamp,
     session_id,
@@ -463,12 +503,12 @@ test "handle_send simulation: agent loop should record via passed history_record
     record_type: @interfaces.HistoryRecordType::UserMessage,
     payload: Json::object({ "content": Json::string("test message from user") }),
   }
-  handler.history_recorder.record(record=user_record) catch {
+  history_recorder.record(record=user_record) catch {
     _ => fail("record should not fail")
   }
 
   // 3. safe_close
-  @agent.safe_close(Some(handler.history_recorder))
+  @agent.safe_close(Some(history_recorder))
 
   // 4. 読み込んで検証
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
@@ -477,7 +517,11 @@ test "handle_send simulation: agent loop should record via passed history_record
   }
 
   // SessionMeta + UserMessage = 2 records
-  assert_eq(records.length(), 2, msg="send-sim: Should have 2 records (SessionMeta + UserMessage)")
+  assert_eq(
+    records.length(),
+    2,
+    msg="send-sim: Should have 2 records (SessionMeta + UserMessage)",
+  )
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
   assert_eq(records[1].record_type, @interfaces.HistoryRecordType::UserMessage)
 }
@@ -486,6 +530,7 @@ test "handle_send simulation: agent loop should record via passed history_record
 // テスト: エラーケースの確認
 // ============================================================
 
+///|
 test "error case: record without open_session should fail silently" {
   // open_session を呼ばずに record を呼ぶ
   let unique_suffix = @native.c_time()
@@ -512,6 +557,7 @@ test "error case: record without open_session should fail silently" {
   assert_true(error_caught, msg="record without open_session should fail")
 }
 
+///|
 test "data_dir verification: check actual path" {
   // @config.data_dir() の値を確認
   let data_dir = @config.data_dir()
@@ -533,6 +579,7 @@ test "data_dir verification: check actual path" {
 // エラーケースの検証テスト
 // ============================================================
 
+///|
 test "error case: NotInitialized error has clear message" {
   let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
   let record : @interfaces.HistoryRecord = {
@@ -559,6 +606,7 @@ test "error case: NotInitialized error has clear message" {
   )
 }
 
+///|
 test "error case: FileOpenFailed has path and reason" {
   // 存在しないディレクトリに書き込もうとする
   let recorder = @native.NativeHistoryRecorder::new(
@@ -590,8 +638,7 @@ test "error case: FileOpenFailed has path and reason" {
   // ディレクトリ作成失敗か、ファイルオープン失敗のどちらか
   assert_true(error_caught, msg="Should catch an error")
   assert_true(
-    error_type == "DirectoryCreationFailed" ||
-    error_type == "FileOpenFailed",
+    error_type == "DirectoryCreationFailed" || error_type == "FileOpenFailed",
     msg="Should fail with DirectoryCreationFailed or FileOpenFailed, got: \{error_type}",
   )
 }
@@ -600,6 +647,7 @@ test "error case: FileOpenFailed has path and reason" {
 // 統合テスト: 実際のファイル作成を検証
 // ============================================================
 
+///|
 test "integration: verify file is actually created on disk" {
   // テスト用の一時ディレクトリを使用
   let test_dir = "/tmp/mukuro_integration_test_\{@native.c_time()}"
@@ -610,9 +658,7 @@ test "integration: verify file is actually created on disk" {
 
   // Step 1: open_session
   let is_new = recorder.open_session(session_id~, timestamp~) catch {
-    e => {
-      fail("open_session failed: \{e}")
-    }
+    e => fail("open_session failed: \{e}")
   }
   assert_true(is_new, msg="Should be a new session")
 
@@ -642,17 +688,17 @@ test "integration: verify file is actually created on disk" {
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
 }
 
+///|
 test "integration: verify handle_connection creates files in data_dir" {
   // ChatWsHandler と同じフローを検証
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
   let session_id = "web_chat:\{handler.chat_id}"
   let timestamp = @native.c_time() * 1000L
 
   // Step 1: open_session (handle_connection がやること)
-  let is_new = handler.history_recorder.open_session(session_id~, timestamp~) catch {
-    e => {
-      fail("handle_connection: open_session failed: \{e}")
-    }
+  let is_new = history_recorder.open_session(session_id~, timestamp~) catch {
+    e => fail("handle_connection: open_session failed: \{e}")
   }
 
   // Step 2: record SessionMeta
@@ -666,13 +712,13 @@ test "integration: verify handle_connection creates files in data_dir" {
         "chat_id": Json::string(handler.chat_id),
       }),
     }
-    handler.history_recorder.record(record=meta_record) catch {
+    history_recorder.record(record=meta_record) catch {
       e => fail("handle_connection: record failed: \{e}")
     }
   }
 
   // Step 3: close
-  handler.history_recorder.close() catch {
+  history_recorder.close() catch {
     e => fail("handle_connection: close failed: \{e}")
   }
 
@@ -689,6 +735,7 @@ test "integration: verify handle_connection creates files in data_dir" {
   )
 }
 
+///|
 test "integration: verify create_session_history_recorder works" {
   // create_session_history_recorder() の戻り値を直接テスト
   let recorder = create_session_history_recorder()
@@ -706,7 +753,9 @@ test "integration: verify create_session_history_recorder works" {
     timestamp,
     session_id,
     record_type: @interfaces.HistoryRecordType::SessionMeta,
-    payload: Json::object({ "source": Json::string("create_session_history_recorder") }),
+    payload: Json::object({
+      "source": Json::string("create_session_history_recorder"),
+    }),
   }
   recorder.record(record~) catch {
     e => fail("create_session_history_recorder: record failed: \{e}")
@@ -725,6 +774,7 @@ test "integration: verify create_session_history_recorder works" {
   assert_eq(records.length(), 1, msg="Should have 1 record")
 }
 
+///|
 test "debug: check data_dir value and file creation" {
   // data_dir の値を出力し、ファイル作成をステップバイステップで検証
   let data_dir = @config.data_dir()
@@ -761,7 +811,9 @@ test "debug: check data_dir value and file creation" {
   }
 
   // close
-  recorder.close() catch { _ => () }
+  recorder.close() catch {
+    _ => ()
+  }
 
   // verify
   let reader = @native.NativeHistoryReader::new(base_dir=data_dir)
@@ -775,6 +827,7 @@ test "debug: check data_dir value and file creation" {
   )
 }
 
+///|
 test "error case: Show trait works for all error variants" {
   // 各エラーバリアントが Show trait で正しく出力されるか確認
   let io_err : @interfaces.HistoryError = @interfaces.HistoryError::IoError(
@@ -827,6 +880,7 @@ test "error case: Show trait works for all error variants" {
 // ファイル存在確認テスト - 実際にディスクにファイルが作成されるか検証
 // ============================================================
 
+///|
 test "file existence: verify file is created on disk after record" {
   let data_dir = @config.data_dir()
   let unique_id = @native.c_time()
@@ -853,7 +907,9 @@ test "file existence: verify file is created on disk after record" {
   }
 
   // close to ensure flush
-  recorder.close() catch { _ => () }
+  recorder.close() catch {
+    _ => ()
+  }
 
   // 実際のファイルパスを計算
   let epoch_secs = timestamp / 1000L
@@ -867,11 +923,17 @@ test "file existence: verify file is created on disk after record" {
   )
 
   // ディレクトリ存在確認
-  let dir_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(dir_path)) == 1
+  let dir_exists = @native.c_file_exists_bytes(
+      @native.string_to_utf8_cstring(dir_path),
+    ) ==
+    1
   assert_true(dir_exists, msg="Directory should exist: \{dir_path}")
 
   // ファイル存在確認
-  let file_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(file_path)) == 1
+  let file_exists = @native.c_file_exists_bytes(
+      @native.string_to_utf8_cstring(file_path),
+    ) ==
+    1
   assert_true(file_exists, msg="File should exist: \{file_path}")
 
   // ファイル内容確認
@@ -889,11 +951,12 @@ test "file existence: verify file is created on disk after record" {
 // get_timestamp_ms() のテスト - プロダクションコードの正確な動作を検証
 // ============================================================
 
+///|
 test "get_timestamp_ms: should return valid Int64 timestamp" {
   // プロダクションと同じ計算をテスト
   let c_time_result = @native.c_time()
-  let timestamp_with_L = c_time_result * 1000L  // テストで使用されている形式
-  let timestamp_without_L = c_time_result * 1000  // プロダクションで使用されている形式
+  let timestamp_with_L = c_time_result * 1000L // テストで使用されている形式
+  let timestamp_without_L = c_time_result * 1000 // プロダクションで使用されている形式
 
   // 両者が同じ値か確認
   assert_eq(
@@ -913,18 +976,20 @@ test "get_timestamp_ms: should return valid Int64 timestamp" {
   )
 }
 
+///|
 test "production flow: ChatWsHandler with actual get_timestamp_ms" {
   // ChatWsHandler と同じフローを再現
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
   // 一意のセッションIDを生成（テストの決定論的UUIDを回避）
   let unique_suffix = @native.c_time()
   let session_id = "web_chat:prod-flow-test-\{unique_suffix}"
 
   // プロダクションと同じ get_timestamp_ms 相当の計算
-  let timestamp = @native.c_time() * 1000  // L なし（プロダクションと同じ）
+  let timestamp = @native.c_time() * 1000 // L なし（プロダクションと同じ）
 
   // open_session
-  let is_new = handler.history_recorder.open_session(session_id~, timestamp~) catch {
+  let is_new = history_recorder.open_session(session_id~, timestamp~) catch {
     @interfaces.HistoryError::FileOpenFailed(path~, reason~) =>
       fail("PRODUCTION BUG: FileOpenFailed: path=\{path}, reason=\{reason}")
     @interfaces.HistoryError::DirectoryCreationFailed(path) =>
@@ -949,16 +1014,20 @@ test "production flow: ChatWsHandler with actual get_timestamp_ms" {
       "test": Json::string("production_flow"),
     }),
   }
-  handler.history_recorder.record(record=meta_record) catch {
+  history_recorder.record(record=meta_record) catch {
     @interfaces.HistoryError::NotInitialized =>
       fail("PRODUCTION BUG: NotInitialized when recording")
     @interfaces.HistoryError::WriteFailed(expected~, actual~) =>
-      fail("PRODUCTION BUG: WriteFailed: expected=\{expected}, actual=\{actual}")
+      fail(
+        "PRODUCTION BUG: WriteFailed: expected=\{expected}, actual=\{actual}",
+      )
     e => fail("PRODUCTION BUG: Record error: \{e}")
   }
 
   // close
-  handler.history_recorder.close() catch { _ => () }
+  history_recorder.close() catch {
+    _ => ()
+  }
 
   // verify file exists
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
@@ -995,6 +1064,7 @@ async fn record_in_async(
   recorder.record(record~)
 }
 
+///|
 async test "ASYNC: trait object mutable state in async function" {
   // async 関数内で trait object のメソッドを呼んだときに mutable state が保持されるか
   let data_dir = @config.data_dir()
@@ -1026,7 +1096,9 @@ async test "ASYNC: trait object mutable state in async function" {
   }
 
   // close
-  recorder.close() catch { _ => () }
+  recorder.close() catch {
+    _ => ()
+  }
 
   // 検証
   let reader = @native.NativeHistoryReader::new(base_dir=data_dir)
@@ -1036,6 +1108,7 @@ async test "ASYNC: trait object mutable state in async function" {
   assert_eq(records.length(), 1, msg="Should have 1 record from async")
 }
 
+///|
 test "SYNC CONTEXT: calling async function from sync closure" {
   // プロダクションの run_forever 内のクロージャと同じパターン
   // 同期クロージャ内から async 関数を呼ぶ
@@ -1067,7 +1140,9 @@ test "SYNC CONTEXT: calling async function from sync closure" {
     e => fail("SYNC CLOSURE: record failed: \{e}")
   }
 
-  recorder.close() catch { _ => () }
+  recorder.close() catch {
+    _ => ()
+  }
 
   // 検証
   let reader = @native.NativeHistoryReader::new(base_dir=data_dir)
@@ -1077,34 +1152,35 @@ test "SYNC CONTEXT: calling async function from sync closure" {
   assert_eq(records.length(), 1, msg="Should have 1 record from sync closure")
 }
 
+///|
 test "E2E: verify actual file creation with exact production pattern" {
   // プロダクションと完全に同じパターン:
   // 1. ChatWsHandler::new() で handler 作成
-  // 2. handler.history_recorder.open_session() 呼び出し
-  // 3. handler.history_recorder.record() 呼び出し
+  // 2. history_recorder.open_session() 呼び出し
+  // 3. history_recorder.record() 呼び出し
   // 4. ファイルが実際にディスクに存在することを確認
 
   let unique_id = @native.c_time()
 
   // プロダクションと同じ: ChatWsHandler::new()
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
 
   // プロダクションの session_id 計算と同じ
   let session_id = "web_chat:\{handler.chat_id}"
   let timestamp = @native.c_time() * 1000 // get_timestamp_ms() と同じ（L なし）
 
   // open_session
-  let is_new_session = handler.history_recorder.open_session(
-    session_id~,
-    timestamp~,
-  ) catch {
+  let is_new_session = history_recorder.open_session(session_id~, timestamp~) catch {
     e => fail("E2E: open_session failed: \{e}")
   }
 
   // 必ず新規セッションのはず（chat_id はユニーク）
   if not(is_new_session) {
     // もし既存セッションなら、それは問題
-    fail("E2E: Expected new session but got existing. chat_id=\{handler.chat_id}")
+    fail(
+      "E2E: Expected new session but got existing. chat_id=\{handler.chat_id}",
+    )
   }
 
   // SessionMeta を記録
@@ -1117,7 +1193,7 @@ test "E2E: verify actual file creation with exact production pattern" {
       "chat_id": Json::string(handler.chat_id),
     }),
   }
-  handler.history_recorder.record(record=meta_record) catch {
+  history_recorder.record(record=meta_record) catch {
     @interfaces.HistoryError::NotInitialized =>
       fail("E2E BUG: NotInitialized - mutable state was lost!")
     @interfaces.HistoryError::WriteFailed(expected~, actual~) =>
@@ -1126,7 +1202,9 @@ test "E2E: verify actual file creation with exact production pattern" {
   }
 
   // close
-  handler.history_recorder.close() catch { _ => () }
+  history_recorder.close() catch {
+    _ => ()
+  }
 
   // 実際のファイルパスを計算して存在確認
   let data_dir = @config.data_dir()
@@ -1141,7 +1219,9 @@ test "E2E: verify actual file creation with exact production pattern" {
   )
 
   // ファイル存在確認（FFI直接使用）
-  let file_exists = @native.c_file_exists_bytes(@native.string_to_utf8_cstring(file_path))
+  let file_exists = @native.c_file_exists_bytes(
+    @native.string_to_utf8_cstring(file_path),
+  )
   if file_exists != 1 {
     fail("E2E CRITICAL: File does not exist at: \{file_path}")
   }
@@ -1158,6 +1238,7 @@ test "E2E: verify actual file creation with exact production pattern" {
   }
 }
 
+///|
 test "PRODUCTION PATTERN: ChatWsHandler in sync closure like run_forever" {
   // プロダクションの正確なパターンをシミュレート
   // - ChatWsHandler::new() を呼ぶ
@@ -1169,13 +1250,11 @@ test "PRODUCTION PATTERN: ChatWsHandler in sync closure like run_forever" {
 
   // プロダクションと同じ: ChatWsHandler::new()
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
 
   // プロダクションの handle_connection と同じフローを同期的に実行
   // （WebSocket 部分は除く）
-  let is_new_session = handler.history_recorder.open_session(
-    session_id~,
-    timestamp~,
-  ) catch {
+  let is_new_session = history_recorder.open_session(session_id~, timestamp~) catch {
     e => fail("PRODUCTION PATTERN: open_session failed: \{e}")
   }
 
@@ -1189,7 +1268,7 @@ test "PRODUCTION PATTERN: ChatWsHandler in sync closure like run_forever" {
         "chat_id": Json::string(handler.chat_id),
       }),
     }
-    handler.history_recorder.record(record=meta_record) catch {
+    history_recorder.record(record=meta_record) catch {
       @interfaces.HistoryError::NotInitialized =>
         fail("PRODUCTION PATTERN BUG: NotInitialized when recording!")
       e => fail("PRODUCTION PATTERN: record failed: \{e}")
@@ -1198,27 +1277,37 @@ test "PRODUCTION PATTERN: ChatWsHandler in sync closure like run_forever" {
     fail("PRODUCTION PATTERN: is_new_session should be true")
   }
 
-  handler.history_recorder.close() catch { _ => () }
+  history_recorder.close() catch {
+    _ => ()
+  }
 
   // 検証
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
   let records = reader.read_session(session_id~) catch {
     e => fail("read_session failed: \{e}")
   }
-  assert_eq(records.length(), 1, msg="Should have 1 record from production pattern")
+  assert_eq(
+    records.length(),
+    1,
+    msg="Should have 1 record from production pattern",
+  )
 }
 
+///|
 async test "ASYNC: ChatWsHandler passed by value to async function" {
   // ChatWsHandler が async 関数に値渡しされたときに recorder の state が保持されるか
   // これがプロダクションの handle_connection と同じパターン
 
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
   let unique_id = @native.c_time()
   let session_id = "web_chat:async-handler-test-\{unique_id}"
   let timestamp = unique_id * 1000L
 
   // handler を async 関数に渡して操作（プロダクションの handle_connection と同じ）
-  simulate_handle_connection_async(handler, session_id, timestamp) catch {
+  simulate_handle_connection_async(
+    handler, history_recorder, session_id, timestamp,
+  ) catch {
     e => fail("simulate_handle_connection_async failed: \{e}")
   }
 
@@ -1234,14 +1323,13 @@ async test "ASYNC: ChatWsHandler passed by value to async function" {
 /// handle_connection の履歴記録部分をシミュレート
 async fn simulate_handle_connection_async(
   handler : ChatWsHandler, // 値渡し（プロダクションと同じ）
+  history_recorder : &@interfaces.HistoryRecorder,
   session_id : String,
   timestamp : Int64,
 ) -> Unit raise @interfaces.HistoryError {
+  ignore(handler) // ChatWsHandler は SessionManager 経由でセッション管理
   // プロダクションと同じフロー
-  let is_new_session = handler.history_recorder.open_session(
-    session_id~,
-    timestamp~,
-  )
+  let is_new_session = history_recorder.open_session(session_id~, timestamp~)
 
   if is_new_session {
     let meta_record : @interfaces.HistoryRecord = {
@@ -1253,12 +1341,13 @@ async fn simulate_handle_connection_async(
         "chat_id": Json::string(handler.chat_id),
       }),
     }
-    handler.history_recorder.record(record=meta_record)
+    history_recorder.record(record=meta_record)
   }
 
-  handler.history_recorder.close()
+  history_recorder.close()
 }
 
+///|
 test "CRITICAL: trait object in struct preserves mutable state across calls" {
   // ChatWsHandler と同じ構造をシミュレート
   // struct に trait object を格納し、複数回メソッドを呼び出す
@@ -1288,12 +1377,16 @@ test "CRITICAL: trait object in struct preserves mutable state across calls" {
   }
   recorder_ref.record(record~) catch {
     @interfaces.HistoryError::NotInitialized =>
-      fail("CRITICAL BUG: NotInitialized after open_session - mutable state lost!")
+      fail(
+        "CRITICAL BUG: NotInitialized after open_session - mutable state lost!",
+      )
     e => fail("CRITICAL: record failed: \{e}")
   }
 
   // Step 4: close
-  recorder.close() catch { _ => () }
+  recorder.close() catch {
+    _ => ()
+  }
 
   // Step 5: 検証
   let reader = @native.NativeHistoryReader::new(base_dir=data_dir)
@@ -1303,33 +1396,37 @@ test "CRITICAL: trait object in struct preserves mutable state across calls" {
   assert_eq(records.length(), 1, msg="Should have 1 record")
 }
 
+///|
 test "CRITICAL: ChatWsHandler.history_recorder preserves state" {
   // ChatWsHandler を作成し、その history_recorder の状態が保持されるか確認
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
   let unique_id = @native.c_time()
   let session_id = "web_chat:handler-state-test-\{unique_id}"
   let timestamp = unique_id * 1000L
 
   // open_session
-  let is_new = handler.history_recorder.open_session(session_id~, timestamp~) catch {
+  let is_new = history_recorder.open_session(session_id~, timestamp~) catch {
     e => fail("CRITICAL: open_session on handler failed: \{e}")
   }
 
-  // record - handler.history_recorder 経由で呼び出し
+  // record - history_recorder 経由で呼び出し
   let record : @interfaces.HistoryRecord = {
     timestamp,
     session_id,
     record_type: @interfaces.HistoryRecordType::SessionMeta,
     payload: Json::object({ "source": Json::string("handler_test") }),
   }
-  handler.history_recorder.record(record~) catch {
+  history_recorder.record(record~) catch {
     @interfaces.HistoryError::NotInitialized =>
-      fail("CRITICAL BUG: handler.history_recorder lost mutable state!")
+      fail("CRITICAL BUG: history_recorder lost mutable state!")
     e => fail("CRITICAL: record failed: \{e}")
   }
 
   // close
-  handler.history_recorder.close() catch { _ => () }
+  history_recorder.close() catch {
+    _ => ()
+  }
 
   // 検証
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
@@ -1339,26 +1436,25 @@ test "CRITICAL: ChatWsHandler.history_recorder preserves state" {
   assert_eq(records.length(), 1, msg="Should have 1 record from handler")
 }
 
+///|
 test "CRITICAL: simulate exact production async flow" {
   // プロダクションの handle_connection と同じフローをシミュレート
   // ただし WebSocket なしで
 
   // 1. ChatWsHandler::new()
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
   let unique_id = @native.c_time()
 
   // 2. create_session() - プロダクションではここで session store に保存
-  handler.create_session()
+  let _ = handler.ensure_session()
 
   // 3. session_id と timestamp を計算
   let session_id = "web_chat:\{handler.chat_id}-async-sim-\{unique_id}"
   let timestamp = @native.c_time() * 1000 // L なし（プロダクションと同じ）
 
   // 4. open_session
-  let is_new_session = handler.history_recorder.open_session(
-    session_id~,
-    timestamp~,
-  ) catch {
+  let is_new_session = history_recorder.open_session(session_id~, timestamp~) catch {
     e => fail("ASYNC SIM: open_session failed: \{e}")
   }
 
@@ -1373,7 +1469,7 @@ test "CRITICAL: simulate exact production async flow" {
         "chat_id": Json::string(handler.chat_id),
       }),
     }
-    handler.history_recorder.record(record=meta_record) catch {
+    history_recorder.record(record=meta_record) catch {
       @interfaces.HistoryError::NotInitialized =>
         fail("ASYNC SIM BUG: NotInitialized when recording meta!")
       e => fail("ASYNC SIM: record meta failed: \{e}")
@@ -1383,7 +1479,9 @@ test "CRITICAL: simulate exact production async flow" {
   }
 
   // 6. close
-  handler.history_recorder.close() catch { _ => () }
+  history_recorder.close() catch {
+    _ => ()
+  }
 
   // 7. 検証
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
@@ -1393,6 +1491,7 @@ test "CRITICAL: simulate exact production async flow" {
   assert_eq(records.length(), 1, msg="ASYNC SIM: Should have 1 record")
 }
 
+///|
 test "generate_ws_chat_id: should produce different UUIDs on each call" {
   // generate_ws_chat_id が毎回異なる UUID を生成するか確認
   let uuid1 = generate_ws_chat_id()
@@ -1405,10 +1504,15 @@ test "generate_ws_chat_id: should produce different UUIDs on each call" {
   assert_true(uuid1 != uuid3, msg="UUID1 and UUID3 should be different")
 
   // UUID v4 フォーマットのチェック（基本的なパターン）
-  assert_eq(uuid1.length(), 36, msg="UUID should be 36 characters (with dashes)")
+  assert_eq(
+    uuid1.length(),
+    36,
+    msg="UUID should be 36 characters (with dashes)",
+  )
   assert_true(uuid1.contains("-"), msg="UUID should contain dashes")
 }
 
+///|
 test "ChatWsHandler::new: should produce different chat_ids" {
   // ChatWsHandler::new() が毎回異なる chat_id を生成するか確認
   let handler1 = ChatWsHandler::new()
@@ -1429,6 +1533,7 @@ test "ChatWsHandler::new: should produce different chat_ids" {
   )
 }
 
+///|
 test "resume existing session: append to existing file works" {
   // 既存ファイルがある場合に追記できるか確認
   let data_dir = @config.data_dir()
@@ -1450,8 +1555,12 @@ test "resume existing session: append to existing file works" {
     record_type: @interfaces.HistoryRecordType::SessionMeta,
     payload: Json::object({ "seq": Json::number(1.0) }),
   }
-  recorder1.record(record=record1) catch { e => fail("First record failed: \{e}") }
-  recorder1.close() catch { _ => () }
+  recorder1.record(record=record1) catch {
+    e => fail("First record failed: \{e}")
+  }
+  recorder1.close() catch {
+    _ => ()
+  }
 
   // 2番目のセッション: 同じ session_id で再オープン（追記）
   let recorder2 = @native.NativeHistoryRecorder::new(base_dir=data_dir)
@@ -1465,38 +1574,48 @@ test "resume existing session: append to existing file works" {
     timestamp,
     session_id,
     record_type: @interfaces.HistoryRecordType::UserMessage,
-    payload: Json::object({ "seq": Json::number(2.0), "content": Json::string("hello") }),
+    payload: Json::object({
+      "seq": Json::number(2.0),
+      "content": Json::string("hello"),
+    }),
   }
-  recorder2.record(record=record2) catch { e => fail("Second record failed: \{e}") }
-  recorder2.close() catch { _ => () }
+  recorder2.record(record=record2) catch {
+    e => fail("Second record failed: \{e}")
+  }
+  recorder2.close() catch {
+    _ => ()
+  }
 
   // 検証: 両方のレコードが読める
   let reader = @native.NativeHistoryReader::new(base_dir=data_dir)
   let records = reader.read_session(session_id~) catch {
     e => fail("read_session failed: \{e}")
   }
-  assert_eq(records.length(), 2, msg="Should have 2 records (1 from each session)")
+  assert_eq(
+    records.length(),
+    2,
+    msg="Should have 2 records (1 from each session)",
+  )
 }
 
+///|
 test "handle_connection exact flow: using handler's own chat_id and recorder" {
   // handle_connection の完全なフローを再現
   // このテストは、プロダクションと完全に同じシーケンスを使う
 
   // 1. ChatWsHandler::new() で handler を作成
   let handler = ChatWsHandler::new()
+  let history_recorder = create_session_history_recorder()
 
   // 2. create_session (handle_connection line 216)
-  handler.create_session()
+  let _ = handler.ensure_session()
 
   // 3. session_id と timestamp を取得 (handle_connection lines 220-221)
   let session_id = "web_chat:\{handler.chat_id}"
   let timestamp = @native.c_time() * 1000
 
   // 4. open_session (handle_connection lines 222-231)
-  let is_new_session = handler.history_recorder.open_session(
-    session_id~,
-    timestamp~,
-  ) catch {
+  let is_new_session = history_recorder.open_session(session_id~, timestamp~) catch {
     e => fail("handle_connection exact: open_session failed: \{e}")
   }
 
@@ -1511,13 +1630,15 @@ test "handle_connection exact flow: using handler's own chat_id and recorder" {
         "chat_id": Json::string(handler.chat_id),
       }),
     }
-    handler.history_recorder.record(record=meta_record) catch {
+    history_recorder.record(record=meta_record) catch {
       e => fail("handle_connection exact: record failed: \{e}")
     }
   }
 
   // 6. close (handle_connection lines 275-277)
-  handler.history_recorder.close() catch { _ => () }
+  history_recorder.close() catch {
+    _ => ()
+  }
 
   // 7. 検証: ファイルが作成され、内容があるか
   let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())

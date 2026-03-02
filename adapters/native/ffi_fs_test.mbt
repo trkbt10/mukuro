@@ -55,7 +55,9 @@ test "c_mkdir_recursive_bytes creates nested directories" {
   // Verify exists
   assert_eq(@native.c_access_bytes(path, @native.f_ok), 0)
   // Cleanup
-  let _ = @native.c_system_bytes(@native.string_to_utf8_cstring("rm -rf \{base}"))
+  let _ = @native.c_system_bytes(
+    @native.string_to_utf8_cstring("rm -rf \{base}"),
+  )
 }
 
 ///|
