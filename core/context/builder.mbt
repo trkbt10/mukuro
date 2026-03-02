@@ -5,6 +5,8 @@ pub(all) struct ContextOptions {
   include_skills : Bool
   /// システムプロンプトにメモリ情報を含めるか
   include_memory : Bool
+  /// システムプロンプトにビルトインツールガイドを含めるか
+  include_builtin_tools_guide : Bool
   /// 最大コンテキストトークン数
   max_context_tokens : Int
   /// デフォルトのシステムプロンプトモード
@@ -19,6 +21,7 @@ pub fn ContextOptions::default() -> ContextOptions {
   {
     include_skills: true,
     include_memory: true,
+    include_builtin_tools_guide: true,
     max_context_tokens: 100000,
     default_system_prompt_mode: @types.SystemPromptMode::Append,
     default_system_prompt_when: @types.SystemPromptWhen::Always,
@@ -98,6 +101,7 @@ fn DefaultContextBuilder::build_system_prompt(
   let has_skills = self.options.include_skills && input.skills.length() > 0
   let has_memory = self.options.include_memory &&
     input.memory_context.length() > 0
+  let has_builtin_tools = self.options.include_builtin_tools_guide
   let has_context_files = input.context_files.has_soul() ||
     input.context_files.identity is Some(_) ||
     input.context_files.agents_handbook is Some(_) ||
@@ -107,6 +111,7 @@ fn DefaultContextBuilder::build_system_prompt(
     not(has_custom) &&
     not(has_skills) &&
     not(has_memory) &&
+    not(has_builtin_tools) &&
     not(has_context_files) {
     return ""
   }
@@ -145,25 +150,60 @@ fn DefaultContextBuilder::build_system_prompt(
     Some(content) => parts.push(format_handbook_section(content))
     None => ()
   }
-  // 5. TOOLS.md - ツール設定
+  // 5. ビルトインツールガイド（自動生成）
+  if has_builtin_tools {
+    parts.push(format_builtin_tools_guide())
+  }
+  // 6. TOOLS.md - ユーザーのツール使用ガイド
   match input.context_files.tools_config {
     Some(content) => parts.push(format_tools_section(content))
     None => ()
   }
-  // 6. USER.md - ユーザー好み
+  // 7. USER.md - ユーザー好み
   match input.context_files.user_context {
     Some(content) => parts.push(format_user_section(content))
     None => ()
   }
-  // 7. スキル情報
+  // 8. スキル情報
   if has_skills {
     parts.push(format_skills(input.skills))
   }
-  // 8. メモリ情報
+  // 9. メモリ情報
   if has_memory {
     parts.push(format_memory(input.memory_context))
   }
   join_parts(parts, "\n\n")
+}
+
+///|
+/// ビルトインツールガイドを生成
+/// ツール定義から自動生成し、使い方を説明する
+fn format_builtin_tools_guide() -> String {
+  let tools = @tools.all_tool_definitions()
+  if tools.is_empty() {
+    return ""
+  }
+  let buf = StringBuilder::new()
+  buf.write_string("## Available Tools\n\n")
+  buf.write_string(
+    "You have access to the following tools. Use them proactively to help users.\n\n",
+  )
+  for tool in tools {
+    buf.write_string("### ")
+    buf.write_string(tool.name)
+    buf.write_string("\n")
+    buf.write_string(tool.description)
+    buf.write_string("\n\n")
+  }
+  let guidelines =
+    #|**Tool Usage Guidelines:**
+    #|- Use tools proactively without asking permission
+    #|- When users ask about themselves, check memory first
+    #|- For time-related questions, use datetime
+    #|- For system operations, prefer filesystem over shell when possible
+    #|- Store important user information in memory for future reference
+  buf.write_string(guidelines)
+  buf.to_string()
 }
 
 ///|
@@ -235,10 +275,10 @@ fn format_handbook_section(content : String) -> String {
 }
 
 ///|
-/// TOOLS.mdをフォーマット（ツール設定）
+/// TOOLS.mdをフォーマット（ユーザーのツール使用ガイド）
 fn format_tools_section(content : String) -> String {
   let buf = StringBuilder::new()
-  buf.write_string("## Local Tools & Environment\n")
+  buf.write_string("## User's Tool Preferences\n")
   buf.write_string(content)
   buf.to_string()
 }

@@ -1,31 +1,11 @@
-# TOOLS.md - Local Notes
+# TOOLS.md
 
-This file is for your environment-specific setup — the stuff unique to your workspace.
+Additional tool information for this workspace.
 
-## What Goes Here
+Built-in tools are automatically documented. Use this file for extra context:
 
-Things like:
+- Custom tool configurations
+- Workspace-specific tool usage notes
+- External tool integrations
 
-- API endpoints and base URLs
-- SSH hosts and aliases
-- Preferred configurations
-- Device and service details
-- Anything environment-specific
-
-## Example
-
-```markdown
-### API
-
-- Gateway: http://localhost:6960
-- Dashboard: http://localhost:3960
-
-### Providers
-
-- Primary: anthropic (claude-sonnet-4)
-- Fallback: openai (gpt-4o)
-```
-
----
-
-Add whatever helps you do your job. This is your cheat sheet.
+Leave empty if not needed.

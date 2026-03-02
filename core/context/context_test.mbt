@@ -27,7 +27,13 @@ test "DefaultContextBuilder builds messages with system prompt" {
 
 ///|
 test "DefaultContextBuilder includes history" {
-  let builder = DefaultContextBuilder::default()
+  // ビルトインツールガイドを無効化して履歴のみテスト
+  let builder = DefaultContextBuilder::new(
+    options={
+      ..ContextOptions::default(),
+      include_builtin_tools_guide: false,
+    },
+  )
   let history = [
     @types.ModelMessage::User(content="Hi", name=None),
     @types.ModelMessage::Assistant(content="Hello!", tool_calls=None),
@@ -319,7 +325,8 @@ test "DefaultContextBuilder includes all context files" {
       inspect(content.contains("Identity"), content="true")
       inspect(content.contains("Base instructions"), content="true")
       inspect(content.contains("Workspace Handbook"), content="true")
-      inspect(content.contains("Local Tools"), content="true")
+      inspect(content.contains("Available Tools"), content="true") // ビルトインツールガイド
+      inspect(content.contains("User's Tool Preferences"), content="true") // TOOLS.md
       inspect(content.contains("User Preferences"), content="true")
     }
     _ => fail("Expected system message")
