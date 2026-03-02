@@ -4,6 +4,7 @@ test "DefaultContextBuilder builds messages with system prompt" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "You are a helpful assistant.",
     current_message: @types.InboundEnvelope::{
@@ -41,6 +42,7 @@ test "DefaultContextBuilder includes history" {
   let input : @interfaces.ContextInput = {
     session_history: history,
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "",
     current_message: @types.InboundEnvelope::{
@@ -111,6 +113,7 @@ test "SystemPromptMode::Replace replaces bootstrap" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "Original bootstrap",
     current_message: @types.InboundEnvelope::{
@@ -148,6 +151,7 @@ test "SystemPromptMode::Append appends to bootstrap" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "Original",
     current_message: @types.InboundEnvelope::{
@@ -186,6 +190,7 @@ test "SystemPromptWhen::First only applies on first message" {
   let input : @interfaces.ContextInput = {
     session_history: [@types.ModelMessage::User(content="Previous", name=None)],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "",
     current_message: @types.InboundEnvelope::{
@@ -220,6 +225,7 @@ test "SystemPromptWhen::Never never applies system prompt" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "Bootstrap",
     current_message: @types.InboundEnvelope::{
@@ -255,6 +261,7 @@ test "DefaultContextBuilder includes SOUL.md in system prompt" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "",
     current_message: @types.InboundEnvelope::{
@@ -294,6 +301,7 @@ test "DefaultContextBuilder includes all context files" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "Base instructions",
     current_message: @types.InboundEnvelope::{
@@ -407,6 +415,7 @@ test "DefaultContextBuilder context_files ordering in system prompt" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "BOOTSTRAP_MARKER",
     current_message: @types.InboundEnvelope::{
@@ -452,12 +461,85 @@ test "DefaultContextBuilder context_files ordering in system prompt" {
 }
 
 ///|
+test "DefaultContextBuilder includes trace context in system prompt" {
+  let builder = DefaultContextBuilder::default()
+  let input : @interfaces.ContextInput = {
+    session_history: [],
+    memory_context: [],
+    trace_context: Some("## Recent Conversations\n\n**2026-03-02** (MoonBit, FFI)\nDiscussed FFI implementation"),
+    skills: [],
+    bootstrap: "",
+    current_message: @types.InboundEnvelope::{
+      channel: "http",
+      chat_id: "test",
+      sender_id: "user1",
+      sender_name: "User",
+      content: "Hello",
+      message_type: @types.MessageType::Text,
+      metadata: {},
+      timestamp: 1000L,
+    },
+    system_prompt_config: None,
+    is_first_message: true,
+    context_files: @interfaces.ContextFiles::empty(),
+  }
+  let messages = @interfaces.ContextBuilder::build(builder, input)
+  match messages[0] {
+    @types.ModelMessage::System(content) => {
+      inspect(content.contains("Recent Conversations"), content="true")
+      inspect(content.contains("MoonBit, FFI"), content="true")
+    }
+    _ => fail("Expected system message")
+  }
+}
+
+///|
+test "DefaultContextBuilder excludes trace when include_trace is false" {
+  let builder = DefaultContextBuilder::new(
+    options={
+      ..ContextOptions::default(),
+      include_trace: false,
+      include_builtin_tools_guide: false,
+    },
+  )
+  let input : @interfaces.ContextInput = {
+    session_history: [],
+    memory_context: [],
+    trace_context: Some("## Recent Conversations\n\nSome trace content"),
+    skills: [],
+    bootstrap: "Bootstrap only",
+    current_message: @types.InboundEnvelope::{
+      channel: "http",
+      chat_id: "test",
+      sender_id: "user1",
+      sender_name: "User",
+      content: "Hello",
+      message_type: @types.MessageType::Text,
+      metadata: {},
+      timestamp: 1000L,
+    },
+    system_prompt_config: None,
+    is_first_message: true,
+    context_files: @interfaces.ContextFiles::empty(),
+  }
+  let messages = @interfaces.ContextBuilder::build(builder, input)
+  match messages[0] {
+    @types.ModelMessage::System(content) => {
+      inspect(content.contains("Bootstrap only"), content="true")
+      inspect(content.contains("Recent Conversations"), content="false")
+    }
+    _ => fail("Expected system message")
+  }
+}
+
+///|
 test "SystemPromptMode::Replace preserves context_files sections" {
   // Replace モードでもSOUL/IDENTITYは維持される
   let builder = DefaultContextBuilder::default()
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
+    trace_context: None,
     skills: [],
     bootstrap: "Original bootstrap",
     current_message: @types.InboundEnvelope::{

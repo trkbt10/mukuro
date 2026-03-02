@@ -303,6 +303,7 @@ pub async fn run_agent_loop(
   let context_input : @interfaces.ContextInput = {
     session_history: session.history,
     memory_context: overrides.memory_context,
+    trace_context: None, // TODO: Integrate with TraceStore via deps
     skills: overrides.skills,
     bootstrap: overrides.bootstrap,
     current_message: envelope,

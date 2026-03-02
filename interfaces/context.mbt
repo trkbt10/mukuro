@@ -55,6 +55,8 @@ pub(all) struct ContextInput {
   session_history : Array[@types.ModelMessage]
   /// 長期記憶からの関連情報
   memory_context : Array[String]
+  /// Trace短期記憶（フォーマット済み）
+  trace_context : String?
   /// 利用可能スキル定義
   skills : Array[SkillDefinition]
   /// ブートストラップ指示（システムプロンプト）

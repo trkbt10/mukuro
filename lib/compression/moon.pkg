@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8" @utf8,
+}
+
+options(
+  "native-stub": ["deflate_stubs.c"],
+  link: { "native": { "stub-cc-link-flags": "-lz" } },
+)

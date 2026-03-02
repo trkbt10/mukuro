@@ -5,6 +5,8 @@ pub(all) struct ContextOptions {
   include_skills : Bool
   /// システムプロンプトにメモリ情報を含めるか
   include_memory : Bool
+  /// システムプロンプトにTrace短期記憶を含めるか
+  include_trace : Bool
   /// システムプロンプトにビルトインツールガイドを含めるか
   include_builtin_tools_guide : Bool
   /// 最大コンテキストトークン数
@@ -21,6 +23,7 @@ pub fn ContextOptions::default() -> ContextOptions {
   {
     include_skills: true,
     include_memory: true,
+    include_trace: true,
     include_builtin_tools_guide: true,
     max_context_tokens: 100000,
     default_system_prompt_mode: @types.SystemPromptMode::Append,
@@ -101,6 +104,7 @@ fn DefaultContextBuilder::build_system_prompt(
   let has_skills = self.options.include_skills && input.skills.length() > 0
   let has_memory = self.options.include_memory &&
     input.memory_context.length() > 0
+  let has_trace = self.options.include_trace && has_trace_context(input)
   let has_builtin_tools = self.options.include_builtin_tools_guide
   let has_context_files = input.context_files.has_soul() ||
     input.context_files.identity is Some(_) ||
@@ -111,6 +115,7 @@ fn DefaultContextBuilder::build_system_prompt(
     not(has_custom) &&
     not(has_skills) &&
     not(has_memory) &&
+    not(has_trace) &&
     not(has_builtin_tools) &&
     not(has_context_files) {
     return ""
@@ -171,6 +176,13 @@ fn DefaultContextBuilder::build_system_prompt(
   // 9. メモリ情報
   if has_memory {
     parts.push(format_memory(input.memory_context))
+  }
+  // 10. Trace短期記憶（最近の会話コンテキスト）
+  if has_trace {
+    match input.trace_context {
+      Some(tc) => parts.push(tc)
+      None => ()
+    }
   }
   join_parts(parts, "\n\n")
 }
@@ -290,6 +302,15 @@ fn format_user_section(content : String) -> String {
   buf.write_string("## User Preferences\n")
   buf.write_string(content)
   buf.to_string()
+}
+
+///|
+/// トレースコンテキストが存在するかどうか
+fn has_trace_context(input : @interfaces.ContextInput) -> Bool {
+  match input.trace_context {
+    Some(tc) => tc.length() > 0
+    None => false
+  }
 }
 
 ///|

@@ -12,6 +12,7 @@ pub fn all_tool_definitions() -> Array[@types.ToolDefinition] {
   [
     datetime_tool(),
     memory_tool(),
+    trace_tool(),
     message_tool(),
     spawn_tool(),
     shell_tool(),
@@ -51,6 +52,7 @@ pub fn all_tool_names() -> Array[String] {
 pub fn get_settings_schema(name : String) -> Json? {
   match name {
     "memory" => Some(memory_settings_schema())
+    "trace" => Some(trace_settings_schema())
     "shell" => Some(shell_settings_schema())
     "filesystem" => Some(filesystem_settings_schema())
     "web" => Some(web_settings_schema())
