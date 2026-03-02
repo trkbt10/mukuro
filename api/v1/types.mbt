@@ -111,130 +111,46 @@ pub fn ApiRequestContext::new(
   role? : ApiRole = ApiRole::Admin,
 ) -> ApiRequestContext {
   let segments = parse_path_segments(path)
-  let query = parse_query_params(path)
+  let query = @url.get_params(path)
   let client_id = parse_client_id_from_headers(headers)
   { http_method: meth, path, segments, query, headers, body, role, client_id }
 }
 
 ///|
-/// Find index of character in string
-fn find_char(s : String, c : Char) -> Int? {
-  let chars = s.to_array()
-  for i, ch in chars {
-    if ch == c {
-      return Some(i)
-    }
-  }
-  None
-}
-
-///|
-/// Get substring from start to end (exclusive)
-fn substr(s : String, start : Int, end : Int) -> String {
-  let chars = s.to_array()
-  let mut result = ""
-  for i in start..<end {
-    if i >= 0 && i < chars.length() {
-      result = result + chars[i].to_string()
-    }
-  }
-  result
-}
-
-///|
-/// Get substring from start to end of string
-fn substr_from(s : String, start : Int) -> String {
-  let chars = s.to_array()
-  let mut result = ""
-  for i in start..<chars.length() {
-    if i >= 0 {
-      result = result + chars[i].to_string()
-    }
-  }
-  result
-}
-
-///|
 /// Parse path segments from /api/v1/xxx/yyy
+/// Uses @url.path() to extract path before query string
 fn parse_path_segments(path : String) -> Array[String] {
   let segments : Array[String] = []
-  // Remove query string first
-  let path_only = match find_char(path, '?') {
-    Some(idx) => substr(path, 0, idx)
-    None => path
-  }
-  let prefix = "/api/v1/"
-  let prefix_short = "/api/v1"
-  let trimmed = if path_only.has_prefix(prefix) {
-    substr_from(path_only, prefix.length())
-  } else if path_only.has_prefix(prefix_short) {
-    substr_from(path_only, prefix_short.length())
+  // Remove query string using @url.path()
+  let path_only = @url.path(path)
+  // Remove /api/v1/ prefix using char array to avoid raising slice
+  let chars = path_only.to_array()
+  let start = if path_only.has_prefix("/api/v1/") {
+    8
+  } else if path_only.has_prefix("/api/v1") {
+    7
   } else {
-    path_only
+    0
   }
-  // Split by /
-  let chars = trimmed.to_array()
-  let mut segment = ""
-  for c in chars {
+  // Build trimmed string and split by /
+  let mut segment = StringBuilder::new()
+  for i = start; i < chars.length(); i = i + 1 {
+    let c = chars[i]
     if c == '/' {
-      if segment.length() > 0 {
-        segments.push(segment)
-        segment = ""
+      let s = segment.to_string()
+      if s.length() > 0 {
+        segments.push(s)
+        segment = StringBuilder::new()
       }
     } else {
-      segment = segment + c.to_string()
+      segment.write_char(c)
     }
   }
-  if segment.length() > 0 {
-    segments.push(segment)
+  let last = segment.to_string()
+  if last.length() > 0 {
+    segments.push(last)
   }
   segments
-}
-
-///|
-/// Parse query parameters from path
-fn parse_query_params(path : String) -> Map[String, String] {
-  let params : Map[String, String] = {}
-  match find_char(path, '?') {
-    Some(idx) => {
-      let query_str = substr_from(path, idx + 1)
-      let pairs = split_string(query_str, '&')
-      for pair in pairs {
-        match find_char(pair, '=') {
-          Some(eq_idx) => {
-            let key = substr(pair, 0, eq_idx)
-            let value = substr_from(pair, eq_idx + 1)
-            params[key] = value
-          }
-          None => params[pair] = ""
-        }
-      }
-    }
-    None => ()
-  }
-  params
-}
-
-///|
-/// Split string by delimiter
-fn split_string(s : String, delim : Char) -> Array[String] {
-  let parts : Array[String] = []
-  let chars = s.to_array()
-  let mut part = ""
-  for c in chars {
-    if c == delim {
-      if part.length() > 0 {
-        parts.push(part)
-        part = ""
-      }
-    } else {
-      part = part + c.to_string()
-    }
-  }
-  if part.length() > 0 {
-    parts.push(part)
-  }
-  parts
 }
 
 ///|

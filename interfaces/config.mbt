@@ -96,30 +96,3 @@ pub fn EnvMapping::default() -> EnvMapping {
   }
 }
 
-///|
-/// 設定書き込み トレイト
-/// 設定ファイルへのアトミック書き込みを抽象化
-pub(open) trait ConfigWriter {
-  /// 設定をアトミックに書き込み
-  write_atomic(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
-  /// 設定をJSON文字列に変換
-  serialize(Self, config~ : @types.MukuroConfig) -> String raise ConfigError
-}
-
-///|
-/// ランタイム設定変更トレイト
-/// 動的な設定変更をサポート
-pub(open) trait RuntimeConfigManager {
-  /// 現在の設定を取得
-  get_config(Self) -> @types.MukuroConfig
-  /// 設定を更新
-  update_config(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
-  /// 設定をリロード（ファイルから再読み込み）
-  reload(Self) -> Unit raise ConfigError
-  /// 設定ファイルパスを取得
-  get_config_path(Self) -> String
-  /// リトライ設定を取得
-  get_retry_config(Self) -> @types.RetryConfig
-  /// リトライ設定を更新
-  update_retry_config(Self, config~ : @types.RetryConfig) -> Unit raise ConfigError
-}

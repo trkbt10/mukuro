@@ -1,5 +1,6 @@
 import {
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/lib/url" @url,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
 }

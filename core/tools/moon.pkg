@@ -3,6 +3,7 @@ import {
   "trkbt10/mukuro/core/trace" @trace,
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/lib/bytes" @bytes,
+  "trkbt10/mukuro/adapters/native" @native,
   "moonbitlang/core/json",
   "moonbitlang/core/string",
   "moonbitlang/core/encoding/utf8",
@@ -15,7 +16,7 @@ import {
 } for "test"
 
 options(
-  "native-stub": [ "time_stub.c", "native_stubs.c" ],
+  "native-stub": [ "native_stubs.c" ],
   targets: {
     "datetime_time_native.mbt": [ "native" ],
     "shell_native.mbt": [ "native" ],
