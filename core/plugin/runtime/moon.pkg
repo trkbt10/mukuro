@@ -4,7 +4,6 @@ import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/config" @config,
   "trkbt10/mukuro/core/tool" @tool,
-  "trkbt10/mukuro/core/plugin/transport" @plugin_transport,
   "trkbt10/mukuro/adapters/native" @native,
   "trkbt10/mukuro/lib/bytes" @bytes,
   "moonbitlang/core/json",

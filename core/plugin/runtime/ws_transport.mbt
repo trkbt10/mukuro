@@ -25,11 +25,11 @@ pub struct NativeWebSocketTransportHandler {
   /// WebSocket client
   client : NativeWebSocketClient
   /// Connection state
-  mut state : @plugin_transport.WebSocketState
+  mut state : WebSocketState
   /// Request ID counter
   mut request_id : Int
   /// Message queue for incoming messages
-  message_queue : @plugin_transport.MessageQueue
+  message_queue : MessageQueue
   /// Reconnect attempt counter
   mut reconnect_attempts : Int
 }
@@ -48,9 +48,9 @@ pub fn NativeWebSocketTransportHandler::new(
     plugin_id,
     config,
     client,
-    state: @plugin_transport.WebSocketState::Disconnected,
+    state: WebSocketState::Disconnected,
     request_id: 0,
-    message_queue: @plugin_transport.MessageQueue::new(),
+    message_queue: MessageQueue::new(),
     reconnect_attempts: 0,
   }
 }
@@ -69,7 +69,7 @@ fn NativeWebSocketTransportHandler::is_active_impl(
   self : NativeWebSocketTransportHandler,
 ) -> Bool {
   match self.state {
-    @plugin_transport.WebSocketState::Connected => self.client.is_connected()
+    WebSocketState::Connected => self.client.is_connected()
     _ => false
   }
 }
@@ -83,14 +83,14 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
   self,
 ) {
   match self.state {
-    @plugin_transport.WebSocketState::Connected
-    | @plugin_transport.WebSocketState::Connecting =>
+    WebSocketState::Connected
+    | WebSocketState::Connecting =>
       raise @interfaces.TransportError::AlreadyStarted
     _ => {
-      self.state = @plugin_transport.WebSocketState::Connecting
+      self.state = WebSocketState::Connecting
       self.client.connect() catch {
         e => {
-          self.state = @plugin_transport.WebSocketState::Error(
+          self.state = WebSocketState::Error(
             "Connection failed",
           )
           raise @interfaces.TransportError::ConnectionFailed(
@@ -98,7 +98,7 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
           )
         }
       }
-      self.state = @plugin_transport.WebSocketState::Connected
+      self.state = WebSocketState::Connected
       self.reconnect_attempts = 0
     }
   }
@@ -109,12 +109,12 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
   self,
 ) {
   match self.state {
-    @plugin_transport.WebSocketState::Connected
-    | @plugin_transport.WebSocketState::Connecting => {
+    WebSocketState::Connected
+    | WebSocketState::Connecting => {
       self.client.close()
-      self.state = @plugin_transport.WebSocketState::Closed
+      self.state = WebSocketState::Closed
     }
-    _ => self.state = @plugin_transport.WebSocketState::Closed
+    _ => self.state = WebSocketState::Closed
   }
 }
 

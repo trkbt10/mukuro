@@ -48,7 +48,7 @@ pub fn NativeTransportFactory::create_handler_with_auth(
     @interfaces.PluginTransport::Http =>
       match manifest.http {
         Some(http_config) => {
-          let handler : &@interfaces.PluginTransportHandler = @plugin_transport.HttpTransportHandler::with_client(
+          let handler : &@interfaces.PluginTransportHandler = HttpTransportHandler::with_client(
             plugin_id=manifest.id,
             config=http_config,
             auth_token~,

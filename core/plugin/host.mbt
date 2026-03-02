@@ -8,8 +8,6 @@ pub struct PluginHostImpl {
   transport_handlers : Map[String, &@interfaces.PluginTransportHandler]
   /// HTTP transport handlers (plugin_id -> handler) - legacy, kept for compatibility
   http_handlers : Map[String, HttpPluginHandler]
-  /// Transport factory
-  transport_factory : @transport.TransportFactory
   /// Incoming message queue from plugins
   incoming_messages : Array[@types.InboundEnvelope]
   /// Request ID counter
@@ -38,7 +36,6 @@ pub fn PluginHostImpl::new(plugin_dir~ : String) -> PluginHostImpl {
     registry: PluginRegistry::new(plugin_dir~),
     transport_handlers: {},
     http_handlers: {},
-    transport_factory: @transport.TransportFactory::new(),
     incoming_messages: [],
     request_id: 0,
     loader_config: Some(PluginLoaderConfig::default(plugin_dir~)),
@@ -56,7 +53,6 @@ pub fn PluginHostImpl::with_config(
     registry: PluginRegistry::new(plugin_dir~),
     transport_handlers: {},
     http_handlers: {},
-    transport_factory: @transport.TransportFactory::new(),
     incoming_messages: [],
     request_id: 0,
     loader_config: Some(loader_config),
@@ -304,11 +300,11 @@ pub fn PluginHostImpl::set_transport_handler(
 pub fn PluginHostImpl::register_plugin_with_transport(
   self : PluginHostImpl,
   manifest : @interfaces.PluginManifest,
-) -> Unit raise {
+  handler : &@interfaces.PluginTransportHandler,
+) -> Unit {
   // Register in registry first
   self.registry.register(manifest)
-  // Create and store transport handler
-  let handler = self.transport_factory.create_handler(manifest)
+  // Store the provided transport handler
   self.transport_handlers[manifest.id] = handler
   // Also set up legacy HTTP handler for compatibility
   match manifest.transport {
@@ -352,24 +348,16 @@ pub impl @interfaces.PluginHost for PluginHostImpl with start_plugin(self, id~) 
         _ => {
           // Set status to starting
           self.registry.set_status(id, @interfaces.PluginStatus::Starting)
-          // Get or create transport handler
+          // Get transport handler (must be pre-injected via set_transport_handler)
           match self.transport_handlers.get(id) {
             Some(handler) => {
               @interfaces.PluginTransportHandler::start(handler)
               self.registry.set_status(id, @interfaces.PluginStatus::Running)
             }
             None =>
-              // Try to create handler from manifest
-              match self.transport_factory.create_handler(instance.manifest) {
-                handler => {
-                  self.transport_handlers[id] = handler
-                  @interfaces.PluginTransportHandler::start(handler)
-                  self.registry.set_status(
-                    id,
-                    @interfaces.PluginStatus::Running,
-                  )
-                }
-              }
+              raise @interfaces.PluginError::InvalidManifest(
+                "No transport handler set for plugin: \{id}. Use set_transport_handler() first.",
+              )
           }
         }
       }

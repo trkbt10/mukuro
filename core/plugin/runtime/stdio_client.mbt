@@ -202,7 +202,7 @@ pub fn NativeStdioClient::send_request(
             "Invalid JSON: \{e} - output: \{line}",
           )
       }
-      match parse_jsonrpc_response(json) {
+      match parse_jsonrpc_response_json(json) {
         Some(response) => response
         None =>
           raise StdioClientError::InvalidResponse(
@@ -239,7 +239,7 @@ pub struct StdioTransportAdapter {
   /// Whether active
   mut active : Bool
   /// Message queue
-  message_queue : @plugin_transport.MessageQueue
+  message_queue : MessageQueue
 }
 
 ///|
@@ -253,7 +253,7 @@ pub fn StdioTransportAdapter::new(
     client,
     plugin_id,
     active: false,
-    message_queue: @plugin_transport.MessageQueue::new(),
+    message_queue: MessageQueue::new(),
   }
 }
 

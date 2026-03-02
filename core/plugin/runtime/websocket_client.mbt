@@ -127,7 +127,7 @@ pub async fn NativeWebSocketClient::send_jsonrpc_request(
   let json = @json.parse(response_text) catch {
     e => raise WebSocketClientError::ReceiveFailed("Invalid JSON: \{e}")
   }
-  match parse_jsonrpc_response(json) {
+  match parse_jsonrpc_response_json(json) {
     Some(response) => response
     None =>
       raise WebSocketClientError::ReceiveFailed(
@@ -138,7 +138,7 @@ pub async fn NativeWebSocketClient::send_jsonrpc_request(
 
 ///|
 /// Parse JSON as JSON-RPC response
-fn parse_jsonrpc_response(json : Json) -> @interfaces.JsonRpcResponse? {
+pub fn parse_jsonrpc_response_json(json : Json) -> @interfaces.JsonRpcResponse? {
   match json {
     { "jsonrpc": String(ver), .. } if ver == "2.0" => {
       let result = match json {

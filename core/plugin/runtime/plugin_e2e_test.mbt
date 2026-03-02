@@ -15,7 +15,7 @@ async test "E2E: HttpTransportHandler with real HTTP client (requires hello-worl
     endpoints: {},
   }
   // Create handler with HTTP client
-  let handler = @plugin_transport.HttpTransportHandler::with_client(
+  let handler = HttpTransportHandler::with_client(
     plugin_id="hello-world",
     config=http_config,
     auth_token=None,
