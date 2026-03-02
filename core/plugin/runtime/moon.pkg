@@ -14,15 +14,15 @@ warnings = "-29"
 
 options(
   targets: {
-    "plugin_watcher.mbt": [ "native" ],
-    "plugin_transport_factory.mbt": [ "native" ],
-    "stdio_client.mbt": [ "native" ],
-    "websocket_client.mbt": [ "native" ],
-    "ws_transport.mbt": [ "native" ],
-    "tool_loader.mbt": [ "native" ],
     "plugin_e2e_test.mbt": [ "native" ],
-    "ws_e2e_test.mbt": [ "native" ],
+    "plugin_transport_factory.mbt": [ "native" ],
+    "plugin_watcher.mbt": [ "native" ],
+    "stdio_client.mbt": [ "native" ],
     "stdio_e2e_test.mbt": [ "native" ],
     "stdio_security_test.mbt": [ "native" ],
+    "tool_loader.mbt": [ "native" ],
+    "websocket_client.mbt": [ "native" ],
+    "ws_e2e_test.mbt": [ "native" ],
+    "ws_transport.mbt": [ "native" ],
   },
 )

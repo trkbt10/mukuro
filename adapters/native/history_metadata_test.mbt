@@ -13,7 +13,7 @@ test "NoOpMetadataStore implements trait" {
   }
   // Get should return None
   let result = store.get(session_id="any") catch { _ => fail("get failed") }
-  inspect(result.is_none(), content="true")
+  inspect(result is None, content="true")
   // List should return empty
   let dates = store.list_by_date(year=2024, month=3, day=1) catch {
     _ => fail("list_by_date failed")

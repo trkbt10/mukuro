@@ -3,7 +3,9 @@ import {
   "moonbitlang/core/encoding/utf8" @utf8,
 }
 
+warnings = "-1"
+
 options(
-  "native-stub": ["deflate_stubs.c"],
   link: { "native": { "stub-cc-link-flags": "-lz" } },
+  "native-stub": [ "deflate_stubs.c" ],
 )

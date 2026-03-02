@@ -95,4 +95,3 @@ pub fn EnvMapping::default() -> EnvMapping {
     log_level: "MUKURO_LOG_LEVEL",
   }
 }
-

@@ -24,9 +24,13 @@ pub fn memory_tool() -> @types.ToolDefinition {
           ]),
           "description": "Action to perform: 'search' to find user info, 'get' for exact key lookup, 'set' to store info, 'list' to see all keys, 'delete' to remove",
         },
-        "key": string_param("Memory key (for get/set/delete). Use descriptive keys like 'user_name', 'user_preferences'"),
+        "key": string_param(
+          "Memory key (for get/set/delete). Use descriptive keys like 'user_name', 'user_preferences'",
+        ),
         "value": { "description": "Value to store (for set action)" },
-        "query": string_param("Search query (for search action). Use to find user information by keyword"),
+        "query": string_param(
+          "Search query (for search action). Use to find user information by keyword",
+        ),
       },
       ["action"],
     ),
@@ -134,7 +138,8 @@ pub fn execute_memory(store : MemoryStore, args : Json) -> ToolExecutionResult {
         None => return ToolExecutionResult::error("Missing key argument")
       }
       match store.get(key) {
-        Some(value) => ToolExecutionResult::success({ "key": key, "value": value })
+        Some(value) =>
+          ToolExecutionResult::success({ "key": key, "value": value })
         None => ToolExecutionResult::error("Key not found: \{key}")
       }
     }

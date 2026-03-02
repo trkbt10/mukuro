@@ -29,12 +29,10 @@ test "DefaultContextBuilder builds messages with system prompt" {
 ///|
 test "DefaultContextBuilder includes history" {
   // ビルトインツールガイドを無効化して履歴のみテスト
-  let builder = DefaultContextBuilder::new(
-    options={
-      ..ContextOptions::default(),
-      include_builtin_tools_guide: false,
-    },
-  )
+  let builder = DefaultContextBuilder::new(options={
+    ..ContextOptions::default(),
+    include_builtin_tools_guide: false,
+  })
   let history = [
     @types.ModelMessage::User(content="Hi", name=None),
     @types.ModelMessage::Assistant(content="Hello!", tool_calls=None),
@@ -466,7 +464,9 @@ test "DefaultContextBuilder includes trace context in system prompt" {
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],
-    trace_context: Some("## Recent Conversations\n\n**2026-03-02** (MoonBit, FFI)\nDiscussed FFI implementation"),
+    trace_context: Some(
+      "## Recent Conversations\n\n**2026-03-02** (MoonBit, FFI)\nDiscussed FFI implementation",
+    ),
     skills: [],
     bootstrap: "",
     current_message: @types.InboundEnvelope::{
@@ -495,13 +495,11 @@ test "DefaultContextBuilder includes trace context in system prompt" {
 
 ///|
 test "DefaultContextBuilder excludes trace when include_trace is false" {
-  let builder = DefaultContextBuilder::new(
-    options={
-      ..ContextOptions::default(),
-      include_trace: false,
-      include_builtin_tools_guide: false,
-    },
-  )
+  let builder = DefaultContextBuilder::new(options={
+    ..ContextOptions::default(),
+    include_trace: false,
+    include_builtin_tools_guide: false,
+  })
   let input : @interfaces.ContextInput = {
     session_history: [],
     memory_context: [],

@@ -171,9 +171,7 @@ fn web_fetch(
   // レスポンス解析: 最後の行がHTTPステータスコード
   let lines = stdout.split("\n").collect()
   let status_code = if lines.length() > 0 {
-    let last_line = lines[lines.length() - 1]
-      .to_string()
-      .trim(chars=" \t\r\n")
+    let last_line = lines[lines.length() - 1].to_string().trim(chars=" \t\r\n")
     parse_status_code(last_line)
   } else {
     0

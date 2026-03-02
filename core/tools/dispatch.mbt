@@ -48,7 +48,10 @@ pub fn execute_simple_tool(name : String, args : Json) -> ToolExecutionResult {
     "shell" => execute_shell(args)
     "filesystem" => execute_filesystem(args)
     "web" => execute_web(args)
-    _ => ToolExecutionResult::error("Unknown tool or requires dependencies: \{name}")
+    _ =>
+      ToolExecutionResult::error(
+        "Unknown tool or requires dependencies: \{name}",
+      )
   }
 }
 
@@ -56,8 +59,13 @@ pub fn execute_simple_tool(name : String, args : Json) -> ToolExecutionResult {
 /// ツールが同期実行可能かチェック
 pub fn is_sync_tool(name : String) -> Bool {
   match name {
-    "datetime" | "memory" | "message" | "spawn" | "shell" | "filesystem" | "web" =>
-      true
+    "datetime"
+    | "memory"
+    | "message"
+    | "spawn"
+    | "shell"
+    | "filesystem"
+    | "web" => true
     _ => false
   }
 }

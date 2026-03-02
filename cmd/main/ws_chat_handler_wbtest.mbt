@@ -1048,7 +1048,7 @@ test "production flow: ChatWsHandler with actual get_timestamp_ms" {
 
 ///|
 /// async 関数内で trait object のメソッドを呼ぶヘルパー
-async fn call_recorder_in_async(
+fn call_recorder_in_async(
   recorder : &@interfaces.HistoryRecorder,
   session_id : String,
   timestamp : Int64,
@@ -1057,7 +1057,7 @@ async fn call_recorder_in_async(
 }
 
 ///|
-async fn record_in_async(
+fn record_in_async(
   recorder : &@interfaces.HistoryRecorder,
   record : @interfaces.HistoryRecord,
 ) -> Unit raise @interfaces.HistoryError {
@@ -1160,8 +1160,6 @@ test "E2E: verify actual file creation with exact production pattern" {
   // 3. history_recorder.record() 呼び出し
   // 4. ファイルが実際にディスクに存在することを確認
 
-  let unique_id = @native.c_time()
-
   // プロダクションと同じ: ChatWsHandler::new()
   let handler = ChatWsHandler::new()
   let history_recorder = create_session_history_recorder()
@@ -1212,7 +1210,6 @@ test "E2E: verify actual file creation with exact production pattern" {
   let (year, month, day) = @native.native_epoch_to_date(epoch_secs) catch {
     _ => fail("E2E: native_epoch_to_date failed")
   }
-  let dir_path = @history.history_dir_for_date(data_dir, year, month, day)
   let (channel, chat_id) = @history.split_session_id(session_id)
   let file_path = @history.history_file_path(
     data_dir, channel, chat_id, year, month, day, epoch_secs,
@@ -1321,7 +1318,7 @@ async test "ASYNC: ChatWsHandler passed by value to async function" {
 
 ///|
 /// handle_connection の履歴記録部分をシミュレート
-async fn simulate_handle_connection_async(
+fn simulate_handle_connection_async(
   handler : ChatWsHandler, // 値渡し（プロダクションと同じ）
   history_recorder : &@interfaces.HistoryRecorder,
   session_id : String,
@@ -1399,14 +1396,14 @@ test "CRITICAL: trait object in struct preserves mutable state across calls" {
 ///|
 test "CRITICAL: ChatWsHandler.history_recorder preserves state" {
   // ChatWsHandler を作成し、その history_recorder の状態が保持されるか確認
-  let handler = ChatWsHandler::new()
+  let _handler = ChatWsHandler::new()
   let history_recorder = create_session_history_recorder()
   let unique_id = @native.c_time()
   let session_id = "web_chat:handler-state-test-\{unique_id}"
   let timestamp = unique_id * 1000L
 
   // open_session
-  let is_new = history_recorder.open_session(session_id~, timestamp~) catch {
+  let _is_new = history_recorder.open_session(session_id~, timestamp~) catch {
     e => fail("CRITICAL: open_session on handler failed: \{e}")
   }
 

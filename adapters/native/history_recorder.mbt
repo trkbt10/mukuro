@@ -215,7 +215,9 @@ fn update_metadata_for_record(
       // SessionMeta から model_name を抽出して SQLite に保存
       let model = extract_model_from_payload(record.payload)
       if model.length() > 0 {
-        store.update_model_name(session_id~, model_name=model) catch { _ => () }
+        store.update_model_name(session_id~, model_name=model) catch {
+          _ => ()
+        }
       }
     }
     _ => () // ToolResult, Error は無視

@@ -58,10 +58,9 @@ pub fn NoOpEmbeddingProvider::new(dimension~ : Int) -> NoOpEmbeddingProvider {
 }
 
 ///|
-pub impl EmbeddingProvider for NoOpEmbeddingProvider with embed(
-  self,
-  text,
-) -> Array[Double] raise EmbeddingError {
+pub impl EmbeddingProvider for NoOpEmbeddingProvider with embed(self, text) -> Array[
+  Double,
+] raise EmbeddingError {
   ignore(text)
   Array::make(self.dim, 0.0)
 }
@@ -210,25 +209,19 @@ pub(open) trait TraceStore {
   get_segment(Self, id : String) -> LongTermSegment? raise MemoryStoreError
 
   /// ベクトル類似検索（RAG用）
-  search_segments_by_vector(
-    Self,
-    embedding : Array[Double],
-    limit : Int,
-  ) -> Array[(LongTermSegment, Double)] raise MemoryStoreError
+  search_segments_by_vector(Self, embedding : Array[Double], limit : Int) -> Array[
+    (LongTermSegment, Double),
+  ] raise MemoryStoreError
 
   /// 時間範囲でセグメントを取得
-  get_segments_by_time(
-    Self,
-    start : Int64,
-    end : Int64,
-  ) -> Array[LongTermSegment] raise MemoryStoreError
+  get_segments_by_time(Self, start : Int64, end : Int64) -> Array[
+    LongTermSegment,
+  ] raise MemoryStoreError
 
   /// トピックでセグメントを検索
-  search_segments_by_topic(
-    Self,
-    topics : Array[String],
-    limit : Int,
-  ) -> Array[LongTermSegment] raise MemoryStoreError
+  search_segments_by_topic(Self, topics : Array[String], limit : Int) -> Array[
+    LongTermSegment,
+  ] raise MemoryStoreError
 
   /// セグメントを削除
   delete_segment(Self, id : String) -> Unit raise MemoryStoreError
@@ -252,27 +245,22 @@ pub impl TraceStore for NoOpTraceStore with open(_self) -> Unit raise MemoryStor
 }
 
 ///|
-pub impl TraceStore for NoOpTraceStore with save_short_term(
-  _self,
-  entry,
-) -> Unit raise MemoryStoreError {
+pub impl TraceStore for NoOpTraceStore with save_short_term(_self, entry) -> Unit raise MemoryStoreError {
   ignore(entry)
 }
 
 ///|
-pub impl TraceStore for NoOpTraceStore with get_daily_memory(
-  _self,
-  date,
-) -> Array[ShortTermMemoryEntry] raise MemoryStoreError {
+pub impl TraceStore for NoOpTraceStore with get_daily_memory(_self, date) -> Array[
+  ShortTermMemoryEntry,
+] raise MemoryStoreError {
   ignore(date)
   []
 }
 
 ///|
-pub impl TraceStore for NoOpTraceStore with list_recent_short_term(
-  _self,
-  days,
-) -> Array[ShortTermMemoryEntry] raise MemoryStoreError {
+pub impl TraceStore for NoOpTraceStore with list_recent_short_term(_self, days) -> Array[
+  ShortTermMemoryEntry,
+] raise MemoryStoreError {
   ignore(days)
   []
 }
@@ -287,26 +275,17 @@ pub impl TraceStore for NoOpTraceStore with get_short_term_by_session(
 }
 
 ///|
-pub impl TraceStore for NoOpTraceStore with delete_short_term(
-  _self,
-  session_id,
-) -> Unit raise MemoryStoreError {
+pub impl TraceStore for NoOpTraceStore with delete_short_term(_self, session_id) -> Unit raise MemoryStoreError {
   ignore(session_id)
 }
 
 ///|
-pub impl TraceStore for NoOpTraceStore with save_segment(
-  _self,
-  segment,
-) -> Unit raise MemoryStoreError {
+pub impl TraceStore for NoOpTraceStore with save_segment(_self, segment) -> Unit raise MemoryStoreError {
   ignore(segment)
 }
 
 ///|
-pub impl TraceStore for NoOpTraceStore with get_segment(
-  _self,
-  id,
-) -> LongTermSegment? raise MemoryStoreError {
+pub impl TraceStore for NoOpTraceStore with get_segment(_self, id) -> LongTermSegment? raise MemoryStoreError {
   ignore(id)
   None
 }
@@ -345,10 +324,7 @@ pub impl TraceStore for NoOpTraceStore with search_segments_by_topic(
 }
 
 ///|
-pub impl TraceStore for NoOpTraceStore with delete_segment(
-  _self,
-  id,
-) -> Unit raise MemoryStoreError {
+pub impl TraceStore for NoOpTraceStore with delete_segment(_self, id) -> Unit raise MemoryStoreError {
   ignore(id)
 }
 

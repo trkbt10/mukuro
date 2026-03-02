@@ -1,6 +1,7 @@
 {
   "name": "trkbt10/mukuro",
   "version": "0.1.0",
+  "preferred-target": "native",
   "deps": {
     "moonbitlang/async": "0.16.6",
     "moonbitlang/x": "0.4.40",

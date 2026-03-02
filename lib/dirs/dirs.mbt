@@ -90,11 +90,7 @@ pub fn temp_dir_for(app_name : String) -> String {
 /// e.g. "/Users/.../mukuro/history/2026/03/02/file.jsonl" → "history/2026/03/02/file.jsonl"
 pub fn to_relative_path(file_path : String, base_dir : String) -> String {
   // base_dir が "/" で終わらない場合は "/" を付加してプレフィックスチェック
-  let prefix = if base_dir.has_suffix("/") {
-    base_dir
-  } else {
-    "\{base_dir}/"
-  }
+  let prefix = if base_dir.has_suffix("/") { base_dir } else { "\{base_dir}/" }
   if file_path.has_prefix(prefix) {
     // prefix を除去して相対パスに
     let sb = StringBuilder::new()

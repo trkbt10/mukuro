@@ -69,7 +69,11 @@ test "extract_tool_call_payload: extracts all fields" {
 
 ///|
 test "reconstruct_session_from_history: empty records returns empty session" {
-  let key = @types.SessionKey::new(channel="test", chat_id="chat_1", user_id=None)
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_1",
+    user_id=None,
+  )
   let records : Array[@interfaces.HistoryRecord] = []
   let session = reconstruct_session_from_history(key, records)
   assert_eq(session.history.length(), 0)
@@ -78,7 +82,11 @@ test "reconstruct_session_from_history: empty records returns empty session" {
 
 ///|
 test "reconstruct_session_from_history: user message is reconstructed" {
-  let key = @types.SessionKey::new(channel="test", chat_id="chat_1", user_id=None)
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_1",
+    user_id=None,
+  )
   let records : Array[@interfaces.HistoryRecord] = [
     {
       timestamp: 1000L,
@@ -98,7 +106,11 @@ test "reconstruct_session_from_history: user message is reconstructed" {
 
 ///|
 test "reconstruct_session_from_history: ToolCall records populate AssistantMessage.tool_calls" {
-  let key = @types.SessionKey::new(channel="test", chat_id="chat_1", user_id=None)
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_1",
+    user_id=None,
+  )
   let records : Array[@interfaces.HistoryRecord] = [
     {
       timestamp: 1000L,
@@ -179,7 +191,11 @@ test "reconstruct_session_from_history: ToolCall records populate AssistantMessa
 /// 回帰テスト: チェーンされたツールコール（複数回のツール呼び出し）
 /// シナリオ: User → ToolCall1 → Result1 → ToolCall2 → Result2 → TextResponse
 test "reconstruct_session_from_history: chained_tool_calls" {
-  let key = @types.SessionKey::new(channel="test", chat_id="chat_1", user_id=None)
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_1",
+    user_id=None,
+  )
   let records : Array[@interfaces.HistoryRecord] = [
     // User
     {
@@ -315,7 +331,11 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 /// シナリオ: Turn1(User→TC→Result→Text) → Turn2(User follow-up)
 /// これは元のバグ「2ターン目で ModelCallFailed」の再現テスト
 test "reconstruct_session_from_history: two_phase_with_follow_up" {
-  let key = @types.SessionKey::new(channel="test", chat_id="chat_1", user_id=None)
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_1",
+    user_id=None,
+  )
   let records : Array[@interfaces.HistoryRecord] = [
     // Turn 1: User asks
     {

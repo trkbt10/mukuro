@@ -13,10 +13,19 @@ pub fn shell_tool() -> @types.ToolDefinition {
     description="Execute shell commands on the local system. Use for: running programs, checking system status (ls, pwd, df), git operations, build commands, and any terminal operations. Returns stdout, stderr, and exit code. Dangerous commands (rm -rf, dd, etc.) require confirmation.",
     parameters=object_schema(
       {
-        "command": string_param("Shell command to execute (e.g., 'ls -la', 'git status', 'npm install')"),
-        "cwd": string_param("Working directory path. Command runs here instead of default directory."),
-        "timeout": integer_param("Timeout in milliseconds (default: 30000). Use longer for slow operations."),
-        "env": { "type": "object", "description": "Environment variables as key-value pairs (e.g., {\"NODE_ENV\": \"production\"})" },
+        "command": string_param(
+          "Shell command to execute (e.g., 'ls -la', 'git status', 'npm install')",
+        ),
+        "cwd": string_param(
+          "Working directory path. Command runs here instead of default directory.",
+        ),
+        "timeout": integer_param(
+          "Timeout in milliseconds (default: 30000). Use longer for slow operations.",
+        ),
+        "env": {
+          "type": "object",
+          "description": "Environment variables as key-value pairs (e.g., {\"NODE_ENV\": \"production\"})",
+        },
       },
       ["command"],
     ),
@@ -43,7 +52,11 @@ pub fn shell_settings_schema() -> Json {
         label="Default Shell",
         description="Shell to use for command execution",
         default_value="/bin/bash",
-        options=[("/bin/bash", "Bash"), ("/bin/zsh", "Zsh"), ("/bin/sh", "POSIX sh")],
+        options=[
+          ("/bin/bash", "Bash"),
+          ("/bin/zsh", "Zsh"),
+          ("/bin/sh", "POSIX sh"),
+        ],
       ),
       toggle_field(
         key="allow_dangerous",

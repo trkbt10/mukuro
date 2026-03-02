@@ -177,7 +177,9 @@ fn temp_dir_impl() -> String {
         Some(v) if not(v.is_empty()) =>
           // TMPDIR may have trailing slash, normalize it
           if v.length() > 1 && v[v.length() - 1] == '/' {
-            let trimmed : String = v[:v.length() - 1].to_string() catch { _ => v }
+            let trimmed : String = v[:v.length() - 1].to_string() catch {
+              _ => v
+            }
             trimmed
           } else {
             v

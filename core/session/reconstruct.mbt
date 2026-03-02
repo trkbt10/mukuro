@@ -28,10 +28,7 @@ pub fn reconstruct_session_from_history(
       @interfaces.HistoryRecordType::UserMessage => {
         // 前の AssistantMessage に tool_calls を反映
         finalize_pending_assistant(
-          history,
-          pending_tool_calls,
-          pending_assistant_index,
-          pending_assistant_content,
+          history, pending_tool_calls, pending_assistant_index, pending_assistant_content,
         )
         pending_assistant_index = -1
         pending_tool_calls.clear()
@@ -43,10 +40,7 @@ pub fn reconstruct_session_from_history(
       @interfaces.HistoryRecordType::AssistantMessage => {
         // 前の AssistantMessage に tool_calls を反映
         finalize_pending_assistant(
-          history,
-          pending_tool_calls,
-          pending_assistant_index,
-          pending_assistant_content,
+          history, pending_tool_calls, pending_assistant_index, pending_assistant_content,
         )
         pending_tool_calls.clear()
 
@@ -56,10 +50,14 @@ pub fn reconstruct_session_from_history(
           // tool_calls は後続の ToolCall レコードから取得するので、一時的に None で追加
           pending_assistant_index = history.length()
           pending_assistant_content = content
-          history.push(@types.ModelMessage::Assistant(content~, tool_calls=None))
+          history.push(
+            @types.ModelMessage::Assistant(content~, tool_calls=None),
+          )
         } else {
           pending_assistant_index = -1
-          history.push(@types.ModelMessage::Assistant(content~, tool_calls=None))
+          history.push(
+            @types.ModelMessage::Assistant(content~, tool_calls=None),
+          )
         }
       }
       @interfaces.HistoryRecordType::ToolCall => {
@@ -70,16 +68,15 @@ pub fn reconstruct_session_from_history(
       @interfaces.HistoryRecordType::ToolResult => {
         // ToolResult の前に pending の AssistantMessage を確定
         finalize_pending_assistant(
-          history,
-          pending_tool_calls,
-          pending_assistant_index,
-          pending_assistant_content,
+          history, pending_tool_calls, pending_assistant_index, pending_assistant_content,
         )
         pending_assistant_index = -1
         pending_tool_calls.clear()
 
         let (call_id, content) = extract_tool_result_payload(record.payload)
-        history.push(@types.ModelMessage::ToolResult(tool_call_id=call_id, content~))
+        history.push(
+          @types.ModelMessage::ToolResult(tool_call_id=call_id, content~),
+        )
       }
       _ => () // SessionMeta, Error は直接 history に入れない
     }
@@ -87,10 +84,7 @@ pub fn reconstruct_session_from_history(
 
   // ループ終了後、未処理の AssistantMessage があれば確定
   finalize_pending_assistant(
-    history,
-    pending_tool_calls,
-    pending_assistant_index,
-    pending_assistant_content,
+    history, pending_tool_calls, pending_assistant_index, pending_assistant_content,
   )
 
   // Session を作成し、復元したメッセージを追加

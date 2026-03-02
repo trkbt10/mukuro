@@ -33,7 +33,11 @@ pub fn create_tool_loader_io() -> @tool.ToolLoaderIO {
         if not(entry.has_prefix(".")) {
           // Check if tool.json exists in this subdirectory
           let manifest_path = tools_dir + "/" + entry + "/tool.json"
-          if @native.c_access_bytes(@native.string_to_utf8_cstring(manifest_path), @native.f_ok) == 0 {
+          if @native.c_access_bytes(
+              @native.string_to_utf8_cstring(manifest_path),
+              @native.f_ok,
+            ) ==
+            0 {
             dirs.push(entry)
           }
         }

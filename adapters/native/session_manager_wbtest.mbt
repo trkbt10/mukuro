@@ -706,8 +706,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
   match session.history[0] {
     @types.ModelMessage::User(content~, ..) =>
       assert_eq(
-        content,
-        "List files and then show me the content of the first file",
+        content, "List files and then show me the content of the first file",
       )
     _ => fail("Expected User message at index 0")
   }

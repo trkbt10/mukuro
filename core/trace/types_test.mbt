@@ -1,6 +1,5 @@
 ///|
 /// Memory Types Unit Tests
-
 test "short_term_entry_to_json roundtrip" {
   let entry : @interfaces.ShortTermMemoryEntry = {
     session_id: "web_chat:abc123",
@@ -26,18 +25,21 @@ test "short_term_entry_to_json roundtrip" {
   assert_eq(r.source_file_path, entry.source_file_path)
 }
 
+///|
 test "short_term_entry_from_json invalid json returns None" {
   let invalid = Json::string("not an object")
   let result = short_term_entry_from_json(invalid)
   assert_true(result is None)
 }
 
+///|
 test "short_term_entry_from_json missing required field returns None" {
   let json = Json::object({ "date": Json::string("2026-03-02") })
   let result = short_term_entry_from_json(json)
   assert_true(result is None)
 }
 
+///|
 test "segment_to_json roundtrip with embedding" {
   let segment : @interfaces.LongTermSegment = {
     id: "seg-001",
@@ -63,6 +65,7 @@ test "segment_to_json roundtrip with embedding" {
   assert_eq(r.time_range_end, segment.time_range_end)
 }
 
+///|
 test "segment_to_json roundtrip without embedding" {
   let segment : @interfaces.LongTermSegment = {
     id: "seg-002",
@@ -82,12 +85,14 @@ test "segment_to_json roundtrip without embedding" {
   assert_true(r.embedding is None)
 }
 
+///|
 test "segment_from_json invalid json returns None" {
   let invalid = Json::array([])
   let result = segment_from_json(invalid)
   assert_true(result is None)
 }
 
+///|
 test "SegmentationConfig default values" {
   let cfg = SegmentationConfig::default()
   assert_eq(cfg.target_chunk_size, 500)
@@ -98,6 +103,7 @@ test "SegmentationConfig default values" {
   assert_false(cfg.adaptive)
 }
 
+///|
 test "BatchDigestConfig default values" {
   let cfg = BatchDigestConfig::default()
   assert_eq(cfg.batch_threshold, 300)
@@ -105,30 +111,37 @@ test "BatchDigestConfig default values" {
   assert_eq(cfg.max_batch_chars, 1500)
 }
 
+///|
 test "IterativeDigestConfig default values" {
   let cfg = IterativeDigestConfig::default()
   assert_true(cfg.target_ratio > 0.2 && cfg.target_ratio < 0.4)
   assert_eq(cfg.max_iterations, 5)
-  assert_true(cfg.convergence_threshold > 0.0 && cfg.convergence_threshold < 0.1)
+  assert_true(
+    cfg.convergence_threshold > 0.0 && cfg.convergence_threshold < 0.1,
+  )
 }
 
+///|
 test "estimate_tokens empty string" {
   let result = estimate_tokens("")
   assert_eq(result, 0)
 }
 
+///|
 test "estimate_tokens short text" {
   let result = estimate_tokens("Hello")
   // 5 chars / 2 = 2.5 → 3 (rounded up)
   assert_true(result >= 2 && result <= 3)
 }
 
+///|
 test "estimate_tokens japanese text" {
   let result = estimate_tokens("こんにちは世界")
   // 7 chars / 2 = 3.5 → 4
   assert_true(result >= 3 && result <= 4)
 }
 
+///|
 test "estimate_tokens long text" {
   let text = "This is a longer piece of text that should have more tokens."
   let result = estimate_tokens(text)

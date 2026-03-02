@@ -7,7 +7,5 @@ warnings = "-29"
 
 options(
   "native-stub": [ "dirs_native_stub.c" ],
-  targets: {
-    "dirs_native.mbt": [ "native" ],
-  },
+  targets: { "dirs_native.mbt": [ "native" ] },
 )

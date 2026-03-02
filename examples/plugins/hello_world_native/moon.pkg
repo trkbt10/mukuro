@@ -8,8 +8,5 @@ options(
   "is-main": true,
   link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
   "native-stub": [ "native_stubs.c" ],
-  targets: {
-    "main.mbt": [ "native" ],
-    "plugin.mbt": [ "native" ],
-  },
+  targets: { "main.mbt": [ "native" ], "plugin.mbt": [ "native" ] },
 )

@@ -18,15 +18,22 @@ pub fn web_tool() -> @types.ToolDefinition {
           "enum": Json::array([Json::string("fetch"), Json::string("search")]),
           "description": "Action: 'fetch' makes HTTP request to URL, 'search' performs web search (requires API setup)",
         },
-        "url": string_param("Full URL including protocol (e.g., 'https://api.example.com/data')"),
+        "url": string_param(
+          "Full URL including protocol (e.g., 'https://api.example.com/data')",
+        ),
         "query": string_param("Search query string (for search action)"),
         "method": {
           "type": "string",
           "enum": Json::array([Json::string("GET"), Json::string("POST")]),
           "description": "HTTP method: GET (retrieve data) or POST (send data)",
         },
-        "headers": { "type": "object", "description": "Custom HTTP headers as key-value pairs (e.g., {\"Authorization\": \"Bearer token\"})" },
-        "body": string_param("Request body for POST requests (JSON string or form data)"),
+        "headers": {
+          "type": "object",
+          "description": "Custom HTTP headers as key-value pairs (e.g., {\"Authorization\": \"Bearer token\"})",
+        },
+        "body": string_param(
+          "Request body for POST requests (JSON string or form data)",
+        ),
       },
       ["action"],
     ),

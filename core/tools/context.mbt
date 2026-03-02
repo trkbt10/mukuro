@@ -17,7 +17,11 @@ pub struct BuiltinToolContext {
 pub fn BuiltinToolContext::new(
   send_message : (@types.OutboundMessage) -> Unit,
 ) -> BuiltinToolContext {
-  { memory: MemoryStore::new(), agent_manager: SubAgentManager::new(), send_message }
+  {
+    memory: MemoryStore::new(),
+    agent_manager: SubAgentManager::new(),
+    send_message,
+  }
 }
 
 ///|

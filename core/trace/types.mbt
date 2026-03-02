@@ -7,14 +7,18 @@
 
 ///|
 /// ShortTermMemoryEntry を Json に変換
-pub fn short_term_entry_to_json(entry : @interfaces.ShortTermMemoryEntry) -> Json {
+pub fn short_term_entry_to_json(
+  entry : @interfaces.ShortTermMemoryEntry,
+) -> Json {
   let topics_json = entry.topics.map(fn(t) { Json::string(t) })
   Json::object({
     "session_id": Json::string(entry.session_id),
     "date": Json::string(entry.date),
     "digest": Json::string(entry.digest),
     "topics": Json::array(topics_json),
-    "original_message_count": Json::number(entry.original_message_count.to_double()),
+    "original_message_count": Json::number(
+      entry.original_message_count.to_double(),
+    ),
     "estimated_tokens": Json::number(entry.estimated_tokens.to_double()),
     "created_at": Json::number(entry.created_at.to_double()),
     "source_file_path": Json::string(entry.source_file_path),
@@ -24,7 +28,7 @@ pub fn short_term_entry_to_json(entry : @interfaces.ShortTermMemoryEntry) -> Jso
 ///|
 /// Json から ShortTermMemoryEntry を復元
 pub fn short_term_entry_from_json(
-  json : Json
+  json : Json,
 ) -> @interfaces.ShortTermMemoryEntry? {
   let obj = match json {
     Object(o) => o
@@ -44,14 +48,12 @@ pub fn short_term_entry_from_json(
   }
   let topics = match obj.get("topics") {
     Some(Array(arr)) =>
-      arr.filter_map(
-        fn(j) {
-          match j {
-            String(s) => Some(s)
-            _ => None
-          }
-        },
-      )
+      arr.filter_map(fn(j) {
+        match j {
+          String(s) => Some(s)
+          _ => None
+        }
+      })
     _ => []
   }
   let original_message_count = match obj.get("original_message_count") {
@@ -70,18 +72,16 @@ pub fn short_term_entry_from_json(
     Some(String(s)) => s
     _ => ""
   }
-  Some(
-    {
-      session_id,
-      date,
-      digest,
-      topics,
-      original_message_count,
-      estimated_tokens,
-      created_at,
-      source_file_path,
-    },
-  )
+  Some({
+    session_id,
+    date,
+    digest,
+    topics,
+    original_message_count,
+    estimated_tokens,
+    created_at,
+    source_file_path,
+  })
 }
 
 // ============================================================
@@ -128,14 +128,12 @@ pub fn segment_from_json(json : Json) -> @interfaces.LongTermSegment? {
   let embedding : Array[Double]? = match obj.get("embedding") {
     Some(Array(arr)) =>
       Some(
-        arr.filter_map(
-          fn(j) {
-            match j {
-              Number(n, ..) => Some(n)
-              _ => None
-            }
-          },
-        ),
+        arr.filter_map(fn(j) {
+          match j {
+            Number(n, ..) => Some(n)
+            _ => None
+          }
+        }),
       )
     Some(Null) => None
     None => None
@@ -143,14 +141,12 @@ pub fn segment_from_json(json : Json) -> @interfaces.LongTermSegment? {
   }
   let source_sessions = match obj.get("source_sessions") {
     Some(Array(arr)) =>
-      arr.filter_map(
-        fn(j) {
-          match j {
-            String(s) => Some(s)
-            _ => None
-          }
-        },
-      )
+      arr.filter_map(fn(j) {
+        match j {
+          String(s) => Some(s)
+          _ => None
+        }
+      })
     _ => []
   }
   let time_range_start = match obj.get("time_range_start") {
@@ -163,14 +159,12 @@ pub fn segment_from_json(json : Json) -> @interfaces.LongTermSegment? {
   }
   let topics = match obj.get("topics") {
     Some(Array(arr)) =>
-      arr.filter_map(
-        fn(j) {
-          match j {
-            String(s) => Some(s)
-            _ => None
-          }
-        },
-      )
+      arr.filter_map(fn(j) {
+        match j {
+          String(s) => Some(s)
+          _ => None
+        }
+      })
     _ => []
   }
   let compression_ratio = match obj.get("compression_ratio") {
@@ -181,19 +175,17 @@ pub fn segment_from_json(json : Json) -> @interfaces.LongTermSegment? {
     Some(Number(n, ..)) => n.to_int64()
     _ => 0L
   }
-  Some(
-    {
-      id,
-      content,
-      embedding,
-      source_sessions,
-      time_range_start,
-      time_range_end,
-      topics,
-      compression_ratio,
-      created_at,
-    },
-  )
+  Some({
+    id,
+    content,
+    embedding,
+    source_sessions,
+    time_range_start,
+    time_range_end,
+    topics,
+    compression_ratio,
+    created_at,
+  })
 }
 
 // ============================================================

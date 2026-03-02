@@ -25,7 +25,8 @@ pub(all) suberror ShortTermMemoryError {
 ///|
 pub impl Show for ShortTermMemoryError with output(self, logger) {
   match self {
-    StoreError(msg) => logger.write_string("ShortTermMemoryError::StoreError: \{msg}")
+    StoreError(msg) =>
+      logger.write_string("ShortTermMemoryError::StoreError: \{msg}")
     DigestFailure(msg) =>
       logger.write_string("ShortTermMemoryError::DigestFailure: \{msg}")
     HistoryReadError(msg) =>
@@ -68,10 +69,7 @@ pub fn ShortTermMemoryService::new(
   config~ : ShortTermMemoryConfig,
   digest_config~ : DigestServiceConfig,
 ) -> ShortTermMemoryService {
-  {
-    config,
-    digest_service: DigestService::new(config=digest_config),
-  }
+  { config, digest_service: DigestService::new(config=digest_config) }
 }
 
 ///|
@@ -104,16 +102,10 @@ pub async fn ShortTermMemoryService::create_entry_from_messages(
   }
   // DigestService を使ってエントリを作成
   let entry = self.digest_service.create_short_term_entry(
-      orchestrator,
-      session_id,
-      date,
-      messages,
-      source_file_path,
-      timestamp,
-    )
-    catch {
-      e => raise DigestFailure(e.to_string())
-    }
+    orchestrator, session_id, date, messages, source_file_path, timestamp,
+  ) catch {
+    e => raise DigestFailure(e.to_string())
+  }
   entry
 }
 
@@ -192,17 +184,15 @@ pub fn ShortTermMemoryService::format_for_prompt(
   }
   // 時間降順でソート（最新が先）
   let sorted = entries.copy()
-  sorted.sort_by(
-    fn(a, b) {
-      if a.created_at > b.created_at {
-        -1
-      } else if a.created_at < b.created_at {
-        1
-      } else {
-        0
-      }
-    },
-  )
+  sorted.sort_by(fn(a, b) {
+    if a.created_at > b.created_at {
+      -1
+    } else if a.created_at < b.created_at {
+      1
+    } else {
+      0
+    }
+  })
   let parts : Array[String] = []
   let mut total_tokens = 0
   let mut count = 0
@@ -253,6 +243,7 @@ pub fn ShortTermMemoryService::get_prompt_context(
 // Internal Tests
 // ============================================================
 
+///|
 test "ShortTermMemoryConfig default values" {
   let config = ShortTermMemoryConfig::default()
   assert_eq(config.recent_days, 3)
@@ -260,11 +251,13 @@ test "ShortTermMemoryConfig default values" {
   assert_eq(config.max_prompt_tokens, 2000)
 }
 
+///|
 test "ShortTermMemoryService creation" {
   let service = ShortTermMemoryService::with_defaults()
   assert_eq(service.config.recent_days, 3)
 }
 
+///|
 test "format_entry_for_prompt without topics" {
   let entry : @interfaces.ShortTermMemoryEntry = {
     session_id: "test:123",
@@ -282,6 +275,7 @@ test "format_entry_for_prompt without topics" {
   assert_false(formatted.contains("("))
 }
 
+///|
 test "format_entry_for_prompt with topics" {
   let entry : @interfaces.ShortTermMemoryEntry = {
     session_id: "test:123",
@@ -299,12 +293,14 @@ test "format_entry_for_prompt with topics" {
   assert_true(formatted.contains("Test digest content"))
 }
 
+///|
 test "format_for_prompt with empty entries" {
   let service = ShortTermMemoryService::with_defaults()
   let result = service.format_for_prompt([])
   assert_eq(result, "")
 }
 
+///|
 test "format_for_prompt respects token limit" {
   let config = ShortTermMemoryConfig::{
     recent_days: 3,
@@ -312,7 +308,7 @@ test "format_for_prompt respects token limit" {
     max_prompt_tokens: 100, // 100トークン制限
   }
   let service = ShortTermMemoryService::new(
-    config=config,
+    config~,
     digest_config=DigestServiceConfig::default(),
   )
   let entries : Array[@interfaces.ShortTermMemoryEntry] = [
@@ -342,6 +338,7 @@ test "format_for_prompt respects token limit" {
   assert_false(result.contains("Second entry"))
 }
 
+///|
 test "format_for_prompt respects entry count limit" {
   let config = ShortTermMemoryConfig::{
     recent_days: 3,
@@ -349,7 +346,7 @@ test "format_for_prompt respects entry count limit" {
     max_prompt_tokens: 10000,
   }
   let service = ShortTermMemoryService::new(
-    config=config,
+    config~,
     digest_config=DigestServiceConfig::default(),
   )
   let entries : Array[@interfaces.ShortTermMemoryEntry] = [
@@ -379,6 +376,7 @@ test "format_for_prompt respects entry count limit" {
   assert_false(result.contains("Second entry"))
 }
 
+///|
 test "format_for_prompt orders by created_at descending" {
   let service = ShortTermMemoryService::with_defaults()
   let entries : Array[@interfaces.ShortTermMemoryEntry] = [
@@ -413,9 +411,12 @@ test "format_for_prompt orders by created_at descending" {
   }
 }
 
+///|
 test "ShortTermMemoryError display" {
   let err : ShortTermMemoryError = ShortTermMemoryError::StoreError("test")
   assert_true(err.to_string().contains("StoreError"))
-  let err2 : ShortTermMemoryError = ShortTermMemoryError::SessionNotFound("sess1")
+  let err2 : ShortTermMemoryError = ShortTermMemoryError::SessionNotFound(
+    "sess1",
+  )
   assert_true(err2.to_string().contains("SessionNotFound"))
 }

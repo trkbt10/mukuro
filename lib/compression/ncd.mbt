@@ -202,17 +202,20 @@ pub fn sliding_window_ncd(
 // Internal Tests (moved from ncd_test.mbt for zlib linking)
 // ============================================================
 
+///|
 test "ncd of identical strings is close to 0" {
   let text = "This is a test string for NCD calculation"
   let result = ncd(text, text)
   assert_true(result >= 0.0 && result < 0.3)
 }
 
+///|
 test "ncd of empty strings is 0" {
   let result = ncd("", "")
   assert_eq(result, 0.0)
 }
 
+///|
 test "ncd with one empty string is 1" {
   let result1 = ncd("hello", "")
   let result2 = ncd("", "world")
@@ -220,6 +223,7 @@ test "ncd with one empty string is 1" {
   assert_eq(result2, 1.0)
 }
 
+///|
 test "ncd of similar strings is lower than dissimilar" {
   let base = "The quick brown fox jumps over the lazy dog"
   let similar = "The quick brown fox leaps over the lazy dog"
@@ -229,6 +233,7 @@ test "ncd of similar strings is lower than dissimilar" {
   assert_true(ncd_similar < ncd_different)
 }
 
+///|
 test "ncd is symmetric" {
   let a = "Hello world"
   let b = "Goodbye world"
@@ -237,13 +242,11 @@ test "ncd is symmetric" {
   assert_eq(ncd_ab, ncd_ba)
 }
 
+///|
 test "ncd returns values in valid range" {
   let texts = [
-    "Short",
-    "A bit longer text",
-    "This is a much longer text with more content to compress",
-    "日本語のテキスト",
-    "Mixed text with 日本語 and English",
+    "Short", "A bit longer text", "This is a much longer text with more content to compress",
+    "日本語のテキスト", "Mixed text with 日本語 and English",
   ]
   for i = 0; i < texts.length(); i = i + 1 {
     for j = i + 1; j < texts.length(); j = j + 1 {
@@ -253,12 +256,14 @@ test "ncd returns values in valid range" {
   }
 }
 
+///|
 test "calculate_adjacent_ncd returns correct length" {
   let texts = ["a", "b", "c", "d"]
   let result = calculate_adjacent_ncd(texts)
   assert_eq(result.length(), 3)
 }
 
+///|
 test "calculate_adjacent_ncd with less than 2 texts" {
   let result1 = calculate_adjacent_ncd([])
   let result2 = calculate_adjacent_ncd(["single"])
@@ -266,12 +271,14 @@ test "calculate_adjacent_ncd with less than 2 texts" {
   assert_eq(result2.length(), 0)
 }
 
+///|
 test "find_local_maxima with no peaks above threshold" {
   let values = [0.1, 0.2, 0.15, 0.1]
   let result = find_local_maxima(values, 0.5)
   assert_eq(result.length(), 0)
 }
 
+///|
 test "find_local_maxima finds peaks" {
   let values = [0.1, 0.5, 0.2, 0.6, 0.3]
   let result = find_local_maxima(values, 0.3)
@@ -280,6 +287,7 @@ test "find_local_maxima finds peaks" {
   assert_eq(result[1], 3)
 }
 
+///|
 test "find_local_maxima handles plateau" {
   let values = [0.1, 0.5, 0.5, 0.2]
   let result = find_local_maxima(values, 0.3)
@@ -287,24 +295,30 @@ test "find_local_maxima handles plateau" {
   assert_eq(result[0], 1)
 }
 
+///|
 test "sliding_window_ncd returns correct length" {
-  let sentences = ["Sentence one.", "Sentence two.", "Sentence three.", "Sentence four.", "Sentence five."]
+  let sentences = [
+    "Sentence one.", "Sentence two.", "Sentence three.", "Sentence four.", "Sentence five.",
+  ]
   let result = sliding_window_ncd(sentences, 2)
   assert_eq(result.length(), 3)
 }
 
+///|
 test "sliding_window_ncd with insufficient sentences" {
   let sentences = ["Only one."]
   let result = sliding_window_ncd(sentences, 2)
   assert_eq(result.length(), 0)
 }
 
+///|
 test "compressed_size returns positive value" {
   let text = "Hello, World! This is a test."
   let size = compressed_size(text)
   assert_true(size > 0L)
 }
 
+///|
 test "compressed_size of empty string is 0" {
   let size = compressed_size("")
   assert_eq(size, 0L)

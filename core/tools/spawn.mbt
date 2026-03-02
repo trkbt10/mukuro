@@ -23,17 +23,29 @@ pub fn spawn_tool() -> @types.ToolDefinition {
           ]),
           "description": "Action: 'create' new sub-agent, 'status' check progress, 'cancel' stop agent, 'result' get final output",
         },
-        "name": string_param("Descriptive name for the sub-agent (e.g., 'researcher', 'code-reviewer')"),
-        "system_prompt": string_param("Instructions/persona for the sub-agent. Define its role and constraints."),
-        "message": string_param("Initial task or question for the sub-agent to work on"),
-        "model": string_param("LLM model name (default: inherit from parent agent)"),
-        "max_turns": integer_param("Maximum conversation turns before auto-stop (default: 10)"),
+        "name": string_param(
+          "Descriptive name for the sub-agent (e.g., 'researcher', 'code-reviewer')",
+        ),
+        "system_prompt": string_param(
+          "Instructions/persona for the sub-agent. Define its role and constraints.",
+        ),
+        "message": string_param(
+          "Initial task or question for the sub-agent to work on",
+        ),
+        "model": string_param(
+          "LLM model name (default: inherit from parent agent)",
+        ),
+        "max_turns": integer_param(
+          "Maximum conversation turns before auto-stop (default: 10)",
+        ),
         "tools": {
           "type": "array",
           "items": { "type": "string" },
           "description": "List of tool names sub-agent can use (empty = all except spawn)",
         },
-        "agent_id": string_param("Sub-agent ID returned from 'create' (required for status/cancel/result)"),
+        "agent_id": string_param(
+          "Sub-agent ID returned from 'create' (required for status/cancel/result)",
+        ),
       },
       ["action"],
     ),
@@ -101,7 +113,10 @@ pub fn SubAgentManager::generate_id(self : SubAgentManager) -> String {
 // =============================================================================
 
 ///|
-pub fn execute_spawn(manager : SubAgentManager, args : Json) -> ToolExecutionResult {
+pub fn execute_spawn(
+  manager : SubAgentManager,
+  args : Json,
+) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")
@@ -153,8 +168,15 @@ pub fn execute_spawn(manager : SubAgentManager, args : Json) -> ToolExecutionRes
       }
       match manager.agents.get(agent_id) {
         Some(_) => {
-          manager.agents[agent_id] = { agent_id, status: "cancelled", response: None }
-          ToolExecutionResult::success({ "agent_id": agent_id, "status": "cancelled" })
+          manager.agents[agent_id] = {
+            agent_id,
+            status: "cancelled",
+            response: None,
+          }
+          ToolExecutionResult::success({
+            "agent_id": agent_id,
+            "status": "cancelled",
+          })
         }
         None => ToolExecutionResult::error("Agent not found: \{agent_id}")
       }
@@ -247,14 +269,22 @@ pub async fn spawn_agent_async(
     let response = model_invoke(messages, tools, model_options) catch {
       e => {
         let error_msg = e.to_string()
-        let result : SpawnResult = { agent_id, status: "failed", response: Some(error_msg) }
+        let result : SpawnResult = {
+          agent_id,
+          status: "failed",
+          response: Some(error_msg),
+        }
         manager.agents[agent_id] = result
         return result
       }
     }
     match response {
       @types.ModelResponse::Text(content) => {
-        let result : SpawnResult = { agent_id, status: "completed", response: Some(content) }
+        let result : SpawnResult = {
+          agent_id,
+          status: "completed",
+          response: Some(content),
+        }
         manager.agents[agent_id] = result
         return result
       }
@@ -268,13 +298,20 @@ pub async fn spawn_agent_async(
               "Error: RequiresAction is not supported for sub-agents"
           }
           messages.push(
-            @types.ModelMessage::ToolResult(tool_call_id=call.id, content=result_content),
+            @types.ModelMessage::ToolResult(
+              tool_call_id=call.id,
+              content=result_content,
+            ),
           )
         }
         continue iteration + 1
       }
       @types.ModelResponse::ModelError(msg) => {
-        let result : SpawnResult = { agent_id, status: "failed", response: Some(msg) }
+        let result : SpawnResult = {
+          agent_id,
+          status: "failed",
+          response: Some(msg),
+        }
         manager.agents[agent_id] = result
         return result
       }
@@ -299,7 +336,9 @@ async fn execute_subagent_tool_call(
   tool_registry : &@interfaces.ToolRegistry,
 ) -> @types.ToolResult {
   if call.name == "spawn" {
-    return @types.ToolResult::Error(message="spawn tool is not available for sub-agents")
+    return @types.ToolResult::Error(
+      message="spawn tool is not available for sub-agents",
+    )
   }
   match tool_registry.get_executor(call.name) {
     Some(executor) => {

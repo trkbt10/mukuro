@@ -26,7 +26,8 @@ pub(all) suberror DigestError {
 ///|
 pub impl Show for DigestError with output(self, logger) {
   match self {
-    ModelCallError(msg) => logger.write_string("DigestError::ModelCallError: \{msg}")
+    ModelCallError(msg) =>
+      logger.write_string("DigestError::ModelCallError: \{msg}")
     EmptyInput => logger.write_string("DigestError::EmptyInput")
     ParseError(msg) => logger.write_string("DigestError::ParseError: \{msg}")
     ConfigError(msg) => logger.write_string("DigestError::ConfigError: \{msg}")
@@ -66,7 +67,7 @@ pub struct DigestService {
 
 ///|
 pub fn DigestService::new(config~ : DigestServiceConfig) -> DigestService {
-  DigestService::{ config }
+  DigestService::{ config, }
 }
 
 ///|
@@ -131,7 +132,7 @@ pub async fn digest_once(
     @types.ModelMessage::System(system),
     @types.ModelMessage::User(content=text, name=None),
   ]
-  let response = orchestrator.call(messages=messages, tools=[], options=options) catch {
+  let response = orchestrator.call(messages~, tools=[], options~) catch {
     e => raise ModelCallError("Model call failed: \{e}")
   }
   match response {
@@ -161,14 +162,13 @@ pub async fn DigestService::digest_iterative(
   while iteration < config.max_iterations {
     let before_len = current.iter().count()
     let shortened = digest_once(
-        orchestrator,
-        current,
-        context_type,
-        self.config.model_options,
-      )
-      catch {
-        e => raise e
-      }
+      orchestrator,
+      current,
+      context_type,
+      self.config.model_options,
+    ) catch {
+      e => raise e
+    }
     let after_len = shortened.iter().count()
     // 収束判定: 削減率が閾値以下なら停止
     let reduction = if before_len > 0 {
@@ -261,7 +261,7 @@ pub async fn extract_topics(
     @types.ModelMessage::System(system),
     @types.ModelMessage::User(content=text, name=None),
   ]
-  let response = orchestrator.call(messages=messages, tools=[], options=options) catch {
+  let response = orchestrator.call(messages~, tools=[], options~) catch {
     e => raise ModelCallError("Model call failed: \{e}")
   }
   let result = match response {
@@ -298,21 +298,17 @@ fn parse_topic_array(json_str : String) -> Array[String] raise DigestError {
     trimmed.to_string()
   }
   // JSONパース
-  let json = try {
-    @json.parse(cleaned)
-  } catch {
+  let json = @json.parse(cleaned) catch {
     _ => raise ParseError("Failed to parse topics JSON: \{cleaned}")
   }
   match json {
     Array(arr) =>
-      arr.filter_map(
-        fn(item) {
-          match item {
-            String(s) => Some(s)
-            _ => None
-          }
-        },
-      )
+      arr.filter_map(fn(item) {
+        match item {
+          String(s) => Some(s)
+          _ => None
+        }
+      })
     _ => raise ParseError("Expected JSON array for topics")
   }
 }
@@ -339,13 +335,12 @@ pub async fn DigestService::create_short_term_entry(
   }
   // 短縮
   let digest = self.digest_iterative(
-      orchestrator,
-      text,
-      DigestContextType::Conversation,
-    )
-    catch {
-      e => raise e
-    }
+    orchestrator,
+    text,
+    DigestContextType::Conversation,
+  ) catch {
+    e => raise e
+  }
   // トピック抽出
   let topics = extract_topics(orchestrator, digest, self.config.model_options) catch {
     e => raise e
@@ -392,6 +387,7 @@ fn messages_to_text(messages : Array[@types.ModelMessage]) -> String {
 // Internal Tests
 // ============================================================
 
+///|
 test "digest_system_prompt contains context type" {
   let prompt = digest_system_prompt(DigestContextType::Conversation)
   assert_true(prompt.contains("会話ログ"))
@@ -401,10 +397,11 @@ test "digest_system_prompt contains context type" {
   assert_true(notes_prompt.contains("メモ・ノート"))
 }
 
+///|
 test "parse_topic_array with valid JSON" {
-  let result : Result[Array[String], Error] = try {
-    Ok(parse_topic_array("[\"a\", \"b\", \"c\"]"))
-  } catch {
+  let result : Result[Array[String], Error] = Ok(
+    parse_topic_array("[\"a\", \"b\", \"c\"]"),
+  ) catch {
     e => Err(e)
   }
   match result {
@@ -418,10 +415,11 @@ test "parse_topic_array with valid JSON" {
   }
 }
 
+///|
 test "parse_topic_array with code block format" {
-  let result : Result[Array[String], Error] = try {
-    Ok(parse_topic_array("```json\n[\"topic1\", \"topic2\"]\n```"))
-  } catch {
+  let result : Result[Array[String], Error] = Ok(
+    parse_topic_array("```json\n[\"topic1\", \"topic2\"]\n```"),
+  ) catch {
     e => Err(e)
   }
   match result {
@@ -434,10 +432,9 @@ test "parse_topic_array with code block format" {
   }
 }
 
+///|
 test "parse_topic_array with invalid JSON raises ParseError" {
-  let result : Result[Array[String], Error] = try {
-    Ok(parse_topic_array("not json"))
-  } catch {
+  let result : Result[Array[String], Error] = Ok(parse_topic_array("not json")) catch {
     e => Err(e)
   }
   match result {
@@ -446,6 +443,7 @@ test "parse_topic_array with invalid JSON raises ParseError" {
   }
 }
 
+///|
 test "messages_to_text formats correctly" {
   let messages : Array[@types.ModelMessage] = [
     @types.ModelMessage::System("system message"),
@@ -459,6 +457,7 @@ test "messages_to_text formats correctly" {
   assert_false(text.contains("system message"))
 }
 
+///|
 test "messages_to_text skips empty content" {
   let messages : Array[@types.ModelMessage] = [
     @types.ModelMessage::User(content="", name=None),
@@ -470,14 +469,19 @@ test "messages_to_text skips empty content" {
   assert_true(text.contains("Assistant: response"))
 }
 
+///|
 test "messages_to_text includes tool results" {
   let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::ToolResult(tool_call_id="call_1", content="Result data"),
+    @types.ModelMessage::ToolResult(
+      tool_call_id="call_1",
+      content="Result data",
+    ),
   ]
   let text = messages_to_text(messages)
   assert_true(text.contains("Tool Result: Result data"))
 }
 
+///|
 test "topic_extraction_prompt contains expected content" {
   let prompt = topic_extraction_prompt()
   assert_true(prompt.contains("トピック"))

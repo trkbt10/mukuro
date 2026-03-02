@@ -12,7 +12,9 @@ pub fn create_tool_handlers(state : ToolManagerState) -> @api.ToolApiHandlers {
     disable: @api.RouteHandler(fn(ctx) { handle_disable(state, ctx) }),
     remove: @api.RouteHandler(fn(ctx) { handle_remove(state, ctx) }),
     list_actions: @api.RouteHandler(fn(ctx) { handle_list_actions(state, ctx) }),
-    invoke_action: @api.RouteHandler(fn(ctx) { handle_invoke_action(state, ctx) }),
+    invoke_action: @api.RouteHandler(fn(ctx) {
+      handle_invoke_action(state, ctx)
+    }),
   }
 }
 
@@ -160,24 +162,18 @@ pub fn handle_invoke_action(
   let segments = ctx.segments
   // Expected: ["tools", "{id}", "actions", "{action}"]
   if segments.length() < 4 {
-    return @api.error_response(400, "bad_request", "Tool ID and action required")
+    return @api.error_response(
+      400, "bad_request", "Tool ID and action required",
+    )
   }
   let id = segments[1].to_string()
   let action = segments[3].to_string()
   match state.get_tool(id) {
     Some(tool_state) =>
       if not(tool_state.enabled) {
-        @api.error_response(
-          400,
-          "tool_disabled",
-          "Tool '\{id}' is disabled",
-        )
+        @api.error_response(400, "tool_disabled", "Tool '\{id}' is disabled")
       } else {
-        let params = try {
-          @json.parse(ctx.body)
-        } catch {
-          _ => Json::object({})
-        }
+        let params = @json.parse(ctx.body) catch { _ => Json::object({}) }
         match state.invoke_action(id, action, params) {
           Some(resp) => resp
           None =>

@@ -22,8 +22,12 @@ pub fn datetime_tool() -> @types.ToolDefinition {
           ]),
           "description": "Action: 'now' returns full datetime info (ISO 8601 + timestamps), 'timestamp' returns Unix timestamp only, 'format' returns custom formatted string",
         },
-        "format": string_param("Format pattern: 'ISO8601' (default), 'UNIX' (seconds), 'UNIX_MS' (milliseconds)"),
-        "timezone": string_param("Timezone (e.g., UTC, JST). Currently UTC is used."),
+        "format": string_param(
+          "Format pattern: 'ISO8601' (default), 'UNIX' (seconds), 'UNIX_MS' (milliseconds)",
+        ),
+        "timezone": string_param(
+          "Timezone (e.g., UTC, JST). Currently UTC is used.",
+        ),
       },
       ["action"],
     ),
@@ -89,7 +93,11 @@ fn format_iso8601(timestamp_ms : Int64) -> String {
 
 ///|
 fn pad_zero(n : Int) -> String {
-  if n < 10 { "0\{n}" } else { n.to_string() }
+  if n < 10 {
+    "0\{n}"
+  } else {
+    n.to_string()
+  }
 }
 
 ///|

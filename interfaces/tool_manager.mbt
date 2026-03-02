@@ -64,7 +64,7 @@ pub fn ToolState::builtin(
   name~ : String,
   description~ : String,
   parameters~ : Json,
-  settings_schema~ : Json? = None,
+  settings_schema? : Json? = None,
 ) -> ToolState {
   {
     id,
@@ -86,7 +86,7 @@ pub fn ToolState::user_defined(
   name~ : String,
   description~ : String,
   parameters~ : Json,
-  settings_schema~ : Json? = None,
+  settings_schema? : Json? = None,
 ) -> ToolState {
   {
     id,
@@ -108,7 +108,7 @@ pub fn ToolState::from_plugin(
   capability~ : String,
   description~ : String,
   parameters~ : Json,
-  settings_schema~ : Json? = None,
+  settings_schema? : Json? = None,
 ) -> ToolState {
   let id = "\{plugin_id}.\{capability}"
   {
@@ -131,7 +131,7 @@ pub fn ToolState::from_mcp(
   tool_name~ : String,
   description~ : String,
   parameters~ : Json,
-  settings_schema~ : Json? = None,
+  settings_schema? : Json? = None,
 ) -> ToolState {
   let id = "\{server_id}.\{tool_name}"
   {

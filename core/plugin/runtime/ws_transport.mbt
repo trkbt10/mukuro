@@ -83,16 +83,13 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
   self,
 ) {
   match self.state {
-    WebSocketState::Connected
-    | WebSocketState::Connecting =>
+    WebSocketState::Connected | WebSocketState::Connecting =>
       raise @interfaces.TransportError::AlreadyStarted
     _ => {
       self.state = WebSocketState::Connecting
       self.client.connect() catch {
         e => {
-          self.state = WebSocketState::Error(
-            "Connection failed",
-          )
+          self.state = WebSocketState::Error("Connection failed")
           raise @interfaces.TransportError::ConnectionFailed(
             ws_error_message(e),
           )
@@ -109,8 +106,7 @@ pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler 
   self,
 ) {
   match self.state {
-    WebSocketState::Connected
-    | WebSocketState::Connecting => {
+    WebSocketState::Connected | WebSocketState::Connecting => {
       self.client.close()
       self.state = WebSocketState::Closed
     }

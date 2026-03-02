@@ -221,4 +221,3 @@ async test "dynamic plugin manager: enable/disable workflow" {
   let state3 = manager.get_state("my-plugin") catch { _ => panic() }
   assert_true(state3.enabled)
 }
-

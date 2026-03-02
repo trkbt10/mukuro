@@ -140,7 +140,8 @@ pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
   let result = match
     @tools.execute_builtin_tool(self.tool_context, tool_name, arguments) {
     Some(r) => r
-    None => return @types.ToolResult::Error(message="Unknown tool: \{tool_name}")
+    None =>
+      return @types.ToolResult::Error(message="Unknown tool: \{tool_name}")
   }
   match result.status {
     @tools.ToolResultStatus::Success =>

@@ -66,8 +66,8 @@ pub(all) struct SettingsFieldDef {
 pub fn text_field(
   key~ : String,
   label~ : String,
-  description~ : String = "",
-  default_value~ : String = "",
+  description? : String = "",
+  default_value? : String = "",
 ) -> SettingsFieldDef {
   {
     key,
@@ -90,10 +90,10 @@ pub fn text_field(
 pub fn number_field(
   key~ : String,
   label~ : String,
-  description~ : String = "",
-  default_value~ : Double = 0.0,
-  min~ : Double? = None,
-  max~ : Double? = None,
+  description? : String = "",
+  default_value? : Double = 0.0,
+  min? : Double? = None,
+  max? : Double? = None,
 ) -> SettingsFieldDef {
   {
     key,
@@ -112,8 +112,8 @@ pub fn number_field(
 pub fn toggle_field(
   key~ : String,
   label~ : String,
-  description~ : String = "",
-  default_value~ : Bool = false,
+  description? : String = "",
+  default_value? : Bool = false,
 ) -> SettingsFieldDef {
   {
     key,
@@ -132,8 +132,8 @@ pub fn toggle_field(
 pub fn select_field(
   key~ : String,
   label~ : String,
-  description~ : String = "",
-  default_value~ : String = "",
+  description? : String = "",
+  default_value? : String = "",
   options~ : Array[(String, String)],
 ) -> SettingsFieldDef {
   {
@@ -156,7 +156,7 @@ pub fn select_field(
 /// Build settings schema JSON from field definitions
 pub fn build_settings_schema(
   title~ : String,
-  description~ : String = "",
+  description? : String = "",
   fields~ : Array[SettingsFieldDef],
 ) -> Json {
   let fields_json : Array[Json] = []
@@ -263,7 +263,10 @@ pub fn require_string_arg(
 ) -> String raise ToolExecutionError {
   match get_string_arg(args, key) {
     Some(v) => v
-    None => raise ToolExecutionError::InvalidArguments("Missing required argument: \{key}")
+    None =>
+      raise ToolExecutionError::InvalidArguments(
+        "Missing required argument: \{key}",
+      )
   }
 }
 
@@ -275,7 +278,10 @@ pub fn require_int_arg(
 ) -> Int raise ToolExecutionError {
   match get_int_arg(args, key) {
     Some(v) => v
-    None => raise ToolExecutionError::InvalidArguments("Missing required argument: \{key}")
+    None =>
+      raise ToolExecutionError::InvalidArguments(
+        "Missing required argument: \{key}",
+      )
   }
 }
 

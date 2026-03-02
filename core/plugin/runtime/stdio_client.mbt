@@ -249,12 +249,7 @@ pub fn StdioTransportAdapter::new(
   config~ : @interfaces.PluginStdioConfig,
 ) -> StdioTransportAdapter {
   let client = NativeStdioClient::from_config(config)
-  {
-    client,
-    plugin_id,
-    active: false,
-    message_queue: MessageQueue::new(),
-  }
+  { client, plugin_id, active: false, message_queue: MessageQueue::new() }
 }
 
 ///|

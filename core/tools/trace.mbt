@@ -24,7 +24,9 @@ pub fn trace_tool() -> @types.ToolDefinition {
           ]),
           "description": "Action: 'recent' (last N days), 'search' (semantic), 'by_date', 'by_topic', 'segment' (split text into chunks)",
         },
-        "query": string_param("Search query for semantic search (action=search)"),
+        "query": string_param(
+          "Search query for semantic search (action=search)",
+        ),
         "days": {
           "type": "number",
           "description": "Number of days to look back (action=recent, default 7)",
@@ -302,26 +304,22 @@ pub fn execute_trace(store : TraceStore, args : Json) -> ToolExecutionResult {
     "by_topic" => {
       let topics : Array[String] = match args {
         { "topics": Array(arr), .. } =>
-          arr.filter_map(
-            fn(j) {
-              match j {
-                String(s) => Some(s)
-                _ => None
-              }
-            },
-          )
+          arr.filter_map(fn(j) {
+            match j {
+              String(s) => Some(s)
+              _ => None
+            }
+          })
         _ => return ToolExecutionResult::error("Missing topics argument")
       }
       let segments = store.search_by_topic(topics, limit)
-      let segments_json : Array[Json] = segments.map(
-        fn(s) {
-          {
-            "id": s.id,
-            "content": s.content,
-            "topics": Json::array(s.topics.map(fn(t) { Json::string(t) })),
-          }
-        },
-      )
+      let segments_json : Array[Json] = segments.map(fn(s) {
+        {
+          "id": s.id,
+          "content": s.content,
+          "topics": Json::array(s.topics.map(fn(t) { Json::string(t) })),
+        }
+      })
       ToolExecutionResult::success({
         "results": Json::array(segments_json),
         "count": segments_json.length(),
@@ -374,15 +372,15 @@ pub fn execute_trace(store : TraceStore, args : Json) -> ToolExecutionResult {
       // Use NCD + TF-IDF segmentation from core/trace
       let config = @trace.NcdTfidfConfig::default()
       let result = @trace.segment_by_ncd_tfidf(text, config)
-      let chunks_json : Array[Json] = result.chunks.map(
-        fn(c) { Json::string(c) },
-      )
+      let chunks_json : Array[Json] = result.chunks.map(fn(c) {
+        Json::string(c)
+      })
       ToolExecutionResult::success({
         "chunks": Json::array(chunks_json),
         "count": result.chunks.length(),
-        "boundaries": Json::array(result.boundaries.map(fn(b) {
-          Json::number(b.to_double())
-        })),
+        "boundaries": Json::array(
+          result.boundaries.map(fn(b) { Json::number(b.to_double()) }),
+        ),
       })
     }
     _ => ToolExecutionResult::error("Unknown action: \{action}")

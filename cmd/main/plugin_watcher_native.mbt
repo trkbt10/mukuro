@@ -4,7 +4,9 @@
 
 ///|
 /// Global plugin watcher instance
-let global_plugin_watcher : Ref[@plugin_runtime.NativePluginWatcher?] = { val: None }
+let global_plugin_watcher : Ref[@plugin_runtime.NativePluginWatcher?] = {
+  val: None,
+}
 
 ///|
 /// Setup plugin watcher for the plugin system

@@ -13,7 +13,9 @@ pub(all) struct ActionDefinition {
 
 ///|
 /// Get all memory-related API actions
-pub fn get_memory_actions(store : @tools.MemoryStore) -> Array[ActionDefinition] {
+pub fn get_memory_actions(
+  store : @tools.MemoryStore,
+) -> Array[ActionDefinition] {
   [
     {
       name: "memory.list",
@@ -99,7 +101,9 @@ pub fn get_memory_actions(store : @tools.MemoryStore) -> Array[ActionDefinition]
 
 ///|
 /// Get all builtin actions
-pub fn get_all_builtin_actions(store : @tools.MemoryStore) -> Array[ActionDefinition] {
+pub fn get_all_builtin_actions(
+  store : @tools.MemoryStore,
+) -> Array[ActionDefinition] {
   // Currently only memory actions, but extensible
   get_memory_actions(store)
 }

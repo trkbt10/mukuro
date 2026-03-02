@@ -89,7 +89,7 @@ impl @interfaces.SessionManager for MockSessionManager with append_assistant_mes
 
 ///|
 impl @interfaces.SessionManager for MockSessionManager with record_tool_call(
-  self,
+  _self,
   _key,
   call_id~,
   tool_name~,
@@ -123,7 +123,7 @@ impl @interfaces.SessionManager for MockSessionManager with record_tool_result(
 
 ///|
 impl @interfaces.SessionManager for MockSessionManager with record_error(
-  self,
+  _self,
   _key,
   message~,
   timestamp~,
@@ -144,7 +144,7 @@ impl @interfaces.SessionManager for MockSessionManager with list_keys(self) {
 
 ///|
 impl @interfaces.SessionManager for MockSessionManager with close_session(
-  self,
+  _self,
   _key,
 ) {
   // No-op for mock

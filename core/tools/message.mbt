@@ -24,11 +24,19 @@ pub fn message_tool() -> @types.ToolDefinition {
           ]),
           "description": "Action: 'send' new message, 'reply' to existing, 'edit' message, 'delete' message, 'react' with emoji",
         },
-        "channel": string_param("Target channel identifier (e.g., 'slack', 'discord', 'web_chat')"),
-        "chat_id": string_param("Specific chat/thread/room ID within the channel"),
+        "channel": string_param(
+          "Target channel identifier (e.g., 'slack', 'discord', 'web_chat')",
+        ),
+        "chat_id": string_param(
+          "Specific chat/thread/room ID within the channel",
+        ),
         "content": string_param("Message text content to send"),
-        "message_id": string_param("ID of existing message (required for edit/delete/react)"),
-        "reaction": string_param("Emoji reaction (for react action, e.g., ':thumbsup:')"),
+        "message_id": string_param(
+          "ID of existing message (required for edit/delete/react)",
+        ),
+        "reaction": string_param(
+          "Emoji reaction (for react action, e.g., ':thumbsup:')",
+        ),
       },
       ["action"],
     ),
@@ -107,11 +115,17 @@ pub fn execute_message(
       })
     }
     "edit" =>
-      ToolExecutionResult::error("Edit action requires channel-specific implementation")
+      ToolExecutionResult::error(
+        "Edit action requires channel-specific implementation",
+      )
     "delete" =>
-      ToolExecutionResult::error("Delete action requires channel-specific implementation")
+      ToolExecutionResult::error(
+        "Delete action requires channel-specific implementation",
+      )
     "react" =>
-      ToolExecutionResult::error("React action requires channel-specific implementation")
+      ToolExecutionResult::error(
+        "React action requires channel-specific implementation",
+      )
     _ => ToolExecutionResult::error("Unknown action: \{action}")
   }
 }

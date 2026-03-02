@@ -27,10 +27,14 @@ pub fn filesystem_tool() -> @types.ToolDefinition {
           ]),
           "description": "Operation: 'read' file content, 'write' new file, 'append' to file, 'delete' file/dir, 'exists' check, 'list' directory, 'mkdir' create dir, 'stat' get metadata",
         },
-        "path": string_param("Absolute or relative file/directory path. Path traversal (..) is blocked for security."),
+        "path": string_param(
+          "Absolute or relative file/directory path. Path traversal (..) is blocked for security.",
+        ),
         "content": string_param("Text content for write/append actions"),
         "encoding": string_param("File encoding (default: utf8)"),
-        "recursive": boolean_param("For mkdir: create parent dirs. For delete: remove non-empty dirs."),
+        "recursive": boolean_param(
+          "For mkdir: create parent dirs. For delete: remove non-empty dirs.",
+        ),
       },
       ["action", "path"],
     ),

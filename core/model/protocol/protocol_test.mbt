@@ -1119,16 +1119,17 @@ test "regression: two_phase_conversation_with_tool_call_openai_chat" {
   let messages : Array[@types.ModelMessage] = [
     @types.ModelMessage::System("You are a helpful assistant."),
     // Turn 1: User asks
-    @types.ModelMessage::User(content="List files in current directory", name=None),
+    @types.ModelMessage::User(
+      content="List files in current directory",
+      name=None,
+    ),
     // Turn 1: Assistant responds with tool call
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="call_abc123",
-          name="shell",
-          arguments={ "command": "ls" },
-        ),
+        @types.ToolCallRequest::new(id="call_abc123", name="shell", arguments={
+          "command": "ls",
+        }),
       ]),
     ),
     // Turn 1: Tool result
@@ -1192,11 +1193,9 @@ test "regression: two_phase_conversation_with_tool_call_responses_api" {
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="fc_xyz789",
-          name="shell",
-          arguments={ "command": "ls" },
-        ),
+        @types.ToolCallRequest::new(id="fc_xyz789", name="shell", arguments={
+          "command": "ls",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -1229,7 +1228,10 @@ test "regression: two_phase_conversation_with_tool_call_responses_api" {
   // Verify function_call_output
   inspect(s.contains("\"type\":\"function_call_output\""), content="true")
   // Verify tools have name at top level (Responses API format)
-  inspect(s.contains("\"type\":\"function\",\"name\":\"shell\""), content="true")
+  inspect(
+    s.contains("\"type\":\"function\",\"name\":\"shell\""),
+    content="true",
+  )
   // Parse and verify structure
   let body_json = @json.parse(s) catch { _ => return fail("Invalid JSON") }
   match body_json {
@@ -1237,7 +1239,8 @@ test "regression: two_phase_conversation_with_tool_call_responses_api" {
       // Verify tools have name
       for tool_def in tool_defs {
         match tool_def {
-          { "name": String(name), .. } => inspect(name.length() > 0, content="true")
+          { "name": String(name), .. } =>
+            inspect(name.length() > 0, content="true")
           _ => fail("Tool definition missing name")
         }
       }
@@ -1263,11 +1266,9 @@ test "regression: chained_toolcalls_responses_api" {
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="fc_001",
-          name="shell",
-          arguments={ "command": "ls" },
-        ),
+        @types.ToolCallRequest::new(id="fc_001", name="shell", arguments={
+          "command": "ls",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -1278,11 +1279,9 @@ test "regression: chained_toolcalls_responses_api" {
     @types.ModelMessage::Assistant(
       content="",
       tool_calls=Some([
-        @types.ToolCallRequest::new(
-          id="fc_002",
-          name="shell",
-          arguments={ "command": "cat README.md" },
-        ),
+        @types.ToolCallRequest::new(id="fc_002", name="shell", arguments={
+          "command": "cat README.md",
+        }),
       ]),
     ),
     @types.ModelMessage::ToolResult(
@@ -1314,10 +1313,9 @@ test "regression: chained_toolcalls_responses_api" {
   // Parse and verify input items count
   let body_json = @json.parse(s) catch { _ => return fail("Invalid JSON") }
   match body_json {
-    { "input": Array(items), .. } => {
+    { "input": Array(items), .. } =>
       // system + user + fc1 + fc1_output + fc2 + fc2_output = 6 items
       inspect(items.length(), content="6")
-    }
     _ => fail("Expected input array")
   }
 }

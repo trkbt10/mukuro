@@ -208,7 +208,9 @@ fn register_memory_tool_actions(
       let key = match params {
         { "key": String(k), .. } => k
         _ =>
-          return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+          return @api.error_response(
+            400, "bad_request", "Missing 'key' parameter",
+          )
       }
       match store.get(key) {
         Some(value) =>
@@ -225,7 +227,9 @@ fn register_memory_tool_actions(
       let key = match params {
         { "key": String(k), .. } => k
         _ =>
-          return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+          return @api.error_response(
+            400, "bad_request", "Missing 'key' parameter",
+          )
       }
       let value = match params {
         { "value": v, .. } => v
@@ -246,7 +250,9 @@ fn register_memory_tool_actions(
       let key = match params {
         { "key": String(k), .. } => k
         _ =>
-          return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+          return @api.error_response(
+            400, "bad_request", "Missing 'key' parameter",
+          )
       }
       let deleted = store.delete(key)
       @api.json_response(200, { "ok": true, "deleted": deleted })

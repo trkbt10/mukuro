@@ -393,4 +393,3 @@ test "PluginSystemInitializer: create initializer" {
   assert_eq(host.get_plugin_dir(), ".mukuro/plugins")
   assert_eq(registry.get_all_tools().length(), 0)
 }
-

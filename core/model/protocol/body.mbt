@@ -66,7 +66,7 @@ pub fn build_anthropic_body(
   }
   let msgs = messages_to_anthropic_json(messages)
   // Anthropic API requires max_tokens
-  let effective_max_tokens = max_tokens.or(8192)
+  let effective_max_tokens = max_tokens.unwrap_or(8192)
   let mut body : Json = {
     "model": model,
     "max_tokens": effective_max_tokens,

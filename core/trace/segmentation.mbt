@@ -407,7 +407,8 @@ fn find_boundaries(
     }
   }
   // Find threshold at percentile
-  let threshold_idx = ((sorted.length().to_double() - 1.0) * threshold_percentile).to_int()
+  let threshold_idx = ((sorted.length().to_double() - 1.0) *
+  threshold_percentile).to_int()
   let threshold = sorted[threshold_idx]
   // Find local maxima above threshold
   let boundaries : Array[Int] = []
@@ -447,7 +448,11 @@ pub fn split_sentences(text : String) -> Array[Sentence] {
     current.write_char(c)
     pos = pos + 1
     // Check for sentence-ending punctuation
-    let is_end = c == '.' || c == '!' || c == '?' || c == '。' || c == '！' ||
+    let is_end = c == '.' ||
+      c == '!' ||
+      c == '?' ||
+      c == '。' ||
+      c == '！' ||
       c == '？' ||
       c == '\n'
     if is_end {
@@ -528,9 +533,7 @@ pub fn segment_by_ncd_tfidf(
   }
   // Apply size constraints and build chunks
   let chunks = build_chunks_with_constraints(
-    sentences,
-    sentence_boundaries,
-    config,
+    sentences, sentence_boundaries, config,
   )
   { chunks, boundaries: sentence_boundaries, distances }
 }
@@ -645,6 +648,7 @@ fn split_oversized_chunk(
 // Internal Tests
 // ============================================================
 
+///|
 test "is_word_char identifies ASCII alphanumeric" {
   assert_true(is_word_char('a'))
   assert_true(is_word_char('Z'))
@@ -653,12 +657,14 @@ test "is_word_char identifies ASCII alphanumeric" {
   assert_false(is_word_char('.'))
 }
 
+///|
 test "is_word_char identifies CJK" {
   assert_true(is_word_char('日'))
   assert_true(is_word_char('あ'))
   assert_true(is_word_char('ア'))
 }
 
+///|
 test "tokenize_words splits on non-word characters" {
   let tokens = tokenize_words("Hello, world! This is a test.", 2)
   assert_true(tokens.contains("hello"))
@@ -668,6 +674,7 @@ test "tokenize_words splits on non-word characters" {
   assert_false(tokens.contains("a")) // Too short
 }
 
+///|
 test "generate_char_bigrams creates bigrams" {
   let bigrams = generate_char_bigrams("abc")
   assert_eq(bigrams.length(), 2)
@@ -675,6 +682,7 @@ test "generate_char_bigrams creates bigrams" {
   assert_eq(bigrams[1], "bc")
 }
 
+///|
 test "generate_char_bigrams handles Japanese" {
   let bigrams = generate_char_bigrams("日本語")
   assert_eq(bigrams.length(), 2)
@@ -682,6 +690,7 @@ test "generate_char_bigrams handles Japanese" {
   assert_eq(bigrams[1], "本語")
 }
 
+///|
 test "count_term_freqs counts correctly" {
   let tokens = ["a", "b", "a", "c", "a"]
   let freqs = count_term_freqs(tokens)
@@ -690,6 +699,7 @@ test "count_term_freqs counts correctly" {
   assert_eq(freqs.get("c"), Some(1))
 }
 
+///|
 test "min_max_normalize normalizes to 0-1" {
   let values = [1.0, 5.0, 3.0, 2.0, 4.0]
   let normalized = min_max_normalize(values)
@@ -698,6 +708,7 @@ test "min_max_normalize normalizes to 0-1" {
   assert_eq(normalized[2], 0.5) // middle
 }
 
+///|
 test "min_max_normalize handles same values" {
   let values = [3.0, 3.0, 3.0]
   let normalized = min_max_normalize(values)
@@ -706,6 +717,7 @@ test "min_max_normalize handles same values" {
   }
 }
 
+///|
 test "split_sentences splits on punctuation" {
   let sentences = split_sentences("Hello. World! How are you?")
   assert_eq(sentences.length(), 3)
@@ -714,6 +726,7 @@ test "split_sentences splits on punctuation" {
   assert_eq(sentences[2].text, "How are you?")
 }
 
+///|
 test "split_sentences handles Japanese" {
   let sentences = split_sentences("こんにちは。元気ですか？")
   assert_eq(sentences.length(), 2)
@@ -721,18 +734,17 @@ test "split_sentences handles Japanese" {
   assert_eq(sentences[1].text, "元気ですか？")
 }
 
+///|
 test "cosine_similarity of identical vectors is 1" {
   // Use normalized vector [0.6, 0.8] where norm = sqrt(0.36 + 0.64) = 1.0
-  let v1 : TfidfVector = {
-    values: { "a": 0.6, "b": 0.8 },
-    norm: 1.0,
-  }
+  let v1 : TfidfVector = { values: { "a": 0.6, "b": 0.8 }, norm: 1.0 }
   let sim = cosine_similarity(v1, v1)
   // dot product = 0.6*0.6 + 0.8*0.8 = 0.36 + 0.64 = 1.0
   // cosine = 1.0 / (1.0 * 1.0) = 1.0
   assert_true(sim > 0.99 && sim <= 1.01)
 }
 
+///|
 test "cosine_similarity of orthogonal vectors is 0" {
   let v1 : TfidfVector = { values: { "a": 1.0 }, norm: 1.0 }
   let v2 : TfidfVector = { values: { "b": 1.0 }, norm: 1.0 }
@@ -740,17 +752,20 @@ test "cosine_similarity of orthogonal vectors is 0" {
   assert_eq(sim, 0.0)
 }
 
+///|
 test "segment_by_ncd_tfidf handles empty text" {
   let result = segment_by_ncd_tfidf("", NcdTfidfConfig::default())
   assert_eq(result.chunks.length(), 0)
 }
 
+///|
 test "segment_by_ncd_tfidf handles single sentence" {
   let result = segment_by_ncd_tfidf("Hello world.", NcdTfidfConfig::default())
   assert_eq(result.chunks.length(), 1)
   assert_eq(result.chunks[0], "Hello world.")
 }
 
+///|
 test "find_boundaries finds local maxima" {
   let distances = [0.1, 0.5, 0.2, 0.8, 0.3]
   let boundaries = find_boundaries(distances, 0.5)
