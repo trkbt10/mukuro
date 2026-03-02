@@ -458,6 +458,25 @@ export interface ToolDetail extends ToolListItem {
   status_message?: string;
   loaded_at: number;
   parameters: Record<string, unknown>;
+  settings_schema?: ToolSettingsSchema;
+}
+
+export interface ToolSettingsField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'toggle' | 'select' | 'secret' | 'textarea';
+  description?: string;
+  defaultValue?: unknown;
+  placeholder?: string;
+  options?: Array<{ value: string; label: string }>;
+  min?: number;
+  max?: number;
+}
+
+export interface ToolSettingsSchema {
+  title: string;
+  description?: string;
+  fields: ToolSettingsField[];
 }
 
 // ============================================================================

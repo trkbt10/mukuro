@@ -177,6 +177,10 @@ pub(all) struct ToolApiHandlers {
   disable : RouteHandler
   /// DELETE /tools/{id} - remove tool (user-defined only)
   remove : RouteHandler
+  /// GET /tools/{id}/actions - list tool actions
+  list_actions : RouteHandler
+  /// POST /tools/{id}/actions/{action} - invoke tool action
+  invoke_action : RouteHandler
 }
 
 ///|
@@ -730,15 +734,23 @@ fn route_tool_endpoint(
         return error_response(405, "method_not_allowed", "Method not allowed")
     }
   }
-  // /tools/{id}/enable, /tools/{id}/disable
+  // /tools/{id}/enable, /tools/{id}/disable, /tools/{id}/actions
   if segments.length() == 3 {
     let action = segments[2]
     match (meth, action) {
       ("PUT", "enable") => return (handlers.enable.0)(ctx)
       ("PUT", "disable") => return (handlers.disable.0)(ctx)
+      ("GET", "actions") => return (handlers.list_actions.0)(ctx)
       _ =>
         return error_response(405, "method_not_allowed", "Method not allowed")
     }
+  }
+  // /tools/{id}/actions/{action}
+  if segments.length() == 4 && segments[2] == "actions" {
+    if meth == "POST" {
+      return (handlers.invoke_action.0)(ctx)
+    }
+    return error_response(405, "method_not_allowed", "Method not allowed")
   }
   error_response(404, "not_found", "Unknown tool endpoint")
 }

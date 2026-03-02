@@ -89,6 +89,7 @@ pub(all) struct ToolDetailResponse {
   status_message : String?
   loaded_at : Int64
   parameters : Json
+  settings_schema : Json?
 }
 
 ///|
@@ -111,6 +112,7 @@ pub fn ToolDetailResponse::from_state(
     status_message,
     loaded_at: state.loaded_at,
     parameters: state.parameters,
+    settings_schema: state.settings_schema,
   }
 }
 
@@ -134,6 +136,10 @@ pub fn ToolDetailResponse::to_json(self : ToolDetailResponse) -> Json {
   }
   obj["loaded_at"] = Json::number(self.loaded_at.to_double())
   obj["parameters"] = self.parameters
+  match self.settings_schema {
+    Some(schema) => obj["settings_schema"] = schema
+    None => ()
+  }
   Json::object(obj)
 }
 

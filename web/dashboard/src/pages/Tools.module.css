@@ -18,6 +18,11 @@
   gap: var(--mk-space-xs);
   flex: 1;
   min-width: 0;
+  text-decoration: none;
+}
+
+.toolInfo:hover .toolName {
+  color: var(--mk-accent);
 }
 
 .toolName {
@@ -62,4 +67,14 @@
 .sourceBadge[data-source="mcp"] {
   background: var(--mk-warning-subtle);
   color: var(--mk-warning);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mk-space-md);
+  padding: var(--mk-space-xxl);
+  color: var(--mk-text-muted);
 }

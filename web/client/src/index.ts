@@ -87,6 +87,8 @@ export type {
   ToolStats,
   ToolListResponse,
   ToolDetail,
+  ToolSettingsField,
+  ToolSettingsSchema,
   // Onboard types
   OnboardGenerateRequest,
   OnboardGenerateResponse,

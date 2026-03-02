@@ -51,8 +51,10 @@ pub(all) struct ToolState {
   loaded_at : Int64
   /// Human-readable description
   description : String
-  /// JSON Schema for parameters
+  /// JSON Schema for parameters (passed to LLM)
   parameters : Json
+  /// Settings schema for UI configuration (optional)
+  settings_schema : Json?
 }
 
 ///|
@@ -62,6 +64,7 @@ pub fn ToolState::builtin(
   name~ : String,
   description~ : String,
   parameters~ : Json,
+  settings_schema~ : Json? = None,
 ) -> ToolState {
   {
     id,
@@ -72,6 +75,7 @@ pub fn ToolState::builtin(
     loaded_at: 0L,
     description,
     parameters,
+    settings_schema,
   }
 }
 
@@ -82,6 +86,7 @@ pub fn ToolState::user_defined(
   name~ : String,
   description~ : String,
   parameters~ : Json,
+  settings_schema~ : Json? = None,
 ) -> ToolState {
   {
     id,
@@ -92,6 +97,7 @@ pub fn ToolState::user_defined(
     loaded_at: 0L,
     description,
     parameters,
+    settings_schema,
   }
 }
 
@@ -102,6 +108,7 @@ pub fn ToolState::from_plugin(
   capability~ : String,
   description~ : String,
   parameters~ : Json,
+  settings_schema~ : Json? = None,
 ) -> ToolState {
   let id = "\{plugin_id}.\{capability}"
   {
@@ -113,6 +120,7 @@ pub fn ToolState::from_plugin(
     loaded_at: 0L,
     description,
     parameters,
+    settings_schema,
   }
 }
 
@@ -123,6 +131,7 @@ pub fn ToolState::from_mcp(
   tool_name~ : String,
   description~ : String,
   parameters~ : Json,
+  settings_schema~ : Json? = None,
 ) -> ToolState {
   let id = "\{server_id}.\{tool_name}"
   {
@@ -134,6 +143,7 @@ pub fn ToolState::from_mcp(
     loaded_at: 0L,
     description,
     parameters,
+    settings_schema,
   }
 }
 

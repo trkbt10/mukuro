@@ -1,0 +1,44 @@
+.page { composes: page from '@/styles/page.module.css'; }
+
+.grid { composes: panelGrid2 from '@/styles/page.module.css'; }
+.propList { composes: propList from '@/styles/page.module.css'; }
+.enableRow { composes: toggleRow from '@/styles/page.module.css'; }
+.enableLabel { composes: toggleLabel from '@/styles/page.module.css'; }
+
+.descriptionText { composes: secondaryText from '@/styles/page.module.css'; }
+
+.emptyState { composes: emptyStateInline from '@/styles/page.module.css'; }
+.notFoundText { composes: secondaryText from '@/styles/page.module.css'; }
+
+.sourceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--mk-space-sm);
+  color: var(--mk-text-primary);
+}
+
+.sourceId {
+  color: var(--mk-text-muted);
+  font-size: var(--mk-font-size-sm);
+}
+
+.statusMessage {
+  color: var(--mk-text-muted);
+  font-size: var(--mk-font-size-sm);
+}
+
+.schemaBlock {
+  background: var(--mk-bg-tertiary);
+  border-radius: var(--mk-radius-md);
+  padding: var(--mk-space-md);
+  overflow: auto;
+  max-height: 300px;
+}
+
+.schemaCode {
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-text-secondary);
+  white-space: pre;
+  margin: 0;
+}

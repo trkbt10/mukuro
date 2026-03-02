@@ -1,0 +1,56 @@
+.description {
+  color: var(--mk-text-muted);
+  font-size: var(--mk-font-size-sm);
+  margin-bottom: var(--mk-space-lg);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-lg);
+}
+
+.fieldWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-xs);
+}
+
+.fieldLabel {
+  font-size: var(--mk-font-size-sm);
+  font-weight: 500;
+  color: var(--mk-text-primary);
+}
+
+.fieldDesc {
+  font-size: var(--mk-font-size-xs);
+  color: var(--mk-text-muted);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--mk-space-sm) var(--mk-space-md);
+  font-family: var(--mk-font-mono);
+  font-size: var(--mk-font-size-sm);
+  color: var(--mk-text-primary);
+  background: var(--mk-bg-secondary);
+  border: 1px solid var(--mk-border-primary);
+  border-radius: var(--mk-radius-md);
+  resize: vertical;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--mk-accent);
+}
+
+.textarea::placeholder {
+  color: var(--mk-text-muted);
+}
+
+.fieldWithDesc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mk-space-xs);
+}

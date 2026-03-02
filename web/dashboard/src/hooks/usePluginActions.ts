@@ -9,7 +9,8 @@ import type { MemoryListResponse } from '@mukuro/client';
 import { createMutation } from './mutation';
 
 const PLUGINS_KEY = ['plugins'];
-const MEMORY_KEY = ['plugins', 'memory', 'entries'];
+const TOOLS_KEY = ['tools'];
+const MEMORY_KEY = [...TOOLS_KEY, 'memory', 'entries'];
 
 // =============================================================================
 // Generic Plugin Actions
@@ -54,7 +55,7 @@ export function useMemoryEntries() {
   return useQuery({
     queryKey: MEMORY_KEY,
     queryFn: async () => {
-      const res = await getClient().plugins.invokeAction<{ data: MemoryListResponse }>(
+      const res = await getClient().tools.invokeAction<{ data: MemoryListResponse }>(
         'memory', 'list'
       );
       return res.data;
@@ -64,7 +65,7 @@ export function useMemoryEntries() {
 
 export const useSetMemoryEntry = createMutation<unknown, { key: string; value: unknown }>({
   mutationFn: ({ key, value }) =>
-    getClient().plugins.invokeAction('memory', 'set', { key, value }),
+    getClient().tools.invokeAction('memory', 'set', { key, value }),
   invalidateKeys: () => [MEMORY_KEY],
   successMessage: 'Entry saved',
   errorMessage: 'Failed to save entry',
@@ -72,7 +73,7 @@ export const useSetMemoryEntry = createMutation<unknown, { key: string; value: u
 
 export const useDeleteMemoryEntry = createMutation<unknown, string>({
   mutationFn: (key) =>
-    getClient().plugins.invokeAction('memory', 'delete', { key }),
+    getClient().tools.invokeAction('memory', 'delete', { key }),
   invalidateKeys: () => [MEMORY_KEY],
   successMessage: 'Entry deleted',
   errorMessage: 'Failed to delete entry',
@@ -80,7 +81,7 @@ export const useDeleteMemoryEntry = createMutation<unknown, string>({
 
 export const useClearMemory = createMutation<unknown, void>({
   mutationFn: () =>
-    getClient().plugins.invokeAction('memory', 'clear'),
+    getClient().tools.invokeAction('memory', 'clear'),
   invalidateKeys: () => [MEMORY_KEY],
   successMessage: 'Memory cleared',
   errorMessage: 'Failed to clear memory',

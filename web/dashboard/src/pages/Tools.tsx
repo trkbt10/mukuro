@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Wrench, Activity, Puzzle, Server } from 'lucide-react';
 import { Badge, Loading, StatCard, Toggle } from '@/components/ui';
 import { PageToolbar } from '@/components/layout/PageToolbar';
@@ -48,10 +49,10 @@ export function Tools() {
         <div className={styles.toolList}>
           {tools.map((tool) => (
             <div key={tool.id} className={styles.toolRow}>
-              <div className={styles.toolInfo}>
+              <Link to={`/tools/${encodeURIComponent(tool.id)}`} className={styles.toolInfo}>
                 <span className={styles.toolName}>{tool.name}</span>
                 <span className={styles.toolDesc}>{tool.description}</span>
-              </div>
+              </Link>
               <div className={styles.toolMeta}>
                 <span className={styles.sourceBadge} data-source={tool.source}>
                   {tool.source === 'user_defined' ? 'custom' : tool.source}

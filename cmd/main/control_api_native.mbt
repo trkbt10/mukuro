@@ -157,6 +157,7 @@ pub fn init_api_v1_state(
         name=def.name,
         description=def.description,
         parameters=def.parameters,
+        settings_schema=@tools.get_settings_schema(def.name),
       ),
     )
   }
@@ -168,6 +169,98 @@ pub fn init_api_v1_state(
   for action in @builtin.get_all_builtin_actions(global_memory_store) {
     api_v1_plugins_state.register_action("builtin", action.name, action.handler)
   }
+  // memory ツールにアクションを登録
+  register_memory_tool_actions(api_v1_tools_state, global_memory_store)
+}
+
+///|
+/// Register memory tool actions
+fn register_memory_tool_actions(
+  state : @api_tools.ToolManagerState,
+  store : @tools.MemoryStore,
+) -> Unit {
+  // list - 全エントリを取得
+  state.register_action(
+    "memory",
+    "list",
+    @api_tools.ToolActionHandler(fn(_params) {
+      let keys = store.keys()
+      let entries : Array[Json] = []
+      for key in keys {
+        let entry : Map[String, Json] = {}
+        entry["key"] = Json::string(key)
+        match store.get(key) {
+          Some(value) => entry["value"] = value
+          None => ()
+        }
+        entries.push(Json::object(entry))
+      }
+      @api.json_response(200, {
+        "data": { "entries": Json::array(entries), "count": keys.length() },
+      })
+    }),
+  )
+  // get - 単一エントリを取得
+  state.register_action(
+    "memory",
+    "get",
+    @api_tools.ToolActionHandler(fn(params) {
+      let key = match params {
+        { "key": String(k), .. } => k
+        _ =>
+          return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+      }
+      match store.get(key) {
+        Some(value) =>
+          @api.json_response(200, { "data": { "key": key, "value": value } })
+        None => @api.error_response(404, "not_found", "Key '\{key}' not found")
+      }
+    }),
+  )
+  // set - エントリを設定
+  state.register_action(
+    "memory",
+    "set",
+    @api_tools.ToolActionHandler(fn(params) {
+      let key = match params {
+        { "key": String(k), .. } => k
+        _ =>
+          return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+      }
+      let value = match params {
+        { "value": v, .. } => v
+        _ =>
+          return @api.error_response(
+            400, "bad_request", "Missing 'value' parameter",
+          )
+      }
+      store.set(key, value)
+      @api.json_response(200, { "ok": true, "key": key })
+    }),
+  )
+  // delete - エントリを削除
+  state.register_action(
+    "memory",
+    "delete",
+    @api_tools.ToolActionHandler(fn(params) {
+      let key = match params {
+        { "key": String(k), .. } => k
+        _ =>
+          return @api.error_response(400, "bad_request", "Missing 'key' parameter")
+      }
+      let deleted = store.delete(key)
+      @api.json_response(200, { "ok": true, "deleted": deleted })
+    }),
+  )
+  // clear - 全エントリを削除
+  state.register_action(
+    "memory",
+    "clear",
+    @api_tools.ToolActionHandler(fn(_params) {
+      store.clear()
+      @api.json_response(200, { "ok": true })
+    }),
+  )
 }
 
 ///|

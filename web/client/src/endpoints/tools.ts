@@ -65,4 +65,29 @@ export class ToolsApi {
   async delete(id: string): Promise<void> {
     await this.http.delete(`/tools/${encodeURIComponent(id)}`);
   }
+
+  /**
+   * List available actions for a tool
+   */
+  async listActions(id: string): Promise<{ tool_id: string; actions: string[] }> {
+    const res = await this.http.get<ApiResponse<{ tool_id: string; actions: string[] }>>(
+      `/tools/${encodeURIComponent(id)}/actions`
+    );
+    return res.data ?? { tool_id: id, actions: [] };
+  }
+
+  /**
+   * Invoke a tool action
+   */
+  async invokeAction<T = unknown>(
+    id: string,
+    action: string,
+    params?: Record<string, unknown>
+  ): Promise<T> {
+    const res = await this.http.post<T>(
+      `/tools/${encodeURIComponent(id)}/actions/${encodeURIComponent(action)}`,
+      params ?? {}
+    );
+    return res;
+  }
 }

@@ -3,16 +3,22 @@
 /// Holds tool states for the API layer
 
 ///|
+/// Tool action handler type
+pub(all) struct ToolActionHandler((Json) -> @api.ApiResponse)
+
+///|
 /// Tool manager state holder
 pub(all) struct ToolManagerState {
   /// Tool states by ID
   tools : Map[String, @interfaces.ToolState]
+  /// Tool actions: tool_id -> action_name -> handler
+  actions : Map[String, Map[String, ToolActionHandler]]
 }
 
 ///|
 /// Create empty tool manager state
 pub fn ToolManagerState::new() -> ToolManagerState {
-  { tools: {} }
+  { tools: {}, actions: {} }
 }
 
 ///|
@@ -122,4 +128,68 @@ pub fn ToolManagerState::count_enabled(self : ToolManagerState) -> Int {
     }
   }
   count
+}
+
+// =============================================================================
+// Tool Actions
+// =============================================================================
+
+///|
+/// Register an action for a tool
+pub fn ToolManagerState::register_action(
+  self : ToolManagerState,
+  tool_id : String,
+  action_name : String,
+  handler : ToolActionHandler,
+) -> Unit {
+  match self.actions.get(tool_id) {
+    Some(tool_actions) => tool_actions[action_name] = handler
+    None => {
+      let tool_actions : Map[String, ToolActionHandler] = {}
+      tool_actions[action_name] = handler
+      self.actions[tool_id] = tool_actions
+    }
+  }
+}
+
+///|
+/// List actions for a tool
+pub fn ToolManagerState::list_actions(
+  self : ToolManagerState,
+  tool_id : String,
+) -> Array[String] {
+  match self.actions.get(tool_id) {
+    Some(tool_actions) => tool_actions.keys().collect()
+    None => []
+  }
+}
+
+///|
+/// Invoke an action for a tool
+pub fn ToolManagerState::invoke_action(
+  self : ToolManagerState,
+  tool_id : String,
+  action_name : String,
+  params : Json,
+) -> @api.ApiResponse? {
+  match self.actions.get(tool_id) {
+    Some(tool_actions) =>
+      match tool_actions.get(action_name) {
+        Some(ToolActionHandler(handler)) => Some(handler(params))
+        None => None
+      }
+    None => None
+  }
+}
+
+///|
+/// Check if a tool has actions
+pub fn ToolManagerState::has_actions(
+  self : ToolManagerState,
+  tool_id : String,
+) -> Bool {
+  match self.actions.get(tool_id) {
+    Some(tool_actions) => tool_actions.length() > 0
+    None => false
+  }
 }
