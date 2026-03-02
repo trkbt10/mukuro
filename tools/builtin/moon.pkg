@@ -16,14 +16,16 @@ import {
 warnings = "-29"
 
 options(
+  "native-stub": [ "time_stub.c" ],
   targets: {
     "actions_test.mbt": [ "js" ],
     "builtin_test.mbt": [ "js" ],
+    "builtin_native_test.mbt": [ "native" ],
     "context_test.mbt": [ "js" ],
     "message_test.mbt": [ "js" ],
+    "spawn_async_test.mbt": [ "js" ],
     "time_js.mbt": [ "js" ],
     "time_native.mbt": [ "native" ],
     "time_wasm.mbt": [ "wasm", "wasm-gc" ],
-    "spawn_async_test.mbt": [ "js" ],
   },
 )

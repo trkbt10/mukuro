@@ -30,6 +30,7 @@ echo "Linking with -lsqlite3..."
   _build/native/debug/build/lib/dirs/libdirs.a \
   _build/native/debug/build/adapters/native/libnative.a \
   _build/native/debug/build/devtools/libdevtools.a \
+  _build/native/debug/build/tools/builtin/libbuiltin.a \
   -lm "$HOME/.moon/lib/libbacktrace.a" \
   -lsqlite3 -lpthread 2>&1
 
