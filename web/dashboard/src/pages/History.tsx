@@ -1,25 +1,23 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import {
   History as HistoryIcon,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
   Play,
-  Circle,
-  User,
-  Bot,
-  Wrench,
-  CheckCircle,
-  AlertCircle,
   Loader2,
   Info,
 } from 'lucide-react';
 import { IconButton, Badge } from '@/components/ui';
 import { PageToolbar } from '@/components/layout/PageToolbar';
-import { AssistantContent } from '@/components/chat';
+import {
+  ChatMessageDisplay,
+  historyRecordsToDisplay,
+  defaultDisplayOptions,
+  type ChatMessageDisplayHandle,
+} from '@/components/chat';
 import { useHistoryNavigation } from '@/hooks';
-import { formatTimestamp, extractRecordContent } from '@/lib/messages';
-import type { HistoryRecord, HistoryDateEntry } from '@mukuro/client';
+import type { HistoryDateEntry } from '@mukuro/client';
 import styles from './History.module.css';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -99,121 +97,23 @@ function CalendarGrid({ viewYear, viewMonth, monthDates, selectedDate, onSelectD
   );
 }
 
-function RecordItem({ record }: { record: HistoryRecord }) {
-  const payload = record.payload ?? {};
-  const content = extractRecordContent(payload);
-
-  switch (record.record_type) {
-    case 'session_meta': {
-      const channel = (payload as Record<string, unknown>).channel as string | undefined;
-      return (
-        <div className={styles.recordStatus}>
-          <span className={styles.recordStatusDot}><Info style={{ width: 12, height: 12 }} /></span>
-          <div className={styles.recordBody}>
-            <span className={styles.recordStatusText}>
-              Session created {formatTimestamp(record.timestamp)}{channel ? ` (${channel})` : ''}
-            </span>
-          </div>
-        </div>
-      );
-    }
-
-    case 'session_start':
-      return (
-        <div className={styles.recordStatus}>
-          <span className={styles.recordStatusDot}><Circle style={{ width: 12, height: 12 }} /></span>
-          <div className={styles.recordBody}>
-            <span className={styles.recordStatusText}>
-              Session started {formatTimestamp(record.timestamp)}
-            </span>
-          </div>
-        </div>
-      );
-
-    case 'session_end':
-      return (
-        <div className={styles.recordStatus}>
-          <span className={styles.recordStatusDot}><Circle style={{ width: 12, height: 12 }} /></span>
-          <div className={styles.recordBody}>
-            <span className={styles.recordStatusText}>
-              Session ended {formatTimestamp(record.timestamp)}
-            </span>
-          </div>
-        </div>
-      );
-
-    case 'user_message':
-      return (
-        <div className={styles.recordUser}>
-          <span className={styles.recordUserIcon}><User style={{ width: 14, height: 14 }} /></span>
-          <div className={styles.recordBody}>
-            <div className={styles.recordUserBubble}>{content || '(empty)'}</div>
-          </div>
-        </div>
-      );
-
-    case 'assistant_message':
-      return (
-        <div className={styles.recordAssistant}>
-          <span className={styles.recordAssistantIcon}><Bot style={{ width: 14, height: 14 }} /></span>
-          <div className={styles.recordBody}>
-            <div className={styles.recordAssistantBubble}>
-              {content ? <AssistantContent content={content} /> : '(empty)'}
-            </div>
-          </div>
-        </div>
-      );
-
-    case 'tool_call': {
-      const toolName = (payload as Record<string, unknown>).tool_name as string | undefined;
-      const args = (payload as Record<string, unknown>).arguments;
-      const argsStr = args ? JSON.stringify(args) : '';
-      return (
-        <div className={styles.recordTool}>
-          <span className={styles.recordToolIcon}><Wrench style={{ width: 14, height: 14 }} /></span>
-          <div className={styles.recordBody}>
-            <div className={styles.recordToolBlock}>
-              <span className={styles.recordToolName}>{toolName ?? 'tool'}</span>
-              {argsStr && <span>({argsStr.length > 100 ? argsStr.slice(0, 100) + '...' : argsStr})</span>}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    case 'tool_result':
-      return (
-        <div className={styles.recordResult}>
-          <span className={styles.recordResultIcon}><CheckCircle style={{ width: 14, height: 14 }} /></span>
-          <div className={styles.recordBody}>
-            <div className={styles.recordResultBlock}>
-              {content
-                ? (content.length > 200 ? content.slice(0, 200) + '...' : content)
-                : '(no content)'}
-            </div>
-          </div>
-        </div>
-      );
-
-    case 'error':
-      return (
-        <div className={styles.recordError}>
-          <span className={styles.recordErrorIcon}><AlertCircle style={{ width: 14, height: 14 }} /></span>
-          <div className={styles.recordBody}>
-            <div className={styles.recordErrorBanner}>
-              {content || 'Unknown error'}
-            </div>
-          </div>
-        </div>
-      );
-
-    default:
-      return null;
-  }
-}
-
 export function History() {
   const h = useHistoryNavigation();
+  const displayRef = useRef<ChatMessageDisplayHandle>(null);
+
+  // Convert history records to display messages
+  const displayMessages = useMemo(() => {
+    if (!h.sessionDetail) return [];
+    return historyRecordsToDisplay(h.sessionDetail.records);
+  }, [h.sessionDetail]);
+
+  // Check if session has any displayable messages
+  const hasMessages = displayMessages.length > 0;
+
+  // Scroll to top when session changes
+  useEffect(() => {
+    displayRef.current?.scrollToTop();
+  }, [h.selectedSessionId]);
 
   return (
     <div className={styles.page}>
@@ -306,7 +206,7 @@ export function History() {
                 <div>
                   <div className={styles.sessionTitle}>{h.selectedSessionId}</div>
                   <div className={styles.sessionMeta}>
-                    {h.sessionDetail.records.length} record{h.sessionDetail.records.length !== 1 ? 's' : ''}
+                    {displayMessages.length} message{displayMessages.length !== 1 ? 's' : ''}
                   </div>
                 </div>
                 <button
@@ -319,19 +219,21 @@ export function History() {
                 </button>
               </div>
 
-              {/* Timeline */}
-              <div className={styles.timeline}>
-                {h.sessionDetail.records.map((record, i) => (
-                  <RecordItem key={i} record={record} />
-                ))}
-                {h.sessionDetail.records.every(r =>
-                  r.record_type === 'session_meta' || r.record_type === 'session_start'
-                ) && (
-                  <div className={styles.emptyTimeline}>
-                    <Info style={{ width: 16, height: 16 }} />
-                    <span>No messages in this session yet</span>
-                  </div>
-                )}
+              {/* Message display */}
+              <div className={styles.messageArea}>
+                <ChatMessageDisplay.Root
+                  ref={displayRef}
+                  messages={displayMessages}
+                  height="100%"
+                  displayOptions={defaultDisplayOptions}
+                >
+                  <ChatMessageDisplay.Overlay visible={!hasMessages}>
+                    <div className={styles.emptyTimeline}>
+                      <Info style={{ width: 16, height: 16 }} />
+                      <span>No messages in this session yet</span>
+                    </div>
+                  </ChatMessageDisplay.Overlay>
+                </ChatMessageDisplay.Root>
               </div>
             </>
           ) : h.detailLoading ? (

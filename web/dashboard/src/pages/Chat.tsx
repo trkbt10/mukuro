@@ -1,64 +1,43 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import {
-  MessageCircle,
-  Plus,
-  Trash2,
-  Send,
-  AlertCircle,
-} from 'lucide-react';
+import { useRef, useEffect, useMemo, useCallback } from 'react';
+import { MessageCircle, Plus, Trash2, AlertCircle, Paperclip, Mic, Upload } from 'lucide-react';
+import { ChatInput, SendButton, FilePreview } from 'react-editor-ui/chat/ChatInput';
+import { VoiceInput } from 'react-editor-ui/chat/VoiceInput';
 import { IconButton } from '@/components/ui';
 import { PageToolbar } from '@/components/layout/PageToolbar';
-import { MessageBubble, StatusBadge, ThinkingIndicator } from '@/components/chat';
-import { useChat } from '@/hooks/useChat';
+import {
+  StatusBadge,
+  ChatMessageDisplay,
+  chatMessageToDisplay,
+  defaultDisplayOptions,
+  type ChatMessageDisplayHandle,
+} from '@/components/chat';
+import { useChat, useChatInput } from '@/hooks';
 import { getClient } from '@/lib/client';
 import styles from './Chat.module.css';
 
 export function Chat() {
-  const { chatId, messages, status, errorMsg, sendMessage, clearMessages } =
-    useChat();
-  const [input, setInput] = useState('');
-  const composingRef = useRef(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { chatId, messages, status, errorMsg, sendMessage, clearMessages } = useChat();
+  const displayRef = useRef<ChatMessageDisplayHandle>(null);
+
+  // Input state and handlers
+  const chatInput = useChatInput({
+    status,
+    onSend: (text) => sendMessage(text),
+  });
+
+  // Convert messages for display
+  const displayMessages = useMemo(
+    () => messages.map(chatMessageToDisplay),
+    [messages],
+  );
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, status]);
+    displayRef.current?.scrollToBottom();
+  }, [messages.length, status]);
 
-  // Auto-resize textarea
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setInput(e.target.value);
-      const el = e.target;
-      el.style.height = 'auto';
-      el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
-    },
-    [],
-  );
-
-  const handleSend = useCallback(() => {
-    const trimmed = input.trim();
-    if (!trimmed || status === 'thinking' || status === 'disconnected') return;
-    sendMessage(trimmed);
-    setInput('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-  }, [input, status, sendMessage]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey && !composingRef.current) {
-        e.preventDefault();
-        handleSend();
-      }
-    },
-    [handleSend],
-  );
-
+  // Toolbar actions
   const handleNewChat = useCallback(() => {
-    // Reconnect WebSocket to get a new session from the backend
     clearMessages();
     window.location.reload();
   }, [clearMessages]);
@@ -73,13 +52,6 @@ export function Chat() {
     }
   }, [chatId, clearMessages]);
 
-  const canSend =
-    input.trim().length > 0 &&
-    status !== 'thinking' &&
-    status !== 'disconnected' &&
-    status !== 'connecting' &&
-    status !== 'auth_error';
-
   return (
     <div className={styles.page}>
       <PageToolbar
@@ -89,7 +61,7 @@ export function Chat() {
         actions={
           <>
             <IconButton
-              icon={<Trash2 style={{ width: 14, height: 14 }} />}
+              icon={<Trash2 size={14} />}
               aria-label="Clear history"
               onClick={handleClearHistory}
               variant="ghost"
@@ -97,7 +69,7 @@ export function Chat() {
               disabled={messages.length === 0}
             />
             <IconButton
-              icon={<Plus style={{ width: 14, height: 14 }} />}
+              icon={<Plus size={14} />}
               aria-label="New chat"
               onClick={handleNewChat}
               variant="ghost"
@@ -108,60 +80,119 @@ export function Chat() {
       />
 
       {/* Messages */}
-      {messages.length === 0 && status !== 'thinking' ? (
-        <div className={styles.emptyState}>
-          <MessageCircle
-            className={styles.emptyIcon}
-            style={{ width: 48, height: 48 }}
-          />
-          <span className={styles.emptyText}>
-            Send a message to start chatting with the agent
-          </span>
-        </div>
-      ) : (
-        <div className={styles.messageList}>
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} message={msg} />
-          ))}
-          {status === 'thinking' && <ThinkingIndicator />}
-          {status === 'error' && errorMsg && (
-            <div className={styles.errorBanner}>
-              <AlertCircle style={{ width: 14, height: 14, flexShrink: 0 }} />
-              {errorMsg}
+      <div className={styles.messageArea}>
+        <ChatMessageDisplay.Root
+          ref={displayRef}
+          messages={displayMessages}
+          height="100%"
+          isThinking={chatInput.isThinking}
+          displayOptions={defaultDisplayOptions}
+        >
+          <ChatMessageDisplay.Overlay visible={messages.length === 0 && !chatInput.isThinking}>
+            <div className={styles.emptyState}>
+              <MessageCircle className={styles.emptyIcon} size={48} />
+              <span className={styles.emptyText}>
+                Send a message to start chatting with the agent
+              </span>
             </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      )}
+          </ChatMessageDisplay.Overlay>
+        </ChatMessageDisplay.Root>
+
+        {status === 'error' && errorMsg && (
+          <div className={styles.errorBanner}>
+            <AlertCircle size={14} style={{ flexShrink: 0 }} />
+            {errorMsg}
+          </div>
+        )}
+      </div>
 
       {/* Input */}
-      <div className={styles.inputArea}>
-        <textarea
-          ref={textareaRef}
-          className={styles.chatInput}
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onCompositionStart={() => { composingRef.current = true; }}
-          onCompositionEnd={() => { composingRef.current = false; }}
-          placeholder={
-            status === 'auth_error'
-              ? 'Authentication required — set MUKURO_AUTH_TOKEN'
-              : status === 'disconnected'
-                ? 'Disconnected from server...'
-                : 'Type a message... (Enter to send, Shift+Enter for newline)'
-          }
-          rows={1}
-          disabled={status === 'disconnected' || status === 'connecting' || status === 'auth_error'}
+      <div
+        className={styles.inputArea}
+        onDragOver={chatInput.handleDragOver}
+        onDragLeave={chatInput.handleDragLeave}
+        onDrop={chatInput.handleDrop}
+      >
+        <input
+          ref={chatInput.fileInputRef}
+          type="file"
+          multiple
+          onChange={chatInput.handleFileChange}
+          className={styles.hiddenInput}
         />
-        <button
-          className={styles.sendBtn}
-          onClick={handleSend}
-          disabled={!canSend}
-          aria-label="Send message"
-        >
-          <Send style={{ width: 16, height: 16 }} />
-        </button>
+
+        {chatInput.isVoiceMode ? (
+          <VoiceInput
+            variant="ghost"
+            onResult={chatInput.handleVoiceResult}
+            onCancel={chatInput.handleVoiceCancel}
+            listeningText="Listening..."
+          />
+        ) : (
+          <ChatInput.Root variant="ghost" disabled={chatInput.isDisabled}>
+            {chatInput.attachedFiles.length > 0 && (
+              <ChatInput.Badges>
+                {chatInput.attachedFiles.map((file, i) => (
+                  <FilePreview
+                    key={`${file.name}-${i}`}
+                    file={file}
+                    onRemove={() => chatInput.removeFile(i)}
+                  />
+                ))}
+              </ChatInput.Badges>
+            )}
+
+            <ChatInput.Content>
+              <textarea
+                ref={chatInput.textareaRef}
+                className={styles.chatInput}
+                value={chatInput.input}
+                onChange={chatInput.handleInputChange}
+                onKeyDown={chatInput.handleKeyDown}
+                onCompositionStart={chatInput.handleCompositionStart}
+                onCompositionEnd={chatInput.handleCompositionEnd}
+                placeholder={chatInput.placeholder}
+                rows={1}
+                disabled={chatInput.isDisabled}
+              />
+            </ChatInput.Content>
+
+            <ChatInput.Overlay visible={chatInput.isDragging}>
+              <div className={styles.dropOverlay}>
+                <Upload size={32} />
+                <span>Drop files here</span>
+              </div>
+            </ChatInput.Overlay>
+
+            <ChatInput.Toolbar style={{ justifyContent: 'space-between' }}>
+              <div className={styles.toolbarLeft}>
+                <button
+                  type="button"
+                  className={styles.toolbarBtn}
+                  onClick={chatInput.openFilePicker}
+                  disabled={chatInput.isDisabled}
+                  aria-label="Attach files"
+                >
+                  <Paperclip size={18} />
+                </button>
+                <button
+                  type="button"
+                  className={styles.toolbarBtn}
+                  onClick={chatInput.startVoiceMode}
+                  disabled={chatInput.isDisabled}
+                  aria-label="Voice input"
+                >
+                  <Mic size={18} />
+                </button>
+              </div>
+              <SendButton
+                canSend={chatInput.canSend}
+                isLoading={chatInput.isThinking}
+                onClick={chatInput.handleSend}
+              />
+            </ChatInput.Toolbar>
+          </ChatInput.Root>
+        )}
       </div>
     </div>
   );

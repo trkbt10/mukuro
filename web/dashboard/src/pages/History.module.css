@@ -287,24 +287,14 @@
   cursor: not-allowed;
 }
 
-/* ── Timeline ── */
+/* ── Message area (ChatMessageDisplay container) ── */
 
-.timeline {
+.messageArea {
   flex: 1;
-  overflow-y: auto;
-  padding: var(--mk-space-lg) var(--mk-space-xl);
   display: flex;
   flex-direction: column;
-  gap: var(--mk-space-sm);
-}
-
-.timeline::-webkit-scrollbar {
-  width: 6px;
-}
-
-.timeline::-webkit-scrollbar-thumb {
-  background: var(--mk-border-default);
-  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
 }
 
 /* ── Record items ── */

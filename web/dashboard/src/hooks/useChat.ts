@@ -16,6 +16,13 @@ export type ChatStatus =
   | 'error'
   | 'auth_error';
 
+/** Get resumed chat_id from URL query parameter */
+function getResumedChatId(): string | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('resumed');
+}
+
 export function useChat() {
   const [chatId, setChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -31,8 +38,11 @@ export function useChat() {
     function connect() {
       if (disposed) return;
 
-      // Connect directly to the backend WebSocket
-      const wsUrl = `ws://${MUKURO_DEFAULT_HOST}:${MUKURO_DEFAULT_PORT}/ws/chat`;
+      // Check for resumed session from URL
+      const resumedId = getResumedChatId();
+      const wsBase = `ws://${MUKURO_DEFAULT_HOST}:${MUKURO_DEFAULT_PORT}/ws/chat`;
+      const wsUrl = resumedId ? `${wsBase}?chat_id=${encodeURIComponent(resumedId)}` : wsBase;
+
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
       setStatus('connecting');

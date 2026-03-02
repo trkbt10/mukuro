@@ -83,6 +83,8 @@ export {
   type ChatStatus,
 } from './useChat';
 
+export { useChatInput } from './useChatInput';
+
 export {
   useHistoryNavigation,
   useHistoryDates,

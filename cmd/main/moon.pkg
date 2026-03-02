@@ -37,6 +37,7 @@ import {
   "trkbt10/mukuro/adapters/channels" @channels,
   "trkbt10/mukuro/adapters/native" @native,
   "trkbt10/mukuro/lib/bytes" @bytes,
+  "trkbt10/mukuro/lib/url" @url,
 }
 
 warnings = "-29"

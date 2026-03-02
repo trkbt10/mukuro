@@ -20,8 +20,12 @@ pub struct ChatWsHandler {
 
 ///|
 /// Create new chat WebSocket handler
-pub fn ChatWsHandler::new() -> ChatWsHandler {
-  let chat_id = generate_ws_chat_id()
+/// If resume_chat_id is provided, use it instead of generating a new one
+pub fn ChatWsHandler::new(resume_chat_id~ : String? = None) -> ChatWsHandler {
+  let chat_id = match resume_chat_id {
+    Some(id) => id
+    None => generate_ws_chat_id()
+  }
   let history_recorder = create_session_history_recorder()
   { chat_id, history_recorder }
 }

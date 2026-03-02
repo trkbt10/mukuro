@@ -1,4 +1,14 @@
 export { AssistantContent } from './AssistantContent';
-export { MessageBubble } from './MessageBubble';
 export { StatusBadge } from './StatusBadge';
-export { ThinkingIndicator } from './ThinkingIndicator';
+export {
+  ChatMessageDisplay,
+  UserAvatar,
+  AssistantAvatar,
+  SystemAvatar,
+  ToolAvatar,
+  defaultDisplayOptions,
+  chatMessageToDisplay,
+  historyRecordsToDisplay,
+  type DisplayMessage,
+  type ChatMessageDisplayHandle,
+} from './MessageDisplay';

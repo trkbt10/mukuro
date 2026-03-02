@@ -796,13 +796,15 @@ pub async fn run_control_api_server_with_tick_blocking(
     group.spawn_bg(no_wait=true, allow_failure=true, () => {
       server.run_forever((req, body_reader, conn) => {
         // Check for WebSocket upgrade to /ws/chat
-        if req.path == "/ws/chat" && is_websocket_upgrade(req.headers) {
+        if req.path.has_prefix("/ws/chat") && is_websocket_upgrade(req.headers) {
           let http_req = to_async_http_request(req)
           let ws = @async_ws.from_http_server(http_req, conn.inner) catch {
             _ => return
           }
           defer ws.close()
-          let handler = ChatWsHandler::new()
+          // Extract chat_id query parameter for resume
+          let resume_chat_id = @url.get_param(req.path, "chat_id")
+          let handler = ChatWsHandler::new(resume_chat_id~)
           handler.handle_connection(ws) catch { _ => () }
           return
         }
