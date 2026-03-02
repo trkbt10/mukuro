@@ -45,6 +45,160 @@ pub fn object_schema(properties : Json, required : Array[String]) -> Json {
 }
 
 // =============================================================================
+// Settings Schema Builders (for UI configuration)
+// =============================================================================
+
+///|
+/// Settings field definition
+pub(all) struct SettingsFieldDef {
+  key : String
+  label : String
+  field_type : String // "text", "number", "toggle", "select", "secret", "textarea"
+  description : String
+  default_value : Json?
+  options : Array[(String, String)] // for select: (value, label)
+  min : Double?
+  max : Double?
+}
+
+///|
+/// Create a text field
+pub fn text_field(
+  key~ : String,
+  label~ : String,
+  description~ : String = "",
+  default_value~ : String = "",
+) -> SettingsFieldDef {
+  {
+    key,
+    label,
+    field_type: "text",
+    description,
+    default_value: if default_value == "" {
+      None
+    } else {
+      Some(Json::string(default_value))
+    },
+    options: [],
+    min: None,
+    max: None,
+  }
+}
+
+///|
+/// Create a number field
+pub fn number_field(
+  key~ : String,
+  label~ : String,
+  description~ : String = "",
+  default_value~ : Double = 0.0,
+  min~ : Double? = None,
+  max~ : Double? = None,
+) -> SettingsFieldDef {
+  {
+    key,
+    label,
+    field_type: "number",
+    description,
+    default_value: Some(Json::number(default_value)),
+    options: [],
+    min,
+    max,
+  }
+}
+
+///|
+/// Create a toggle (boolean) field
+pub fn toggle_field(
+  key~ : String,
+  label~ : String,
+  description~ : String = "",
+  default_value~ : Bool = false,
+) -> SettingsFieldDef {
+  {
+    key,
+    label,
+    field_type: "toggle",
+    description,
+    default_value: Some(Json::boolean(default_value)),
+    options: [],
+    min: None,
+    max: None,
+  }
+}
+
+///|
+/// Create a select field
+pub fn select_field(
+  key~ : String,
+  label~ : String,
+  description~ : String = "",
+  default_value~ : String = "",
+  options~ : Array[(String, String)],
+) -> SettingsFieldDef {
+  {
+    key,
+    label,
+    field_type: "select",
+    description,
+    default_value: if default_value == "" {
+      None
+    } else {
+      Some(Json::string(default_value))
+    },
+    options,
+    min: None,
+    max: None,
+  }
+}
+
+///|
+/// Build settings schema JSON from field definitions
+pub fn build_settings_schema(
+  title~ : String,
+  description~ : String = "",
+  fields~ : Array[SettingsFieldDef],
+) -> Json {
+  let fields_json : Array[Json] = []
+  for field in fields {
+    let obj : Map[String, Json] = {}
+    obj["key"] = Json::string(field.key)
+    obj["label"] = Json::string(field.label)
+    obj["type"] = Json::string(field.field_type)
+    if field.description != "" {
+      obj["description"] = Json::string(field.description)
+    }
+    match field.default_value {
+      Some(v) => obj["defaultValue"] = v
+      None => ()
+    }
+    if field.options.length() > 0 {
+      let opts : Array[Json] = []
+      for opt in field.options {
+        opts.push({ "value": opt.0, "label": opt.1 })
+      }
+      obj["options"] = Json::array(opts)
+    }
+    match field.min {
+      Some(v) => obj["min"] = Json::number(v)
+      None => ()
+    }
+    match field.max {
+      Some(v) => obj["max"] = Json::number(v)
+      None => ()
+    }
+    fields_json.push(Json::object(obj))
+  }
+  let schema : Map[String, Json] = {}
+  schema["title"] = Json::string(title)
+  if description != "" {
+    schema["description"] = Json::string(description)
+  }
+  schema["fields"] = Json::array(fields_json)
+  Json::object(schema)
+}
+
+// =============================================================================
 // Argument Parsers
 // =============================================================================
 

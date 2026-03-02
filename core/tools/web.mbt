@@ -10,26 +10,55 @@
 pub fn web_tool() -> @types.ToolDefinition {
   make_tool_definition(
     name="web",
-    description="Fetch web content or perform web searches",
+    description="Fetch content from URLs via HTTP requests. Use for: retrieving web pages, calling REST APIs, downloading data. Supports GET/POST methods with custom headers. Note: 'search' action requires external API integration.",
     parameters=object_schema(
       {
         "action": {
           "type": "string",
           "enum": Json::array([Json::string("fetch"), Json::string("search")]),
-          "description": "Action: fetch (get URL content) or search (web search)",
+          "description": "Action: 'fetch' makes HTTP request to URL, 'search' performs web search (requires API setup)",
         },
-        "url": string_param("URL to fetch (for fetch action)"),
-        "query": string_param("Search query (for search action)"),
+        "url": string_param("Full URL including protocol (e.g., 'https://api.example.com/data')"),
+        "query": string_param("Search query string (for search action)"),
         "method": {
           "type": "string",
           "enum": Json::array([Json::string("GET"), Json::string("POST")]),
-          "description": "HTTP method (default: GET)",
+          "description": "HTTP method: GET (retrieve data) or POST (send data)",
         },
-        "headers": { "type": "object", "description": "HTTP headers" },
-        "body": string_param("Request body (for POST)"),
+        "headers": { "type": "object", "description": "Custom HTTP headers as key-value pairs (e.g., {\"Authorization\": \"Bearer token\"})" },
+        "body": string_param("Request body for POST requests (JSON string or form data)"),
       },
       ["action"],
     ),
+  )
+}
+
+///|
+/// Web tool settings schema for UI
+pub fn web_settings_schema() -> Json {
+  build_settings_schema(
+    title="Web Settings",
+    description="Configure HTTP request behavior",
+    fields=[
+      number_field(
+        key="timeout",
+        label="Request Timeout (ms)",
+        description="Timeout for HTTP requests",
+        default_value=30000.0,
+        min=Some(1000.0),
+        max=Some(120000.0),
+      ),
+      text_field(
+        key="user_agent",
+        label="User Agent",
+        description="Custom User-Agent header",
+      ),
+      text_field(
+        key="proxy_url",
+        label="Proxy URL",
+        description="HTTP proxy for requests (optional)",
+      ),
+    ],
   )
 }
 

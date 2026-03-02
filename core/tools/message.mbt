@@ -10,7 +10,7 @@
 pub fn message_tool() -> @types.ToolDefinition {
   make_tool_definition(
     name="message",
-    description="Send messages to channels or manipulate message content",
+    description="Send messages to external channels (Slack, Discord, etc.) or other chat sessions. Use for: notifying users, sending results to other channels, cross-channel communication. Note: edit/delete/react require channel-specific implementation.",
     parameters=object_schema(
       {
         "action": {
@@ -22,13 +22,13 @@ pub fn message_tool() -> @types.ToolDefinition {
             Json::string("delete"),
             Json::string("react"),
           ]),
-          "description": "Action to perform on message",
+          "description": "Action: 'send' new message, 'reply' to existing, 'edit' message, 'delete' message, 'react' with emoji",
         },
-        "channel": string_param("Target channel name"),
-        "chat_id": string_param("Target chat/thread ID"),
-        "content": string_param("Message content"),
-        "message_id": string_param("Message ID (for edit/delete/react)"),
-        "reaction": string_param("Reaction emoji (for react action)"),
+        "channel": string_param("Target channel identifier (e.g., 'slack', 'discord', 'web_chat')"),
+        "chat_id": string_param("Specific chat/thread/room ID within the channel"),
+        "content": string_param("Message text content to send"),
+        "message_id": string_param("ID of existing message (required for edit/delete/react)"),
+        "reaction": string_param("Emoji reaction (for react action, e.g., ':thumbsup:')"),
       },
       ["action"],
     ),

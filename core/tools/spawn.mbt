@@ -10,7 +10,7 @@
 pub fn spawn_tool() -> @types.ToolDefinition {
   make_tool_definition(
     name="spawn",
-    description="Create a sub-agent to handle a specific task",
+    description="Create autonomous sub-agents for parallel or complex tasks. Use for: delegating research, running background tasks, breaking down complex work. Sub-agents have their own conversation loop and can use tools. Parent agent can check status and retrieve results.",
     parameters=object_schema(
       {
         "action": {
@@ -21,19 +21,19 @@ pub fn spawn_tool() -> @types.ToolDefinition {
             Json::string("cancel"),
             Json::string("result"),
           ]),
-          "description": "Action to perform",
+          "description": "Action: 'create' new sub-agent, 'status' check progress, 'cancel' stop agent, 'result' get final output",
         },
-        "name": string_param("Sub-agent name (for create)"),
-        "system_prompt": string_param("System prompt for sub-agent"),
-        "message": string_param("Initial message/task for sub-agent"),
-        "model": string_param("Model to use (default: inherit from parent)"),
-        "max_turns": integer_param("Maximum conversation turns"),
+        "name": string_param("Descriptive name for the sub-agent (e.g., 'researcher', 'code-reviewer')"),
+        "system_prompt": string_param("Instructions/persona for the sub-agent. Define its role and constraints."),
+        "message": string_param("Initial task or question for the sub-agent to work on"),
+        "model": string_param("LLM model name (default: inherit from parent agent)"),
+        "max_turns": integer_param("Maximum conversation turns before auto-stop (default: 10)"),
         "tools": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Tools available to sub-agent",
+          "description": "List of tool names sub-agent can use (empty = all except spawn)",
         },
-        "agent_id": string_param("Agent ID (for status/cancel/result)"),
+        "agent_id": string_param("Sub-agent ID returned from 'create' (required for status/cancel/result)"),
       },
       ["action"],
     ),

@@ -10,7 +10,7 @@
 pub fn datetime_tool() -> @types.ToolDefinition {
   make_tool_definition(
     name="datetime",
-    description="Get current date and time information",
+    description="Get current date, time, and timezone information. Use this when users ask about the current time, today's date, or need timestamps for scheduling. Returns ISO 8601 formatted datetime and Unix timestamps.",
     parameters=object_schema(
       {
         "action": {
@@ -20,10 +20,10 @@ pub fn datetime_tool() -> @types.ToolDefinition {
             Json::string("timestamp"),
             Json::string("format"),
           ]),
-          "description": "Action to perform: now (current datetime), timestamp (unix timestamp), format (formatted string)",
+          "description": "Action: 'now' returns full datetime info (ISO 8601 + timestamps), 'timestamp' returns Unix timestamp only, 'format' returns custom formatted string",
         },
-        "format": string_param("Date format pattern (for format action)"),
-        "timezone": string_param("Timezone (e.g., UTC, JST)"),
+        "format": string_param("Format pattern: 'ISO8601' (default), 'UNIX' (seconds), 'UNIX_MS' (milliseconds)"),
+        "timezone": string_param("Timezone (e.g., UTC, JST). Currently UTC is used."),
       },
       ["action"],
     ),

@@ -10,7 +10,7 @@
 pub fn memory_tool() -> @types.ToolDefinition {
   make_tool_definition(
     name="memory",
-    description="Store and retrieve information in long-term memory",
+    description="Store and retrieve user information and preferences in long-term memory. IMPORTANT: When users ask about themselves (name, preferences, history), ALWAYS search memory first before saying you don't know. When users share personal information, store it immediately.",
     parameters=object_schema(
       {
         "action": {
@@ -22,14 +22,39 @@ pub fn memory_tool() -> @types.ToolDefinition {
             Json::string("list"),
             Json::string("search"),
           ]),
-          "description": "Action to perform on memory",
+          "description": "Action to perform: 'search' to find user info, 'get' for exact key lookup, 'set' to store info, 'list' to see all keys, 'delete' to remove",
         },
-        "key": string_param("Memory key (for get/set/delete)"),
+        "key": string_param("Memory key (for get/set/delete). Use descriptive keys like 'user_name', 'user_preferences'"),
         "value": { "description": "Value to store (for set action)" },
-        "query": string_param("Search query (for search action)"),
+        "query": string_param("Search query (for search action). Use to find user information by keyword"),
       },
       ["action"],
     ),
+  )
+}
+
+///|
+/// Memory tool settings schema for UI
+pub fn memory_settings_schema() -> Json {
+  build_settings_schema(
+    title="Memory Settings",
+    description="Configure memory store behavior",
+    fields=[
+      number_field(
+        key="max_entries",
+        label="Max Entries",
+        description="Maximum number of entries to store",
+        default_value=1000.0,
+        min=Some(10.0),
+        max=Some(100000.0),
+      ),
+      toggle_field(
+        key="persist_to_disk",
+        label="Persist to Disk",
+        description="Save memory entries to disk for persistence across restarts",
+        default_value=false,
+      ),
+    ],
   )
 }
 

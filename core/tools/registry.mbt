@@ -45,3 +45,15 @@ pub fn has_tool(name : String) -> Bool {
 pub fn all_tool_names() -> Array[String] {
   all_tool_definitions().map(fn(def) { def.name })
 }
+
+///|
+/// ツール名から設定スキーマを取得
+pub fn get_settings_schema(name : String) -> Json? {
+  match name {
+    "memory" => Some(memory_settings_schema())
+    "shell" => Some(shell_settings_schema())
+    "filesystem" => Some(filesystem_settings_schema())
+    "web" => Some(web_settings_schema())
+    _ => None
+  }
+}
