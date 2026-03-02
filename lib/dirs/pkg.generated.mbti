@@ -18,6 +18,14 @@ pub fn detect_os() -> OsKind
 
 pub fn home_dir() -> String
 
+pub fn temp_dir() -> String
+
+pub fn temp_dir_for(String) -> String
+
+pub fn to_absolute_path(String, String) -> String
+
+pub fn to_relative_path(String, String) -> String
+
 // Errors
 
 // Types and methods

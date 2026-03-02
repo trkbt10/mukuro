@@ -1,11 +1,351 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "trkbt10/mukuro/adapters/native"
 
+import {
+  "mizchi/sqlite",
+  "trkbt10/mukuro/core/control",
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
 // Values
+pub fn c_access(CString, Int) -> Int
+
+pub fn c_access_bytes(Bytes, Int) -> Int
+
+pub fn c_append_gateway_auth_audit(Int64, Int, Int) -> Int
+
+pub fn c_append_gateway_auth_audit_detail(Int64, Int, Int, CString, CString, Int, CString, Int, Int64) -> Int
+
+pub fn c_append_gateway_auth_audit_detail_bytes(Int64, Int, Int, Bytes, Bytes, Int, Bytes, Int, Int64) -> Int
+
+pub fn c_chmod_file(CString, Int) -> Int
+
+pub fn c_chmod_file_bytes(Bytes, Int) -> Int
+
+pub fn c_daemon_child_init(CString) -> Int
+
+pub fn c_daemon_child_init_bytes(Bytes) -> Int
+
+pub fn c_exit(Int) -> Unit
+
+pub fn c_fclose_handle(Int64) -> Int
+
+pub fn c_fflush_handle(Int64) -> Int
+
+pub fn c_fflush_stdout() -> Int
+
+pub fn c_file_exists(CString) -> Int
+
+pub fn c_file_exists_bytes(Bytes) -> Int
+
+pub fn c_fopen_handle(Bytes, Bytes) -> Int64
+
+pub fn c_fread_handle(Bytes, Int, Int, Int64) -> Int
+
+pub fn c_fwrite_handle(Bytes, Int, Int, Int64) -> Int
+
+pub fn c_generate_gateway_token() -> Int
+
+pub fn c_get_errno() -> Int
+
+pub fn c_get_exe_path() -> CString
+
+pub fn c_get_signal_received() -> Int
+
+pub fn c_getenv(CString) -> CString?
+
+pub fn c_getpid() -> Int
+
+pub fn c_gmtime(Int64, Bytes) -> Int
+
+pub fn c_ipc_client_request(Int, Int, Int, CString, Bytes, Int) -> Int
+
+pub fn c_ipc_client_request_bytes(Int, Int, Int, Bytes, Bytes, Int) -> Int
+
+pub fn c_ipc_get_last_client_id(Bytes, Int) -> Int
+
+pub fn c_ipc_get_last_session_id() -> Int
+
+pub fn c_ipc_server_cleanup() -> Int
+
+pub fn c_ipc_server_poll(Int, Int, Int, Int, Int) -> Int
+
+pub fn c_ipc_server_start() -> Int
+
+pub fn c_kill(Int, Int) -> Int
+
+pub fn c_list_dir(CString, Bytes, Int) -> Int
+
+pub fn c_list_dir_bytes(Bytes, Bytes, Int) -> Int
+
+pub fn c_mkdir(CString, Int) -> Int
+
+pub fn c_mkdir_bytes(Bytes, Int) -> Int
+
+pub fn c_mkdir_recursive(CString, Int) -> Int
+
+pub fn c_mkdir_recursive_bytes(Bytes, Int) -> Int
+
+pub fn c_pclose_handle(Int64) -> Int
+
+pub fn c_popen_handle(Bytes, Bytes) -> Int64
+
+pub fn c_read_gateway_session_id() -> Int
+
+pub fn c_read_gateway_token() -> Int
+
+pub fn c_read_pid_file(CString) -> Int
+
+pub fn c_read_pid_file_bytes(Bytes) -> Int
+
+pub fn c_read_stdin_line(Bytes, Int) -> Int
+
+pub fn c_read_text_file(CString, Bytes, Int) -> Int
+
+pub fn c_read_text_file_bytes(Bytes, Bytes, Int) -> Int
+
+pub fn c_remove(CString) -> Int
+
+pub fn c_remove_bytes(Bytes) -> Int
+
+pub fn c_remove_file(CString) -> Int
+
+pub fn c_remove_file_bytes(Bytes) -> Int
+
+pub fn c_reset_signal_received() -> Unit
+
+pub fn c_setenv(CString, CString, Int) -> Int
+
+pub fn c_setenv_bytes(Bytes, Bytes, Int) -> Int
+
+pub fn c_setup_signal_handlers() -> Int
+
+pub fn c_sleep_ms(Int) -> Unit
+
+pub fn c_spawn_daemon(CString) -> Int
+
+pub fn c_spawn_daemon_bytes(Bytes) -> Int
+
+pub fn c_system(CString) -> Int
+
+pub fn c_system_bytes(Bytes) -> Int
+
+pub fn c_time() -> Int64
+
+pub fn c_unsetenv(CString) -> Int
+
+pub fn c_unsetenv_bytes(Bytes) -> Int
+
+pub fn c_write_gateway_snapshot(Int, Int, Int) -> Int
+
+pub fn c_write_gateway_token(Int) -> Int
+
+pub fn c_write_gateway_token_record(Int, Int, Int64) -> Int
+
+pub fn c_write_pid_file(CString, Int) -> Int
+
+pub fn c_write_pid_file_bytes(Bytes, Int) -> Int
+
+pub fn c_write_stderr(Bytes, Int) -> Int
+
+pub fn c_write_stdout(Bytes, Int) -> Int
+
+pub fn c_write_text_file(CString, CString) -> Int
+
+pub fn c_write_text_file_bytes(Bytes, Bytes) -> Int
+
+pub fn cstring_to_string(CString) -> String
+
+pub fn default_metadata_db_path() -> String
+
+pub let dir_permission : Int
+
+pub fn escape_shell_single_quote(String) -> String
+
+pub let f_ok : Int
+
+pub fn ffi_assert_true(Bool) -> Unit raise
+
+pub fn get_signal_received() -> Int
+
+pub fn has_received_signal() -> Bool
+
+pub fn native_append_file_text(String, String) -> Unit raise FileSystemError
+
+pub fn native_epoch_to_date(Int64) -> (Int, Int, Int) raise FileSystemError
+
+pub fn native_find_file_with_prefix(String, String, String) -> String?
+
+pub fn native_list_dir_entries(String) -> Array[String]
+
+pub fn native_read_file_bytes(String) -> Bytes raise FileSystemError
+
+pub fn native_read_file_text(String) -> String raise FileSystemError
+
+pub fn native_write_file_bytes(String, Bytes) -> Unit raise FileSystemError
+
+pub fn native_write_file_text(String, String) -> Unit raise FileSystemError
+
+pub let r_ok : Int
+
+pub fn rebuild_metadata_from_jsonl(&@interfaces.HistoryMetadataStore, String) -> Int
+
+pub fn reset_signal_received() -> Unit
+
+pub fn run_daemon_loop(interval_ms~ : Int, on_tick~ : () -> Bool) -> Int
+
+pub fn setup_signal_handlers() -> Bool
+
+pub let sigint : Int
+
+pub let sigterm : Int
+
+pub fn sleep_ms(Int) -> Unit
+
+pub fn string_to_cstring(String) -> CString
+
+pub fn string_to_utf8_cstring(String) -> Bytes
+
+pub fn validate_command_name(String) -> Unit raise ProcessError
+
+pub let w_ok : Int
+
+pub let x_ok : Int
 
 // Errors
+pub(all) suberror FileSystemError {
+  FileNotFound(String)
+  PermissionDenied(String)
+  IoError(String)
+  InvalidPath(String)
+}
+
+pub(all) suberror ProcessError {
+  ExecutionFailed(String)
+  Timeout
+  SignalReceived(Int)
+}
 
 // Types and methods
+#external
+pub type CString
+
+pub(all) enum LogOutput {
+  Stdout
+  Stderr
+  File(String)
+}
+
+pub struct NativeClock {
+  _placeholder : Unit
+}
+pub fn NativeClock::new() -> Self
+pub impl @interfaces.Clock for NativeClock
+
+pub struct NativeFileStore {
+  base_dir : String?
+}
+pub fn NativeFileStore::default() -> Self
+pub fn NativeFileStore::new(base_dir~ : String?) -> Self
+pub fn NativeFileStore::read_text(Self, String) -> String raise FileSystemError
+pub impl @interfaces.FileStore for NativeFileStore
+
+pub struct NativeHistoryMetadataStore {
+  db_path : String
+  mut db : @sqlite.Database?
+}
+pub fn NativeHistoryMetadataStore::new(String) -> Self
+pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore
+
+pub struct NativeHistoryReader {
+  base_dir : String
+  metadata_store : &@interfaces.HistoryMetadataStore?
+}
+pub fn NativeHistoryReader::new(base_dir~ : String) -> Self
+pub fn NativeHistoryReader::new_with_metadata_store(base_dir~ : String, metadata_store~ : &@interfaces.HistoryMetadataStore) -> Self
+pub impl @interfaces.HistoryReader for NativeHistoryReader
+
+pub struct NativeHistoryRecorder {
+  base_dir : String
+  mut current_file_handle : Int64
+  mut current_file_path : String
+  mut session_id : String
+  mut initialized : Bool
+  metadata_store : &@interfaces.HistoryMetadataStore?
+  mut is_first_user_message : Bool
+}
+pub fn NativeHistoryRecorder::new(base_dir~ : String) -> Self
+pub fn NativeHistoryRecorder::new_with_metadata_store(base_dir~ : String, metadata_store~ : &@interfaces.HistoryMetadataStore) -> Self
+pub impl @interfaces.HistoryRecorder for NativeHistoryRecorder
+
+pub struct NativeHttpClient {
+  timeout_seconds : Int
+  user_agent : String
+}
+pub fn NativeHttpClient::default() -> Self
+pub async fn NativeHttpClient::do_request_async(Self, @interfaces.HttpRequest) -> @interfaces.HttpResponse raise @interfaces.HttpError
+pub async fn NativeHttpClient::get_json(Self, String) -> Json raise @interfaces.HttpError
+pub fn NativeHttpClient::new(timeout_seconds~ : Int, user_agent~ : String) -> Self
+pub async fn NativeHttpClient::post_json(Self, String, Json) -> @interfaces.HttpResponse raise @interfaces.HttpError
+pub impl @interfaces.HttpClient for NativeHttpClient
+
+pub struct NativeLogger {
+  min_level : @interfaces.LogLevel
+  output : LogOutput
+  include_timestamp : Bool
+}
+pub fn NativeLogger::default() -> Self
+pub fn NativeLogger::new(min_level~ : @interfaces.LogLevel, output~ : LogOutput, include_timestamp~ : Bool) -> Self
+pub impl @interfaces.Logger for NativeLogger
+
+pub struct NativePlatform {
+  clock : NativeClock
+  logger : NativeLogger
+  process : NativeProcessExecutor
+}
+pub fn NativePlatform::get_info(Self) -> @interfaces.PlatformInfo
+pub fn NativePlatform::log(Self, @interfaces.LogLevel, String) -> Unit
+pub fn NativePlatform::new() -> Self
+
+pub struct NativeProcessChecker {
+  _placeholder : Int
+}
+pub fn NativeProcessChecker::new() -> Self
+pub impl @control.ProcessChecker for NativeProcessChecker
+
+pub struct NativeProcessExecutor {
+  default_timeout_ms : Int64
+}
+pub fn NativeProcessExecutor::command_exists(Self, String) -> Bool
+pub fn NativeProcessExecutor::default() -> Self
+pub fn NativeProcessExecutor::new(default_timeout_ms~ : Int64) -> Self
+pub fn NativeProcessExecutor::shell(Self, String) -> @interfaces.ProcessResult raise ProcessError
+pub impl @interfaces.ProcessExecutor for NativeProcessExecutor
+
+pub struct NativeSessionManager {
+  base_dir : String
+  cache : Map[@types.SessionKey, @types.Session]
+  cache_max_size : Int
+  open_recorders : Map[String, NativeHistoryRecorder]
+  metadata_store : &@interfaces.HistoryMetadataStore?
+}
+pub fn NativeSessionManager::new(base_dir~ : String, cache_max_size~ : Int) -> Self
+pub fn NativeSessionManager::new_with_metadata_store(base_dir~ : String, cache_max_size~ : Int, metadata_store~ : &@interfaces.HistoryMetadataStore) -> Self
+pub impl @interfaces.SessionManager for NativeSessionManager
+
+pub struct NativeStructuredLogger {
+  min_level : @interfaces.LogLevel
+  output : LogOutput
+  format : @interfaces.LogFormat
+  context : @interfaces.LogContext
+  component_levels : Array[@interfaces.ComponentLogLevel]
+}
+pub fn NativeStructuredLogger::add_component_level(Self, component~ : String, level~ : @interfaces.LogLevel) -> Self
+pub fn NativeStructuredLogger::default() -> Self
+pub fn NativeStructuredLogger::new(min_level~ : @interfaces.LogLevel, output~ : LogOutput, format~ : @interfaces.LogFormat) -> Self
+pub impl @interfaces.Logger for NativeStructuredLogger
+pub impl @interfaces.StructuredLogger for NativeStructuredLogger
 
 // Type aliases
 

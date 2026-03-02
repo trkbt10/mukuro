@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1/chat"
+
+import {
+  "trkbt10/mukuro/api/v1",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn create_chat_handlers(ChatState) -> @v1.ChatApiHandlers
+
+// Errors
+
+// Types and methods
+pub(all) struct ChatState {
+  session_manager : &@interfaces.SessionManager
+  get_timestamp : (() -> Int64)?
+}
+pub fn ChatState::new_with_session_manager(&@interfaces.SessionManager, get_timestamp? : () -> Int64) -> Self
+
+// Type aliases
+
+// Traits
+

@@ -2,6 +2,8 @@
 package "trkbt10/mukuro/adapters/channels"
 
 import {
+  "mizchi/x/websocket",
+  "trkbt10/mukuro/adapters/native",
   "trkbt10/mukuro/core/session",
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
@@ -19,6 +21,7 @@ pub(all) suberror ChannelError {
   NetworkError(String)
   ChannelNotFound(String)
 }
+pub impl Show for ChannelError
 
 // Types and methods
 pub(all) struct ChannelBaseConfig {
@@ -53,6 +56,24 @@ pub(all) struct EventHandler {
   handler : (@interfaces.ChannelEvent) -> Unit
 }
 
+pub struct HttpChannelAdapter {
+  config : HttpChannelConfig
+  mut status : ChannelStatus
+  received_messages : Array[@types.InboundEnvelope]
+  http_client : @native.NativeHttpClient
+}
+pub fn HttpChannelAdapter::handle_request(Self, Json, String, String) -> Unit
+pub fn HttpChannelAdapter::new(HttpChannelConfig) -> Self
+pub impl @interfaces.ChannelAdapter for HttpChannelAdapter
+
+pub(all) struct HttpChannelConfig {
+  name : String
+  auth_token : String?
+  webhook_url : String?
+  base : ChannelBaseConfig
+}
+pub fn HttpChannelConfig::default(name~ : String) -> Self
+
 pub(all) struct MessageHandler {
   handler : (@types.InboundEnvelope) -> Unit
 }
@@ -80,6 +101,26 @@ pub(all) struct SendResult {
 }
 pub fn SendResult::failure(error~ : String) -> Self
 pub fn SendResult::success(message_id~ : String) -> Self
+
+pub struct WebSocketChannelAdapter {
+  config : WebSocketChannelConfig
+  mut status : ChannelStatus
+  received_messages : Array[@types.InboundEnvelope]
+  mut conn : @websocket.Conn?
+}
+pub fn WebSocketChannelAdapter::handle_incoming_text(Self, String, String?, String?) -> Unit
+pub fn WebSocketChannelAdapter::new(WebSocketChannelConfig) -> Self
+pub impl @interfaces.ChannelAdapter for WebSocketChannelAdapter
+
+pub(all) struct WebSocketChannelConfig {
+  name : String
+  url : String
+  auth_token : String?
+  heartbeat_interval_ms : Int
+  receive_timeout_ms : Int
+  base : ChannelBaseConfig
+}
+pub fn WebSocketChannelConfig::default(name~ : String, url~ : String) -> Self
 
 // Type aliases
 

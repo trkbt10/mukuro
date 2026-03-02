@@ -4,14 +4,14 @@
 
 ///|
 /// Global plugin watcher instance
-let global_plugin_watcher : Ref[@native.NativePluginWatcher?] = { val: None }
+let global_plugin_watcher : Ref[@plugin_runtime.NativePluginWatcher?] = { val: None }
 
 ///|
 /// Setup plugin watcher for the plugin system
 pub fn setup_plugin_watcher(plugin_dir : String) -> Unit raise {
   match global_plugin_initializer.val {
     Some(initializer) => {
-      let watcher = @native.NativePluginWatcher::default(plugin_dir~)
+      let watcher = @plugin_runtime.NativePluginWatcher::default(plugin_dir~)
       initializer.set_watcher(watcher)
       global_plugin_watcher.val = Some(watcher)
     }

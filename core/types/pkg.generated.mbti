@@ -14,6 +14,7 @@ pub(all) struct AgentConfig {
   bootstrap : String
 }
 pub fn AgentConfig::default() -> Self
+pub fn AgentConfig::to_json(Self) -> Json
 
 pub(all) struct AttachmentInfo {
   filename : String
@@ -30,6 +31,14 @@ pub(all) struct ChannelConfig {
   options : Map[String, Json]
 }
 pub fn ChannelConfig::new(name~ : String, token~ : String?) -> Self
+pub fn ChannelConfig::to_json(Self) -> Json
+
+pub(all) struct ContextPruningConfig {
+  strategy : PruningStrategy
+  preserve_system : Bool
+  min_context_tokens : Int?
+}
+pub fn ContextPruningConfig::default() -> Self
 
 pub(all) struct FallbackConfig {
   enabled : Bool
@@ -37,6 +46,7 @@ pub(all) struct FallbackConfig {
   cooldown_ms : Int
 }
 pub fn FallbackConfig::new() -> Self
+pub fn FallbackConfig::to_json(Self) -> Json
 
 pub(all) struct InboundEnvelope {
   channel : String
@@ -58,6 +68,12 @@ pub(all) enum MessageType {
   System(SystemEvent)
 }
 
+pub(all) struct ModelAlias {
+  alias_name : String
+  provider : String
+  model_name : String
+}
+
 pub(all) enum ModelMessage {
   System(String)
   User(content~ : String, name~ : String?)
@@ -72,6 +88,7 @@ pub(all) struct ModelOptions {
   stop_sequences : Array[String]?
 }
 pub fn ModelOptions::default() -> Self
+pub fn ModelOptions::to_json(Self) -> Json
 
 pub(all) enum ModelResponse {
   Text(String)
@@ -85,7 +102,9 @@ pub(all) struct MukuroConfig {
   providers : Array[ProviderConfig]
   fallback : FallbackConfig
   channels : Array[ChannelConfig]
+  thinking : ThinkingConfig
 }
+pub fn MukuroConfig::to_json(Self) -> Json
 
 pub(all) struct OutboundAttachment {
   filename : String
@@ -118,8 +137,26 @@ pub(all) struct ProviderConfig {
   default_model : String
   timeout_ms : Int
   max_retries : Int
+  use_responses_api : Bool
 }
-pub fn ProviderConfig::new(name~ : String, api_key~ : String?, default_model~ : String) -> Self
+pub fn ProviderConfig::new(name~ : String, api_key~ : String?, default_model~ : String, use_responses_api? : Bool) -> Self
+pub fn ProviderConfig::to_json(Self) -> Json
+
+pub(all) enum PruningStrategy {
+  CacheTTL(Int64)
+  SoftTrim(Int)
+  HardClear
+}
+pub fn PruningStrategy::to_string(Self) -> String
+
+pub(all) struct RetryConfig {
+  max_retries : Int
+  initial_backoff_ms : Int
+  max_backoff_ms : Int
+  backoff_multiplier : Double
+  retry_status_codes : Array[Int]
+}
+pub fn RetryConfig::default() -> Self
 
 pub(all) struct Session {
   key : SessionKey
@@ -157,6 +194,45 @@ pub(all) enum SystemEvent {
   ChannelCreated
   ChannelDeleted
 }
+
+pub(all) struct SystemPromptConfig {
+  mode : SystemPromptMode
+  when : SystemPromptWhen
+  content : String
+}
+pub fn SystemPromptConfig::default() -> Self
+
+pub(all) enum SystemPromptMode {
+  Append
+  Replace
+}
+pub fn SystemPromptMode::to_string(Self) -> String
+
+pub(all) enum SystemPromptWhen {
+  First
+  Always
+  Never
+}
+pub fn SystemPromptWhen::to_string(Self) -> String
+
+pub(all) struct ThinkingConfig {
+  enabled : Bool
+  level : ThinkingLevel
+  budget_tokens : Int?
+}
+pub fn ThinkingConfig::default() -> Self
+pub fn ThinkingConfig::to_json(Self) -> Json
+
+pub(all) enum ThinkingLevel {
+  Off
+  Minimal
+  Low
+  Medium
+  High
+  XHigh
+}
+pub fn ThinkingLevel::from_string(String) -> Self
+pub fn ThinkingLevel::to_string(Self) -> String
 
 pub(all) struct ToolCallRequest {
   id : String

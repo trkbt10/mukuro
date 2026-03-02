@@ -1,0 +1,87 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1/plugins"
+
+import {
+  "trkbt10/mukuro/api/v1",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn create_plugin_handlers(PluginManagerState) -> @v1.PluginApiHandlers
+
+pub fn handle_invoke_action(PluginManagerState, @v1.ApiRequestContext) -> @v1.ApiResponse
+
+pub fn handle_list_actions(PluginManagerState, @v1.ApiRequestContext) -> @v1.ApiResponse
+
+// Errors
+
+// Types and methods
+pub(all) struct PluginAddRequest {
+  manifest_path : String
+  enabled : Bool?
+  auto_start : Bool?
+}
+pub fn PluginAddRequest::from_json(Map[String, Json]) -> Self?
+
+pub(all) struct PluginDetailResponse {
+  id : String
+  name : String
+  version : String
+  description : String
+  author : String?
+  enabled : Bool
+  status : String
+  loaded_at : Int64
+  modified_at : Int64
+  permissions : Array[String]
+  settings_schema : Json?
+  is_builtin : Bool
+}
+pub fn PluginDetailResponse::to_json(Self) -> Json
+
+pub(all) struct PluginListItem {
+  id : String
+  name : String
+  version : String
+  description : String
+  enabled : Bool
+  status : String
+  loaded_at : Int64
+  is_builtin : Bool
+}
+pub fn PluginListItem::to_json(Self) -> Json
+
+pub(all) struct PluginManagerState {
+  mut plugins : Map[String, @interfaces.PluginState]
+  mut settings : Map[String, Map[String, Json]]
+  mut actions : Map[String, Map[String, (Json) -> @v1.ApiResponse]]
+}
+pub fn PluginManagerState::get_plugin(Self, String) -> @interfaces.PluginState?
+pub fn PluginManagerState::get_settings(Self, String) -> Map[String, Json]?
+pub fn PluginManagerState::invoke_action(Self, String, String, Json) -> @v1.ApiResponse?
+pub fn PluginManagerState::list_actions(Self, String) -> Array[String]
+pub fn PluginManagerState::new() -> Self
+pub fn PluginManagerState::register_action(Self, String, String, (Json) -> @v1.ApiResponse) -> Unit
+pub fn PluginManagerState::remove_plugin(Self, String) -> Unit
+pub fn PluginManagerState::set_plugin(Self, String, @interfaces.PluginState) -> Unit
+pub fn PluginManagerState::set_settings(Self, String, Map[String, Json]) -> Unit
+
+pub(all) enum PluginPermission {
+  NetworkAccess(Array[String])
+  FileRead(Array[String])
+  FileWrite(Array[String])
+  ProcessSpawn
+  EnvAccess(Array[String])
+}
+pub fn PluginPermission::to_string(Self) -> String
+
+pub(all) struct PluginSettingsResponse {
+  plugin_id : String
+  settings : Map[String, Json]
+}
+pub fn PluginSettingsResponse::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits
+

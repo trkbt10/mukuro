@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/model/protocol"
+
+import {
+  "trkbt10/mukuro/core/types",
+}
+
+// Values
+pub fn build_anthropic_body(String, Array[@types.ModelMessage], Array[@types.ToolDefinition], max_tokens? : Int?, system? : String, temperature? : Double?) -> Json
+
+pub fn build_openai_chat_body(String, Array[@types.ModelMessage], Array[@types.ToolDefinition], max_tokens? : Int?, temperature? : Double?) -> Json
+
+pub fn build_responses_api_body(String, Array[@types.ModelMessage], Array[@types.ToolDefinition]) -> Json
+
+pub fn extract_system_message(Array[@types.ModelMessage]) -> String
+
+pub fn message_to_anthropic_json(@types.ModelMessage) -> Json
+
+pub fn message_to_openai_json(@types.ModelMessage) -> Json
+
+pub fn messages_to_anthropic_json(Array[@types.ModelMessage]) -> Array[Json]
+
+pub fn messages_to_openai_json(Array[@types.ModelMessage]) -> Array[Json]
+
+pub fn messages_to_responses_input(Array[@types.ModelMessage]) -> Array[Json]
+
+pub fn parse_anthropic_response(Json) -> @types.ModelResponse
+
+pub fn parse_anthropic_tool_calls(Json) -> Array[@types.ToolCallRequest]
+
+pub fn parse_openai_chat_response(Json) -> @types.ModelResponse
+
+pub fn parse_openai_tool_calls(Json) -> Array[@types.ToolCallRequest]
+
+pub fn parse_responses_api_response(Json) -> @types.ModelResponse
+
+pub fn tool_to_anthropic_json(@types.ToolDefinition) -> Json
+
+pub fn tool_to_openai_json(@types.ToolDefinition) -> Json
+
+pub fn tool_to_responses_api_json(@types.ToolDefinition) -> Json
+
+pub fn tools_to_anthropic_json(Array[@types.ToolDefinition]) -> Array[Json]
+
+pub fn tools_to_openai_json(Array[@types.ToolDefinition]) -> Array[Json]
+
+pub fn tools_to_responses_api_json(Array[@types.ToolDefinition]) -> Array[Json]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

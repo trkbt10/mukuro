@@ -9,11 +9,13 @@ import {
 // Values
 pub fn calculate_backoff_delay(Int, Int, Int, Double) -> Int
 
-pub async fn call_model_with_retry_async(async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse, Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions, RetryConfig) -> @types.ModelResponse raise AgentLoopError
+pub fn record_session_meta(&@interfaces.HistoryRecorder?, &@interfaces.Clock?, Int64, String, Json) -> Unit
 
 pub async fn run_agent_loop(@types.InboundEnvelope, AgentLoopOptions, AgentDependencies) -> @types.OutboundMessage raise AgentLoopError
 
-pub async fn run_agent_loop_async(@types.InboundEnvelope, AgentLoopOptions, AsyncAgentDependencies) -> @types.OutboundMessage raise AgentLoopError
+pub fn safe_close(&@interfaces.HistoryRecorder?) -> Unit
+
+pub fn safe_open_session(&@interfaces.HistoryRecorder?, String, Int64) -> Bool?
 
 pub async fn single_model_call(Array[@types.ModelMessage], @types.ModelOptions, &@interfaces.ModelOrchestrator) -> @types.ModelResponse raise AgentLoopError
 
@@ -35,6 +37,9 @@ pub(all) struct AgentDependencies {
   model_orchestrator : &@interfaces.ModelOrchestrator
   tool_registry : &@interfaces.ToolRegistry
   outbound_dispatcher : &@interfaces.OutboundDispatcher
+  history_recorder : &@interfaces.HistoryRecorder?
+  clock : &@interfaces.Clock?
+  session_manager : &@interfaces.SessionManager?
 }
 
 pub(all) struct AgentLoopContext {
@@ -70,15 +75,6 @@ pub(all) enum AgentState {
   Completed
 }
 pub impl Show for AgentState
-
-pub(all) struct AsyncAgentDependencies {
-  session_resolver : &@interfaces.SessionResolver
-  session_store : &@interfaces.SessionStore
-  context_builder : &@interfaces.ContextBuilder
-  tool_registry : &@interfaces.ToolRegistry
-  outbound_dispatcher : &@interfaces.OutboundDispatcher
-  model_invoke : async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse
-}
 
 pub(all) enum IterationResult {
   Continue(Array[@types.ModelMessage])

@@ -1,0 +1,67 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1/history"
+
+import {
+  "trkbt10/mukuro/api/v1",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn create_history_handlers(HistoryState) -> @v1.HistoryApiHandlers
+
+pub fn history_record_to_json(@interfaces.HistoryRecord) -> HistoryRecordJson
+
+pub fn session_summary_from_metadata(@interfaces.SessionMetadata) -> HistorySessionSummary
+
+// Errors
+
+// Types and methods
+pub(all) struct HistoryDateEntry {
+  year : Int
+  month : Int
+  day : Int
+  session_count : Int
+}
+pub impl Eq for HistoryDateEntry
+pub impl Show for HistoryDateEntry
+pub impl ToJson for HistoryDateEntry
+
+pub(all) struct HistoryRecordJson {
+  timestamp : Int64
+  record_type : String
+  payload : Json
+}
+pub impl Eq for HistoryRecordJson
+pub impl Show for HistoryRecordJson
+pub impl ToJson for HistoryRecordJson
+
+pub(all) struct HistorySessionSummary {
+  session_id : String
+  channel : String
+  chat_id : String
+  filename : String
+  started_at : Int64
+  record_count : Int
+  title : String?
+  first_message : String?
+  message_count : Int
+  user_message_count : Int
+  assistant_message_count : Int
+  tool_call_count : Int
+  model_name : String?
+}
+pub impl Eq for HistorySessionSummary
+pub impl Show for HistorySessionSummary
+pub impl ToJson for HistorySessionSummary
+
+pub(all) struct HistoryState {
+  reader : &@interfaces.HistoryReader
+  metadata_store : &@interfaces.HistoryMetadataStore?
+}
+pub fn HistoryState::new(&@interfaces.HistoryReader) -> Self
+pub fn HistoryState::new_with_metadata_store(&@interfaces.HistoryReader, &@interfaces.HistoryMetadataStore) -> Self
+
+// Type aliases
+
+// Traits
+

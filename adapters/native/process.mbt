@@ -72,6 +72,16 @@ pub fn validate_command_name(command : String) -> Unit raise ProcessError {
 }
 
 ///|
+/// Escape single quotes for shell commands
+pub fn escape_shell_single_quote(s : String) -> String {
+  let parts : Array[String] = s
+    .split("'")
+    .map(fn(sv) { sv.to_string() })
+    .collect()
+  parts.join("'\\''")
+}
+
+///|
 fn build_command(
   command : String,
   args : Array[String],

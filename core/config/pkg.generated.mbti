@@ -7,6 +7,39 @@ import {
 }
 
 // Values
+pub let app_name : String
+
+pub fn auth_log_file() -> String
+
+pub fn cache_dir() -> String
+
+pub fn config_dir() -> String
+
+pub fn config_file() -> String
+
+pub fn config_file_for(PathMode) -> String
+
+pub fn data_dir() -> String
+
+pub fn get_path_mode() -> PathMode
+
+pub fn history_dir() -> String
+
+pub fn local_dir() -> String
+
+pub let mukuro_dir_name : String
+
+pub fn pid_file() -> String
+
+pub fn set_path_mode(PathMode) -> Unit
+
+pub fn socket_file() -> String
+
+pub fn state_file() -> String
+
+pub fn token_file() -> String
+
+pub fn workspace_dir() -> String
 
 // Errors
 
@@ -40,6 +73,12 @@ pub fn FileStoreConfigLoader::load_from_string_with_env(Self, String, &@interfac
 pub fn FileStoreConfigLoader::new(file_store~ : &@interfaces.FileStore, env_mapping~ : @interfaces.EnvMapping, priority~ : @interfaces.ConfigPriority) -> Self
 pub fn FileStoreConfigLoader::with_defaults(file_store~ : &@interfaces.FileStore) -> Self
 pub impl @interfaces.ConfigLoader for FileStoreConfigLoader
+
+pub(all) enum PathMode {
+  Standard
+  Local
+  Custom(String)
+}
 
 // Type aliases
 

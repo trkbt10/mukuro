@@ -1,0 +1,98 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1/settings"
+
+import {
+  "trkbt10/mukuro/api/v1",
+  "trkbt10/mukuro/core/types",
+}
+
+// Values
+pub fn create_settings_handlers(SettingsState) -> @v1.SettingsApiHandlers
+
+// Errors
+
+// Types and methods
+pub(all) struct AgentSettingsResponse {
+  max_iterations : Int
+  timeout_ms : Int64
+  bootstrap : String
+}
+pub fn AgentSettingsResponse::from_config(@types.AgentConfig) -> Self
+pub fn AgentSettingsResponse::to_json(Self) -> Json
+
+pub(all) struct AllSettingsResponse {
+  retry : RetrySettingsResponse
+  agent : AgentSettingsResponse
+  model : ModelSettingsResponse
+  thinking : ThinkingSettingsResponse
+  providers : Array[ProviderSettingsResponse]
+}
+pub fn AllSettingsResponse::to_json(Self) -> Json
+
+pub(all) struct ModelInferenceSettingsResponse {
+  model_name : String
+  temperature : Double?
+  max_tokens : Int?
+  stop_sequences : Array[String]?
+  thinking_enabled : Bool
+  thinking_level : String
+  thinking_budget_tokens : Int?
+}
+pub fn ModelInferenceSettingsResponse::from_configs(@types.ModelOptions, @types.ThinkingConfig) -> Self
+pub fn ModelInferenceSettingsResponse::to_json(Self) -> Json
+
+pub(all) struct ModelSettingsResponse {
+  model_name : String
+  temperature : Double?
+  max_tokens : Int?
+  stop_sequences : Array[String]?
+}
+pub fn ModelSettingsResponse::from_config(@types.ModelOptions) -> Self
+pub fn ModelSettingsResponse::to_json(Self) -> Json
+
+pub(all) struct ProviderSettingsResponse {
+  name : String
+  base_url : String?
+  default_model : String
+  timeout_ms : Int
+  max_retries : Int
+  has_api_key : Bool
+  use_responses_api : Bool
+}
+pub fn ProviderSettingsResponse::from_config(@types.ProviderConfig) -> Self
+pub fn ProviderSettingsResponse::to_json(Self) -> Json
+
+pub(all) struct RetrySettingsResponse {
+  max_retries : Int
+  initial_backoff_ms : Int
+  max_backoff_ms : Int
+  backoff_multiplier : Double
+  retry_status_codes : Array[Int]
+}
+pub fn RetrySettingsResponse::from_config(@types.RetryConfig) -> Self
+pub fn RetrySettingsResponse::to_json(Self) -> Json
+
+pub(all) struct SettingsState {
+  mut config : @types.MukuroConfig?
+  mut retry_config : @types.RetryConfig
+  mut config_path : String
+  mut persister : ((@types.MukuroConfig, String) -> Unit)?
+}
+pub fn SettingsState::get_config(Self) -> @types.MukuroConfig?
+pub fn SettingsState::init(Self, @types.MukuroConfig, String) -> Unit
+pub fn SettingsState::new() -> Self
+pub fn SettingsState::set_persister(Self, (@types.MukuroConfig, String) -> Unit) -> Unit
+pub fn SettingsState::update_config(Self, @types.MukuroConfig) -> Unit
+
+pub(all) struct ThinkingSettingsResponse {
+  enabled : Bool
+  level : String
+  budget_tokens : Int?
+}
+pub fn ThinkingSettingsResponse::from_config(@types.ThinkingConfig) -> Self
+pub fn ThinkingSettingsResponse::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits
+

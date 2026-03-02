@@ -1,0 +1,84 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1/tools"
+
+import {
+  "trkbt10/mukuro/api/v1",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn calculate_stats(ToolManagerState) -> ToolStats
+
+pub fn create_tool_handlers(ToolManagerState) -> @v1.ToolApiHandlers
+
+pub fn handle_invoke_action(ToolManagerState, @v1.ApiRequestContext) -> @v1.ApiResponse
+
+pub fn handle_list_actions(ToolManagerState, @v1.ApiRequestContext) -> @v1.ApiResponse
+
+// Errors
+
+// Types and methods
+pub(all) struct ToolActionHandler((Json) -> @v1.ApiResponse)
+#deprecated
+pub fn ToolActionHandler::inner(Self) -> (Json) -> @v1.ApiResponse
+
+pub(all) struct ToolDetailResponse {
+  id : String
+  name : String
+  description : String
+  source : String
+  source_id : String?
+  enabled : Bool
+  status : String
+  status_message : String?
+  loaded_at : Int64
+  parameters : Json
+  settings_schema : Json?
+}
+pub fn ToolDetailResponse::from_state(@interfaces.ToolState) -> Self
+pub fn ToolDetailResponse::to_json(Self) -> Json
+
+pub(all) struct ToolListItem {
+  id : String
+  name : String
+  description : String
+  source : String
+  source_id : String?
+  enabled : Bool
+  status : String
+}
+pub fn ToolListItem::from_state(@interfaces.ToolState) -> Self
+pub fn ToolListItem::to_json(Self) -> Json
+
+pub(all) struct ToolManagerState {
+  tools : Map[String, @interfaces.ToolState]
+  actions : Map[String, Map[String, ToolActionHandler]]
+}
+pub fn ToolManagerState::count_by_source(Self) -> Map[String, Int]
+pub fn ToolManagerState::count_enabled(Self) -> Int
+pub fn ToolManagerState::get_tool(Self, String) -> @interfaces.ToolState?
+pub fn ToolManagerState::has_actions(Self, String) -> Bool
+pub fn ToolManagerState::invoke_action(Self, String, String, Json) -> @v1.ApiResponse?
+pub fn ToolManagerState::is_builtin(Self, String) -> Bool
+pub fn ToolManagerState::list_actions(Self, String) -> Array[String]
+pub fn ToolManagerState::list_tools(Self) -> Array[@interfaces.ToolState]
+pub fn ToolManagerState::new() -> Self
+pub fn ToolManagerState::register_action(Self, String, String, ToolActionHandler) -> Unit
+pub fn ToolManagerState::remove_tool_state(Self, String) -> Unit
+pub fn ToolManagerState::set_tool(Self, String, @interfaces.ToolState) -> Unit
+pub fn ToolManagerState::set_tool_enabled(Self, String, Bool) -> Bool
+pub fn ToolManagerState::set_tool_status(Self, String, @interfaces.ToolStatus) -> Bool
+
+pub(all) struct ToolStats {
+  total : Int
+  enabled : Int
+  plugin : Int
+  user_defined : Int
+  mcp : Int
+}
+pub fn ToolStats::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits
+

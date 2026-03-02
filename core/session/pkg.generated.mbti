@@ -9,13 +9,27 @@ import {
 // Values
 pub fn estimate_history_tokens(Array[@types.ModelMessage]) -> Int
 
+pub fn estimate_token_count(Array[@types.ModelMessage]) -> Int
+
 pub fn estimate_tokens(@types.ModelMessage) -> Int
+
+pub fn extract_payload_content(Json) -> String
+
+pub fn extract_payload_has_tool_calls(Json) -> Bool
+
+pub fn extract_payload_name(Json) -> String?
+
+pub fn extract_tool_call_payload(Json) -> @types.ToolCallRequest
+
+pub fn extract_tool_result_payload(Json) -> (String, String)
 
 pub fn filter_non_system_messages(Array[@types.ModelMessage]) -> Array[@types.ModelMessage]
 
 pub fn get_recent_messages(@types.Session, Int) -> Array[@types.ModelMessage]
 
 pub fn parse_session_key(String) -> @types.SessionKey?
+
+pub fn reconstruct_session_from_history(@types.SessionKey, Array[@interfaces.HistoryRecord]) -> @types.Session
 
 pub fn session_key_to_storage_key(@types.SessionKey) -> String
 
@@ -67,6 +81,14 @@ pub struct ConfigurableSessionResolver {
 pub fn ConfigurableSessionResolver::default() -> Self
 pub fn ConfigurableSessionResolver::new(strategy~ : SessionStrategy) -> Self
 pub impl @interfaces.SessionResolver for ConfigurableSessionResolver
+
+pub struct ContextPruner {
+  config : @types.ContextPruningConfig
+}
+pub fn ContextPruner::default() -> Self
+pub fn ContextPruner::new(@types.ContextPruningConfig) -> Self
+pub fn ContextPruner::prune(Self, Array[@types.ModelMessage]) -> Array[@types.ModelMessage]
+pub fn ContextPruner::prune_to_token_budget(Self, Array[@types.ModelMessage], Int) -> Array[@types.ModelMessage]
 
 pub struct HistoryManager {
   options : HistoryOptions

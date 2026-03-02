@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/lib/url"
+
+// Values
+pub fn decode(String) -> String
+
+pub fn encode(String) -> String
+
+pub fn find_char(String, Char) -> Int
+
+pub fn get_param(String, String) -> String?
+
+pub fn get_params(String) -> Map[String, String]
+
+pub fn parse(String) -> Url
+
+pub fn parse_query_param(String, String) -> String?
+
+pub fn path(String) -> String
+
+pub fn query_string(String) -> String?
+
+// Errors
+
+// Types and methods
+pub struct Url {
+  path : String
+  query : String?
+  fragment : String?
+}
+pub impl Eq for Url
+pub impl Show for Url
+
+// Type aliases
+
+// Traits
+

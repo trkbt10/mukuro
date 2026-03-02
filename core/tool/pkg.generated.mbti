@@ -11,6 +11,10 @@ pub fn is_error(@types.ToolResult) -> Bool
 
 pub fn is_success(@types.ToolResult) -> Bool
 
+pub fn load_tool_from_manifest(String) -> @interfaces.ToolState raise @interfaces.ToolManagerError
+
+pub fn load_user_defined_tools(ToolLoaderIO) -> Array[@interfaces.ToolState]
+
 pub fn requires_action(@types.ToolResult) -> Bool
 
 pub fn tool_result_to_message(String, @types.ToolResult) -> @types.ModelMessage
@@ -44,6 +48,20 @@ pub struct ToolExecutionManager {
 pub async fn ToolExecutionManager::execute(Self, String, Json, @types.ToolContext) -> @types.ToolResult raise ToolExecutionError
 pub async fn ToolExecutionManager::execute_calls(Self, Array[@types.ToolCallRequest], @types.ToolContext) -> Array[(@types.ToolCallRequest, @types.ToolResult)] raise ToolExecutionError
 pub fn ToolExecutionManager::new(&@interfaces.ToolRegistry) -> Self
+
+pub(all) struct ToolLoaderIO {
+  list_tool_dirs : () -> Array[String]
+  read_manifest : (String) -> String?
+}
+
+pub(all) struct ToolManifest {
+  id : String
+  name : String
+  description : String
+  parameters : Json
+}
+pub fn ToolManifest::from_json(Json) -> Self?
+pub fn ToolManifest::to_tool_state(Self) -> @interfaces.ToolState
 
 // Type aliases
 

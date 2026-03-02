@@ -1,0 +1,29 @@
+import {
+  "moonbitlang/async",
+  "mizchi/x/websocket" @websocket,
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/config" @config,
+  "trkbt10/mukuro/core/tool" @tool,
+  "trkbt10/mukuro/core/plugin/transport" @plugin_transport,
+  "trkbt10/mukuro/adapters/native" @native,
+  "trkbt10/mukuro/lib/bytes" @bytes,
+  "moonbitlang/core/json",
+  "moonbitlang/core/encoding/utf8",
+}
+
+warnings = "-29"
+
+options(
+  targets: {
+    "plugin_watcher.mbt": [ "native" ],
+    "plugin_transport_factory.mbt": [ "native" ],
+    "stdio_client.mbt": [ "native" ],
+    "websocket_client.mbt": [ "native" ],
+    "ws_transport.mbt": [ "native" ],
+    "tool_loader.mbt": [ "native" ],
+    "plugin_e2e_test.mbt": [ "native" ],
+    "ws_e2e_test.mbt": [ "native" ],
+    "stdio_e2e_test.mbt": [ "native" ],
+    "stdio_security_test.mbt": [ "native" ],
+  },
+)

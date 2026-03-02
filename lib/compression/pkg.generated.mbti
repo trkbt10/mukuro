@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/lib/compression"
+
+// Values
+pub fn calculate_adjacent_ncd(Array[String]) -> Array[Double]
+
+pub fn compressed_size(String) -> Int64
+
+pub fn compressed_size_bytes(Bytes) -> Int64
+
+pub fn find_local_maxima(Array[Double], Double) -> Array[Int]
+
+pub fn ncd(String, String) -> Double
+
+pub fn ncd_bytes(Bytes, Bytes) -> Double
+
+pub fn sliding_window_ncd(Array[String], Int) -> Array[Double]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

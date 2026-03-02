@@ -162,7 +162,7 @@ pub fn init_api_v1_state(
     )
   }
   // ユーザー定義ツールを {data_dir}/tools/ からロード
-  for tool_state in @native.load_native_user_defined_tools() {
+  for tool_state in @plugin_runtime.load_native_user_defined_tools() {
     api_v1_tools_state.set_tool(tool_state.id, tool_state)
   }
   // builtin プラグインにアクションを登録（定義から自動登録）

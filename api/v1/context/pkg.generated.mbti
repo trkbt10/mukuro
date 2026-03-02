@@ -1,0 +1,72 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1/context"
+
+import {
+  "trkbt10/mukuro/api/v1",
+}
+
+// Values
+pub fn all_context_file_types() -> Array[ContextFileType]
+
+pub fn create_context_handlers(ContextState) -> @v1.ContextApiHandlers
+
+// Errors
+
+// Types and methods
+pub(all) struct ContextDataIO {
+  read : (String) -> String?
+  write : (String, String) -> Bool
+  delete : (String) -> Bool
+  get_dir : () -> String
+}
+
+pub(all) struct ContextFileResponse {
+  name : String
+  filename : String
+  description : String
+  content : String
+  exists : Bool
+  is_default : Bool
+}
+pub fn ContextFileResponse::from_data(ContextFileType, String?) -> Self
+pub fn ContextFileResponse::from_template(ContextFileType, String) -> Self
+pub fn ContextFileResponse::from_type(ContextFileType, String?) -> Self
+pub fn ContextFileResponse::to_json(Self) -> Json
+
+pub(all) enum ContextFileType {
+  Soul
+  Agents
+  Tools
+  Identity
+  User
+  Bootstrap
+  Heartbeat
+}
+pub fn ContextFileType::default_template(Self) -> String
+pub fn ContextFileType::description(Self) -> String
+pub fn ContextFileType::filename(Self) -> String
+pub fn ContextFileType::from_string(String) -> Self?
+pub fn ContextFileType::to_string(Self) -> String
+pub impl Eq for ContextFileType
+pub impl Show for ContextFileType
+
+pub(all) struct ContextFilesListResponse {
+  files : Array[ContextFileResponse]
+}
+pub fn ContextFilesListResponse::to_json(Self) -> Json
+
+pub(all) struct ContextState {
+  data_io : ContextDataIO
+  templates : TemplateResolver
+}
+pub fn ContextState::new(ContextDataIO, TemplateResolver) -> Self
+
+pub(all) struct TemplateResolver {
+  read_installed : (String) -> String?
+  get_embedded : (ContextFileType) -> String
+}
+
+// Type aliases
+
+// Traits
+

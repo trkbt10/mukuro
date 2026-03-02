@@ -1,11 +1,31 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "trkbt10/mukuro/examples/plugins/hello_world_native"
 
+import {
+  "trkbt10/mukuro/interfaces",
+}
+
 // Values
 
 // Errors
 
 // Types and methods
+pub(all) struct HelloWorldConfig {
+  greeting_prefix : String
+  uppercase : Bool
+}
+pub fn HelloWorldConfig::default() -> Self
+
+pub struct HelloWorldPlugin {
+  name : String
+  config : HelloWorldConfig
+  mut greeting_count : Int
+}
+pub fn HelloWorldPlugin::get_greeting_count(Self) -> Int
+pub fn HelloWorldPlugin::handle_request(Self, @interfaces.JsonRpcRequest) -> @interfaces.JsonRpcResponse
+pub fn HelloWorldPlugin::manifest(Self) -> @interfaces.PluginManifest
+pub fn HelloWorldPlugin::new(name~ : String, config~ : HelloWorldConfig) -> Self
+pub fn HelloWorldPlugin::with_defaults(name~ : String) -> Self
 
 // Type aliases
 

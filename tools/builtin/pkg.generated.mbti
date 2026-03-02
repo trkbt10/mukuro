@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/tools/builtin"
+
+import {
+  "trkbt10/mukuro/api/v1",
+  "trkbt10/mukuro/core/tools",
+}
+
+// Values
+pub fn get_all_builtin_actions(@tools.MemoryStore) -> Array[ActionDefinition]
+
+pub fn get_memory_actions(@tools.MemoryStore) -> Array[ActionDefinition]
+
+// Errors
+
+// Types and methods
+pub(all) struct ActionDefinition {
+  name : String
+  handler : (Json) -> @v1.ApiResponse
+}
+
+// Type aliases
+
+// Traits
+

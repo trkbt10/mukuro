@@ -35,6 +35,7 @@ import {
   "trkbt10/mukuro/tools/builtin" @builtin,
   "trkbt10/mukuro/adapters/channels" @channels,
   "trkbt10/mukuro/adapters/native" @native,
+  "trkbt10/mukuro/core/plugin/runtime" @plugin_runtime,
   "trkbt10/mukuro/lib/bytes" @bytes,
   "trkbt10/mukuro/lib/url" @url,
 }

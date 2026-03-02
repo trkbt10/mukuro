@@ -1,0 +1,239 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/tools"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn all_tool_definitions() -> Array[@types.ToolDefinition]
+
+pub fn all_tool_names() -> Array[String]
+
+pub fn boolean_param(String) -> Json
+
+pub fn build_outbound_message(String, String, String, String?) -> @types.OutboundMessage
+
+pub fn build_settings_schema(title~ : String, description? : String, fields~ : Array[SettingsFieldDef]) -> Json
+
+pub fn datetime_tool() -> @types.ToolDefinition
+
+pub fn execute_builtin_tool(BuiltinToolContext, String, Json) -> ToolExecutionResult?
+
+pub fn execute_datetime(Json) -> ToolExecutionResult
+
+pub fn execute_filesystem(Json) -> ToolExecutionResult
+
+pub fn execute_memory(MemoryStore, Json) -> ToolExecutionResult
+
+pub fn execute_message(Json, (@types.OutboundMessage) -> Unit) -> ToolExecutionResult
+
+pub fn execute_shell(Json) -> ToolExecutionResult
+
+pub fn execute_simple_tool(String, Json) -> ToolExecutionResult
+
+pub fn execute_spawn(SubAgentManager, Json) -> ToolExecutionResult
+
+pub fn execute_tool(String, Json, MemoryStore?, SubAgentManager?, ((@types.OutboundMessage) -> Unit)?) -> ToolExecutionResult
+
+pub fn execute_trace(TraceStore, Json) -> ToolExecutionResult
+
+pub fn execute_web(Json) -> ToolExecutionResult
+
+pub fn filesystem_settings_schema() -> Json
+
+pub fn filesystem_tool() -> @types.ToolDefinition
+
+pub fn filter_tools_for_subagent(&@interfaces.ToolRegistry, Array[String]) -> Array[@types.ToolDefinition]
+
+pub fn get_array_arg(Json, String) -> Array[Json]?
+
+pub fn get_bool_arg(Json, String) -> Bool?
+
+pub fn get_current_time_ms() -> Int64
+
+pub fn get_current_time_seconds() -> Int64
+
+pub fn get_int_arg(Json, String) -> Int?
+
+pub fn get_settings_schema(String) -> Json?
+
+pub fn get_string_arg(Json, String) -> String?
+
+pub fn get_tool_definition(String) -> @types.ToolDefinition?
+
+pub fn has_tool(String) -> Bool
+
+pub fn integer_param(String) -> Json
+
+pub fn is_dangerous_command(String) -> Bool
+
+pub fn is_sync_tool(String) -> Bool
+
+pub fn make_tool_definition(name~ : String, description~ : String, parameters~ : Json) -> @types.ToolDefinition
+
+pub fn memory_settings_schema() -> Json
+
+pub fn memory_tool() -> @types.ToolDefinition
+
+pub fn message_tool() -> @types.ToolDefinition
+
+pub fn number_field(key~ : String, label~ : String, description? : String, default_value? : Double, min? : Double?, max? : Double?) -> SettingsFieldDef
+
+pub fn object_schema(Json, Array[String]) -> Json
+
+pub fn require_int_arg(Json, String) -> Int raise ToolExecutionError
+
+pub fn require_string_arg(Json, String) -> String raise ToolExecutionError
+
+pub fn select_field(key~ : String, label~ : String, description? : String, default_value? : String, options~ : Array[(String, String)]) -> SettingsFieldDef
+
+pub fn shell_settings_schema() -> Json
+
+pub fn shell_tool() -> @types.ToolDefinition
+
+pub async fn spawn_agent_async(SubAgentManager, AsyncSubAgentConfig, String, async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse, &@interfaces.ToolRegistry, @types.ModelOptions) -> SpawnResult
+
+pub fn spawn_tool() -> @types.ToolDefinition
+
+pub fn string_param(String) -> Json
+
+pub fn text_field(key~ : String, label~ : String, description? : String, default_value? : String) -> SettingsFieldDef
+
+pub fn toggle_field(key~ : String, label~ : String, description? : String, default_value? : Bool) -> SettingsFieldDef
+
+pub fn trace_settings_schema() -> Json
+
+pub fn trace_tool() -> @types.ToolDefinition
+
+pub fn web_settings_schema() -> Json
+
+pub fn web_tool() -> @types.ToolDefinition
+
+// Errors
+pub(all) suberror ToolExecutionError {
+  InvalidArguments(String)
+  ExecutionFailed(String)
+  PermissionDenied(String)
+  NotFound(String)
+  Timeout
+}
+
+// Types and methods
+pub(all) struct AsyncSubAgentConfig {
+  name : String
+  system_prompt : String
+  max_turns : Int
+  allowed_tools : Array[String]
+}
+pub fn AsyncSubAgentConfig::default(name~ : String) -> Self
+
+pub struct BuiltinToolContext {
+  memory : MemoryStore
+  agent_manager : SubAgentManager
+  send_message : (@types.OutboundMessage) -> Unit
+}
+pub fn BuiltinToolContext::new((@types.OutboundMessage) -> Unit) -> Self
+pub fn BuiltinToolContext::with_memory(MemoryStore, (@types.OutboundMessage) -> Unit) -> Self
+
+pub struct MemoryStore {
+  data : Map[String, Json]
+  metadata : Map[String, Int64]
+}
+pub fn MemoryStore::clear(Self) -> Unit
+pub fn MemoryStore::delete(Self, String) -> Bool
+pub fn MemoryStore::get(Self, String) -> Json?
+pub fn MemoryStore::has(Self, String) -> Bool
+pub fn MemoryStore::keys(Self) -> Array[String]
+pub fn MemoryStore::new() -> Self
+pub fn MemoryStore::set(Self, String, Json) -> Unit
+
+pub(all) struct SettingsFieldDef {
+  key : String
+  label : String
+  field_type : String
+  description : String
+  default_value : Json?
+  options : Array[(String, String)]
+  min : Double?
+  max : Double?
+}
+
+pub(all) struct SpawnRequest {
+  config : SubAgentConfig
+  initial_message : String
+  callback_on_complete : Bool
+}
+
+pub(all) struct SpawnResult {
+  agent_id : String
+  status : String
+  response : String?
+}
+
+pub(all) struct SubAgentConfig {
+  name : String
+  system_prompt : String
+  model : String
+  max_turns : Int
+  tools : Array[String]
+}
+pub fn SubAgentConfig::default(name~ : String) -> Self
+
+pub struct SubAgentManager {
+  agents : Map[String, SpawnResult]
+  mut next_id : Int
+}
+pub fn SubAgentManager::generate_id(Self) -> String
+pub fn SubAgentManager::new() -> Self
+
+pub(all) struct ToolExecutionResult {
+  status : ToolResultStatus
+  data : Json
+  error_message : String?
+}
+pub fn ToolExecutionResult::error(String) -> Self
+pub fn ToolExecutionResult::requires_confirmation(Json) -> Self
+pub fn ToolExecutionResult::success(Json) -> Self
+
+pub(all) enum ToolResultStatus {
+  Success
+  Error
+  RequiresConfirmation
+}
+pub impl Eq for ToolResultStatus
+
+pub(all) struct TraceEntry {
+  session_id : String
+  date : String
+  digest : String
+  topics : Array[String]
+  created_at : Int64
+}
+
+pub(all) struct TraceSegment {
+  id : String
+  content : String
+  topics : Array[String]
+  time_range_start : Int64
+  time_range_end : Int64
+  source_sessions : Array[String]
+}
+
+pub struct TraceStore {
+  short_term : Map[String, TraceEntry]
+  long_term : Map[String, TraceSegment]
+  mut id_counter : Int
+}
+pub fn TraceStore::add_segment(Self, String, Array[String], Int64, Int64, Array[String]) -> String
+pub fn TraceStore::add_short_term(Self, String, String, String, Array[String], Int64) -> Unit
+pub fn TraceStore::get_by_date(Self, String) -> Array[TraceEntry]
+pub fn TraceStore::get_recent(Self, Int) -> Array[TraceEntry]
+pub fn TraceStore::new() -> Self
+pub fn TraceStore::search_by_topic(Self, Array[String], Int) -> Array[TraceSegment]
+
+// Type aliases
+
+// Traits
+

@@ -8,7 +8,7 @@ pub fn setup_native_transport_handlers() -> Unit {
   match global_plugin_initializer.val {
     Some(initializer) => {
       let host = initializer.get_host()
-      let factory = @native.get_native_transport_factory()
+      let factory = @plugin_runtime.get_native_transport_factory()
       // Replace transport handlers for all registered plugins
       for manifest in @interfaces.PluginHost::list_plugins(host) {
         let handler = factory.create_handler(manifest) catch { _ => continue }

@@ -1,0 +1,153 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/trace"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn calculate_window_ncd_tfidf_distances(Array[String], NcdTfidfConfig) -> Array[Double]
+
+pub async fn digest_once(&@interfaces.ModelOrchestrator, String, DigestContextType, @types.ModelOptions) -> String raise DigestError
+
+pub fn estimate_tokens(String) -> Int
+
+pub async fn extract_topics(&@interfaces.ModelOrchestrator, String, @types.ModelOptions) -> Array[String] raise DigestError
+
+pub fn segment_by_ncd_tfidf(String, NcdTfidfConfig) -> SegmentResult
+
+pub fn segment_from_json(Json) -> @interfaces.LongTermSegment?
+
+pub fn segment_to_json(@interfaces.LongTermSegment) -> Json
+
+pub fn short_term_entry_from_json(Json) -> @interfaces.ShortTermMemoryEntry?
+
+pub fn short_term_entry_to_json(@interfaces.ShortTermMemoryEntry) -> Json
+
+pub fn split_sentences(String) -> Array[Sentence]
+
+// Errors
+pub(all) suberror DigestError {
+  ModelCallError(String)
+  EmptyInput
+  ParseError(String)
+  ConfigError(String)
+}
+pub impl Show for DigestError
+
+pub(all) suberror ShortTermMemoryError {
+  StoreError(String)
+  DigestFailure(String)
+  HistoryReadError(String)
+  SessionNotFound(String)
+}
+pub impl Show for ShortTermMemoryError
+
+// Types and methods
+pub(all) struct BatchDigestConfig {
+  batch_threshold : Int
+  max_batch_size : Int
+  max_batch_chars : Int
+}
+pub fn BatchDigestConfig::default() -> Self
+
+pub(all) enum DigestContextType {
+  Conversation
+  Document
+  Notes
+}
+pub impl Eq for DigestContextType
+pub impl Show for DigestContextType
+
+pub struct DigestService {
+  config : DigestServiceConfig
+}
+pub async fn DigestService::create_short_term_entry(Self, &@interfaces.ModelOrchestrator, String, String, Array[@types.ModelMessage], String, Int64) -> @interfaces.ShortTermMemoryEntry raise DigestError
+pub async fn DigestService::digest_batch(Self, &@interfaces.ModelOrchestrator, Array[String], DigestContextType) -> Array[String] raise DigestError
+pub async fn DigestService::digest_iterative(Self, &@interfaces.ModelOrchestrator, String, DigestContextType) -> String raise DigestError
+pub fn DigestService::new(config~ : DigestServiceConfig) -> Self
+pub fn DigestService::with_defaults() -> Self
+
+pub(all) struct DigestServiceConfig {
+  iterative : IterativeDigestConfig
+  batch : BatchDigestConfig
+  model_options : @types.ModelOptions
+}
+pub fn DigestServiceConfig::default() -> Self
+
+pub(all) struct IterativeDigestConfig {
+  target_ratio : Double
+  max_iterations : Int
+  convergence_threshold : Double
+}
+pub fn IterativeDigestConfig::default() -> Self
+
+pub(all) struct NcdTfidfConfig {
+  ncd_weight : Double
+  tfidf_weight : Double
+  use_char_bigrams : Bool
+  min_token_length : Int
+  window_size : Int
+  min_segment_size : Int
+  target_segment_size : Int
+  max_segment_size : Int
+  threshold_percentile : Double
+}
+pub fn NcdTfidfConfig::default() -> Self
+
+pub(all) struct NcdWindowResult {
+  ncd_values : Array[Double]
+  window_end_positions : Array[Int]
+}
+
+pub(all) struct SegmentResult {
+  chunks : Array[String]
+  boundaries : Array[Int]
+  distances : Array[Double]
+}
+
+pub(all) struct SegmentationConfig {
+  target_chunk_size : Int
+  min_chunk_size : Int
+  max_chunk_size : Int
+  ncd_threshold : Double
+  window_size : Int
+  adaptive : Bool
+  ncd_percentile : Double
+}
+pub fn SegmentationConfig::default() -> Self
+
+pub(all) struct Sentence {
+  index : Int
+  text : String
+  start : Int
+  end : Int
+}
+
+pub(all) struct ShortTermMemoryConfig {
+  recent_days : Int
+  max_prompt_entries : Int
+  max_prompt_tokens : Int
+}
+pub fn ShortTermMemoryConfig::default() -> Self
+
+pub struct ShortTermMemoryService {
+  config : ShortTermMemoryConfig
+  digest_service : DigestService
+}
+pub async fn ShortTermMemoryService::create_entry_from_messages(Self, &@interfaces.ModelOrchestrator, String, String, Array[@types.ModelMessage], String, Int64) -> @interfaces.ShortTermMemoryEntry raise ShortTermMemoryError
+pub fn ShortTermMemoryService::delete_entry(Self, &@interfaces.TraceStore, String) -> Unit raise ShortTermMemoryError
+pub fn ShortTermMemoryService::format_for_prompt(Self, Array[@interfaces.ShortTermMemoryEntry]) -> String
+pub fn ShortTermMemoryService::get_daily_entries(Self, &@interfaces.TraceStore, String) -> Array[@interfaces.ShortTermMemoryEntry] raise ShortTermMemoryError
+pub fn ShortTermMemoryService::get_entry_by_session(Self, &@interfaces.TraceStore, String) -> @interfaces.ShortTermMemoryEntry? raise ShortTermMemoryError
+pub fn ShortTermMemoryService::get_prompt_context(Self, &@interfaces.TraceStore) -> String raise ShortTermMemoryError
+pub fn ShortTermMemoryService::get_recent_entries(Self, &@interfaces.TraceStore) -> Array[@interfaces.ShortTermMemoryEntry] raise ShortTermMemoryError
+pub fn ShortTermMemoryService::new(config~ : ShortTermMemoryConfig, digest_config~ : DigestServiceConfig) -> Self
+pub fn ShortTermMemoryService::save_entry(Self, &@interfaces.TraceStore, @interfaces.ShortTermMemoryEntry) -> Unit raise ShortTermMemoryError
+pub fn ShortTermMemoryService::with_defaults() -> Self
+
+// Type aliases
+
+// Traits
+

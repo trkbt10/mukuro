@@ -2,15 +2,22 @@
 package "trkbt10/mukuro/interfaces"
 
 import {
+  "moonbitlang/core/builtin",
   "trkbt10/mukuro/core/types",
 }
 
 // Values
+pub fn constant_time_compare(String, String) -> Bool
+
 pub fn extract_bearer_token(String) -> String?
 
 pub fn extract_parameters(Json) -> Array[ToolParameter]
 
 pub fn format_bearer_token(String) -> String
+
+pub let gateway_default_host : String
+
+pub let gateway_default_port : Int
 
 pub fn[P : ConnectablePlugin] handle_connect_common(P, JsonRpcRequest) -> JsonRpcResponse
 
@@ -142,6 +149,7 @@ pub(all) suberror ConfigError {
   ParseError(String)
   ValidationError(String)
   EnvironmentError(String)
+  WriteError(String)
 }
 
 pub(all) suberror ControlError {
@@ -153,6 +161,24 @@ pub(all) suberror ControlError {
   InternalError(String)
 }
 
+pub(all) suberror EmbeddingError {
+  ApiError(String)
+  RateLimited(String)
+  InvalidInput(String)
+  ConfigError(String)
+}
+pub impl Show for EmbeddingError
+
+pub(all) suberror HistoryError {
+  IoError(String)
+  DirectoryCreationFailed(String)
+  PermissionDenied(String)
+  FileOpenFailed(path~ : String, reason~ : String)
+  WriteFailed(expected~ : Int, actual~ : Int)
+  NotInitialized
+}
+pub impl Show for HistoryError
+
 pub(all) suberror HttpError {
   ConnectionError(String)
   Timeout
@@ -160,6 +186,29 @@ pub(all) suberror HttpError {
   ParseError(String)
   StatusError(Int, String)
 }
+
+pub(all) suberror MemoryStoreError {
+  DatabaseError(String)
+  NotFound(String)
+  InvalidData(String)
+  CompressionError(String)
+}
+pub impl Show for MemoryStoreError
+
+pub(all) suberror MessageProviderError {
+  NotFound(String)
+  AlreadyExists(String)
+  InvalidConfig(String)
+  ConnectionFailed(String)
+  AuthFailed(String)
+}
+
+pub(all) suberror MetadataStoreError {
+  DatabaseError(String)
+  NotFound(String)
+  InvalidData(String)
+}
+pub impl Show for MetadataStoreError
 
 pub(all) suberror PluginAuthError {
   MissingToken(String)
@@ -185,12 +234,30 @@ pub(all) suberror PluginManagerError {
   FilesystemError(String)
 }
 
+pub(all) suberror SessionManagerError {
+  IoError(String)
+  NotFound(String)
+  InvalidState(String)
+  NotInitialized
+}
+pub fn SessionManagerError::to_string(Self) -> String
+pub impl Show for SessionManagerError
+
 pub(all) suberror ToolError {
   NotFound(String)
   InvalidArguments(String)
   ExecutionFailed(String)
   PermissionDenied(String)
   Timeout
+}
+
+pub(all) suberror ToolManagerError {
+  NotFound(String)
+  AlreadyExists(String)
+  CannotModifyBuiltin(String)
+  ManifestInvalid(String)
+  LoadFailed(String)
+  FilesystemError(String)
 }
 
 pub(all) suberror TransportError {
@@ -258,12 +325,33 @@ pub(all) enum ConfigSourceType {
   Default
 }
 
+pub(all) struct ContextFiles {
+  soul : String?
+  agents_handbook : String?
+  tools_config : String?
+  identity : String?
+  user_context : String?
+  heartbeat : String?
+}
+pub fn ContextFiles::empty() -> Self
+pub fn ContextFiles::has_soul(Self) -> Bool
+
 pub(all) struct ContextInput {
   session_history : Array[@types.ModelMessage]
   memory_context : Array[String]
+  trace_context : String?
   skills : Array[SkillDefinition]
   bootstrap : String
   current_message : @types.InboundEnvelope
+  system_prompt_config : @types.SystemPromptConfig?
+  is_first_message : Bool
+  context_files : ContextFiles
+}
+
+pub(all) struct DailyShortTermMemory {
+  date : String
+  entries : Array[ShortTermMemoryEntry]
+  total_tokens : Int
 }
 
 pub struct DefaultSessionResolver {
@@ -271,6 +359,13 @@ pub struct DefaultSessionResolver {
 }
 pub fn DefaultSessionResolver::new() -> Self
 pub impl SessionResolver for DefaultSessionResolver
+
+pub(all) struct DigestConfig {
+  target_ratio : Double
+  preserve_key_terms : Bool
+  preserve_structure : Bool
+}
+pub fn DigestConfig::default() -> Self
 
 pub(all) struct EnvMapping {
   anthropic_api_key : String
@@ -339,6 +434,24 @@ pub(all) enum HealthStatus {
 pub fn HealthStatus::is_healthy(Self) -> Bool
 pub fn HealthStatus::is_unhealthy(Self) -> Bool
 pub fn HealthStatus::to_string(Self) -> String
+
+pub(all) struct HistoryRecord {
+  timestamp : Int64
+  session_id : String
+  record_type : HistoryRecordType
+  payload : Json
+}
+
+pub(all) enum HistoryRecordType {
+  SessionMeta
+  UserMessage
+  AssistantMessage
+  ToolCall
+  ToolResult
+  Error
+}
+pub impl Eq for HistoryRecordType
+pub impl Show for HistoryRecordType
 
 pub(all) enum HttpMethod {
   Get
@@ -434,6 +547,83 @@ pub(all) enum LogLevel {
   Warn
   Error
 }
+
+pub(all) struct LongTermSegment {
+  id : String
+  content : String
+  embedding : Array[Double]?
+  source_sessions : Array[String]
+  time_range_start : Int64
+  time_range_end : Int64
+  topics : Array[String]
+  compression_ratio : Double
+  created_at : Int64
+}
+
+pub(all) struct MessageProviderConfig {
+  id : String
+  name : String
+  provider_type : MessageProviderType
+  enabled : Bool
+  auto_connect : Bool
+  settings : Map[String, Json]
+  capabilities : ProviderCapabilities
+}
+pub fn MessageProviderConfig::new(id~ : String, name~ : String, provider_type~ : MessageProviderType) -> Self
+
+pub(all) struct MessageProviderState {
+  config : MessageProviderConfig
+  status : ProviderConnectionStatus
+  last_connected_at : Int64
+  last_error : String?
+  messages_sent : Int64
+  messages_received : Int64
+}
+pub fn MessageProviderState::from_config(MessageProviderConfig) -> Self
+
+pub(all) enum MessageProviderType {
+  Slack
+  Discord
+  Telegram
+  Webhook
+  HttpPoll
+  WebSocket
+  Custom(String)
+}
+pub fn MessageProviderType::from_string(String) -> Self
+pub fn MessageProviderType::to_string(Self) -> String
+
+pub struct NoOpEmbeddingProvider {
+  dim : Int
+}
+pub fn NoOpEmbeddingProvider::new(dimension~ : Int) -> Self
+pub impl EmbeddingProvider for NoOpEmbeddingProvider
+
+pub struct NoOpHistoryReader {
+}
+pub fn NoOpHistoryReader::new() -> Self
+pub impl HistoryReader for NoOpHistoryReader
+
+pub struct NoOpHistoryRecorder {
+}
+pub fn NoOpHistoryRecorder::new() -> Self
+pub impl HistoryRecorder for NoOpHistoryRecorder
+
+pub struct NoOpMetadataStore {
+}
+pub fn NoOpMetadataStore::new() -> Self
+pub impl HistoryMetadataStore for NoOpMetadataStore
+
+pub struct NoOpSessionManager {
+  _placeholder : Unit
+}
+pub fn NoOpSessionManager::new() -> Self
+pub impl SessionManager for NoOpSessionManager
+
+pub struct NoOpTraceStore {
+}
+pub fn NoOpTraceStore::new() -> Self
+pub impl TraceStore for NoOpTraceStore
 
 pub(all) struct PendingRequest {
   id : Int
@@ -535,7 +725,10 @@ pub(all) struct PluginState {
   status : PluginStatus
   loaded_at : Int64
   modified_at : Int64
+  is_builtin : Bool
+  description : String
 }
+pub fn PluginState::builtin(id~ : String, description~ : String) -> Self
 pub fn PluginState::default(id~ : String) -> Self
 
 pub(all) enum PluginStatus {
@@ -544,6 +737,7 @@ pub(all) enum PluginStatus {
   Running
   Error(String)
 }
+pub fn PluginStatus::to_string(Self) -> String
 
 pub(all) struct PluginStdioConfig {
   command : String
@@ -610,6 +804,36 @@ pub(all) struct ProcessResult {
   stderr : Bytes
 }
 
+pub(all) enum ProviderAuthMethod {
+  Token
+  BotToken
+  OAuth2
+  WebhookSecret
+  None
+}
+
+pub(all) struct ProviderCapabilities {
+  can_send : Bool
+  can_receive : Bool
+  supports_rich_text : Bool
+  supports_attachments : Bool
+  supports_reactions : Bool
+  supports_threads : Bool
+  supports_edit : Bool
+  supports_delete : Bool
+}
+pub fn ProviderCapabilities::default() -> Self
+pub fn ProviderCapabilities::discord() -> Self
+pub fn ProviderCapabilities::slack() -> Self
+
+pub(all) enum ProviderConnectionStatus {
+  Disconnected
+  Connecting
+  Connected
+  Error(String)
+}
+pub fn ProviderConnectionStatus::to_string(Self) -> String
+
 pub(all) enum ProviderError {
   AuthenticationFailed(String)
   RateLimited(retry_after~ : Int)
@@ -619,6 +843,52 @@ pub(all) enum ProviderError {
   InternalError(String)
 }
 pub fn ProviderError::is_retriable(Self) -> Bool
+
+pub(all) enum ProviderFieldType {
+  Text
+  TextArea
+  Secret
+  Url
+  Number
+  Toggle
+  Select(Array[String])
+}
+pub fn ProviderFieldType::to_string(Self) -> String
+
+pub(all) struct ProviderSettingField {
+  key : String
+  label : String
+  field_type : ProviderFieldType
+  required : Bool
+  description : String
+  default_value : Json?
+  is_secret : Bool
+}
+
+pub(all) struct ProviderSettingsSchema {
+  provider_type : MessageProviderType
+  fields : Array[ProviderSettingField]
+}
+pub fn ProviderSettingsSchema::discord() -> Self
+pub fn ProviderSettingsSchema::for_type(MessageProviderType) -> Self
+pub fn ProviderSettingsSchema::slack() -> Self
+pub fn ProviderSettingsSchema::telegram() -> Self
+pub fn ProviderSettingsSchema::webhook() -> Self
+
+pub(all) struct RecallResult {
+  content : String
+  relevance : Double
+  source_sessions : Array[String]
+  time_range : (Int64, Int64)?
+  source_type : RecallSourceType
+}
+
+pub(all) enum RecallSourceType {
+  ShortTerm
+  LongTerm
+}
+pub impl Eq for RecallSourceType
+pub impl Show for RecallSourceType
 
 pub(all) struct ReconnectConfig {
   enabled : Bool
@@ -645,6 +915,38 @@ pub(all) struct ScheduledTask {
   schedule : Schedule
   envelope_template : @types.InboundEnvelope
   enabled : Bool
+}
+
+pub(all) struct SegmentBoundary {
+  position : Int
+  ncd_score : Double
+}
+
+pub(all) struct SessionMetadata {
+  session_id : String
+  channel : String
+  chat_id : String
+  title : String?
+  first_message : String?
+  message_count : Int
+  user_message_count : Int
+  assistant_message_count : Int
+  tool_call_count : Int
+  created_at : Int64
+  updated_at : Int64
+  file_path : String
+  model_name : String?
+}
+
+pub(all) struct ShortTermMemoryEntry {
+  session_id : String
+  date : String
+  digest : String
+  topics : Array[String]
+  original_message_count : Int
+  estimated_tokens : Int
+  created_at : Int64
+  source_file_path : String
 }
 
 pub struct SimpleTokenAuthenticator {
@@ -682,6 +984,36 @@ pub(all) struct ToolParameter {
   param_type : String
   description : String
   required : Bool
+}
+
+pub(all) enum ToolSource {
+  Plugin(String)
+  UserDefined
+  MCP(String)
+}
+pub fn ToolSource::is_builtin(Self) -> Bool
+
+pub(all) struct ToolState {
+  id : String
+  name : String
+  source : ToolSource
+  enabled : Bool
+  status : ToolStatus
+  loaded_at : Int64
+  description : String
+  parameters : Json
+  settings_schema : Json?
+}
+pub fn ToolState::builtin(id~ : String, name~ : String, description~ : String, parameters~ : Json, settings_schema? : Json?) -> Self
+pub fn ToolState::from_mcp(server_id~ : String, tool_name~ : String, description~ : String, parameters~ : Json, settings_schema? : Json?) -> Self
+pub fn ToolState::from_plugin(plugin_id~ : String, capability~ : String, description~ : String, parameters~ : Json, settings_schema? : Json?) -> Self
+pub fn ToolState::user_defined(id~ : String, name~ : String, description~ : String, parameters~ : Json, settings_schema? : Json?) -> Self
+
+pub(all) enum ToolStatus {
+  Available
+  Disabled
+  Error(String)
+  Unavailable
 }
 
 pub(all) struct TransportConfig {
@@ -768,6 +1100,11 @@ pub(open) trait ConfigValidator {
   validate(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
 }
 
+pub(open) trait ConfigWriter {
+  write_atomic(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
+  serialize(Self, config~ : @types.MukuroConfig) -> String raise ConfigError
+}
+
 pub(open) trait ConnectablePlugin {
   is_connected(Self) -> Bool
   set_connected(Self, Bool) -> Unit
@@ -788,6 +1125,25 @@ pub(open) trait DynamicPluginManager {
   list_plugin_states(Self) -> Array[PluginState]
   start_watching(Self) -> Unit raise
   stop_watching(Self) -> Unit
+}
+
+pub(open) trait DynamicToolManager {
+  scan_tools(Self) -> Array[String] raise ToolManagerError
+  load_tool(Self, manifest_path~ : String) -> ToolState raise ToolManagerError
+  enable_tool(Self, id~ : String) -> Unit raise ToolManagerError
+  disable_tool(Self, id~ : String) -> Unit raise ToolManagerError
+  remove_tool(Self, id~ : String) -> Unit raise ToolManagerError
+  reload_tool(Self, id~ : String) -> Unit raise ToolManagerError
+  get_tool_state(Self, id~ : String) -> ToolState?
+  list_tool_states(Self) -> Array[ToolState]
+  list_enabled_definitions(Self) -> Array[@types.ToolDefinition]
+  has_tool(Self, id~ : String) -> Bool
+}
+
+pub(open) trait EmbeddingProvider {
+  embed(Self, String) -> Array[Double] raise EmbeddingError
+  embed_batch(Self, Array[String]) -> Array[Array[Double]] raise EmbeddingError
+  dimension(Self) -> Int
 }
 
 pub(open) trait Environment {
@@ -832,6 +1188,33 @@ pub(open) trait HealthAggregator {
 pub(open) trait HealthChecker {
   name(Self) -> String
   async check(Self) -> HealthCheck
+}
+
+pub(open) trait HistoryMetadataStore {
+  open(Self) -> Unit raise MetadataStoreError
+  upsert(Self, metadata~ : SessionMetadata) -> Unit raise MetadataStoreError
+  get(Self, session_id~ : String) -> SessionMetadata? raise MetadataStoreError
+  increment_counts(Self, session_id~ : String, user~ : Int, assistant~ : Int, tool~ : Int) -> Unit raise MetadataStoreError
+  update_title(Self, session_id~ : String, title~ : String) -> Unit raise MetadataStoreError
+  set_first_message(Self, session_id~ : String, message~ : String) -> Unit raise MetadataStoreError
+  list_by_date(Self, year~ : Int, month~ : Int, day~ : Int) -> Array[SessionMetadata] raise MetadataStoreError
+  list_recent(Self, limit~ : Int, offset~ : Int) -> Array[SessionMetadata] raise MetadataStoreError
+  search(Self, query~ : String, limit~ : Int) -> Array[SessionMetadata] raise MetadataStoreError
+  delete(Self, session_id~ : String) -> Unit raise MetadataStoreError
+  update_model_name(Self, session_id~ : String, model_name~ : String) -> Unit raise MetadataStoreError
+  close(Self) -> Unit
+}
+
+pub(open) trait HistoryReader {
+  read_session(Self, session_id~ : String) -> Array[HistoryRecord] raise HistoryError
+  list_sessions(Self, year~ : Int, month~ : Int, day~ : Int) -> Array[String] raise HistoryError
+  list_dates(Self) -> Array[(Int, Int, Int)] raise HistoryError
+}
+
+pub(open) trait HistoryRecorder {
+  open_session(Self, session_id~ : String, timestamp~ : Int64) -> Bool raise HistoryError
+  record(Self, record~ : HistoryRecord) -> Unit raise HistoryError
+  close(Self) -> Unit raise HistoryError
 }
 
 pub(open) trait HttpClient {
@@ -879,6 +1262,19 @@ pub(open) trait MemoryStore {
   retrieve(Self, key~ : String) -> String? raise
   search(Self, query~ : String, limit~ : Int) -> Array[String] raise
   remove(Self, key~ : String) -> Unit raise
+}
+
+pub(open) trait MessageProviderManager {
+  list_providers(Self) -> Array[MessageProviderState]
+  get_provider(Self, id~ : String) -> MessageProviderState?
+  add_provider(Self, config~ : MessageProviderConfig) -> Unit raise
+  update_provider(Self, id~ : String, config~ : MessageProviderConfig) -> Unit raise
+  remove_provider(Self, id~ : String) -> Unit raise
+  enable_provider(Self, id~ : String) -> Unit raise
+  disable_provider(Self, id~ : String) -> Unit raise
+  async connect_provider(Self, id~ : String) -> Unit
+  async disconnect_provider(Self, id~ : String) -> Unit
+  async test_connection(Self, id~ : String) -> Bool
 }
 
 pub(open) trait MessagingPlugin {
@@ -943,6 +1339,19 @@ pub(open) trait ProcessExecutor {
   exec_async(Self, command~ : String, args~ : Array[String], options~ : ProcessOptions, on_complete~ : (ProcessResult) -> Unit, on_error~ : (String) -> Unit) -> Unit
 }
 
+pub(open) trait ProviderResolver {
+  resolve(Self) -> @types.ProviderConfig?
+}
+
+pub(open) trait RuntimeConfigManager {
+  get_config(Self) -> @types.MukuroConfig
+  update_config(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
+  reload(Self) -> Unit raise ConfigError
+  get_config_path(Self) -> String
+  get_retry_config(Self) -> @types.RetryConfig
+  update_retry_config(Self, config~ : @types.RetryConfig) -> Unit raise ConfigError
+}
+
 pub(open) trait Scheduler {
   register(Self, ScheduledTask) -> Unit raise
   unregister(Self, task_id~ : String) -> Unit raise
@@ -950,6 +1359,19 @@ pub(open) trait Scheduler {
   list_tasks(Self) -> Array[ScheduledTask] raise
   next_tick(Self) -> Int64?
   due_tasks(Self, now~ : Int64) -> Array[ScheduledTask]
+}
+
+pub(open) trait SessionManager {
+  get(Self, @types.SessionKey) -> @types.Session? raise SessionManagerError
+  get_or_create(Self, @types.SessionKey, now~ : Int64) -> @types.Session raise SessionManagerError
+  append_user_message(Self, @types.SessionKey, content~ : String, name~ : String?, timestamp~ : Int64) -> Unit raise SessionManagerError
+  append_assistant_message(Self, @types.SessionKey, content~ : String, tool_calls~ : Array[@types.ToolCallRequest]?, timestamp~ : Int64) -> Unit raise SessionManagerError
+  record_tool_call(Self, @types.SessionKey, call_id~ : String, tool_name~ : String, arguments~ : Json, timestamp~ : Int64) -> Unit raise SessionManagerError
+  record_tool_result(Self, @types.SessionKey, call_id~ : String, content~ : String, timestamp~ : Int64) -> Unit raise SessionManagerError
+  record_error(Self, @types.SessionKey, message~ : String, timestamp~ : Int64) -> Unit raise SessionManagerError
+  delete(Self, @types.SessionKey) -> Unit raise SessionManagerError
+  list_keys(Self) -> Array[@types.SessionKey] raise SessionManagerError
+  close_session(Self, @types.SessionKey) -> Unit raise SessionManagerError
 }
 
 pub(open) trait SessionResolver {
@@ -979,6 +1401,22 @@ pub(open) trait ToolRegistry {
   list_definitions(Self) -> Array[@types.ToolDefinition]
   get_executor(Self, String) -> &ToolExecutor?
   has_tool(Self, String) -> Bool
+}
+
+pub(open) trait TraceStore {
+  open(Self) -> Unit raise MemoryStoreError
+  save_short_term(Self, ShortTermMemoryEntry) -> Unit raise MemoryStoreError
+  get_daily_memory(Self, String) -> Array[ShortTermMemoryEntry] raise MemoryStoreError
+  list_recent_short_term(Self, Int) -> Array[ShortTermMemoryEntry] raise MemoryStoreError
+  get_short_term_by_session(Self, String) -> ShortTermMemoryEntry? raise MemoryStoreError
+  delete_short_term(Self, String) -> Unit raise MemoryStoreError
+  save_segment(Self, LongTermSegment) -> Unit raise MemoryStoreError
+  get_segment(Self, String) -> LongTermSegment? raise MemoryStoreError
+  search_segments_by_vector(Self, Array[Double], Int) -> Array[(LongTermSegment, Double)] raise MemoryStoreError
+  get_segments_by_time(Self, Int64, Int64) -> Array[LongTermSegment] raise MemoryStoreError
+  search_segments_by_topic(Self, Array[String], Int) -> Array[LongTermSegment] raise MemoryStoreError
+  delete_segment(Self, String) -> Unit raise MemoryStoreError
+  close(Self) -> Unit
 }
 
 pub(open) trait WsClient {

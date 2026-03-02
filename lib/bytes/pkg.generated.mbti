@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/lib/bytes"
+
+// Values
+pub fn copy_slice(BytesView) -> Bytes
+
+pub fn decode_utf8(BytesView) -> String?
+
+pub fn decode_utf8_or(BytesView, default~ : String) -> String
+
+pub fn encode_utf8(String) -> Bytes
+
+pub fn parse_utf16le_lines(Bytes, Int) -> Array[String]
+
+pub fn to_utf8_cstring(String) -> Bytes
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

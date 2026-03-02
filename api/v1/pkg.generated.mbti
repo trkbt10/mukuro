@@ -1,0 +1,209 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1"
+
+// Values
+pub fn error_response(Int, String, String) -> ApiResponse
+
+pub fn error_response_with_details(Int, String, String, Map[String, Json]) -> ApiResponse
+
+pub fn extract_bearer_token(Map[String, String]) -> String?
+
+pub fn get_optional_bool_field(Map[String, Json], String) -> Bool?
+
+pub fn get_optional_int_field(Map[String, Json], String) -> Int?
+
+pub fn get_optional_string_field(Map[String, Json], String) -> String?
+
+pub fn get_required_action(String, Array[String]) -> ApiAction
+
+pub fn is_action_allowed(ApiRole, ApiAction) -> Bool
+
+pub fn json_response(Int, Json) -> ApiResponse
+
+pub fn[T : ToJson] paginated_response(Array[T], total~ : Int, page~ : Int, per_page~ : Int) -> ApiResponse
+
+pub fn require_bool_field(Map[String, Json], String) -> Result[Bool, ApiResponse]
+
+pub fn require_int_field(Map[String, Json], String) -> Result[Int, ApiResponse]
+
+pub fn require_json_object(String) -> Result[Map[String, Json], ApiResponse]
+
+pub fn require_string_field(Map[String, Json], String) -> Result[String, ApiResponse]
+
+pub fn[T : ToJson] success_response(Int, T) -> ApiResponse
+
+pub fn url_decode(String) -> String
+
+pub fn validate_authorization(ApiRequestContext) -> ApiResponse?
+
+pub fn validate_body_size(String) -> ApiResponse?
+
+pub fn validate_json_body(String) -> Result[Json, ApiResponse]
+
+pub fn validate_json_content_type(Map[String, String]) -> ApiResponse?
+
+// Errors
+
+// Types and methods
+pub(all) enum ApiAction {
+  Read
+  Write
+  Admin
+}
+
+pub(all) struct ApiErrorResponse {
+  error : String
+  message : String
+  details : Map[String, Json]?
+}
+
+pub(all) struct ApiMeta {
+  total : Int?
+  page : Int?
+  per_page : Int?
+}
+
+pub(all) struct ApiRequestContext {
+  http_method : String
+  path : String
+  segments : Array[String]
+  query : Map[String, String]
+  headers : Map[String, String]
+  body : String
+  role : ApiRole
+  client_id : String
+}
+pub fn ApiRequestContext::new(meth~ : String, path~ : String, headers~ : Map[String, String], body~ : String, role? : ApiRole) -> Self
+
+pub(all) struct ApiResponse {
+  status : Int
+  body : String
+  headers : Map[String, String]
+}
+
+pub(all) enum ApiRole {
+  Admin
+  Operator
+  Viewer
+  Anonymous
+}
+pub fn ApiRole::from_string(String) -> Self
+pub fn ApiRole::to_string(Self) -> String
+
+pub(all) struct ApiRouter {
+  plugin_handlers : PluginApiHandlers?
+  plugin_action_dispatcher : ((ApiRequestContext) -> ApiResponse)?
+  context_handlers : ContextApiHandlers?
+  settings_handlers : SettingsApiHandlers?
+  config_handlers : ConfigApiHandlers?
+  provider_handlers : ProviderApiHandlers?
+  chat_handlers : ChatApiHandlers?
+  history_handlers : HistoryApiHandlers?
+  tool_handlers : ToolApiHandlers?
+}
+pub fn ApiRouter::new() -> Self
+pub fn ApiRouter::route(Self, ApiRequestContext) -> ApiResponse
+
+pub(all) struct ApiSuccessResponse[T] {
+  data : T
+  meta : ApiMeta?
+}
+
+pub(all) struct ChatApiHandlers {
+  create_session : RouteHandler
+  list_sessions : RouteHandler
+  get_history : RouteHandler
+  delete_session : RouteHandler
+  resume_session : RouteHandler
+}
+
+pub(all) struct ConfigApiHandlers {
+  get : RouteHandler
+  update : RouteHandler
+  reload : RouteHandler
+  get_file : RouteHandler
+}
+
+pub(all) struct ContextApiHandlers {
+  data_list : RouteHandler
+  data_get : RouteHandler
+  data_update : RouteHandler
+  data_delete : RouteHandler
+  templates_list : RouteHandler
+  templates_get : RouteHandler
+}
+
+pub(all) struct HistoryApiHandlers {
+  list_dates : RouteHandler
+  list_sessions : RouteHandler
+  get_session : RouteHandler
+}
+
+pub(all) struct PluginApiHandlers {
+  list : RouteHandler
+  get : RouteHandler
+  add : RouteHandler
+  remove : RouteHandler
+  enable : RouteHandler
+  disable : RouteHandler
+  reload : RouteHandler
+  upload : RouteHandler
+  get_settings : RouteHandler
+  update_settings : RouteHandler
+}
+
+pub(all) struct ProviderApiHandlers {
+  list : RouteHandler
+  get : RouteHandler
+  add : RouteHandler
+  update : RouteHandler
+  remove : RouteHandler
+  enable : RouteHandler
+  disable : RouteHandler
+  connect : RouteHandler
+  disconnect : RouteHandler
+  test_connection : RouteHandler
+  get_types : RouteHandler
+  get_schema : RouteHandler
+}
+
+pub(all) struct RateLimitState {
+  mut counts : Map[String, Int]
+  mut window_start : Map[String, Int64]
+  max_requests : Int
+  window_seconds : Int64
+}
+pub fn RateLimitState::default() -> Self
+pub fn RateLimitState::new(max_requests~ : Int, window_seconds~ : Int64) -> Self
+
+pub(all) struct RouteHandler((ApiRequestContext) -> ApiResponse)
+#deprecated
+pub fn RouteHandler::inner(Self) -> (ApiRequestContext) -> ApiResponse
+
+pub(all) struct SettingsApiHandlers {
+  get_all : RouteHandler
+  update_all : RouteHandler
+  get_retry : RouteHandler
+  update_retry : RouteHandler
+  get_agent : RouteHandler
+  update_agent : RouteHandler
+  get_model_inference : RouteHandler
+  update_model_inference : RouteHandler
+  list_providers : RouteHandler
+  update_provider : RouteHandler
+}
+
+pub(all) struct ToolApiHandlers {
+  list : RouteHandler
+  get : RouteHandler
+  enable : RouteHandler
+  disable : RouteHandler
+  remove : RouteHandler
+  list_actions : RouteHandler
+  invoke_action : RouteHandler
+}
+
+// Type aliases
+
+// Traits
+

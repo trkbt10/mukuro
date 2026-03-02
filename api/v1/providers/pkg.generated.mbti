@@ -1,0 +1,118 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/api/v1/providers"
+
+import {
+  "trkbt10/mukuro/api/v1",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn create_provider_handlers(ProviderManagerState) -> @v1.ProviderApiHandlers
+
+pub fn get_provider_types() -> Array[ProviderTypeInfo]
+
+pub fn is_secret_key(String) -> Bool
+
+pub fn settings_schema_to_response(@interfaces.ProviderSettingsSchema) -> SettingsSchemaResponse
+
+// Errors
+
+// Types and methods
+pub(all) struct CapabilitiesResponse {
+  can_send : Bool
+  can_receive : Bool
+  supports_rich_text : Bool
+  supports_attachments : Bool
+  supports_reactions : Bool
+  supports_threads : Bool
+  supports_edit : Bool
+  supports_delete : Bool
+}
+pub fn CapabilitiesResponse::to_json(Self) -> Json
+
+pub(all) struct ProviderAddRequest {
+  id : String
+  name : String
+  provider_type : String
+  enabled : Bool?
+  auto_connect : Bool?
+  settings : Map[String, Json]
+}
+pub fn ProviderAddRequest::from_json(Map[String, Json]) -> Self?
+
+pub(all) struct ProviderDetailResponse {
+  id : String
+  name : String
+  provider_type : String
+  enabled : Bool
+  auto_connect : Bool
+  status : String
+  last_connected_at : Int64
+  last_error : String?
+  messages_sent : Int64
+  messages_received : Int64
+  settings : Map[String, Json]
+  capabilities : CapabilitiesResponse
+}
+pub fn ProviderDetailResponse::to_json(Self) -> Json
+
+pub(all) struct ProviderListItem {
+  id : String
+  name : String
+  provider_type : String
+  enabled : Bool
+  status : String
+  messages_sent : Int64
+  messages_received : Int64
+}
+pub fn ProviderListItem::to_json(Self) -> Json
+
+pub(all) struct ProviderManagerState {
+  mut providers : Map[String, @interfaces.MessageProviderState]
+}
+pub fn ProviderManagerState::get_provider(Self, String) -> @interfaces.MessageProviderState?
+pub fn ProviderManagerState::new() -> Self
+pub fn ProviderManagerState::remove_provider(Self, String) -> Unit
+pub fn ProviderManagerState::set_provider(Self, String, @interfaces.MessageProviderState) -> Unit
+
+pub(all) struct ProviderTypeInfo {
+  id : String
+  name : String
+  description : String
+}
+pub fn ProviderTypeInfo::to_json(Self) -> Json
+
+pub(all) struct ProviderTypesResponse {
+  types : Array[ProviderTypeInfo]
+}
+
+pub(all) struct ProviderUpdateRequest {
+  name : String?
+  enabled : Bool?
+  auto_connect : Bool?
+  settings : Map[String, Json]?
+}
+pub fn ProviderUpdateRequest::from_json(Map[String, Json]) -> Self
+
+pub(all) struct SettingsFieldResponse {
+  key : String
+  label : String
+  field_type : String
+  required : Bool
+  description : String
+  default_value : Json?
+  is_secret : Bool
+  options : Array[String]?
+}
+pub fn SettingsFieldResponse::to_json(Self) -> Json
+
+pub(all) struct SettingsSchemaResponse {
+  provider_type : String
+  fields : Array[SettingsFieldResponse]
+}
+pub fn SettingsSchemaResponse::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits
+
