@@ -105,8 +105,19 @@ fn escape_single_quote(s : String) -> String {
 // =============================================================================
 
 ///|
+/// Shellツールエントリ
+pub fn shell_entry() -> ToolEntry {
+  {
+    name: "shell",
+    definition: shell_tool(),
+    settings_schema: Some(shell_settings_schema()),
+    execute: fn(_, args) { execute_shell(args) },
+  }
+}
+
+///|
 /// シェルツールを実行（プラットフォーム固有実装を呼び出す）
-pub fn execute_shell(args : Json) -> ToolExecutionResult {
+fn execute_shell(args : Json) -> ToolExecutionResult {
   let command = match get_string_arg(args, "command") {
     Some(c) => c
     None => return ToolExecutionResult::error("Missing command argument")

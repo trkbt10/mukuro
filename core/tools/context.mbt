@@ -1,36 +1,43 @@
 ///|
 /// ビルトインツール実行コンテキスト
-
-///|
-/// ビルトインツール実行コンテキスト
 pub struct BuiltinToolContext {
-  /// メモリストア
   memory : MemoryStore
-  /// サブエージェントマネージャ
   agent_manager : SubAgentManager
-  /// メッセージ送信関数
+  trace : TraceStore
   send_message : (@types.OutboundMessage) -> Unit
 }
 
 ///|
-/// ビルトインツールコンテキストを新規作成
+/// ツールエントリ - 定義と実行関数を一箇所で管理
+pub struct ToolEntry {
+  name : String
+  definition : @types.ToolDefinition
+  settings_schema : Json?
+  execute : (BuiltinToolContext, Json) -> ToolExecutionResult
+}
+
+///|
+/// ビルトインツールコンテキストを新規作成（デフォルト値）
 pub fn BuiltinToolContext::new(
   send_message : (@types.OutboundMessage) -> Unit,
 ) -> BuiltinToolContext {
   {
     memory: MemoryStore::new(),
     agent_manager: SubAgentManager::new(),
+    trace: TraceStore::new(),
     send_message,
   }
 }
 
 ///|
-/// 外部から MemoryStore を注入してコンテキストを作成
-pub fn BuiltinToolContext::with_memory(
+/// ビルトインツールコンテキストを作成（全引数指定）
+pub fn BuiltinToolContext::make(
   memory : MemoryStore,
+  agent_manager : SubAgentManager,
+  trace : TraceStore,
   send_message : (@types.OutboundMessage) -> Unit,
 ) -> BuiltinToolContext {
-  { memory, agent_manager: SubAgentManager::new(), send_message }
+  { memory, agent_manager, trace, send_message }
 }
 
 ///|
@@ -40,14 +47,8 @@ pub fn execute_builtin_tool(
   tool_name : String,
   args : Json,
 ) -> ToolExecutionResult? {
-  match tool_name {
-    "datetime" => Some(execute_datetime(args))
-    "memory" => Some(execute_memory(ctx.memory, args))
-    "spawn" => Some(execute_spawn(ctx.agent_manager, args))
-    "message" => Some(execute_message(args, ctx.send_message))
-    "shell" => Some(execute_shell(args))
-    "filesystem" => Some(execute_filesystem(args))
-    "web" => Some(execute_web(args))
-    _ => None
+  match get_tool_entry(tool_name) {
+    Some(entry) => Some((entry.execute)(ctx, args))
+    None => None
   }
 }

@@ -126,7 +126,18 @@ pub fn MemoryStore::has(self : MemoryStore, key : String) -> Bool {
 // =============================================================================
 
 ///|
-pub fn execute_memory(store : MemoryStore, args : Json) -> ToolExecutionResult {
+/// Memoryツールエントリ
+pub fn memory_entry() -> ToolEntry {
+  {
+    name: "memory",
+    definition: memory_tool(),
+    settings_schema: Some(memory_settings_schema()),
+    execute: fn(ctx, args) { execute_memory(ctx.memory, args) },
+  }
+}
+
+///|
+fn execute_memory(store : MemoryStore, args : Json) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")

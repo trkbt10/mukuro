@@ -45,8 +45,19 @@ pub fn get_current_time_seconds() -> Int64 {
 }
 
 ///|
+/// DateTimeツールエントリ
+pub fn datetime_entry() -> ToolEntry {
+  {
+    name: "datetime",
+    definition: datetime_tool(),
+    settings_schema: None,
+    execute: fn(_, args) { execute_datetime(args) },
+  }
+}
+
+///|
 /// DateTimeツールを実行
-pub fn execute_datetime(args : Json) -> ToolExecutionResult {
+fn execute_datetime(args : Json) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")

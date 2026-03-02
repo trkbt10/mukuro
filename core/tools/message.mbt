@@ -58,7 +58,18 @@ pub fn build_outbound_message(
 }
 
 ///|
-pub fn execute_message(
+/// Messageツールエントリ
+pub fn message_entry() -> ToolEntry {
+  {
+    name: "message",
+    definition: message_tool(),
+    settings_schema: None,
+    execute: fn(ctx, args) { execute_message(args, ctx.send_message) },
+  }
+}
+
+///|
+fn execute_message(
   args : Json,
   send_fn : (@types.OutboundMessage) -> Unit,
 ) -> ToolExecutionResult {

@@ -40,7 +40,9 @@ fn main {
   }
 
   // Demo: test datetime tool
-  let datetime_result = @tools.execute_datetime({ "action": "now" })
+  let datetime_result = @tools.execute_simple_tool("datetime", {
+    "action": "now",
+  })
   match datetime_result.status {
     @tools.ToolResultStatus::Success =>
       platform.log(

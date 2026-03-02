@@ -158,11 +158,12 @@ pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
 ///|
 /// ビルトインツールをグローバルレジストリに登録
 pub fn register_builtin_tools() -> Unit {
-  let tool_ctx = @tools.BuiltinToolContext::with_memory(global_memory_store, fn(
-    msg,
-  ) {
-    global_outbound_dispatcher.sent_messages.push(msg)
-  })
+  let tool_ctx = @tools.BuiltinToolContext::make(
+    global_memory_store,
+    @tools.SubAgentManager::new(),
+    @tools.TraceStore::new(),
+    fn(msg) { global_outbound_dispatcher.sent_messages.push(msg) },
+  )
   let executor : BuiltinToolExecutorAdapter = { tool_context: tool_ctx }
   for definition in @tools.all_tool_definitions() {
     global_tool_registry.register(definition, executor)

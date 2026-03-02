@@ -76,8 +76,19 @@ pub fn filesystem_settings_schema() -> Json {
 // =============================================================================
 
 ///|
+/// Filesystemツールエントリ
+pub fn filesystem_entry() -> ToolEntry {
+  {
+    name: "filesystem",
+    definition: filesystem_tool(),
+    settings_schema: Some(filesystem_settings_schema()),
+    execute: fn(_, args) { execute_filesystem(args) },
+  }
+}
+
+///|
 /// ファイルシステムツールを実行
-pub fn execute_filesystem(args : Json) -> ToolExecutionResult {
+fn execute_filesystem(args : Json) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")

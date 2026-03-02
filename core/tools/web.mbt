@@ -74,8 +74,19 @@ pub fn web_settings_schema() -> Json {
 // =============================================================================
 
 ///|
+/// Webツールエントリ
+pub fn web_entry() -> ToolEntry {
+  {
+    name: "web",
+    definition: web_tool(),
+    settings_schema: Some(web_settings_schema()),
+    execute: fn(_, args) { execute_web(args) },
+  }
+}
+
+///|
 /// Webツールを実行
-pub fn execute_web(args : Json) -> ToolExecutionResult {
+fn execute_web(args : Json) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")

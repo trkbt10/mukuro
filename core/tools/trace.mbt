@@ -249,7 +249,18 @@ pub fn TraceStore::add_segment(
 // =============================================================================
 
 ///|
-pub fn execute_trace(store : TraceStore, args : Json) -> ToolExecutionResult {
+/// Traceツールエントリ
+pub fn trace_entry() -> ToolEntry {
+  {
+    name: "trace",
+    definition: trace_tool(),
+    settings_schema: Some(trace_settings_schema()),
+    execute: fn(ctx, args) { execute_trace(ctx.trace, args) },
+  }
+}
+
+///|
+fn execute_trace(store : TraceStore, args : Json) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")

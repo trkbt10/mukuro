@@ -113,10 +113,18 @@ pub fn SubAgentManager::generate_id(self : SubAgentManager) -> String {
 // =============================================================================
 
 ///|
-pub fn execute_spawn(
-  manager : SubAgentManager,
-  args : Json,
-) -> ToolExecutionResult {
+/// Spawnツールエントリ
+pub fn spawn_entry() -> ToolEntry {
+  {
+    name: "spawn",
+    definition: spawn_tool(),
+    settings_schema: None,
+    execute: fn(ctx, args) { execute_spawn(ctx.agent_manager, args) },
+  }
+}
+
+///|
+fn execute_spawn(manager : SubAgentManager, args : Json) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")

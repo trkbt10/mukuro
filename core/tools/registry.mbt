@@ -1,61 +1,70 @@
 ///|
-/// ツールレジストリ - すべてのツール定義を集約
-/// core/tools パッケージが唯一のツール定義のソース
+/// ツールレジストリ - すべてのツールエントリを集約
+/// 新しいツールを追加するときは all_tool_entries() に1行追加するだけ
 
 // =============================================================================
 // Tool Registry
 // =============================================================================
 
 ///|
-/// すべてのビルトインツール定義を返す
-pub fn all_tool_definitions() -> Array[@types.ToolDefinition] {
+/// すべてのビルトインツールエントリを返す
+/// 新しいツールを追加するときはここに追加
+pub fn all_tool_entries() -> Array[ToolEntry] {
   [
-    datetime_tool(),
-    memory_tool(),
-    trace_tool(),
-    message_tool(),
-    spawn_tool(),
-    shell_tool(),
-    filesystem_tool(),
-    web_tool(),
+    datetime_entry(),
+    memory_entry(),
+    trace_entry(),
+    message_entry(),
+    spawn_entry(),
+    shell_entry(),
+    filesystem_entry(),
+    web_entry(),
   ]
 }
 
 ///|
-/// ツール名から定義を取得
-pub fn get_tool_definition(name : String) -> @types.ToolDefinition? {
-  for def in all_tool_definitions() {
-    if def.name == name {
-      return Some(def)
+/// ツール名からエントリを取得
+pub fn get_tool_entry(name : String) -> ToolEntry? {
+  for entry in all_tool_entries() {
+    if entry.name == name {
+      return Some(entry)
     }
   }
   None
 }
 
 ///|
+/// すべてのビルトインツール定義を返す
+pub fn all_tool_definitions() -> Array[@types.ToolDefinition] {
+  all_tool_entries().map(fn(entry) { entry.definition })
+}
+
+///|
+/// ツール名から定義を取得
+pub fn get_tool_definition(name : String) -> @types.ToolDefinition? {
+  match get_tool_entry(name) {
+    Some(entry) => Some(entry.definition)
+    None => None
+  }
+}
+
+///|
 /// ツールが存在するかチェック
 pub fn has_tool(name : String) -> Bool {
-  match get_tool_definition(name) {
-    Some(_) => true
-    None => false
-  }
+  not(get_tool_entry(name) is None)
 }
 
 ///|
 /// ツール名一覧を返す
 pub fn all_tool_names() -> Array[String] {
-  all_tool_definitions().map(fn(def) { def.name })
+  all_tool_entries().map(fn(entry) { entry.name })
 }
 
 ///|
 /// ツール名から設定スキーマを取得
 pub fn get_settings_schema(name : String) -> Json? {
-  match name {
-    "memory" => Some(memory_settings_schema())
-    "trace" => Some(trace_settings_schema())
-    "shell" => Some(shell_settings_schema())
-    "filesystem" => Some(filesystem_settings_schema())
-    "web" => Some(web_settings_schema())
-    _ => None
+  match get_tool_entry(name) {
+    Some(entry) => entry.settings_schema
+    None => None
   }
 }
