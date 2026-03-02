@@ -69,3 +69,18 @@ pub fn data_dir_for(app_name : String) -> String {
 pub fn cache_dir_for(app_name : String) -> String {
   cache_dir() + "/" + app_name
 }
+
+///|
+/// OS標準の一時ディレクトリを取得
+/// Linux/macOS: $TMPDIR or /tmp
+/// Windows: %TEMP% or %TMP% or C:\Windows\Temp
+pub fn temp_dir() -> String {
+  temp_dir_impl()
+}
+
+///|
+/// アプリ名付きの一時ディレクトリを取得
+/// テスト用に使用する場合は、テスト終了時にクリーンアップすること
+pub fn temp_dir_for(app_name : String) -> String {
+  temp_dir() + "/" + app_name
+}

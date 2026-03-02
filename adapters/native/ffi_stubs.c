@@ -1991,3 +1991,11 @@ int moonbit_gmtime(int64_t epoch_secs, unsigned char* out_buf) {
 
 /* Note: moonbit_get_home_dir, moonbit_get_os_name, moonbit_getenv_safe
  * are now defined in core/dirs/dirs_native_stub.c to avoid symbol duplication */
+
+/*
+ * exit() wrapper to avoid C compiler warning about incompatible redeclaration.
+ * MoonBit generates `int32_t exit(int32_t)` but standard library has `void exit(int)`.
+ */
+void moonbit_exit(int status) {
+    exit(status);
+}

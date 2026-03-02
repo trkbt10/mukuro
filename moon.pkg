@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/async" @async,
   "trkbt10/mukuro/cmd/main" @entry,
 }
 

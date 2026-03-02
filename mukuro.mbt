@@ -1,7 +1,7 @@
 ///|
 /// Root entrypoint for `moon run .`
 fn main {
-  @entry.run_cli_from_env()
+  @async.run_async_main(async fn() { @entry.run_cli_from_env_async() })
 }
 
 ///|

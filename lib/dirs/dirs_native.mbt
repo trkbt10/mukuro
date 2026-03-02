@@ -168,6 +168,42 @@ fn cache_dir_impl() -> String {
 }
 
 ///|
+/// OS標準の一時ディレクトリを取得
+fn temp_dir_impl() -> String {
+  match detect_os_impl() {
+    Linux | MacOS => {
+      let tmpdir = get_env("TMPDIR")
+      match tmpdir {
+        Some(v) if not(v.is_empty()) =>
+          // TMPDIR may have trailing slash, normalize it
+          if v.length() > 1 && v[v.length() - 1] == '/' {
+            let trimmed : String = v[:v.length() - 1].to_string() catch { _ => v }
+            trimmed
+          } else {
+            v
+          }
+        _ => "/tmp"
+      }
+    }
+    Windows => {
+      // Try TEMP first, then TMP
+      let temp = get_env("TEMP")
+      match temp {
+        Some(v) if not(v.is_empty()) => v
+        _ => {
+          let tmp = get_env("TMP")
+          match tmp {
+            Some(v) if not(v.is_empty()) => v
+            _ => "C:\\Windows\\Temp"
+          }
+        }
+      }
+    }
+    Unknown => "/tmp"
+  }
+}
+
+///|
 /// HOME環境変数を取得してバッファに書き込む
 #borrow(buffer)
 extern "C" fn c_get_home_dir(buffer : Bytes, buffer_len : Int) -> Int = "moonbit_get_home_dir"

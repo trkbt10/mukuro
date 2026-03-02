@@ -25,3 +25,8 @@ fn data_dir_impl() -> String {
 fn cache_dir_impl() -> String {
   "."
 }
+
+///|
+fn temp_dir_impl() -> String {
+  "/tmp"
+}

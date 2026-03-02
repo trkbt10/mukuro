@@ -8,7 +8,9 @@
 test "NoOpMetadataStore implements trait" {
   let store = @interfaces.NoOpMetadataStore::new()
   // Open should not fail
-  store.open() catch { _ => fail("open should not fail") }
+  store.open() catch {
+    _ => fail("open should not fail")
+  }
   // Get should return None
   let result = store.get(session_id="any") catch { _ => fail("get failed") }
   inspect(result.is_none(), content="true")
@@ -62,15 +64,25 @@ test "SessionMetadata struct fields" {
 ///|
 /// Test default_metadata_db_path returns expected path structure
 test "default_metadata_db_path format" {
+  // Use OS temp directory to avoid writing to production paths
+  let test_temp_dir = @dirs.temp_dir_for("mukuro-test")
+  @config.set_path_mode(@config.PathMode::Custom(test_temp_dir))
   let path = default_metadata_db_path()
+  // Reset immediately
+  @config.set_path_mode(@config.PathMode::Standard)
   // Should end with metadata.db
   inspect(path.length() > 0, content="true")
   // Path should contain "history" and "metadata.db"
   let contains_history = {
     let mut found = false
     for i = 0; i < path.length() - 7; i = i + 1 {
-      if path[i] == 'h' && path[i + 1] == 'i' && path[i + 2] == 's' &&
-         path[i + 3] == 't' && path[i + 4] == 'o' && path[i + 5] == 'r' && path[i + 6] == 'y' {
+      if path[i] == 'h' &&
+        path[i + 1] == 'i' &&
+        path[i + 2] == 's' &&
+        path[i + 3] == 't' &&
+        path[i + 4] == 'o' &&
+        path[i + 5] == 'r' &&
+        path[i + 6] == 'y' {
         found = true
         break
       }
@@ -78,4 +90,6 @@ test "default_metadata_db_path format" {
     found
   }
   inspect(contains_history, content="true")
+  // Verify it uses the temp path
+  inspect(path.has_prefix(test_temp_dir), content="true")
 }

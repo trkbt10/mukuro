@@ -40,7 +40,8 @@ pub extern "C" fn c_sleep_ms(ms : Int) -> Unit = "moonbit_sleep_ms"
 
 ///|
 /// プロセスを終了
-pub extern "C" fn c_exit(status : Int) -> Unit = "exit"
+/// Note: Uses wrapper to avoid C compiler warning about exit() redeclaration
+pub extern "C" fn c_exit(status : Int) -> Unit = "moonbit_exit"
 
 // ============================================================
 // シグナル定数

@@ -51,3 +51,15 @@ test "cache_dir_for appends app name" {
   let dir = cache_dir_for("testapp")
   assert_true(dir.has_suffix("/testapp"))
 }
+
+///|
+test "temp_dir returns non-empty" {
+  let dir = temp_dir()
+  assert_true(not(dir.is_empty()))
+}
+
+///|
+test "temp_dir_for appends app name" {
+  let dir = temp_dir_for("testapp")
+  assert_true(dir.has_suffix("/testapp"))
+}

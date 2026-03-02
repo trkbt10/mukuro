@@ -5,6 +5,7 @@ import {
   "mizchi/x/websocket" @websocket,
   "mizchi/sqlite" @sqlite,
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/core/types" @types,
   "trkbt10/mukuro/core/control",
   "trkbt10/mukuro/core/config" @config,
   "trkbt10/mukuro/core/logging" @logging,
@@ -14,13 +15,14 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
   "trkbt10/mukuro/lib/bytes" @bytes,
+  "trkbt10/mukuro/lib/dirs" @dirs,
 }
 
 warnings = "-29"
 
 options(
-  "native-stub": [ "ffi_stubs.c" ],
   link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
+  "native-stub": [ "ffi_stubs.c" ],
   targets: {
     "clock.mbt": [ "native" ],
     "daemon.mbt": [ "native" ],
@@ -38,9 +40,9 @@ options(
     "ffi_signal_test.mbt": [ "native" ],
     "ffi_stdio.mbt": [ "native" ],
     "ffi_stdio_test.mbt": [ "native" ],
+    "ffi_test_helpers.mbt": [ "native" ],
     "ffi_time.mbt": [ "native" ],
     "ffi_time_test.mbt": [ "native" ],
-    "ffi_test_helpers.mbt": [ "native" ],
     "file_utils.mbt": [ "native" ],
     "file_utils_test.mbt": [ "native" ],
     "filesystem.mbt": [ "native" ],
@@ -56,10 +58,12 @@ options(
     "plugin_watcher.mbt": [ "native" ],
     "process.mbt": [ "native" ],
     "process_security_test.mbt": [ "native" ],
+    "session_manager.mbt": [ "native" ],
+    "session_manager_wbtest.mbt": [ "native" ],
     "stdio_client.mbt": [ "native" ],
-    "tool_loader.mbt": [ "native" ],
     "stdio_e2e_test.mbt": [ "native" ],
     "stdio_security_test.mbt": [ "native" ],
+    "tool_loader.mbt": [ "native" ],
     "websocket_client.mbt": [ "native" ],
     "ws_e2e_test.mbt": [ "native" ],
     "ws_transport.mbt": [ "native" ],
