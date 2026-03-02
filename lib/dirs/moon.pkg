@@ -9,6 +9,5 @@ options(
   "native-stub": [ "dirs_native_stub.c" ],
   targets: {
     "dirs_native.mbt": [ "native" ],
-    "dirs_stub.mbt": [ "js", "wasm", "wasm-gc" ],
   },
 )

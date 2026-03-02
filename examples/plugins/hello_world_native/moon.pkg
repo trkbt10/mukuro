@@ -10,7 +10,6 @@ options(
   "native-stub": [ "native_stubs.c" ],
   targets: {
     "main.mbt": [ "native" ],
-    "main_stub.mbt": [ "js", "wasm", "wasm-gc" ],
     "plugin.mbt": [ "native" ],
   },
 )
