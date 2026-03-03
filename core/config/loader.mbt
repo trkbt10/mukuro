@@ -174,55 +174,16 @@ fn parse_model_options(
 
 ///|
 /// ProviderConfigをパース
+/// ProviderConfig::from_json() に委譲
 fn parse_provider_config(
   obj : Map[String, Json],
 ) -> @types.ProviderConfig raise @interfaces.ConfigError {
-  let name = match @config_json_accessors.required_string_field(obj, "name") {
-    Ok(v) => v
-    Err(msg) => raise @interfaces.ConfigError::ValidationError(msg)
-  }
-  let api_key = match
-    @config_json_accessors.optional_string_field(obj, "api_key") {
-    Ok(v) => v
-    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
-  }
-  let base_url = match
-    @config_json_accessors.optional_string_field(obj, "base_url") {
-    Ok(v) => v
-    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
-  }
-  let default_model = match
-    @config_json_accessors.string_field_or_default(
-      obj, "default_model", "default",
-    ) {
-    Ok(v) => v
-    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
-  }
-  let timeout_ms = match
-    @config_json_accessors.int_field_or_default(obj, "timeout_ms", 30000) {
-    Ok(v) => v
-    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
-  }
-  let max_retries = match
-    @config_json_accessors.int_field_or_default(obj, "max_retries", 3) {
-    Ok(v) => v
-    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
-  }
-  let use_responses_api = match
-    @config_json_accessors.bool_field_or_default(
-      obj, "use_responses_api", false,
-    ) {
-    Ok(v) => v
-    Err(msg) => raise @interfaces.ConfigError::ParseError(msg)
-  }
-  {
-    name,
-    api_key,
-    base_url,
-    default_model,
-    timeout_ms,
-    max_retries,
-    use_responses_api,
+  match @types.ProviderConfig::from_json(Json::object(obj)) {
+    Some(config) => config
+    None =>
+      raise @interfaces.ConfigError::ValidationError(
+        "provider must have a name field",
+      )
   }
 }
 
@@ -283,6 +244,7 @@ fn parse_channel_config(
 
 ///|
 /// 環境変数からプロバイダ設定をマージ
+/// スプレッド構文を使用して、新規フィールド追加時に変更不要にする
 fn merge_provider_from_env(
   provider : @types.ProviderConfig,
   env : &@interfaces.Environment,
@@ -301,15 +263,7 @@ fn merge_provider_from_env(
       }
     _ => provider.api_key
   }
-  {
-    name: provider.name,
-    api_key,
-    base_url: provider.base_url,
-    default_model: provider.default_model,
-    timeout_ms: provider.timeout_ms,
-    max_retries: provider.max_retries,
-    use_responses_api: provider.use_responses_api,
-  }
+  { ..provider, api_key, }
 }
 
 ///|

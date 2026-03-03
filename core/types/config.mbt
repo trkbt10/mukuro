@@ -117,6 +117,20 @@ pub fn ThinkingConfig::default() -> ThinkingConfig {
   { enabled: false, level: ThinkingLevel::Off, budget_tokens: None }
 }
 
+///|
+/// ThinkingConfig to Settings API JSON
+/// Source of truth for API response format
+pub fn ThinkingConfig::to_settings_json(self : ThinkingConfig) -> Json {
+  let obj : Map[String, Json] = {}
+  obj["enabled"] = Json::boolean(self.enabled)
+  obj["level"] = Json::string(self.level.to_string())
+  match self.budget_tokens {
+    Some(b) => obj["budget_tokens"] = Json::number(b.to_double())
+    None => obj["budget_tokens"] = Json::null()
+  }
+  Json::object(obj)
+}
+
 // ============================================================
 // OpenClaw互換: コンテキスト刈り込み設定
 // ============================================================
@@ -209,6 +223,23 @@ pub fn RetryConfig::default() -> RetryConfig {
   }
 }
 
+///|
+/// RetryConfig to Settings API JSON
+/// Source of truth for API response format
+pub fn RetryConfig::to_settings_json(self : RetryConfig) -> Json {
+  let status_codes : Array[Json] = []
+  for code in self.retry_status_codes {
+    status_codes.push(Json::number(code.to_double()))
+  }
+  {
+    "max_retries": self.max_retries,
+    "initial_backoff_ms": self.initial_backoff_ms,
+    "max_backoff_ms": self.max_backoff_ms,
+    "backoff_multiplier": self.backoff_multiplier,
+    "retry_status_codes": Json::array(status_codes),
+  }
+}
+
 // ============================================================
 // 既存の型定義
 // ============================================================
@@ -243,6 +274,9 @@ pub(all) struct ProviderConfig {
   max_retries : Int
   /// Responses API を使用するか（OpenAI互換プロバイダ向け）
   use_responses_api : Bool
+  /// Harmonyパーサーを使用するか（gpt-oss系モデル向け）
+  /// trueの場合、レスポンス内のHarmonyトークンをサニタイズする
+  use_harmony_parser : Bool
 }
 
 ///|
@@ -306,6 +340,33 @@ pub fn ModelOptions::default() -> ModelOptions {
 }
 
 ///|
+/// ModelOptions to Settings API JSON
+/// Source of truth for API response format
+pub fn ModelOptions::to_settings_json(self : ModelOptions) -> Json {
+  let obj : Map[String, Json] = {}
+  obj["model_name"] = Json::string(self.model_name)
+  match self.temperature {
+    Some(t) => obj["temperature"] = Json::number(t)
+    None => obj["temperature"] = Json::null()
+  }
+  match self.max_tokens {
+    Some(m) => obj["max_tokens"] = Json::number(m.to_double())
+    None => obj["max_tokens"] = Json::null()
+  }
+  match self.stop_sequences {
+    Some(seqs) => {
+      let arr : Array[Json] = []
+      for s in seqs {
+        arr.push(Json::string(s))
+      }
+      obj["stop_sequences"] = Json::array(arr)
+    }
+    None => obj["stop_sequences"] = Json::null()
+  }
+  Json::object(obj)
+}
+
+///|
 /// AgentConfigのデフォルト値
 pub fn AgentConfig::default() -> AgentConfig {
   {
@@ -317,12 +378,24 @@ pub fn AgentConfig::default() -> AgentConfig {
 }
 
 ///|
+/// AgentConfig to Settings API JSON
+/// Source of truth for API response format
+pub fn AgentConfig::to_settings_json(self : AgentConfig) -> Json {
+  {
+    "max_iterations": self.max_iterations,
+    "timeout_ms": self.timeout_ms.to_double(),
+    "bootstrap": self.bootstrap,
+  }
+}
+
+///|
 /// ProviderConfigを新規作成
 pub fn ProviderConfig::new(
   name~ : String,
   api_key~ : String?,
   default_model~ : String,
   use_responses_api? : Bool = false,
+  use_harmony_parser? : Bool = false,
 ) -> ProviderConfig {
   {
     name,
@@ -332,6 +405,7 @@ pub fn ProviderConfig::new(
     timeout_ms: 30000,
     max_retries: 3,
     use_responses_api,
+    use_harmony_parser,
   }
 }
 
@@ -401,7 +475,81 @@ pub fn ProviderConfig::to_json(self : ProviderConfig) -> Json {
   obj["timeout_ms"] = Json::number(self.timeout_ms.to_double())
   obj["max_retries"] = Json::number(self.max_retries.to_double())
   obj["use_responses_api"] = Json::boolean(self.use_responses_api)
+  obj["use_harmony_parser"] = Json::boolean(self.use_harmony_parser)
   Json::object(obj)
+}
+
+///|
+/// ProviderConfig to Settings API JSON
+/// Source of truth for API response format
+/// Note: api_key is converted to has_api_key for security
+pub fn ProviderConfig::to_settings_json(self : ProviderConfig) -> Json {
+  let obj : Map[String, Json] = {}
+  obj["name"] = Json::string(self.name)
+  match self.base_url {
+    Some(url) => obj["base_url"] = Json::string(url)
+    None => obj["base_url"] = Json::null()
+  }
+  obj["default_model"] = Json::string(self.default_model)
+  obj["timeout_ms"] = Json::number(self.timeout_ms.to_double())
+  obj["max_retries"] = Json::number(self.max_retries.to_double())
+  let has_api_key = match self.api_key {
+    Some(_) => true
+    None => false
+  }
+  obj["has_api_key"] = Json::boolean(has_api_key)
+  obj["use_responses_api"] = Json::boolean(self.use_responses_api)
+  obj["use_harmony_parser"] = Json::boolean(self.use_harmony_parser)
+  Json::object(obj)
+}
+
+///|
+/// ProviderConfig from JSON
+/// パースロジックを一元化
+pub fn ProviderConfig::from_json(json : Json) -> ProviderConfig? {
+  match json {
+    { "name": String(name), .. } => {
+      let api_key = match json {
+        { "api_key": String(k), .. } => Some(k)
+        _ => None
+      }
+      let base_url = match json {
+        { "base_url": String(u), .. } => Some(u)
+        _ => None
+      }
+      let default_model = match json {
+        { "default_model": String(m), .. } => m
+        _ => "default"
+      }
+      let timeout_ms = match json {
+        { "timeout_ms": Number(n, ..), .. } => n.to_int()
+        _ => 30000
+      }
+      let max_retries = match json {
+        { "max_retries": Number(n, ..), .. } => n.to_int()
+        _ => 3
+      }
+      let use_responses_api = match json {
+        { "use_responses_api": True, .. } => true
+        _ => false
+      }
+      let use_harmony_parser = match json {
+        { "use_harmony_parser": True, .. } => true
+        _ => false
+      }
+      Some({
+        name,
+        api_key,
+        base_url,
+        default_model,
+        timeout_ms,
+        max_retries,
+        use_responses_api,
+        use_harmony_parser,
+      })
+    }
+    _ => None
+  }
 }
 
 ///|
@@ -458,5 +606,36 @@ pub fn MukuroConfig::to_json(self : MukuroConfig) -> Json {
     obj["channels"] = Json::array(self.channels.map(fn(c) { c.to_json() }))
   }
   obj["thinking"] = self.thinking.to_json()
+  Json::object(obj)
+}
+
+///|
+/// ModelOptions + ThinkingConfig combined to Settings API JSON
+/// Source of truth for /settings/model-inference endpoint
+pub fn to_model_inference_json(
+  model : ModelOptions,
+  thinking : ThinkingConfig,
+) -> Json {
+  let obj : Map[String, Json] = {}
+  obj["model_name"] = Json::string(model.model_name)
+  match model.temperature {
+    Some(t) => obj["temperature"] = Json::number(t)
+    None => obj["temperature"] = Json::null()
+  }
+  match model.max_tokens {
+    Some(m) => obj["max_tokens"] = Json::number(m.to_double())
+    None => obj["max_tokens"] = Json::null()
+  }
+  match model.stop_sequences {
+    Some(seqs) =>
+      obj["stop_sequences"] = Json::array(seqs.map(fn(s) { Json::string(s) }))
+    None => obj["stop_sequences"] = Json::null()
+  }
+  obj["thinking_enabled"] = Json::boolean(thinking.enabled)
+  obj["thinking_level"] = Json::string(thinking.level.to_string())
+  match thinking.budget_tokens {
+    Some(b) => obj["thinking_budget_tokens"] = Json::number(b.to_double())
+    None => obj["thinking_budget_tokens"] = Json::null()
+  }
   Json::object(obj)
 }
