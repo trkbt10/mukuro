@@ -423,3 +423,86 @@ test "reconstruct_session_from_history: two_phase_with_follow_up" {
     _ => fail("Expected User message at index 4")
   }
 }
+
+///|
+/// 回帰テスト: 純粋テキスト会話の継続（ツール呼び出しなし）
+/// シナリオ: Turn1(User→Text) → Turn2(User follow-up)
+/// これは「2ターン目で ModelCallFailed」バグの再現テスト（純粋テキスト版）
+test "reconstruct_session_from_history: text_only_conversation_continuation" {
+  let key = @types.SessionKey::new(
+    channel="test",
+    chat_id="chat_text_only",
+    user_id=None,
+  )
+  let records : Array[@interfaces.HistoryRecord] = [
+    // Turn 1: User asks
+    {
+      timestamp: 1000L,
+      session_id: "test:chat_text_only",
+      record_type: @interfaces.HistoryRecordType::UserMessage,
+      payload: Json::object({ "content": Json::string("ブースとラプう") }),
+    },
+    // Turn 1: Assistant responds with text only (no tool calls)
+    {
+      timestamp: 2000L,
+      session_id: "test:chat_text_only",
+      record_type: @interfaces.HistoryRecordType::AssistantMessage,
+      payload: Json::object({
+        "content": Json::string(
+          "「ブースとラプう」について、もう少し詳しく教えてください。",
+        ),
+        "has_tool_calls": Json::boolean(false),
+      }),
+    },
+    // Turn 2: User follow-up (THIS IS WHERE THE BUG OCCURRED)
+    {
+      timestamp: 3000L,
+      session_id: "test:chat_text_only",
+      record_type: @interfaces.HistoryRecordType::UserMessage,
+      payload: Json::object({
+        "content": Json::string("bootstrapって完了した？"),
+      }),
+    },
+  ]
+  let session = reconstruct_session_from_history(key, records)
+
+  // 3 messages: User, Assistant(text), User(follow-up)
+  assert_eq(session.history.length(), 3)
+
+  // 最初のメッセージが User
+  match session.history[0] {
+    @types.ModelMessage::User(content~, ..) =>
+      assert_eq(content, "ブースとラプう")
+    _ => fail("Expected User message at index 0")
+  }
+
+  // 2番目のメッセージが Assistant (text only, no tool_calls)
+  match session.history[1] {
+    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+      assert_eq(content, "「ブースとラプう」について、もう少し詳しく教えてください。")
+      // CRITICAL: 純粋テキスト会話では tool_calls は None であること
+      // これが Some([]) になっていると、Responses API で問題が発生する可能性がある
+      match tool_calls {
+        None => () // OK - expected
+        Some(calls) =>
+          if calls.is_empty() {
+            // Some([]) も許容（空配列）
+            ()
+          } else {
+            fail(
+              "UNEXPECTED: tool_calls should be None or empty for text-only response",
+            )
+          }
+      }
+    }
+    _ => fail("Expected Assistant message at index 1")
+  }
+
+  // 最後のメッセージが User follow-up
+  match session.history[2] {
+    @types.ModelMessage::User(content~, ..) =>
+      assert_eq(content, "bootstrapって完了した？")
+    _ => fail("Expected User message at index 2")
+  }
+}
+
