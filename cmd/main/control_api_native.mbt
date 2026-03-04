@@ -51,7 +51,9 @@ fn create_context_data_io() -> @api_context.ContextDataIO {
     delete: fn(path) {
       @native.c_remove_file_bytes(@native.string_to_utf8_cstring(path)) == 0
     },
-    get_dir: fn() { get_workspace_context_dir() },
+    // CRITICAL: @config.data_dir() must be called at invocation time, not at closure creation time
+    // This ensures --data-dir flag is respected after set_path_mode() is called
+    get_dir: fn() { @config.data_dir() },
   }
 }
 
@@ -73,22 +75,48 @@ fn create_template_resolver() -> @api_context.TemplateResolver {
 }
 
 ///|
-/// Global context state
-let api_v1_context_state : @api_context.ContextState = @api_context.ContextState::new(
-  create_context_data_io(),
-  create_template_resolver(),
+/// Lazy-initialized context state (initialized after set_path_mode is called)
+let api_v1_context_state_cell : Ref[@api_context.ContextState?] = Ref::new(None)
+
+///|
+/// Get context state, initializing on first access
+fn get_api_v1_context_state() -> @api_context.ContextState {
+  match api_v1_context_state_cell.val {
+    Some(state) => state
+    None => {
+      let state = @api_context.ContextState::new(
+        create_context_data_io(),
+        create_template_resolver(),
+      )
+      api_v1_context_state_cell.val = Some(state)
+      state
+    }
+  }
+}
+
+///|
+/// Lazy-initialized history reader（initialized after set_path_mode is called）
+let global_history_reader_cell : Ref[@native.NativeHistoryReader?] = Ref::new(
+  None,
 )
 
 ///|
-/// Global history reader（data_dir() を使ってレコーダーと同じパスを参照）
-let global_history_reader : @native.NativeHistoryReader = @native.NativeHistoryReader::new(
-  base_dir=@config.data_dir(),
-)
+/// Get history reader, initializing on first access
+fn get_global_history_reader() -> @native.NativeHistoryReader {
+  match global_history_reader_cell.val {
+    Some(reader) => reader
+    None => {
+      let reader = @native.NativeHistoryReader::new(base_dir=@config.data_dir())
+      global_history_reader_cell.val = Some(reader)
+      reader
+    }
+  }
+}
 
 ///|
 /// Get API v1 router with handlers configured
 fn get_api_v1_router() -> @api.ApiRouter {
-  let history_reader : &@interfaces.HistoryReader = global_history_reader
+  let history_reader : &@interfaces.HistoryReader = get_global_history_reader()
   {
     plugin_handlers: Some(
       @api_plugins.create_plugin_handlers(api_v1_plugins_state),
@@ -107,7 +135,7 @@ fn get_api_v1_router() -> @api.ApiRouter {
       @api.error_response(405, "method_not_allowed", "Method not allowed")
     }),
     context_handlers: Some(
-      @api_context.create_context_handlers(api_v1_context_state),
+      @api_context.create_context_handlers(get_api_v1_context_state()),
     ),
     settings_handlers: Some(
       @api_settings.create_settings_handlers(api_v1_settings_state),
@@ -118,7 +146,7 @@ fn get_api_v1_router() -> @api.ApiRouter {
     ),
     chat_handlers: Some(
       @api_chat.create_chat_handlers(
-        @api_chat.ChatState::new_with_session_manager(global_session_manager, get_timestamp=fn() {
+        @api_chat.ChatState::new_with_session_manager(get_global_session_manager(), get_timestamp=fn() {
           @native.c_time() * 1000
         }),
       ),
@@ -714,6 +742,16 @@ pub async fn handle_control_api_request(
         Some(resp) => return resp
         None => ()
       }
+    }
+    // Onboard API endpoints (Source of Truth: .mukuro/onboard-state.json)
+    if meth_str == "GET" && path == "/api/v1/onboard/status" {
+      return try_onboard_status()
+    }
+    if meth_str == "POST" && path == "/api/v1/onboard/start" {
+      return try_onboard_start()
+    }
+    if meth_str == "POST" && path == "/api/v1/onboard/complete" {
+      return try_onboard_complete()
     }
     // Async intercept: onboard context generation via LLM
     if meth_str == "POST" && path == "/api/v1/onboard/generate" {

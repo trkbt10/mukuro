@@ -3,28 +3,32 @@
 
 ///|
 struct WorkspaceContextDirCell {
-  mut path : String
+  // None = use @config.data_dir() dynamically
+  // Some(path) = use custom path (set via set_workspace_context_dir_for_process)
+  mut custom_path : String?
 }
 
 ///|
-let workspace_context_dir_cell : WorkspaceContextDirCell = {
-  path: @config.data_dir(),
-}
+let workspace_context_dir_cell : WorkspaceContextDirCell = { custom_path: None }
 
 ///|
 pub fn set_workspace_context_dir_for_process(path : String) -> Unit {
-  workspace_context_dir_cell.path = path
+  workspace_context_dir_cell.custom_path = Some(path)
 }
 
 ///|
 /// Get current workspace context directory
+/// Uses @config.data_dir() dynamically to respect --data-dir flag
 pub fn get_workspace_context_dir() -> String {
-  workspace_context_dir_cell.path
+  match workspace_context_dir_cell.custom_path {
+    Some(path) => path
+    None => @config.data_dir()
+  }
 }
 
 ///|
 fn context_path(file : String) -> String {
-  workspace_context_dir_cell.path + "/" + file
+  get_workspace_context_dir() + "/" + file
 }
 
 ///|

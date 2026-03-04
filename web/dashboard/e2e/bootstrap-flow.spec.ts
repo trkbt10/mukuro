@@ -157,12 +157,40 @@ test.describe.serial('Bootstrap Flow E2E', () => {
     expect(groqProvider.default_model).toBe('openai/gpt-oss-20b');
   });
 
-  test('3. complete onboarding', async ({ request }) => {
+  test('2.5. create bootstrap.md via Context API', async ({ request }) => {
+    // Create bootstrap.md before completing onboarding (JSON body required)
+    const res = await request.put(
+      `http://${ctx.host}:${ctx.port}/api/v1/context/data/bootstrap`,
+      {
+        data: { content: '# Hello World\n\nThis is a test bootstrap file.' },
+      }
+    );
+    expect(res.ok()).toBeTruthy();
+
+    // Verify bootstrap.md exists in data directory
+    const bootstrapPath = path.join(ctx.tmpDir, 'bootstrap.md');
+    expect(fs.existsSync(bootstrapPath)).toBe(true);
+
+    const content = fs.readFileSync(bootstrapPath, 'utf-8');
+    expect(content).toContain('Hello World');
+  });
+
+  test('3. complete onboarding and verify bootstrap.md deletion', async ({ request }) => {
+    // Verify bootstrap.md exists before completion
+    const bootstrapPath = path.join(ctx.tmpDir, 'bootstrap.md');
+    expect(fs.existsSync(bootstrapPath)).toBe(true);
+
     const res = await request.post(`http://${ctx.host}:${ctx.port}/api/v1/onboard/complete`);
     expect(res.ok()).toBeTruthy();
 
     const data = await res.json();
     expect(data.data.status).toBe('completed');
+
+    // Wait for file operations to complete
+    await new Promise((r) => setTimeout(r, 500));
+
+    // Verify bootstrap.md is deleted after completion
+    expect(fs.existsSync(bootstrapPath)).toBe(false);
   });
 
   test('4. multi-turn text conversation via WebSocket', async ({ page }) => {

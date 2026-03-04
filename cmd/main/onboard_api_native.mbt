@@ -1,6 +1,162 @@
 ///|
-/// Onboard API — LLMでコンテキストファイルを一括生成
-/// POST /api/v1/onboard/generate
+/// Onboard API — オンボーディング状態管理とコンテキストファイル生成
+///
+/// Source of Truth: workspace-state.json
+/// - status フィールドが明示的に状態を保持
+/// - BOOTSTRAP.md の存在は補助情報
+
+// =============================================================================
+// Onboard State (Single Source of Truth)
+// =============================================================================
+
+///| 状態ファイルパス
+fn onboard_state_path() -> String {
+  @config.data_dir() + "/.mukuro/onboard-state.json"
+}
+
+///| 状態ディレクトリパス
+fn onboard_state_dir() -> String {
+  @config.data_dir() + "/.mukuro"
+}
+
+///| オンボーディング状態を読み込み
+fn load_onboard_state() -> Json {
+  let path = onboard_state_path()
+  let content = @native.native_read_file_text(path) catch {
+    _ => return {}
+  }
+  if content.length() == 0 {
+    return {}
+  }
+  @json.parse(content) catch {
+    _ => {}
+  }
+}
+
+///| オンボーディング状態を保存
+fn save_onboard_state(state : Json) -> Bool {
+  // ディレクトリを作成
+  let dir = onboard_state_dir()
+  ignore(
+    @native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(dir), 493),
+  ) // 0o755
+  // ファイルに書き込み
+  let path = onboard_state_path()
+  let content = state.stringify()
+  @native.c_write_text_file_bytes(
+    @native.string_to_utf8_cstring(path),
+    @native.string_to_utf8_cstring(content),
+  ) == 0
+}
+
+///| エポック秒を文字列として取得（ISO8601より確実）
+fn get_epoch_timestamp() -> String {
+  let epoch = @native.c_time()
+  epoch.to_string()
+}
+
+// =============================================================================
+// Onboard Status API
+// =============================================================================
+
+///|
+/// GET /api/v1/onboard/status — オンボーディング状態を取得
+fn try_onboard_status() -> ControlApiResponse {
+  // プロバイダの設定状態を確認
+  let has_provider = match api_v1_settings_state.get_config() {
+    Some(config) => config.providers.iter().any(fn(p) { p.api_key is Some(_) })
+    None => false
+  }
+  // Source of Truth: 状態ファイルから読み込み
+  let state = load_onboard_state()
+  let status = match state {
+    { "status": String(s), .. } => s
+    _ =>
+      // 状態未初期化の場合、プロバイダの有無で判定
+      if has_provider { "in_progress" } else { "not_started" }
+  }
+  json_response(200, {
+    "data": {
+      "status": status,
+      "has_provider": Json::boolean(has_provider),
+    },
+  })
+}
+
+///|
+/// POST /api/v1/onboard/start — オンボーディングを開始
+fn try_onboard_start() -> ControlApiResponse {
+  let state = load_onboard_state()
+  // すでに完了済みの場合はエラー
+  match state {
+    { "status": String("completed"), .. } =>
+      return json_response(400, {
+        "error": "already_completed",
+        "message": "Onboarding already completed",
+      })
+    _ => ()
+  }
+  // 状態を in_progress に更新
+  let now = get_epoch_timestamp()
+  let new_state : Json = {
+    "status": "in_progress",
+    "started_at": now,
+  }
+  if not(save_onboard_state(new_state)) {
+    return json_response(500, {
+      "error": "save_failed",
+      "message": "Failed to save onboard state",
+    })
+  }
+  json_response(200, { "data": { "status": "in_progress", "started_at": now } })
+}
+
+///|
+/// POST /api/v1/onboard/complete — オンボーディングを完了
+fn try_onboard_complete() -> ControlApiResponse {
+  let state = load_onboard_state()
+  // すでに完了済みの場合は成功を返す
+  match state {
+    { "status": String("completed"), "completed_at": String(t), .. } =>
+      return json_response(200, {
+        "data": { "status": "completed", "completed_at": t },
+      })
+    _ => ()
+  }
+  // 状態を completed に更新
+  let now = get_epoch_timestamp()
+  let started_at = match state {
+    { "started_at": String(t), .. } => Json::string(t)
+    _ => Json::null()
+  }
+  let new_state : Json = {
+    "status": "completed",
+    "started_at": started_at,
+    "completed_at": now,
+  }
+  if not(save_onboard_state(new_state)) {
+    return json_response(500, {
+      "error": "save_failed",
+      "message": "Failed to save onboard state",
+    })
+  }
+  // bootstrap.md を削除（存在する場合）
+  // Source of truth: @api_context.ContextFileType::Bootstrap.filename()
+  let bootstrap_filename = @api_context.ContextFileType::Bootstrap.filename()
+  let bootstrap_path = @config.data_dir() + "/" + bootstrap_filename
+  let bootstrap_exists = @native.c_access_bytes(
+    @bytes.to_utf8_cstring(bootstrap_path),
+    0,
+  ) == 0
+  if bootstrap_exists {
+    ignore(@native.c_remove_bytes(@bytes.to_utf8_cstring(bootstrap_path)))
+  }
+  json_response(200, { "data": { "status": "completed", "completed_at": now } })
+}
+
+// =============================================================================
+// Onboard Generate API
+// =============================================================================
 
 ///|
 /// POST /api/v1/onboard/generate — LLMでコンテキストファイルを生成
