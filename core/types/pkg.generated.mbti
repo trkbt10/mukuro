@@ -4,6 +4,8 @@ package "trkbt10/mukuro/core/types"
 // Values
 pub fn build_json_schema(type_~ : String, properties~ : Map[String, Json], required~ : Array[String]) -> Json
 
+pub fn to_model_inference_json(ModelOptions, ThinkingConfig) -> Json
+
 // Errors
 
 // Types and methods
@@ -15,6 +17,7 @@ pub(all) struct AgentConfig {
 }
 pub fn AgentConfig::default() -> Self
 pub fn AgentConfig::to_json(Self) -> Json
+pub fn AgentConfig::to_settings_json(Self) -> Json
 
 pub(all) struct AttachmentInfo {
   filename : String
@@ -89,6 +92,7 @@ pub(all) struct ModelOptions {
 }
 pub fn ModelOptions::default() -> Self
 pub fn ModelOptions::to_json(Self) -> Json
+pub fn ModelOptions::to_settings_json(Self) -> Json
 
 pub(all) enum ModelResponse {
   Text(String)
@@ -138,9 +142,12 @@ pub(all) struct ProviderConfig {
   timeout_ms : Int
   max_retries : Int
   use_responses_api : Bool
+  use_harmony_parser : Bool
 }
-pub fn ProviderConfig::new(name~ : String, api_key~ : String?, default_model~ : String, use_responses_api? : Bool) -> Self
+pub fn ProviderConfig::from_json(Json) -> Self?
+pub fn ProviderConfig::new(name~ : String, api_key~ : String?, default_model~ : String, use_responses_api? : Bool, use_harmony_parser? : Bool) -> Self
 pub fn ProviderConfig::to_json(Self) -> Json
+pub fn ProviderConfig::to_settings_json(Self) -> Json
 
 pub(all) enum PruningStrategy {
   CacheTTL(Int64)
@@ -157,6 +164,7 @@ pub(all) struct RetryConfig {
   retry_status_codes : Array[Int]
 }
 pub fn RetryConfig::default() -> Self
+pub fn RetryConfig::to_settings_json(Self) -> Json
 
 pub(all) struct Session {
   key : SessionKey
@@ -222,6 +230,7 @@ pub(all) struct ThinkingConfig {
 }
 pub fn ThinkingConfig::default() -> Self
 pub fn ThinkingConfig::to_json(Self) -> Json
+pub fn ThinkingConfig::to_settings_json(Self) -> Json
 
 pub(all) enum ThinkingLevel {
   Off

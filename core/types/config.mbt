@@ -494,7 +494,7 @@ pub fn ProviderConfig::to_settings_json(self : ProviderConfig) -> Json {
   obj["timeout_ms"] = Json::number(self.timeout_ms.to_double())
   obj["max_retries"] = Json::number(self.max_retries.to_double())
   let has_api_key = match self.api_key {
-    Some(_) => true
+    Some(key) => key.length() > 0
     None => false
   }
   obj["has_api_key"] = Json::boolean(has_api_key)
