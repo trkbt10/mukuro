@@ -9,6 +9,8 @@ import {
 // Values
 pub fn all_tool_definitions() -> Array[@types.ToolDefinition]
 
+pub fn all_tool_entries() -> Array[ToolEntry]
+
 pub fn all_tool_names() -> Array[String]
 
 pub fn boolean_param(String) -> Json
@@ -17,29 +19,17 @@ pub fn build_outbound_message(String, String, String, String?) -> @types.Outboun
 
 pub fn build_settings_schema(title~ : String, description? : String, fields~ : Array[SettingsFieldDef]) -> Json
 
+pub fn datetime_entry() -> ToolEntry
+
 pub fn datetime_tool() -> @types.ToolDefinition
 
 pub fn execute_builtin_tool(BuiltinToolContext, String, Json) -> ToolExecutionResult?
 
-pub fn execute_datetime(Json) -> ToolExecutionResult
-
-pub fn execute_filesystem(Json) -> ToolExecutionResult
-
-pub fn execute_memory(MemoryStore, Json) -> ToolExecutionResult
-
-pub fn execute_message(Json, (@types.OutboundMessage) -> Unit) -> ToolExecutionResult
-
-pub fn execute_shell(Json) -> ToolExecutionResult
-
 pub fn execute_simple_tool(String, Json) -> ToolExecutionResult
-
-pub fn execute_spawn(SubAgentManager, Json) -> ToolExecutionResult
 
 pub fn execute_tool(String, Json, MemoryStore?, SubAgentManager?, ((@types.OutboundMessage) -> Unit)?) -> ToolExecutionResult
 
-pub fn execute_trace(TraceStore, Json) -> ToolExecutionResult
-
-pub fn execute_web(Json) -> ToolExecutionResult
+pub fn filesystem_entry() -> ToolEntry
 
 pub fn filesystem_settings_schema() -> Json
 
@@ -63,6 +53,8 @@ pub fn get_string_arg(Json, String) -> String?
 
 pub fn get_tool_definition(String) -> @types.ToolDefinition?
 
+pub fn get_tool_entry(String) -> ToolEntry?
+
 pub fn has_tool(String) -> Bool
 
 pub fn integer_param(String) -> Json
@@ -73,9 +65,13 @@ pub fn is_sync_tool(String) -> Bool
 
 pub fn make_tool_definition(name~ : String, description~ : String, parameters~ : Json) -> @types.ToolDefinition
 
+pub fn memory_entry() -> ToolEntry
+
 pub fn memory_settings_schema() -> Json
 
 pub fn memory_tool() -> @types.ToolDefinition
+
+pub fn message_entry() -> ToolEntry
 
 pub fn message_tool() -> @types.ToolDefinition
 
@@ -89,11 +85,15 @@ pub fn require_string_arg(Json, String) -> String raise ToolExecutionError
 
 pub fn select_field(key~ : String, label~ : String, description? : String, default_value? : String, options~ : Array[(String, String)]) -> SettingsFieldDef
 
+pub fn shell_entry() -> ToolEntry
+
 pub fn shell_settings_schema() -> Json
 
 pub fn shell_tool() -> @types.ToolDefinition
 
 pub async fn spawn_agent_async(SubAgentManager, AsyncSubAgentConfig, String, async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse, &@interfaces.ToolRegistry, @types.ModelOptions) -> SpawnResult
+
+pub fn spawn_entry() -> ToolEntry
 
 pub fn spawn_tool() -> @types.ToolDefinition
 
@@ -103,9 +103,13 @@ pub fn text_field(key~ : String, label~ : String, description? : String, default
 
 pub fn toggle_field(key~ : String, label~ : String, description? : String, default_value? : Bool) -> SettingsFieldDef
 
+pub fn trace_entry() -> ToolEntry
+
 pub fn trace_settings_schema() -> Json
 
 pub fn trace_tool() -> @types.ToolDefinition
+
+pub fn web_entry() -> ToolEntry
 
 pub fn web_settings_schema() -> Json
 
@@ -132,10 +136,11 @@ pub fn AsyncSubAgentConfig::default(name~ : String) -> Self
 pub struct BuiltinToolContext {
   memory : MemoryStore
   agent_manager : SubAgentManager
+  trace : TraceStore
   send_message : (@types.OutboundMessage) -> Unit
 }
+pub fn BuiltinToolContext::make(MemoryStore, SubAgentManager, TraceStore, (@types.OutboundMessage) -> Unit) -> Self
 pub fn BuiltinToolContext::new((@types.OutboundMessage) -> Unit) -> Self
-pub fn BuiltinToolContext::with_memory(MemoryStore, (@types.OutboundMessage) -> Unit) -> Self
 
 pub struct MemoryStore {
   data : Map[String, Json]
@@ -187,6 +192,13 @@ pub struct SubAgentManager {
 }
 pub fn SubAgentManager::generate_id(Self) -> String
 pub fn SubAgentManager::new() -> Self
+
+pub struct ToolEntry {
+  name : String
+  definition : @types.ToolDefinition
+  settings_schema : Json?
+  execute : (BuiltinToolContext, Json) -> ToolExecutionResult
+}
 
 pub(all) struct ToolExecutionResult {
   status : ToolResultStatus

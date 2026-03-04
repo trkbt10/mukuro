@@ -32,6 +32,8 @@ pub fn set_path_mode(mode : PathMode) -> Unit {
 }
 
 ///|
+
+///|
 /// 現在のパスモードを取得
 pub fn get_path_mode() -> PathMode {
   path_mode.val

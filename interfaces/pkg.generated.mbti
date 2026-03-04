@@ -1100,11 +1100,6 @@ pub(open) trait ConfigValidator {
   validate(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
 }
 
-pub(open) trait ConfigWriter {
-  write_atomic(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
-  serialize(Self, config~ : @types.MukuroConfig) -> String raise ConfigError
-}
-
 pub(open) trait ConnectablePlugin {
   is_connected(Self) -> Bool
   set_connected(Self, Bool) -> Unit
@@ -1229,27 +1224,6 @@ pub(open) trait HttpServer {
   route(Self, http_method~ : HttpMethod, path~ : String, handler~ : (HttpRequest) -> HttpResponse) -> Unit
 }
 
-pub(open) trait InboundReceiver {
-  receive(Self) -> @types.InboundEnvelope raise
-  receive_timeout(Self, timeout_ms~ : Int64) -> @types.InboundEnvelope? raise
-}
-
-pub(open) trait JsonStore {
-  get_json(Self, key~ : String) -> Json? raise
-  set_json(Self, key~ : String, value~ : Json) -> Unit raise
-  get_many(Self, keys~ : Array[String]) -> Array[(String, Json)] raise
-  set_many(Self, entries~ : Array[(String, Json)]) -> Unit raise
-}
-
-pub(open) trait KVStore {
-  get(Self, key~ : String) -> String? raise
-  set(Self, key~ : String, value~ : String) -> Unit raise
-  remove(Self, key~ : String) -> Unit raise
-  has(Self, key~ : String) -> Bool raise
-  keys(Self) -> Array[String] raise
-  clear(Self) -> Unit raise
-}
-
 pub(open) trait Logger {
   debug(Self, message~ : String) -> Unit
   info(Self, message~ : String) -> Unit
@@ -1341,15 +1315,6 @@ pub(open) trait ProcessExecutor {
 
 pub(open) trait ProviderResolver {
   resolve(Self) -> @types.ProviderConfig?
-}
-
-pub(open) trait RuntimeConfigManager {
-  get_config(Self) -> @types.MukuroConfig
-  update_config(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
-  reload(Self) -> Unit raise ConfigError
-  get_config_path(Self) -> String
-  get_retry_config(Self) -> @types.RetryConfig
-  update_retry_config(Self, config~ : @types.RetryConfig) -> Unit raise ConfigError
 }
 
 pub(open) trait Scheduler {
