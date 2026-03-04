@@ -28,6 +28,7 @@ pub(all) suberror AgentLoopError {
   ConfigurationError(String)
   RateLimitExceeded(retry_count~ : Int, last_retry_after~ : Int)
 }
+pub impl Show for AgentLoopError
 
 // Types and methods
 pub(all) struct AgentDependencies {

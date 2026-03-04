@@ -67,3 +67,54 @@ test "AgentLoopError variants" {
   ignore(error2)
   ignore(error3)
 }
+
+///|
+/// Show 実装テスト - エラーメッセージの詳細が正しくフォーマットされること
+test "AgentLoopError Show formats detailed messages" {
+  // ModelCallFailed — 最も重要なケース。HTTP エラー詳細が表示されること
+  let model_err = @agent.AgentLoopError::ModelCallFailed(
+    "OpenAI HTTP error: 400; body={\"error\":{\"message\":\"Tools should have a name!\"}}",
+  )
+  inspect(
+    model_err,
+    content="ModelCallFailed: OpenAI HTTP error: 400; body={\"error\":{\"message\":\"Tools should have a name!\"}}",
+  )
+
+  // MaxIterationsReached
+  let max_iter = @agent.AgentLoopError::MaxIterationsReached(10)
+  inspect(max_iter, content="MaxIterationsReached(10)")
+
+  // ToolExecutionFailed
+  let tool_err = @agent.AgentLoopError::ToolExecutionFailed(
+    "shell command failed: exit code 1",
+  )
+  inspect(
+    tool_err,
+    content="ToolExecutionFailed: shell command failed: exit code 1",
+  )
+
+  // SessionError
+  let session_err = @agent.AgentLoopError::SessionError(
+    "failed to read history file",
+  )
+  inspect(session_err, content="SessionError: failed to read history file")
+
+  // ConfigurationError
+  let config_err = @agent.AgentLoopError::ConfigurationError(
+    "missing api_key in config",
+  )
+  inspect(
+    config_err,
+    content="ConfigurationError: missing api_key in config",
+  )
+
+  // RateLimitExceeded
+  let rate_err = @agent.AgentLoopError::RateLimitExceeded(
+    retry_count=3,
+    last_retry_after=60,
+  )
+  inspect(
+    rate_err,
+    content="RateLimitExceeded(retry_count=3, last_retry_after=60)",
+  )
+}

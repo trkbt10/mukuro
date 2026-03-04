@@ -10,6 +10,24 @@ pub(all) suberror AgentLoopError {
 }
 
 ///|
+/// AgentLoopError の Show 実装 - エラー詳細をフォーマット
+pub impl Show for AgentLoopError with output(self, logger) {
+  match self {
+    MaxIterationsReached(n) => logger.write_string("MaxIterationsReached(\{n})")
+    ModelCallFailed(msg) => logger.write_string("ModelCallFailed: \{msg}")
+    ToolExecutionFailed(msg) =>
+      logger.write_string("ToolExecutionFailed: \{msg}")
+    SessionError(msg) => logger.write_string("SessionError: \{msg}")
+    ConfigurationError(msg) =>
+      logger.write_string("ConfigurationError: \{msg}")
+    RateLimitExceeded(retry_count~, last_retry_after~) =>
+      logger.write_string(
+        "RateLimitExceeded(retry_count=\{retry_count}, last_retry_after=\{last_retry_after})",
+      )
+  }
+}
+
+///|
 /// リトライ設定
 pub(all) struct RetryConfig {
   /// 最大リトライ回数
