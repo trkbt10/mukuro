@@ -869,7 +869,9 @@ pub async fn run_control_api_server_with_tick_blocking(
   on_tick : () -> Bool,
 ) -> Unit {
   @async.with_task_group(group => {
-    let server = @xhttp.Server::new(host~, port~) catch { e => raise e }
+    let server = @xhttp.Server::new(host~, port~, reuse_addr=true) catch {
+      e => raise e
+    }
     defer server.close()
     group.spawn_bg(no_wait=true, allow_failure=true, () => {
       server.run_forever((req, body_reader, conn) => {
