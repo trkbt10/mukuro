@@ -39,6 +39,7 @@ test "validate_provider_config rejects openai-compatible with blank base_url" {
     timeout_ms: 30000,
     max_retries: 3,
     use_responses_api: false,
+    use_harmony_parser: false,
   }
   match validate_provider_config(p) {
     Some(msg) => assert_true(msg.contains("base_url is required"))
@@ -56,6 +57,7 @@ test "validate_provider_config rejects openai-compatible without model" {
     timeout_ms: 30000,
     max_retries: 3,
     use_responses_api: false,
+    use_harmony_parser: false,
   }
   match validate_provider_config(p) {
     Some(msg) => assert_true(msg.contains("model is required"))
@@ -73,6 +75,7 @@ test "validate_provider_config accepts valid openai-compatible provider" {
     timeout_ms: 30000,
     max_retries: 3,
     use_responses_api: false,
+    use_harmony_parser: false,
   }
   match validate_provider_config(p) {
     Some(msg) => fail("unexpected error: \{msg}")
@@ -491,4 +494,69 @@ test "build_agent_loop_options_from_config uses empty model when no providers" {
   inspect(options.model_options.model_name, content="")
   inspect(options.max_iterations, content="5")
   inspect(options.timeout_ms, content="30000")
+}
+
+// =============================================================================
+// needs_harmony_translation
+// =============================================================================
+
+///|
+test "needs_harmony_translation returns false when use_responses_api is false" {
+  let p : @types.ProviderConfig = {
+    name: "groq",
+    api_key: Some("key"),
+    base_url: Some("https://api.groq.com/openai"),
+    default_model: "llama",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: false,
+    use_harmony_parser: false,
+  }
+  assert_true(not(needs_harmony_translation(p)))
+}
+
+///|
+test "needs_harmony_translation returns true for groq provider with use_responses_api true" {
+  let p : @types.ProviderConfig = {
+    name: "groq",
+    api_key: Some("key"),
+    base_url: Some("https://api.groq.com/openai"),
+    default_model: "llama",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: false,
+  }
+  assert_true(needs_harmony_translation(p))
+}
+
+///|
+test "needs_harmony_translation returns true when base_url contains groq" {
+  let p : @types.ProviderConfig = {
+    name: "custom",
+    api_key: Some("key"),
+    base_url: Some("https://api.groq.com/openai"),
+    default_model: "llama",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: false,
+  }
+  assert_true(needs_harmony_translation(p))
+}
+
+///|
+test "needs_harmony_translation returns false for openai provider with use_responses_api true" {
+  let p : @types.ProviderConfig = {
+    name: "openai",
+    api_key: Some("sk-key"),
+    base_url: Some("https://api.openai.com"),
+    default_model: "gpt-4",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: false,
+  }
+  // OpenAI supports Responses API natively, so no translation needed
+  assert_true(not(needs_harmony_translation(p)))
 }

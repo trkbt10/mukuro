@@ -1,0 +1,28 @@
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],"x_groq":{"id":"req_01kjve8p25fhxtmytx3zrf79xe","seed":888005159}}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":"We","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" need","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" to","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" get","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" current","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" date","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":"/time","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" via","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" function","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":".","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"tool_calls":[{"id":"fc_4ebfd2ae-43a1-4ec0-a973-51dd5d123797","type":"function","function":{"name":"datetime","arguments":"{}"},"index":0}]},"logprobs":null,"finish_reason":null}]}
+
+data: {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}],"x_groq":{"id":"req_01kjve8p25fhxtmytx3zrf79xe","usage":{"queue_time":0.027811479,"prompt_tokens":129,"prompt_time":0.006844119,"completion_tokens":29,"completion_time":0.034188682,"total_tokens":158,"total_time":0.041032801,"completion_tokens_details":{"reasoning_tokens":11}}},"usage":{"queue_time":0.027811479,"prompt_tokens":129,"prompt_time":0.006844119,"completion_tokens":29,"completion_time":0.034188682,"total_tokens":158,"total_time":0.041032801,"completion_tokens_details":{"reasoning_tokens":11}}}
+
+data: [DONE]
+

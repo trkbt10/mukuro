@@ -694,3 +694,205 @@ test "Responses API: streaming and non-streaming produce same tool call" {
     _ => fail("Expected matching ToolCalls responses")
   }
 }
+
+// =============================================================================
+// Harmony Accumulator Tests (gpt-oss Chat Completions)
+// =============================================================================
+
+///|
+test "HarmonyAccumulator accumulates text and reasoning" {
+  // Simulated Harmony response with reasoning channel
+  let jsonl =
+    #| {"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"reasoning":"Let me think","channel":"analysis"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"reasoning":"...","channel":"analysis"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":"Hello!","channel":"final"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+  let (result, reasoning) = accumulate_harmony_with_reasoning(jsonl)
+  match result {
+    @types.ModelResponse::Text(content) => inspect(content, content="Hello!")
+    _ => fail("Expected Text response")
+  }
+  inspect(reasoning, content="Let me think...")
+}
+
+///|
+test "HarmonyAccumulator accumulates tool calls (fixture-based)" {
+  // Based on testdata/sse_fixtures/groq/harmony/toolcall_stream.jsonl
+  let jsonl =
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":"We","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" need","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" to","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" get","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" current","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" date","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" and","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" time","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" via","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" function","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":".","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"tool_calls":[{"id":"fc_xxx","type":"function","function":{"name":"datetime","arguments":"{}"},"index":0}]},"finish_reason":null}]}
+    #| {"id":"chatcmpl-xxx","object":"chat.completion.chunk","created":1772593972,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+  let (result, reasoning) = accumulate_harmony_with_reasoning(jsonl)
+  match result {
+    @types.ModelResponse::ToolCalls(calls) => {
+      inspect(calls.length(), content="1")
+      inspect(calls[0].name, content="datetime")
+    }
+    _ => fail("Expected ToolCalls response")
+  }
+  // Verify reasoning was captured
+  assert_true(reasoning.contains("We need to get current date and time via function."))
+}
+
+///|
+test "HarmonyAccumulator handles empty content correctly" {
+  // Empty content strings should not corrupt output
+  let jsonl =
+    #| {"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":"A"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":""},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":"B"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+  let result = accumulate_harmony(jsonl)
+  match result {
+    @types.ModelResponse::Text(content) => inspect(content, content="AB")
+    _ => fail("Expected Text response")
+  }
+}
+
+///|
+test "HarmonyAccumulator with multi-argument tool call" {
+  // Tool call with arguments split across chunks
+  let jsonl =
+    #| {"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"tool_calls":[{"id":"call_1","type":"function","function":{"name":"search","arguments":"{\"query\":"}}]},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"tool_calls":[{"function":{"arguments":"\"hello"}}]},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"tool_calls":[{"function":{"arguments":" world\"}"}}]},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+  let result = accumulate_harmony(jsonl)
+  match result {
+    @types.ModelResponse::ToolCalls(calls) => {
+      inspect(calls.length(), content="1")
+      inspect(calls[0].name, content="search")
+      match calls[0].arguments {
+        { "query": String(q), .. } => inspect(q, content="hello world")
+        _ => fail("Expected query argument")
+      }
+    }
+    _ => fail("Expected ToolCalls response")
+  }
+}
+
+///|
+test "HarmonyAccumulator handles post-tool text response" {
+  // After tool execution, model responds with text
+  // Simulated from testdata/sse_fixtures/groq/harmony/toolresult_stream.jsonl
+  let jsonl =
+    #| {"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"reasoning":"The user asked","channel":"analysis"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"reasoning":" about time.","channel":"analysis"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":"It is ","channel":"final"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"content":"3:30 PM"},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+  let (result, reasoning) = accumulate_harmony_with_reasoning(jsonl)
+  match result {
+    @types.ModelResponse::Text(content) => {
+      assert_true(content.contains("3:30 PM"))
+    }
+    _ => fail("Expected Text response")
+  }
+  assert_true(reasoning.contains("The user asked"))
+}
+
+// =============================================================================
+// Harmony Multi-turn Tests (Real API Fixtures)
+// testdata/sse_fixtures/groq/harmony/multiturn_*.jsonl
+// =============================================================================
+
+///|
+test "Harmony multiturn Turn 1: initial tool call (real fixture)" {
+  // From testdata/sse_fixtures/groq/harmony/multiturn_turn1.jsonl
+  // User: "What time is it now?" -> Model calls datetime tool
+  let jsonl =
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],"x_groq":{"id":"req_01kjve8p25fhxtmytx3zrf79xe","seed":888005159}}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":"We","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" need","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" to","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" get","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" current","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" date","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":"/time","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" via","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":" function","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"reasoning":".","channel":"analysis"},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{"tool_calls":[{"id":"fc_4ebfd2ae-43a1-4ec0-a973-51dd5d123797","type":"function","function":{"name":"datetime","arguments":"{}"},"index":0}]},"logprobs":null,"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8-9bb0-47a4-93f9-cc7fa8dd07d1","object":"chat.completion.chunk","created":1772594944,"model":"openai/gpt-oss-20b","system_fingerprint":"fp_84bb35977d","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}],"x_groq":{"id":"req_01kjve8p25fhxtmytx3zrf79xe","usage":{"queue_time":0.027811479,"prompt_tokens":129,"prompt_time":0.006844119,"completion_tokens":29,"completion_time":0.034188682,"total_tokens":158,"total_time":0.041032801,"completion_tokens_details":{"reasoning_tokens":11}}}}
+  let (result, reasoning) = accumulate_harmony_with_reasoning(jsonl)
+  // Verify tool call
+  match result {
+    @types.ModelResponse::ToolCalls(calls) => {
+      inspect(calls.length(), content="1")
+      inspect(calls[0].name, content="datetime")
+      inspect(calls[0].id, content="fc_4ebfd2ae-43a1-4ec0-a973-51dd5d123797")
+    }
+    _ => fail("Expected ToolCalls response")
+  }
+  // Verify reasoning was captured
+  assert_true(reasoning.contains("We need to get current date/time via function."))
+}
+
+///|
+test "Harmony multiturn Turn 2: text after tool result (real fixture)" {
+  // From testdata/sse_fixtures/groq/harmony/multiturn_turn2.jsonl
+  // After tool result, model responds with text
+  // Using first and last few lines to keep test readable
+  let jsonl =
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":"The","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" user","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" asked","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"content":"It"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"content":"'s"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"content":" 3:42 PM"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"content":" JST"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-9e8d9b12-29d1-4bda-937c-c143968aa442","object":"chat.completion.chunk","created":1772594958,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+  let (result, reasoning) = accumulate_harmony_with_reasoning(jsonl)
+  // Verify text response
+  match result {
+    @types.ModelResponse::Text(content) => {
+      assert_true(content.contains("3:42 PM"))
+      assert_true(content.contains("JST"))
+    }
+    _ => fail("Expected Text response")
+  }
+  // Verify reasoning
+  assert_true(reasoning.contains("The user asked"))
+}
+
+///|
+test "Harmony multiturn Turn 3: follow-up text (real fixture)" {
+  // From testdata/sse_fixtures/groq/harmony/multiturn_turn3.jsonl
+  // User asks follow-up "And what about in UTC?" -> Model responds with text (no tool call)
+  let jsonl =
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":"We","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" need","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" to","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" convert","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"reasoning":" JST to UTC.","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{"content":"15:42 JST is 06:42 UTC."},"finish_reason":null}]}
+    #| {"id":"chatcmpl-43750a96-5c75-4d98-95e4-70fc08d415ae","object":"chat.completion.chunk","created":1772594976,"model":"openai/gpt-oss-20b","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+  let (result, reasoning) = accumulate_harmony_with_reasoning(jsonl)
+  // Verify text response with UTC conversion
+  match result {
+    @types.ModelResponse::Text(content) => {
+      assert_true(content.contains("UTC"))
+      assert_true(content.contains("06:42") || content.contains("6:42"))
+    }
+    _ => fail("Expected Text response")
+  }
+  // Verify reasoning shows conversion logic
+  assert_true(reasoning.contains("convert"))
+}

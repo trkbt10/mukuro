@@ -9,6 +9,26 @@ fn is_openai_compatible_provider(provider : String) -> Bool {
 }
 
 ///|
+/// Groq プロバイダーは Responses API をネイティブサポートしていないため、
+/// use_responses_api: true の場合でも Chat Completions に翻訳する必要がある
+fn needs_harmony_translation(provider : @types.ProviderConfig) -> Bool {
+  // use_responses_api が true でも、プロバイダーが Responses API をサポートしていない場合
+  // Chat Completions にフォールバックし、HarmonyToResponsesTranslator で翻訳する
+  if not(provider.use_responses_api) {
+    return false
+  }
+  // Groq は Responses API 未対応
+  if provider.name == "groq" {
+    return true
+  }
+  // base_url に "groq" が含まれる場合も翻訳が必要
+  match provider.base_url {
+    Some(url) => url.contains("groq")
+    None => false
+  }
+}
+
+///|
 fn validate_provider_config(p : @types.ProviderConfig) -> String? {
   if p.name.is_empty() {
     return Some(
@@ -165,9 +185,12 @@ async fn call_openai_impl(
   }
   let model = options.model_name
   let use_responses_api = provider.use_responses_api
-  let body = (if use_responses_api {
-    @protocol.build_responses_api_body(model, messages, tools)
-  } else {
+  // Harmony Translation: use_responses_api: true だが Responses API 未対応のプロバイダーの場合
+  // Chat Completions を使用してリクエストを送信し、レスポンスを翻訳する
+  let use_translation = needs_harmony_translation(provider)
+  // use_translation が true の場合、Chat Completions を使用
+  let use_chat_completions_internally = use_translation || not(use_responses_api)
+  let body = (if use_chat_completions_internally {
     @protocol.build_openai_chat_body(
       model,
       messages,
@@ -175,12 +198,14 @@ async fn call_openai_impl(
       max_tokens=options.max_tokens,
       temperature=options.temperature,
     )
+  } else {
+    @protocol.build_responses_api_body(model, messages, tools)
   }).stringify()
   let base = normalize_base_url(provider.base_url.unwrap_or(""))
-  let path = if use_responses_api {
-    "/v1/responses"
-  } else {
+  let path = if use_chat_completions_internally {
     "/v1/chat/completions"
+  } else {
+    "/v1/responses"
   }
   let req : @interfaces.HttpRequest = {
     url: "\{base}\{path}",
@@ -200,10 +225,11 @@ async fn call_openai_impl(
       "OpenAI HTTP error: \{response.status}; body=\{err_body}",
     )
   }
-  if use_responses_api {
-    parse_openai_responses_response(body_bytes_to_string(response.body))
-  } else {
+  // Responses API モードでも、翻訳が必要な場合は Chat Completions レスポンスをパース
+  if use_chat_completions_internally {
     parse_openai_response(body_bytes_to_string(response.body))
+  } else {
+    parse_openai_responses_response(body_bytes_to_string(response.body))
   }
 }
 
@@ -278,4 +304,87 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
   } else {
     call_anthropic_impl(provider, self.http_client, messages, options, tools)
   }
+}
+
+// =============================================================================
+// Streaming API with Harmony Translation
+// =============================================================================
+
+///|
+/// ストリーミングイベントの型
+pub(all) enum StreamEvent {
+  /// Responses API フォーマットのイベント (event_type, data)
+  ResponsesEvent(String, Json)
+  /// ストリーミング完了
+  Done(@types.ModelResponse)
+  /// エラー
+  Error(String)
+}
+
+///|
+/// SSE JSONL をパースして Responses API イベントに翻訳
+/// Chat Completions SSE フォーマットから Responses API イベントを生成
+pub fn translate_sse_jsonl_to_responses_events(
+  jsonl : String,
+) -> Array[(String, Json)] {
+  let translator = @protocol.HarmonyToResponsesTranslator::new()
+  let events = @sse.parse_chat_completions_jsonl(jsonl) catch { _ => return [] }
+  let result : Array[(String, Json)] = []
+  for event in events {
+    let translated = translator.translate(event)
+    for evt in translated {
+      result.push(evt)
+    }
+  }
+  result
+}
+
+///|
+/// 非ストリーミングレスポンスを Responses API イベント形式に変換
+/// 翻訳レイヤーの検証に使用
+pub fn model_response_to_stream_events(
+  response : @types.ModelResponse,
+) -> Array[(String, Json)] {
+  let events : Array[(String, Json)] = []
+  // response.created
+  events.push((
+    "response.created",
+    { "type": "response.created", "response": { "id": "resp_generated" } },
+  ))
+  match response {
+    @types.ModelResponse::Text(content) => {
+      // response.output_text.delta (full content)
+      events.push((
+        "response.output_text.delta",
+        { "type": "response.output_text.delta", "delta": content, "output_index": 0 },
+      ))
+      // response.output_text.done
+      events.push((
+        "response.output_text.done",
+        { "type": "response.output_text.done", "text": content, "output_index": 0 },
+      ))
+    }
+    @types.ModelResponse::ToolCalls(calls) =>
+      for i, call in calls {
+        // response.output_item.added
+        events.push((
+          "response.output_item.added",
+          {
+            "type": "response.output_item.added",
+            "output_index": i,
+            "item": {
+              "type": "function_call",
+              "id": call.id.to_json(),
+              "call_id": call.id.to_json(),
+              "name": call.name.to_json(),
+              "arguments": call.arguments.stringify().to_json(),
+            },
+          },
+        ))
+      }
+    _ => ()
+  }
+  // response.completed
+  events.push(("response.completed", { "type": "response.completed" }))
+  events
 }

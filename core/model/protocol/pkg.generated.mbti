@@ -2,6 +2,7 @@
 package "trkbt10/mukuro/core/model/protocol"
 
 import {
+  "trkbt10/mukuro/core/sse",
   "trkbt10/mukuro/core/types",
 }
 
@@ -24,6 +25,8 @@ pub fn messages_to_openai_json(Array[@types.ModelMessage]) -> Array[Json]
 
 pub fn messages_to_responses_input(Array[@types.ModelMessage]) -> Array[Json]
 
+pub fn model_response_to_responses_json(@types.ModelResponse, response_id? : String, model? : String) -> Json
+
 pub fn parse_anthropic_response(Json) -> @types.ModelResponse
 
 pub fn parse_anthropic_tool_calls(Json) -> Array[@types.ToolCallRequest]
@@ -33,6 +36,10 @@ pub fn parse_openai_chat_response(Json) -> @types.ModelResponse
 pub fn parse_openai_tool_calls(Json) -> Array[@types.ToolCallRequest]
 
 pub fn parse_responses_api_response(Json) -> @types.ModelResponse
+
+pub fn responses_input_to_messages(Array[Json]) -> Array[@types.ModelMessage]
+
+pub fn responses_request_to_chat_completions(Json) -> Json
 
 pub fn tool_to_anthropic_json(@types.ToolDefinition) -> Json
 
@@ -49,6 +56,17 @@ pub fn tools_to_responses_api_json(Array[@types.ToolDefinition]) -> Array[Json]
 // Errors
 
 // Types and methods
+pub struct HarmonyToResponsesTranslator {
+  response_id : String
+  mut output_index : Int
+  mut has_emitted_created : Bool
+  mut current_tool_call_id : String
+  text_buffer : StringBuilder
+  reasoning_buffer : StringBuilder
+}
+pub fn HarmonyToResponsesTranslator::get_reasoning(Self) -> String
+pub fn HarmonyToResponsesTranslator::new(response_id? : String) -> Self
+pub fn HarmonyToResponsesTranslator::translate(Self, @sse.SseEvent) -> Array[(String, Json)]
 
 // Type aliases
 

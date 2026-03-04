@@ -10,6 +10,10 @@ pub fn accumulate_anthropic_messages(String) -> @types.ModelResponse raise
 
 pub fn accumulate_chat_completions(String) -> @types.ModelResponse raise
 
+pub fn accumulate_harmony(String) -> @types.ModelResponse raise
+
+pub fn accumulate_harmony_with_reasoning(String) -> (@types.ModelResponse, String) raise
+
 pub fn accumulate_responses_api(String) -> @types.ModelResponse raise
 
 pub fn parse_chat_completions_jsonl(String) -> Array[SseEvent] raise
@@ -36,6 +40,18 @@ pub struct ChatCompletionsAccumulator {
 pub fn ChatCompletionsAccumulator::feed(Self, SseEvent) -> Unit
 pub fn ChatCompletionsAccumulator::finish(Self) -> @types.ModelResponse
 pub fn ChatCompletionsAccumulator::new() -> Self
+
+pub struct HarmonyAccumulator {
+  text : StringBuilder
+  reasoning : StringBuilder
+  mut current_channel : String
+  tool_calls : Array[ToolCallAcc]
+  mut finish_reason : String
+}
+pub fn HarmonyAccumulator::feed(Self, SseEvent) -> Unit
+pub fn HarmonyAccumulator::finish(Self) -> @types.ModelResponse
+pub fn HarmonyAccumulator::get_reasoning(Self) -> String
+pub fn HarmonyAccumulator::new() -> Self
 
 pub struct ResponsesApiAccumulator {
   text : StringBuilder

@@ -1417,3 +1417,125 @@ test "parse_responses_api_response - chained_final_text" {
     _ => fail("Expected Text response")
   }
 }
+
+// =============================================================================
+// Regression Tests: Text-Only Conversation Continuation
+// =============================================================================
+
+///|
+/// 回帰テスト: 純粋テキスト会話の Responses API 変換
+/// ツール呼び出しなしの会話が正しく変換されることを確認
+/// バグ: 2ターン目で ModelCallFailed が発生（純粋テキスト版）
+test "messages_to_responses_input: text_only_conversation" {
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::System("You are a helpful assistant."),
+    @types.ModelMessage::User(content="ブースとラプう", name=None),
+    @types.ModelMessage::Assistant(
+      content="「ブースとラプう」について、もう少し詳しく教えてください。",
+      tool_calls=None,
+    ),
+    @types.ModelMessage::User(content="bootstrapって完了した？", name=None),
+  ]
+
+  let input = messages_to_responses_input(messages)
+
+  // 4 items: system, user, assistant, user
+  inspect(input.length(), content="4")
+
+  // Check each item has correct structure
+  match input[0] {
+    Object(obj) => {
+      inspect(obj.get("role"), content="Some(String(\"system\"))")
+      inspect(
+        obj.get("content"),
+        content="Some(String(\"You are a helpful assistant.\"))",
+      )
+    }
+    _ => fail("Expected object at index 0")
+  }
+
+  match input[1] {
+    Object(obj) => {
+      inspect(obj.get("role"), content="Some(String(\"user\"))")
+      inspect(obj.get("content"), content="Some(String(\"ブースとラプう\"))")
+    }
+    _ => fail("Expected object at index 1")
+  }
+
+  match input[2] {
+    Object(obj) => {
+      inspect(obj.get("role"), content="Some(String(\"assistant\"))")
+      inspect(
+        obj.get("content"),
+        content="Some(String(\"「ブースとラプう」について、もう少し詳しく教えてください。\"))",
+      )
+      // 重要: function_call 系のフィールドがないこと
+      inspect(obj.get("type"), content="None")
+      inspect(obj.get("call_id"), content="None")
+    }
+    _ => fail("Expected object at index 2")
+  }
+
+  match input[3] {
+    Object(obj) => {
+      inspect(obj.get("role"), content="Some(String(\"user\"))")
+      inspect(
+        obj.get("content"),
+        content="Some(String(\"bootstrapって完了した？\"))",
+      )
+    }
+    _ => fail("Expected object at index 3")
+  }
+}
+
+///|
+/// 回帰テスト: build_responses_api_body でツールなしの場合
+/// tools が空配列の場合、tool_choice フィールドが含まれないこと
+test "build_responses_api_body: no_tools_no_tool_choice" {
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::System("You are a helpful assistant."),
+    @types.ModelMessage::User(content="Hello", name=None),
+  ]
+  let tools : Array[@types.ToolDefinition] = []
+
+  let body = build_responses_api_body("openai/gpt-oss-20b", messages, tools)
+
+  // tools フィールドがないこと
+  match body {
+    Object(obj) => {
+      inspect(obj.get("tools"), content="None")
+      inspect(obj.get("tool_choice"), content="None")
+    }
+    _ => fail("Expected object body")
+  }
+}
+
+///|
+/// 回帰テスト: build_responses_api_body でツールありの場合
+/// tools がある場合、tool_choice: "auto" が含まれること
+test "build_responses_api_body: with_tools_has_tool_choice" {
+  let messages : Array[@types.ModelMessage] = [
+    @types.ModelMessage::System("You are a helpful assistant."),
+    @types.ModelMessage::User(content="List files", name=None),
+  ]
+  let tools : Array[@types.ToolDefinition] = [
+    @types.ToolDefinition::new(
+      name="shell",
+      description="Execute shell commands",
+      parameters={ "type": "object" },
+    ),
+  ]
+
+  let body = build_responses_api_body("openai/gpt-oss-20b", messages, tools)
+
+  // tool_choice: "auto" があること
+  match body {
+    Object(obj) => {
+      match obj.get("tool_choice") {
+        Some(String(choice)) => inspect(choice, content="auto")
+        _ => fail("Expected tool_choice: auto")
+      }
+    }
+    _ => fail("Expected object body")
+  }
+}

@@ -6,6 +6,7 @@
 /// Chat WebSocket message types
 pub(all) enum ChatWsMessageType {
   Send
+  SendStream
   LoadHistory
   Ping
   Unknown
@@ -41,6 +42,7 @@ pub fn parse_chat_ws_message(
     Object(obj) => {
       let msg_type = match obj.get("type") {
         Some(String("send")) => Send
+        Some(String("send_stream")) => SendStream
         Some(String("load_history")) => LoadHistory
         Some(String("ping")) => Ping
         _ => Unknown
@@ -141,14 +143,14 @@ fn ChatWsHandler::ensure_session(self : ChatWsHandler) -> Bool {
     user_id=None,
   )
   // Check if session already exists in History (source of truth)
-  let existing = global_session_manager.get(key) catch { _ => None }
+  let existing = get_global_session_manager().get(key) catch { _ => None }
   match existing {
     Some(_) => true // Session exists (loaded from History), don't overwrite
     None => {
       // Create new session via SessionManager
       let timestamp = get_timestamp_ms()
       ignore(
-        global_session_manager.get_or_create(key, now=timestamp) catch {
+        get_global_session_manager().get_or_create(key, now=timestamp) catch {
           _ => @types.Session::new(key, timestamp)
         },
       )
@@ -188,6 +190,59 @@ async fn ChatWsHandler::handle_send(
 }
 
 ///|
+/// Send streaming event over WebSocket
+async fn ws_send_stream_event(
+  ws : @async_ws.Conn,
+  event_type : String,
+  data : Json,
+) -> Unit {
+  ws_send_json(ws, {
+    "type": "stream",
+    "event": Json::string(event_type),
+    "data": data,
+  })
+}
+
+///|
+/// Handle "send_stream" message - simulated streaming with Harmony translation
+/// Uses non-streaming model call but emits Responses API events for translation verification
+async fn ChatWsHandler::handle_send_stream(
+  self : ChatWsHandler,
+  ws : @async_ws.Conn,
+  content : String,
+  sender_name : String?,
+) -> Unit {
+  ws_send_status(ws, "streaming")
+  let timestamp = get_timestamp_ms()
+  let envelope : @types.InboundEnvelope = {
+    channel: "web_chat",
+    chat_id: self.chat_id,
+    sender_id: "dashboard_user",
+    sender_name: sender_name.unwrap_or("User"),
+    content,
+    message_type: @types.MessageType::Text,
+    metadata: {},
+    timestamp,
+  }
+  // Use agent loop (which uses translation layer when use_responses_api: true with Groq)
+  let outbound = handle_inbound_with_agent_loop(envelope, None) catch {
+    e => {
+      ws_send_error(ws, "Agent handler failed: \{e}", None)
+      return
+    }
+  }
+  // Convert response to Responses API stream events for translation verification
+  let response = @types.ModelResponse::Text(outbound.content)
+  let stream_events = model_response_to_stream_events(response)
+  // Send each translated event
+  for evt in stream_events {
+    ws_send_stream_event(ws, evt.0, evt.1)
+  }
+  // Send final message
+  ws_send_message(ws, "assistant", outbound.content, get_timestamp_ms())
+}
+
+///|
 /// Handle "load_history" message
 /// Uses SessionManager which reads from History (JSONL) as source of truth
 async fn ChatWsHandler::handle_load_history(
@@ -200,7 +255,7 @@ async fn ChatWsHandler::handle_load_history(
     user_id=None,
   )
   // SessionManager.get() reads from History (JSONL) and materializes Session
-  let session = global_session_manager.get(key) catch { _ => None }
+  let session = get_global_session_manager().get(key) catch { _ => None }
   let messages : Array[Json] = []
   match session {
     Some(s) =>
@@ -255,6 +310,11 @@ pub async fn ChatWsHandler::handle_connection(
               Some(c) => self.handle_send(ws, c, sender_name)
               None => ws_send_error(ws, "Missing content", None)
             }
+          SendStream =>
+            match content {
+              Some(c) => self.handle_send_stream(ws, c, sender_name)
+              None => ws_send_error(ws, "Missing content", None)
+            }
           LoadHistory => self.handle_load_history(ws)
           Ping => ws_send_pong(ws)
           Unknown => ws_send_error(ws, "Unknown message type", None)
@@ -271,7 +331,7 @@ pub async fn ChatWsHandler::handle_connection(
     chat_id=self.chat_id,
     user_id=None,
   )
-  global_session_manager.close_session(key) catch {
+  get_global_session_manager().close_session(key) catch {
     _ => ()
   }
 }

@@ -1,0 +1,427 @@
+///|
+/// Interoperability Tests
+/// Chat Completions (Harmony) <-> Responses API conversion
+
+// =============================================================================
+// Responses API Input → Chat Completions Messages
+// =============================================================================
+
+///|
+test "responses_input_to_messages: basic user message" {
+  let input : Array[Json] = [
+    { "role": "system", "content": "You are helpful." },
+    { "role": "user", "content": "Hello" },
+  ]
+  let messages = responses_input_to_messages(input)
+  inspect(messages.length(), content="2")
+  match messages[0] {
+    @types.ModelMessage::System(content) =>
+      inspect(content, content="You are helpful.")
+    _ => fail("Expected System message")
+  }
+  match messages[1] {
+    @types.ModelMessage::User(content~, ..) => inspect(content, content="Hello")
+    _ => fail("Expected User message")
+  }
+}
+
+///|
+test "responses_input_to_messages: function_call and output" {
+  let input : Array[Json] = [
+    { "role": "user", "content": "What time is it?" },
+    {
+      "type": "function_call",
+      "call_id": "fc_123",
+      "name": "datetime",
+      "arguments": "{}",
+      "status": "completed",
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "fc_123",
+      "output": "{\"time\":\"15:00\"}",
+    },
+  ]
+  let messages = responses_input_to_messages(input)
+  inspect(messages.length(), content="3")
+  // User message
+  match messages[0] {
+    @types.ModelMessage::User(content~, ..) =>
+      inspect(content, content="What time is it?")
+    _ => fail("Expected User message")
+  }
+  // Assistant with tool call
+  match messages[1] {
+    @types.ModelMessage::Assistant(tool_calls=Some(calls), ..) => {
+      inspect(calls.length(), content="1")
+      inspect(calls[0].id, content="fc_123")
+      inspect(calls[0].name, content="datetime")
+    }
+    _ => fail("Expected Assistant message with tool_calls")
+  }
+  // Tool result
+  match messages[2] {
+    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+      inspect(tool_call_id, content="fc_123")
+      inspect(content, content="{\"time\":\"15:00\"}")
+    }
+    _ => fail("Expected ToolResult message")
+  }
+}
+
+///|
+test "responses_input_to_messages: multi-turn with tool call" {
+  // Simulates: User -> Assistant(tool_call) -> ToolResult -> User(follow-up)
+  let input : Array[Json] = [
+    { "role": "system", "content": "You are helpful." },
+    { "role": "user", "content": "List files" },
+    {
+      "type": "function_call",
+      "call_id": "fc_abc",
+      "name": "shell",
+      "arguments": "{\"command\":\"ls\"}",
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "fc_abc",
+      "output": "file1.txt\nfile2.txt",
+    },
+    { "role": "user", "content": "Now show details" },
+  ]
+  let messages = responses_input_to_messages(input)
+  inspect(messages.length(), content="5")
+  // System
+  match messages[0] {
+    @types.ModelMessage::System(_) => ()
+    _ => fail("Expected System")
+  }
+  // User 1
+  match messages[1] {
+    @types.ModelMessage::User(content~, ..) =>
+      inspect(content, content="List files")
+    _ => fail("Expected User")
+  }
+  // Assistant with tool call
+  match messages[2] {
+    @types.ModelMessage::Assistant(tool_calls=Some(calls), ..) =>
+      inspect(calls[0].name, content="shell")
+    _ => fail("Expected Assistant with tool_calls")
+  }
+  // Tool result
+  match messages[3] {
+    @types.ModelMessage::ToolResult(tool_call_id~, ..) =>
+      inspect(tool_call_id, content="fc_abc")
+    _ => fail("Expected ToolResult")
+  }
+  // User 2
+  match messages[4] {
+    @types.ModelMessage::User(content~, ..) =>
+      inspect(content, content="Now show details")
+    _ => fail("Expected User")
+  }
+}
+
+// =============================================================================
+// ModelResponse → Responses API JSON
+// =============================================================================
+
+///|
+test "model_response_to_responses_json: text response" {
+  let response = @types.ModelResponse::Text("Hello, world!")
+  let json = model_response_to_responses_json(response, response_id="resp_001")
+  match json {
+    { "id": String(id), "output": Array(output), .. } => {
+      inspect(id, content="resp_001")
+      inspect(output.length(), content="1")
+      match output[0] {
+        {
+          "type": String("message"),
+          "content": Array(content_arr),
+          ..
+        } => {
+          match content_arr[0] {
+            { "type": String("output_text"), "text": String(t), .. } =>
+              inspect(t, content="Hello, world!")
+            _ => fail("Expected output_text")
+          }
+        }
+        _ => fail("Expected message output")
+      }
+    }
+    _ => fail("Expected valid response JSON")
+  }
+}
+
+///|
+test "model_response_to_responses_json: tool calls" {
+  let calls : Array[@types.ToolCallRequest] = [
+    @types.ToolCallRequest::new(
+      id="fc_001",
+      name="datetime",
+      arguments={ "tz": "UTC" },
+    ),
+  ]
+  let response = @types.ModelResponse::ToolCalls(calls)
+  let json = model_response_to_responses_json(response)
+  match json {
+    { "output": Array(output), .. } => {
+      inspect(output.length(), content="1")
+      match output[0] {
+        {
+          "type": String("function_call"),
+          "name": String(name),
+          "call_id": String(call_id),
+          ..
+        } => {
+          inspect(name, content="datetime")
+          inspect(call_id, content="fc_001")
+        }
+        _ => fail("Expected function_call output")
+      }
+    }
+    _ => fail("Expected valid response JSON")
+  }
+}
+
+// =============================================================================
+// Harmony SSE → Responses API Events
+// =============================================================================
+
+///|
+test "HarmonyToResponsesTranslator: text streaming" {
+  let translator = HarmonyToResponsesTranslator::new(response_id="resp_test")
+  // First chunk with role
+  let event1 : @sse.SseEvent = {
+    event: "",
+    data: {
+      "choices": Json::array([
+        { "index": 0, "delta": { "role": "assistant", "content": "" } },
+      ]),
+    },
+  }
+  let events1 = translator.translate(event1)
+  // Should emit response.created
+  inspect(events1.length(), content="1")
+  inspect(events1[0].0, content="response.created")
+  // Content chunk
+  let event2 : @sse.SseEvent = {
+    event: "",
+    data: {
+      "choices": Json::array([
+        { "index": 0, "delta": { "content": "Hello" } },
+      ]),
+    },
+  }
+  let events2 = translator.translate(event2)
+  inspect(events2.length(), content="1")
+  inspect(events2[0].0, content="response.output_text.delta")
+  // Final chunk with stop
+  let event3 : @sse.SseEvent = {
+    event: "",
+    data: {
+      "choices": Json::array([
+        { "index": 0, "delta": {}, "finish_reason": "stop" },
+      ]),
+    },
+  }
+  let events3 = translator.translate(event3)
+  // Should emit output_text.done and completed
+  inspect(events3.length(), content="2")
+  inspect(events3[0].0, content="response.output_text.done")
+  inspect(events3[1].0, content="response.completed")
+}
+
+///|
+test "HarmonyToResponsesTranslator: tool call streaming" {
+  let translator = HarmonyToResponsesTranslator::new()
+  // First chunk
+  let event1 : @sse.SseEvent = {
+    event: "",
+    data: {
+      "choices": Json::array([
+        { "index": 0, "delta": { "role": "assistant", "content": "" } },
+      ]),
+    },
+  }
+  ignore(translator.translate(event1))
+  // Tool call chunk
+  let event2 : @sse.SseEvent = {
+    event: "",
+    data: {
+      "choices": Json::array([
+        {
+          "index": 0,
+          "delta": {
+            "tool_calls": Json::array([
+              {
+                "id": "fc_xyz",
+                "type": "function",
+                "function": { "name": "datetime", "arguments": "{}" },
+              },
+            ]),
+          },
+        },
+      ]),
+    },
+  }
+  let events2 = translator.translate(event2)
+  // Should emit output_item.added and arguments.delta
+  let mut found_added = false
+  for e in events2 {
+    if e.0 == "response.output_item.added" {
+      found_added = true
+    }
+  }
+  inspect(found_added, content="true")
+  // Final chunk
+  let event3 : @sse.SseEvent = {
+    event: "",
+    data: {
+      "choices": Json::array([
+        { "index": 0, "delta": {}, "finish_reason": "tool_calls" },
+      ]),
+    },
+  }
+  let events3 = translator.translate(event3)
+  inspect(events3.length(), content="1")
+  inspect(events3[0].0, content="response.completed")
+}
+
+// =============================================================================
+// Responses API Request → Chat Completions Request
+// =============================================================================
+
+///|
+test "responses_request_to_chat_completions: basic request" {
+  let request : Json = {
+    "model": "openai/gpt-oss-20b",
+    "input": Json::array([
+      { "role": "system", "content": "You are helpful." },
+      { "role": "user", "content": "Hello" },
+    ]),
+  }
+  let chat_request = responses_request_to_chat_completions(request)
+  match chat_request {
+    { "model": String(model), "messages": Array(msgs), "stream": True, .. } => {
+      inspect(model, content="openai/gpt-oss-20b")
+      inspect(msgs.length(), content="2")
+    }
+    _ => fail("Expected valid Chat Completions request")
+  }
+}
+
+///|
+test "responses_request_to_chat_completions: with tools" {
+  let request : Json = {
+    "model": "openai/gpt-oss-20b",
+    "input": Json::array([{ "role": "user", "content": "What time?" }]),
+    "tools": Json::array([
+      {
+        "type": "function",
+        "function": {
+          "name": "datetime",
+          "description": "Get time",
+          "parameters": {},
+        },
+      },
+    ]),
+    "tool_choice": "auto",
+  }
+  let chat_request = responses_request_to_chat_completions(request)
+  match chat_request {
+    { "tools": Array(tools), "tool_choice": String(choice), .. } => {
+      inspect(tools.length(), content="1")
+      inspect(choice, content="auto")
+    }
+    _ => fail("Expected tools in request")
+  }
+}
+
+// =============================================================================
+// Round-trip Tests: Real Harmony Fixtures
+// =============================================================================
+
+///|
+test "round-trip: Harmony fixture Turn 1 → Responses API events" {
+  // Parse actual Harmony fixture and convert to Responses API events
+  let jsonl =
+    #| {"id":"chatcmpl-430931d8","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8","choices":[{"index":0,"delta":{"reasoning":"We need","channel":"analysis"},"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8","choices":[{"index":0,"delta":{"tool_calls":[{"id":"fc_4ebfd2ae","type":"function","function":{"name":"datetime","arguments":"{}"}}]},"finish_reason":null}]}
+    #| {"id":"chatcmpl-430931d8","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+  let events = @sse.parse_chat_completions_jsonl(jsonl)
+  let translator = HarmonyToResponsesTranslator::new()
+  let all_events : Array[(String, Json)] = []
+  for event in events {
+    let translated = translator.translate(event)
+    for t in translated {
+      all_events.push(t)
+    }
+  }
+  // Should have: created, output_item.added, arguments.delta, completed
+  let mut found_created = false
+  let mut found_item_added = false
+  let mut found_completed = false
+  for e in all_events {
+    if e.0 == "response.created" {
+      found_created = true
+    }
+    if e.0 == "response.output_item.added" {
+      found_item_added = true
+    }
+    if e.0 == "response.completed" {
+      found_completed = true
+    }
+  }
+  inspect(found_created, content="true")
+  inspect(found_item_added, content="true")
+  inspect(found_completed, content="true")
+  // Reasoning should be captured
+  let reasoning = translator.get_reasoning()
+  inspect(reasoning.contains("We need"), content="true")
+}
+
+///|
+test "round-trip: Responses API request → Chat Completions → Harmony → Responses API response" {
+  // 1. Start with Responses API request
+  let responses_request : Json = {
+    "model": "openai/gpt-oss-20b",
+    "input": Json::array([
+      { "role": "system", "content": "You are helpful." },
+      { "role": "user", "content": "What time is it?" },
+    ]),
+    "tools": Json::array([
+      {
+        "type": "function",
+        "function": { "name": "datetime", "parameters": {} },
+      },
+    ]),
+  }
+  // 2. Convert to Chat Completions request
+  let chat_request = responses_request_to_chat_completions(responses_request)
+  match chat_request {
+    { "messages": Array(msgs), "stream": True, .. } => {
+      inspect(msgs.length(), content="2")
+    }
+    _ => fail("Expected valid Chat Completions request")
+  }
+  // 3. Simulate Harmony response (using accumulator)
+  let harmony_jsonl =
+    #| {"choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{"tool_calls":[{"id":"fc_test","type":"function","function":{"name":"datetime","arguments":"{}"}}]},"finish_reason":null}]}
+    #| {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+  let model_response = @sse.accumulate_harmony(harmony_jsonl)
+  // 4. Convert ModelResponse to Responses API format
+  let responses_json = model_response_to_responses_json(model_response)
+  match responses_json {
+    { "output": Array(output), "status": String("completed"), .. } => {
+      inspect(output.length(), content="1")
+      match output[0] {
+        { "type": String("function_call"), "name": String(name), .. } =>
+          inspect(name, content="datetime")
+        _ => fail("Expected function_call")
+      }
+    }
+    _ => fail("Expected valid Responses API response")
+  }
+}
