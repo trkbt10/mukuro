@@ -88,11 +88,40 @@ pub fn initialize_metadata_store() -> Unit {
 ///|
 /// 統合セッションマネージャー（History = Source of Truth）
 /// JSONL を唯一の source of truth とし、Session はそのビューとして扱う
-let global_session_manager : @native.NativeSessionManager = @native.NativeSessionManager::new_with_metadata_store(
-  base_dir=@config.data_dir(),
-  cache_max_size=100,
-  metadata_store=global_metadata_store,
-)
+/// Note: 遅延初期化で --data-dir フラグを反映する
+let global_session_manager_cell : Ref[@native.NativeSessionManager?] = Ref::new(None)
+
+///|
+/// グローバルセッションマネージャーを取得（遅延初期化）
+fn get_global_session_manager() -> @native.NativeSessionManager {
+  match global_session_manager_cell.val {
+    Some(mgr) => mgr
+    None => {
+      let mgr = @native.NativeSessionManager::new_with_metadata_store(
+        base_dir=@config.data_dir(),
+        cache_max_size=100,
+        metadata_store=global_metadata_store,
+      )
+      global_session_manager_cell.val = Some(mgr)
+      mgr
+    }
+  }
+}
+
+///|
+/// セッションマネージャーを再初期化（--data-dir フラグ適用後に呼ぶ）
+pub fn reinitialize_session_manager() -> Unit {
+  global_session_manager_cell.val = Some(
+    @native.NativeSessionManager::new_with_metadata_store(
+      base_dir=@config.data_dir(),
+      cache_max_size=100,
+      metadata_store=global_metadata_store,
+    ),
+  )
+}
+
+// Note: 既存コードとの互換性のため、global_session_manager 変数は削除。
+// 呼び出し側を get_global_session_manager() に変更する必要がある。
 
 ///|
 let global_route_resolver : @channels.RouteResolver = @channels.RouteResolver::new(
@@ -233,7 +262,7 @@ pub async fn handle_inbound_with_agent_loop(
     outbound_dispatcher: global_outbound_dispatcher,
     history_recorder,
     clock: Some(global_clock),
-    session_manager: Some(global_session_manager),
+    session_manager: Some(get_global_session_manager()),
   }
   @agent.run_agent_loop(enriched_envelope, options, deps)
 }

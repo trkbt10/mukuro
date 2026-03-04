@@ -44,7 +44,7 @@ warnings = "-29"
 
 options(
   "is-main": true,
-  link: { "native": { "cc-flags": "-lsqlite3 -lpthread" } },
+  link: { "native": { "cc-flags": "-lsqlite3 -lpthread -lz" } },
   targets: {
     "api_v1_e2e_native_test.mbt": [ "native" ],
     "config_constants_native.mbt": [ "native" ],

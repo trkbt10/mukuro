@@ -114,6 +114,8 @@ pub fn register_builtin_tools() -> Unit
 
 pub fn registered_channel_names_for_test() -> Array[String]
 
+pub fn reinitialize_session_manager() -> Unit
+
 pub fn request_daemon_stop(Int) -> CliResult
 
 pub async fn run_cli(Array[String]) -> CliResult
