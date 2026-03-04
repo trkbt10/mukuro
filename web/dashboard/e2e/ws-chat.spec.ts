@@ -74,8 +74,8 @@ test.describe('WebSocket Chat E2E', () => {
     await chatInput.fill('Hello from E2E test');
     await chatInput.press('Enter');
 
-    // Wait for assistant response
-    const assistantMessage = page.locator('[data-role="assistant"]').first();
+    // Wait for assistant response (look for "Mukuro" label in message)
+    const assistantMessage = page.locator('text=Mukuro').first();
     await expect(assistantMessage).toBeVisible({ timeout: 30000 });
 
     // Wait for history to be flushed
@@ -105,6 +105,109 @@ test.describe('WebSocket Chat (raw WebSocket)', () => {
     !process.env.MUKURO_BACKEND_RUNNING,
     'Requires MUKURO_BACKEND_RUNNING=1 and backend at ws://localhost:6960'
   );
+
+  /**
+   * 回帰テスト: 純粋テキスト会話の継続
+   * シナリオ: User1 → Assistant1 → User2 → Assistant2
+   * バグ: 2ターン目で ModelCallFailed が発生していた
+   */
+  test('two-turn text-only conversation continuation', async ({ page }) => {
+    // Use page.evaluate to test WebSocket with multiple turns
+    const result = await page.evaluate(
+      async ({ host, port }) => {
+        return new Promise<{
+          turn1: { sent: string; received: string | null; error: string | null };
+          turn2: { sent: string; received: string | null; error: string | null };
+          chatId: string | null;
+        }>((resolve) => {
+          const ws = new WebSocket(`ws://${host}:${port}/ws/chat`);
+          let chatId: string | null = null;
+          let currentTurn = 0;
+          const turns: Array<{ sent: string; received: string | null; error: string | null }> = [
+            { sent: 'ブースとラプう', received: null, error: null },
+            { sent: 'bootstrapって完了した？', received: null, error: null },
+          ];
+
+          const timeout = setTimeout(() => {
+            ws.close();
+            resolve({
+              turn1: turns[0],
+              turn2: turns[1],
+              chatId,
+            });
+          }, 60000);
+
+          ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+
+            if (msg.type === 'session') {
+              chatId = msg.chat_id;
+              // Send first message
+              ws.send(JSON.stringify({ type: 'send', content: turns[0].sent }));
+            }
+
+            if (msg.type === 'message' && msg.role === 'assistant') {
+              turns[currentTurn].received = msg.content;
+              currentTurn++;
+
+              if (currentTurn < turns.length) {
+                // Send next message after a short delay
+                setTimeout(() => {
+                  ws.send(JSON.stringify({ type: 'send', content: turns[currentTurn].sent }));
+                }, 500);
+              } else {
+                // All turns completed
+                clearTimeout(timeout);
+                setTimeout(() => {
+                  ws.close();
+                  resolve({
+                    turn1: turns[0],
+                    turn2: turns[1],
+                    chatId,
+                  });
+                }, 1000);
+              }
+            }
+
+            if (msg.type === 'error') {
+              turns[currentTurn].error = msg.error;
+              clearTimeout(timeout);
+              ws.close();
+              resolve({
+                turn1: turns[0],
+                turn2: turns[1],
+                chatId,
+              });
+            }
+          };
+
+          ws.onerror = () => {
+            clearTimeout(timeout);
+            resolve({
+              turn1: turns[0],
+              turn2: turns[1],
+              chatId,
+            });
+          };
+        });
+      },
+      { host: MUKURO_HOST, port: MUKURO_PORT }
+    );
+
+    // Verify both turns succeeded
+    console.log('Turn 1:', result.turn1);
+    console.log('Turn 2:', result.turn2);
+
+    expect(result.chatId).toBeTruthy();
+
+    // Turn 1 should succeed
+    expect(result.turn1.error).toBeNull();
+    expect(result.turn1.received).toBeTruthy();
+
+    // Turn 2 should also succeed (this was the failing case)
+    expect(result.turn2.error).toBeNull();
+    expect(result.turn2.received).toBeTruthy();
+  });
 
   test('raw WebSocket connection creates history file', async ({ page }) => {
     const filesBefore = countHistoryFiles();
