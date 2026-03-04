@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button, Input, Select, Toggle, Badge } from '@/components/ui';
 import { useAiProviders, useUpdateAiProvider, useProviderModels } from '@/hooks';
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function ProviderStep({ onComplete }: Props) {
+  const queryClient = useQueryClient();
   const { data: providers } = useAiProviders();
   const updateProvider = useUpdateAiProvider();
 
@@ -46,7 +48,7 @@ export function ProviderStep({ onComplete }: Props) {
     return opts;
   }, [knownModels, defaultModel]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selected) return;
     const update: Record<string, unknown> = {
       default_model: defaultModel,
@@ -55,10 +57,10 @@ export function ProviderStep({ onComplete }: Props) {
     if (apiKey) {
       update.api_key = apiKey;
     }
-    updateProvider.mutate(
-      { name: selected, update },
-      { onSuccess: onComplete },
-    );
+    await updateProvider.mutateAsync({ name: selected, update });
+    // Directly refetch providers to ensure UI updates immediately
+    await queryClient.refetchQueries({ queryKey: ['settings', 'providers'] });
+    onComplete();
   };
 
   const canSave = selected && apiKey;

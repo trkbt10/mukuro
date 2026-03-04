@@ -90,6 +90,8 @@ export type {
   ToolSettingsField,
   ToolSettingsSchema,
   // Onboard types
+  OnboardStatusValue,
+  OnboardStatusResponse,
   OnboardGenerateRequest,
   OnboardGenerateResponse,
 } from './types.js';

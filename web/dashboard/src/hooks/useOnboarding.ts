@@ -1,78 +1,53 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useAiProviders, useContextDataFiles, useMessageProviders, useConnection } from '@/hooks';
-
-const DISMISS_KEY = 'mukuro-onboarding-dismissed';
+import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useConnection } from '@/hooks';
+import { useAiProviders } from '@/hooks/useSettings';
 
 export interface OnboardingState {
+  /** True if no provider has API key configured */
   needsProvider: boolean;
-  needsWorkspace: boolean;
-  needsChannel: boolean;
-  isComplete: boolean;
+  /** True if at least one provider has API key */
+  hasProvider: boolean;
   isLoading: boolean;
+  /** Show LLM setup wizard (only when no provider configured) */
   shouldShow: boolean;
-  dismissed: boolean;
-  initialStep: number;
-  dismiss: () => void;
-  reset: () => void;
+  /** Mark setup as complete (invalidates provider cache) */
+  complete: () => Promise<void>;
 }
 
+/**
+ * LLM初期設定の状態管理
+ *
+ * Source of Truth: config.json (providers配列)
+ * - hasProvider: いずれかのプロバイダーにAPIキーが設定されているか
+ * - shouldShow: プロバイダー未設定の場合のみウィザードを表示
+ *
+ * LLM使用可能後のオンボーディングはチャットで行う（BOOTSTRAP.md参照）
+ */
 export function useOnboarding(): OnboardingState {
   const { data: connection } = useConnection();
-  const { data: providers, isLoading: providersLoading } = useAiProviders();
-  const { data: contextFiles, isLoading: contextLoading } = useContextDataFiles();
-  const { data: messageProviders, isLoading: channelsLoading } = useMessageProviders();
+  const { data: providers, isLoading } = useAiProviders();
+  const queryClient = useQueryClient();
 
-  const [dismissed, setDismissed] = useState(
-    () => localStorage.getItem(DISMISS_KEY) === 'true',
-  );
+  // Check if any provider has an API key
+  const hasProvider = providers?.some((p) => p.has_api_key) ?? false;
+  const needsProvider = !hasProvider;
 
-  const dismiss = useCallback(() => {
-    localStorage.setItem(DISMISS_KEY, 'true');
-    setDismissed(true);
-  }, []);
+  const complete = useCallback(async () => {
+    // Refetch providers to reflect any changes (await ensures data is updated before returning)
+    await queryClient.refetchQueries({ queryKey: ['settings', 'providers'] });
+  }, [queryClient]);
 
-  const reset = useCallback(() => {
-    localStorage.removeItem(DISMISS_KEY);
-    setDismissed(false);
-  }, []);
-
-  const isLoading = providersLoading || contextLoading || channelsLoading;
   const isConnected = connection?.status === 'connected';
 
-  const needsProvider = useMemo(
-    () => !providers?.some((p) => p.has_api_key),
-    [providers],
-  );
-
-  const needsWorkspace = useMemo(() => {
-    if (!contextFiles) return true;
-    const soul = contextFiles.find((f) => f.name === 'soul');
-    const identity = contextFiles.find((f) => f.name === 'identity');
-    // With new data API, exists=false means file doesn't have custom content
-    return !soul?.exists || !identity?.exists;
-  }, [contextFiles]);
-
-  const needsChannel = useMemo(
-    () => !messageProviders || messageProviders.length === 0,
-    [messageProviders],
-  );
-
-  const isComplete = !needsProvider && !needsWorkspace && !needsChannel;
-
-  const initialStep = needsProvider ? 0 : needsWorkspace ? 1 : needsChannel ? 2 : 3;
-
-  const shouldShow = isConnected && !isLoading && !isComplete && !dismissed;
+  // Show wizard only when connected and no provider has API key
+  const shouldShow = isConnected && !isLoading && needsProvider;
 
   return {
     needsProvider,
-    needsWorkspace,
-    needsChannel,
-    isComplete,
+    hasProvider,
     isLoading,
     shouldShow,
-    dismissed,
-    initialStep,
-    dismiss,
-    reset,
+    complete,
   };
 }

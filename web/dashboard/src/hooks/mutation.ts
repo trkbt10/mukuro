@@ -19,11 +19,13 @@ export function createMutation<TData = unknown, TVariables = void>({
 
     return useMutation<TData, Error, TVariables>({
       mutationFn,
-      onSuccess: (data, variables) => {
+      onSuccess: async (data, variables) => {
         if (invalidateKeys) {
-          for (const key of invalidateKeys(variables, data)) {
-            queryClient.invalidateQueries({ queryKey: key });
-          }
+          await Promise.all(
+            invalidateKeys(variables, data).map((key) =>
+              queryClient.invalidateQueries({ queryKey: key })
+            )
+          );
         }
         if (successMessage) {
           toast.success(successMessage);

@@ -62,7 +62,7 @@ export function useAiProvider(name: string) {
 
 export const useUpdateAiProvider = createMutation<unknown, { name: string; update: UpdateProviderSettings }>({
   mutationFn: ({ name, update }) => getClient().settings.updateProvider(name, update),
-  invalidateKeys: ({ name }) => [SETTINGS_KEY, [...SETTINGS_KEY, 'providers', name]],
+  invalidateKeys: ({ name }) => [SETTINGS_KEY, [...SETTINGS_KEY, 'providers'], [...SETTINGS_KEY, 'providers', name]],
   successMessage: 'Provider settings updated',
   errorMessage: 'Failed to update provider settings',
 });
