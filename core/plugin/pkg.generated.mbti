@@ -1,0 +1,250 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/plugin"
+
+import {
+  "trkbt10/mukuro/core/types",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn build_tool_parameters(Json) -> Array[@types.ToolParameter]
+
+pub fn capability_to_tool_definition(String, String, @interfaces.CapabilitySchema) -> @types.ToolDefinition
+
+pub fn create_plugin_tool_executor(PluginHostImpl, String) -> PluginToolExecutor?
+
+pub fn generate_tools_from_extended_manifest(ExtendedManifest) -> Array[@types.ToolDefinition]
+
+pub fn generate_tools_from_manifest(String, Map[String, @interfaces.CapabilitySchema]) -> Array[@types.ToolDefinition]
+
+pub fn load_all_plugins(PluginLoaderConfig, (String) -> Array[String] raise, (String) -> String raise) -> Array[LoadedPlugin] raise
+
+pub fn load_plugin_manifest(String, String, (String) -> String raise) -> LoadedPlugin raise
+
+pub fn manifest_to_json(@interfaces.PluginManifest) -> Json
+
+pub fn parse_extended_manifest(Json) -> ExtendedManifest?
+
+pub fn parse_manifest(Json) -> @interfaces.PluginManifest?
+
+pub fn parse_plugin_tool_name(String) -> (String, String)?
+
+pub fn resolve_env_vars(String, (String) -> String?) -> String
+
+pub fn scan_plugins_directory(String, (String) -> Array[String] raise) -> Array[String] raise
+
+pub fn validate_tool_arguments(@types.ToolDefinition, Json) -> ValidationResult
+
+// Errors
+pub(all) suberror PluginExecutorError {
+  InvalidArguments(String)
+  ExecutionFailed(String)
+  PluginNotFound(String)
+}
+
+// Types and methods
+pub struct CapabilitySchemaParsed {
+  description : String
+  parameters : Json
+  returns : Json?
+  examples : Array[Json]
+}
+
+pub struct DynamicPluginManagerImpl {
+  host : PluginHostImpl
+  states : Map[String, @interfaces.PluginState]
+  plugin_dir : String
+  manifest_filename : String
+  mut watcher_callback : @interfaces.PluginWatcherCallback?
+  mut is_watching : Bool
+  list_dir : ((String) -> Array[String] raise)?
+  read_file : ((String) -> String raise)?
+  file_exists : ((String) -> Bool)?
+}
+pub async fn DynamicPluginManagerImpl::disable(Self, String) -> Unit
+pub fn DynamicPluginManagerImpl::enable(Self, String) -> Unit raise
+pub fn DynamicPluginManagerImpl::get_state(Self, String) -> @interfaces.PluginState raise
+pub async fn DynamicPluginManagerImpl::handle_plugin_added(Self, String) -> Unit
+pub async fn DynamicPluginManagerImpl::handle_plugin_modified(Self, String) -> Unit
+pub async fn DynamicPluginManagerImpl::handle_plugin_removed(Self, String) -> Unit
+pub fn DynamicPluginManagerImpl::list_states(Self) -> Array[@interfaces.PluginState]
+pub fn DynamicPluginManagerImpl::load_plugin(Self, String) -> Unit raise
+pub fn DynamicPluginManagerImpl::new(host~ : PluginHostImpl, plugin_dir~ : String) -> Self
+pub async fn DynamicPluginManagerImpl::reload(Self, String) -> Unit
+pub async fn DynamicPluginManagerImpl::remove(Self, String) -> Unit
+pub fn DynamicPluginManagerImpl::scan(Self) -> Array[String] raise
+pub fn DynamicPluginManagerImpl::start_watching(Self, @interfaces.PluginWatcherCallback) -> Unit
+pub fn DynamicPluginManagerImpl::stop_watching(Self) -> Unit
+pub fn DynamicPluginManagerImpl::with_fs(host~ : PluginHostImpl, plugin_dir~ : String, list_dir~ : (String) -> Array[String] raise, read_file~ : (String) -> String raise, file_exists~ : (String) -> Bool) -> Self
+pub impl @interfaces.DynamicPluginManager for DynamicPluginManagerImpl
+
+pub struct ExtendedManifest {
+  base : @interfaces.PluginManifest
+  enabled : Bool
+  auto_start : Bool
+  stdio : @interfaces.PluginStdioConfig?
+  websocket : @interfaces.PluginWebSocketConfig?
+  auth : PluginAuthConfigParsed?
+  tls : PluginTlsConfigParsed?
+  capability_schemas : Map[String, CapabilitySchemaParsed]
+}
+
+pub struct HttpPluginHandler {
+  plugin_id : String
+  base_url : String
+  config : @interfaces.PluginHttpConfig
+}
+
+pub struct LoadedPlugin {
+  manifest : @interfaces.PluginManifest
+  plugin_path : String
+  raw_manifest : Json
+}
+
+pub struct PluginAuthConfigParsed {
+  mode : String
+  host_token : String?
+  plugin_token : String?
+  token_header : String
+}
+
+pub struct PluginHostImpl {
+  registry : PluginRegistry
+  transport_handlers : Map[String, &@interfaces.PluginTransportHandler]
+  http_handlers : Map[String, HttpPluginHandler]
+  incoming_messages : Array[@types.InboundEnvelope]
+  mut request_id : Int
+  mut loader_config : PluginLoaderConfig?
+  extended_manifests : Map[String, ExtendedManifest]
+}
+pub async fn PluginHostImpl::auto_start_plugins(Self) -> Unit
+pub fn PluginHostImpl::create_connect_request(Self, String, Json) -> @interfaces.JsonRpcRequest
+pub fn PluginHostImpl::create_disconnect_request(Self, String) -> @interfaces.JsonRpcRequest
+pub fn PluginHostImpl::create_send_request(Self, String, @types.OutboundMessage) -> @interfaces.JsonRpcRequest
+pub fn PluginHostImpl::get_extended_manifest(Self, String) -> ExtendedManifest?
+pub fn PluginHostImpl::get_http_handler(Self, String) -> HttpPluginHandler?
+pub fn PluginHostImpl::get_plugin_dir(Self) -> String
+pub fn PluginHostImpl::get_plugin_status(Self, String) -> @interfaces.PluginStatus raise
+pub fn PluginHostImpl::get_transport_handler(Self, String) -> &@interfaces.PluginTransportHandler?
+pub fn PluginHostImpl::handle_webhook(Self, String, @interfaces.JsonRpcRequest) -> @interfaces.JsonRpcResponse
+pub fn PluginHostImpl::list_plugins(Self) -> Array[@interfaces.PluginManifest]
+pub fn PluginHostImpl::load_plugins_with_fs(Self, (String) -> Array[String] raise, (String) -> String raise) -> Unit raise
+pub fn PluginHostImpl::new(plugin_dir~ : String) -> Self
+pub fn PluginHostImpl::pop_message(Self) -> @types.InboundEnvelope?
+pub fn PluginHostImpl::register_plugin(Self, @interfaces.PluginManifest) -> Unit
+pub fn PluginHostImpl::register_plugin_with_transport(Self, @interfaces.PluginManifest, &@interfaces.PluginTransportHandler) -> Unit
+pub async fn PluginHostImpl::send_notification(Self, String, @interfaces.JsonRpcRequest) -> Unit
+pub fn PluginHostImpl::set_transport_handler(Self, String, &@interfaces.PluginTransportHandler) -> Unit
+pub fn PluginHostImpl::with_config(plugin_dir~ : String, loader_config~ : PluginLoaderConfig) -> Self
+pub impl @interfaces.PluginHost for PluginHostImpl
+
+pub struct PluginLoaderConfig {
+  plugin_dir : String
+  manifest_filename : String
+  validate : Bool
+  skip_invalid : Bool
+}
+pub fn PluginLoaderConfig::default(plugin_dir~ : String) -> Self
+
+pub struct PluginRegistry {
+  plugins : Map[String, @interfaces.PluginInstance]
+  plugin_dir : String
+}
+pub fn PluginRegistry::get(Self, String) -> @interfaces.PluginInstance?
+pub fn PluginRegistry::get_status(Self, String) -> @interfaces.PluginStatus raise
+pub fn PluginRegistry::list(Self) -> Array[@interfaces.PluginManifest]
+pub fn PluginRegistry::new(plugin_dir~ : String) -> Self
+pub fn PluginRegistry::register(Self, @interfaces.PluginManifest) -> Unit
+pub fn PluginRegistry::set_status(Self, String, @interfaces.PluginStatus) -> Unit raise
+pub fn PluginRegistry::unregister(Self, String) -> Unit
+
+pub struct PluginSystemInitializer {
+  plugin_host : PluginHostImpl
+  tool_registry : PluginToolRegistry
+  plugin_dir : String
+  mut watcher : &@interfaces.PluginWatcher?
+  mut watching : Bool
+}
+pub fn PluginSystemInitializer::get_host(Self) -> PluginHostImpl
+pub fn PluginSystemInitializer::get_tool_registry(Self) -> PluginToolRegistry
+pub async fn PluginSystemInitializer::initialize(Self) -> Unit
+pub fn PluginSystemInitializer::is_watching(Self) -> Bool
+pub fn PluginSystemInitializer::new(plugin_dir~ : String) -> Self
+pub fn[R : @interfaces.ToolRegistry] PluginSystemInitializer::register_with_registry(Self, R) -> Unit
+pub fn PluginSystemInitializer::set_watcher(Self, &@interfaces.PluginWatcher) -> Unit
+pub fn PluginSystemInitializer::start_watching(Self) -> Unit raise
+pub fn PluginSystemInitializer::stop_watching(Self) -> Unit
+
+pub struct PluginTlsConfigParsed {
+  enabled : Bool
+  verify_host : Bool
+  ca_cert_path : String?
+  client_cert_path : String?
+  client_key_path : String?
+}
+
+pub struct PluginToolExecutor {
+  plugin_host : PluginHostImpl
+  plugin_id : String
+  method_name : String
+}
+pub async fn PluginToolExecutor::execute(Self, tool_name~ : String, arguments~ : Json, context~ : @types.ToolContext) -> @types.ToolResult raise PluginExecutorError
+pub fn PluginToolExecutor::new(plugin_host~ : PluginHostImpl, plugin_id~ : String, method_name~ : String) -> Self
+pub impl @interfaces.ToolExecutor for PluginToolExecutor
+
+pub struct PluginToolRegistry {
+  tools_by_plugin : Map[String, Array[@types.ToolDefinition]]
+  all_tools : Array[@types.ToolDefinition]
+}
+pub fn PluginToolRegistry::find_tool(Self, String) -> @types.ToolDefinition?
+pub fn PluginToolRegistry::get_all_tools(Self) -> Array[@types.ToolDefinition]
+pub fn PluginToolRegistry::get_plugin_tools(Self, String) -> Array[@types.ToolDefinition]
+pub fn PluginToolRegistry::new() -> Self
+pub fn PluginToolRegistry::register_plugin_tools(Self, String, Array[@types.ToolDefinition]) -> Unit
+pub fn PluginToolRegistry::unregister_plugin_tools(Self, String) -> Unit
+
+pub struct SchemaValidator {
+  strict : Bool
+}
+pub fn SchemaValidator::new() -> Self
+pub fn SchemaValidator::strict() -> Self
+pub fn SchemaValidator::validate(Self, Json, Json) -> ValidationResult
+
+pub(all) struct ValidationError {
+  path : String
+  message : String
+  expected : String?
+  actual : String?
+}
+pub fn ValidationError::missing_required(path~ : String) -> Self
+pub fn ValidationError::new(path~ : String, message~ : String) -> Self
+pub fn ValidationError::type_mismatch(path~ : String, expected~ : String, actual~ : String) -> Self
+
+pub(all) enum ValidationResult {
+  Valid
+  Invalid(Array[ValidationError])
+}
+
+pub struct WebhookServer {
+  host : PluginHostImpl
+  port : Int
+  routes : Map[String, String]
+  mut is_running : Bool
+  authenticator : @interfaces.SimpleTokenAuthenticator?
+  token_header : String
+}
+pub fn WebhookServer::get_plugin_for_path(Self, String) -> String?
+pub fn WebhookServer::handle_request(Self, String, String) -> String
+pub fn WebhookServer::handle_request_with_headers(Self, String, String, Map[String, String]) -> String
+pub fn WebhookServer::handle_simple_message(Self, String, String) -> String
+pub fn WebhookServer::list_routes(Self) -> Array[String]
+pub fn WebhookServer::new(PluginHostImpl, port~ : Int) -> Self
+pub fn WebhookServer::register_route(Self, String, String) -> Unit
+pub fn WebhookServer::running(Self) -> Bool
+pub fn WebhookServer::set_running(Self, Bool) -> Unit
+pub fn WebhookServer::with_auth(PluginHostImpl, port~ : Int, authenticator~ : @interfaces.SimpleTokenAuthenticator, token_header~ : String) -> Self
+
+// Type aliases
+
+// Traits
+

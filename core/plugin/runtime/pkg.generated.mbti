@@ -1,0 +1,185 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/core/plugin/runtime"
+
+import {
+  "mizchi/x/websocket",
+  "trkbt10/mukuro/adapters/native",
+  "trkbt10/mukuro/core/tool",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn create_native_transport_handler(@interfaces.PluginManifest) -> &@interfaces.PluginTransportHandler raise @interfaces.PluginError
+
+pub fn create_plugin_watcher(String) -> NativePluginWatcher
+
+pub fn create_plugin_watcher_with_interval(String, Int) -> NativePluginWatcher
+
+pub fn create_tool_loader_io() -> @tool.ToolLoaderIO
+
+pub fn escape_shell_single_quote(String) -> String
+
+pub fn get_native_transport_factory() -> NativeTransportFactory
+
+pub fn load_native_user_defined_tools() -> Array[@interfaces.ToolState]
+
+pub fn parse_jsonrpc_response(String) -> @interfaces.JsonRpcResponse?
+
+pub fn parse_jsonrpc_response_json(Json) -> @interfaces.JsonRpcResponse?
+
+pub fn validate_env_key(String) -> Unit raise StdioClientError
+
+// Errors
+pub(all) suberror StdioClientError {
+  ProcessFailed(String)
+  InvalidResponse(String)
+  Timeout
+}
+
+pub(all) suberror WebSocketClientError {
+  ConnectionFailed(String)
+  SendFailed(String)
+  ReceiveFailed(String)
+  Closed
+  Timeout
+}
+
+// Types and methods
+pub struct HttpTransportHandler {
+  plugin_id : String
+  base_url : String
+  config : @interfaces.PluginHttpConfig
+  tls_config : @interfaces.PluginTlsConfig?
+  mut state : @interfaces.TransportState
+  pending_requests : Map[Int, @interfaces.PendingRequest]
+  mut request_id : Int
+  auth_token : String?
+  token_header : String
+  message_queue : MessageQueue
+  mut http_client : &@interfaces.HttpClient?
+}
+pub fn HttpTransportHandler::build_headers(Self) -> Map[String, String]
+pub fn HttpTransportHandler::build_url(Self, String) -> String?
+pub fn HttpTransportHandler::create_request(Self, rpc_method~ : String, params~ : Json?) -> @interfaces.JsonRpcRequest
+pub fn HttpTransportHandler::get_base_url(Self) -> String
+pub fn HttpTransportHandler::get_tls_config(Self) -> @interfaces.PluginTlsConfig?
+pub fn HttpTransportHandler::has_http_client(Self) -> Bool
+pub fn HttpTransportHandler::is_active(Self) -> Bool
+pub fn HttpTransportHandler::is_https(Self) -> Bool
+pub fn HttpTransportHandler::is_tls_enabled(Self) -> Bool
+pub fn HttpTransportHandler::new(plugin_id~ : String, config~ : @interfaces.PluginHttpConfig, auth_token~ : String?, token_header~ : String) -> Self
+pub fn HttpTransportHandler::queue_incoming(Self, @interfaces.JsonRpcRequest) -> Unit
+pub fn HttpTransportHandler::set_http_client(Self, &@interfaces.HttpClient) -> Unit
+pub fn HttpTransportHandler::start(Self) -> Unit raise
+pub fn HttpTransportHandler::stop(Self) -> Unit
+pub fn HttpTransportHandler::with_client(plugin_id~ : String, config~ : @interfaces.PluginHttpConfig, auth_token~ : String?, token_header~ : String, http_client~ : &@interfaces.HttpClient) -> Self
+pub fn HttpTransportHandler::with_tls(plugin_id~ : String, config~ : @interfaces.PluginHttpConfig, auth_token~ : String?, token_header~ : String, tls_config~ : @interfaces.PluginTlsConfig?, http_client~ : &@interfaces.HttpClient?) -> Self
+pub impl @interfaces.PluginTransportHandler for HttpTransportHandler
+
+pub struct MessageQueue {
+  queue : Array[@interfaces.JsonRpcRequest]
+  mut callback : ((@interfaces.JsonRpcRequest) -> Unit)?
+}
+pub fn MessageQueue::clear(Self) -> Unit
+pub fn MessageQueue::clear_callback(Self) -> Unit
+pub fn MessageQueue::is_empty(Self) -> Bool
+pub fn MessageQueue::length(Self) -> Int
+pub fn MessageQueue::new() -> Self
+pub fn MessageQueue::pop(Self) -> @interfaces.JsonRpcRequest?
+pub fn MessageQueue::push(Self, @interfaces.JsonRpcRequest) -> Unit
+pub fn MessageQueue::set_callback(Self, (@interfaces.JsonRpcRequest) -> Unit) -> Unit
+
+pub struct NativePluginWatcher {
+  plugin_dir : String
+  manifest_filename : String
+  known_plugins : Map[String, PluginFileInfo]
+  mut callback : @interfaces.PluginWatcherCallback?
+  mut is_watching : Bool
+  poll_interval_ms : Int
+  file_store : @native.NativeFileStore
+}
+pub fn NativePluginWatcher::default(plugin_dir~ : String) -> Self
+pub fn NativePluginWatcher::get_poll_interval(Self) -> Int
+pub fn NativePluginWatcher::is_active(Self) -> Bool
+pub fn NativePluginWatcher::list_known_plugins(Self) -> Array[String]
+pub fn NativePluginWatcher::new(plugin_dir~ : String, poll_interval_ms~ : Int) -> Self
+pub fn NativePluginWatcher::poll(Self) -> Unit
+pub async fn NativePluginWatcher::run_watch_loop(Self) -> Unit
+pub fn NativePluginWatcher::start(Self, @interfaces.PluginWatcherCallback) -> Unit
+pub fn NativePluginWatcher::stop(Self) -> Unit
+pub impl @interfaces.PluginWatcher for NativePluginWatcher
+
+pub struct NativeStdioClient {
+  command : String
+  args : Array[String]
+  cwd : String?
+  env : Map[String, String]
+  mut request_id : Int
+}
+pub fn NativeStdioClient::from_config(@interfaces.PluginStdioConfig) -> Self
+pub fn NativeStdioClient::new(command~ : String, args~ : Array[String], cwd~ : String?, env~ : Map[String, String]) -> Self
+pub fn NativeStdioClient::send_request(Self, @interfaces.JsonRpcRequest) -> @interfaces.JsonRpcResponse raise StdioClientError
+
+pub struct NativeTransportFactory {
+  default_auth_token : String?
+  default_token_header : String
+  http_client : @native.NativeHttpClient
+}
+pub fn NativeTransportFactory::create_handler(Self, @interfaces.PluginManifest) -> &@interfaces.PluginTransportHandler raise @interfaces.PluginError
+pub fn NativeTransportFactory::create_handler_with_auth(Self, @interfaces.PluginManifest, String?, String) -> &@interfaces.PluginTransportHandler raise @interfaces.PluginError
+pub fn NativeTransportFactory::new() -> Self
+
+pub struct NativeWebSocketClient {
+  url : String
+  headers : Map[String, String]
+  mut conn : @websocket.Conn?
+  mut connected : Bool
+}
+pub async fn NativeWebSocketClient::close(Self) -> Unit
+pub async fn NativeWebSocketClient::connect(Self) -> Unit raise WebSocketClientError
+pub fn NativeWebSocketClient::is_connected(Self) -> Bool
+pub fn NativeWebSocketClient::new(url~ : String, headers~ : Map[String, String]) -> Self
+pub async fn NativeWebSocketClient::recv(Self) -> String raise WebSocketClientError
+pub async fn NativeWebSocketClient::send_jsonrpc_request(Self, @interfaces.JsonRpcRequest) -> @interfaces.JsonRpcResponse raise WebSocketClientError
+pub async fn NativeWebSocketClient::send_text(Self, String) -> Unit raise WebSocketClientError
+
+pub struct NativeWebSocketTransportHandler {
+  plugin_id : String
+  config : @interfaces.PluginWebSocketConfig
+  client : NativeWebSocketClient
+  mut state : WebSocketState
+  mut request_id : Int
+  message_queue : MessageQueue
+  mut reconnect_attempts : Int
+}
+pub fn NativeWebSocketTransportHandler::new(plugin_id~ : String, config~ : @interfaces.PluginWebSocketConfig) -> Self
+pub impl @interfaces.PluginTransportHandler for NativeWebSocketTransportHandler
+
+type PluginFileInfo
+
+pub struct StdioTransportAdapter {
+  client : NativeStdioClient
+  plugin_id : String
+  mut active : Bool
+  message_queue : MessageQueue
+}
+pub fn StdioTransportAdapter::is_active(Self) -> Bool
+pub fn StdioTransportAdapter::new(plugin_id~ : String, config~ : @interfaces.PluginStdioConfig) -> Self
+pub fn StdioTransportAdapter::send_request(Self, @interfaces.JsonRpcRequest) -> @interfaces.JsonRpcResponse raise @interfaces.TransportError
+pub fn StdioTransportAdapter::start(Self) -> Unit raise @interfaces.TransportError
+pub fn StdioTransportAdapter::stop(Self) -> Unit
+pub impl @interfaces.PluginTransportHandler for StdioTransportAdapter
+
+pub(all) enum WebSocketState {
+  Disconnected
+  Connecting
+  Connected
+  Reconnecting
+  Closed
+  Error(String)
+}
+
+// Type aliases
+
+// Traits
+
