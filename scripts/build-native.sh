@@ -24,6 +24,7 @@ echo "Linking with -lsqlite3..."
   _build/native/debug/build/.mooncakes/moonbitlang/async/internal/fd_util/libfd_util.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/internal/time/libtime.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/internal/event_loop/libevent_loop.a \
+  _build/native/debug/build/.mooncakes/moonbitlang/async/process/libprocess.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/socket/libsocket.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/tls/libtls.a \
   _build/native/debug/build/.mooncakes/mizchi/sqlite/libsqlite.a \
@@ -48,6 +49,7 @@ echo "Linking cmd/main/main.exe..."
   _build/native/debug/build/.mooncakes/moonbitlang/async/internal/fd_util/libfd_util.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/internal/time/libtime.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/internal/event_loop/libevent_loop.a \
+  _build/native/debug/build/.mooncakes/moonbitlang/async/process/libprocess.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/socket/libsocket.a \
   _build/native/debug/build/.mooncakes/moonbitlang/async/tls/libtls.a \
   _build/native/debug/build/.mooncakes/mizchi/sqlite/libsqlite.a \

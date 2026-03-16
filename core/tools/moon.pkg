@@ -9,6 +9,7 @@ import {
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/async" @async,
   "moonbitlang/x/time" @xtime,
+  "trkbt10/subprocess" @subprocess,
 }
 
 import {

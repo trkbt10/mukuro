@@ -13,7 +13,7 @@ pub struct ToolEntry {
   name : String
   definition : @types.ToolDefinition
   settings_schema : Json?
-  execute : (BuiltinToolContext, Json) -> ToolExecutionResult
+  execute : async (BuiltinToolContext, Json) -> ToolExecutionResult
 }
 
 ///|
@@ -42,7 +42,7 @@ pub fn BuiltinToolContext::make(
 
 ///|
 /// ビルトインツールを実行（コンテキストベース）
-pub fn execute_builtin_tool(
+pub async fn execute_builtin_tool(
   ctx : BuiltinToolContext,
   tool_name : String,
   args : Json,

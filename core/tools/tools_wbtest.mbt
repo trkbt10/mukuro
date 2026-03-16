@@ -174,7 +174,7 @@ test "is_dangerous_command allows safe commands" {
 }
 
 ///|
-test "execute_shell with safe command" {
+async test "execute_shell with safe command" {
   let args : Json = { "command": "echo hello" }
   let result = execute_shell(args)
   assert_true(result.status == ToolResultStatus::Success)
@@ -188,14 +188,14 @@ test "execute_shell with safe command" {
 }
 
 ///|
-test "execute_shell with dangerous command requires confirmation" {
+async test "execute_shell with dangerous command requires confirmation" {
   let args : Json = { "command": "rm -rf /" }
   let result = execute_shell(args)
   assert_true(result.status == ToolResultStatus::RequiresConfirmation)
 }
 
 ///|
-test "execute_shell with cwd" {
+async test "execute_shell with cwd" {
   let args : Json = { "command": "pwd", "cwd": "/tmp" }
   let result = execute_shell(args)
   assert_true(result.status == ToolResultStatus::Success)
@@ -288,14 +288,14 @@ test "execute_web with missing url" {
 // =============================================================================
 
 ///|
-test "execute_simple_tool datetime" {
+async test "execute_simple_tool datetime" {
   let args : Json = { "action": "now" }
   let result = execute_simple_tool("datetime", args)
   assert_true(result.status == ToolResultStatus::Success)
 }
 
 ///|
-test "execute_simple_tool unknown" {
+async test "execute_simple_tool unknown" {
   let args : Json = {}
   let result = execute_simple_tool("unknown", args)
   assert_true(result.status == ToolResultStatus::Error)

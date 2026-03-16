@@ -86,20 +86,6 @@ pub fn is_dangerous_command(command : String) -> Bool {
   false
 }
 
-///|
-/// シングルクォートをエスケープ
-fn escape_single_quote(s : String) -> String {
-  let buf = StringBuilder::new()
-  for c in s {
-    if c == '\'' {
-      buf.write_string("'\\''")
-    } else {
-      buf.write_char(c)
-    }
-  }
-  buf.to_string()
-}
-
 // =============================================================================
 // Tool Implementation Entry Point
 // =============================================================================
@@ -111,13 +97,13 @@ pub fn shell_entry() -> ToolEntry {
     name: "shell",
     definition: shell_tool(),
     settings_schema: Some(shell_settings_schema()),
-    execute: fn(_, args) { execute_shell(args) },
+    execute: async fn(_, args) { execute_shell(args) },
   }
 }
 
 ///|
 /// シェルツールを実行（プラットフォーム固有実装を呼び出す）
-fn execute_shell(args : Json) -> ToolExecutionResult {
+async fn execute_shell(args : Json) -> ToolExecutionResult {
   let command = match get_string_arg(args, "command") {
     Some(c) => c
     None => return ToolExecutionResult::error("Missing command argument")
@@ -130,16 +116,6 @@ fn execute_shell(args : Json) -> ToolExecutionResult {
     })
   }
   let cwd = get_string_arg(args, "cwd")
-  // コマンドを構築
-  let full_cmd = match cwd {
-    Some(dir) => {
-      let escaped_dir = escape_single_quote(dir)
-      "cd '\{escaped_dir}' && \{command}"
-    }
-    None => command
-  }
-  // 標準エラー出力もキャプチャ
-  let cmd_with_stderr = full_cmd + " 2>&1"
   // プラットフォーム固有実装を呼び出す
-  execute_shell_platform(cmd_with_stderr)
+  execute_shell_platform(command, cwd~)
 }

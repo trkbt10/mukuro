@@ -14,7 +14,7 @@ fn platform_type_to_string(pt : @interfaces.PlatformType) -> String {
 }
 
 ///|
-fn main {
+async fn main {
   // Initialize native platform
   let platform = @adapter_native.NativePlatform::new()
 

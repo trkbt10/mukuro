@@ -8,7 +8,7 @@
 
 ///|
 /// ツールを実行（レガシー互換: 個別依存を渡す）
-pub fn execute_tool(
+pub async fn execute_tool(
   name : String,
   args : Json,
   memory_store : MemoryStore?,
@@ -29,7 +29,10 @@ pub fn execute_tool(
 
 ///|
 /// 単純なツールを実行（外部依存なし）
-pub fn execute_simple_tool(name : String, args : Json) -> ToolExecutionResult {
+pub async fn execute_simple_tool(
+  name : String,
+  args : Json,
+) -> ToolExecutionResult {
   execute_tool(name, args, None, None, None)
 }
 

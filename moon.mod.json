@@ -1,16 +1,17 @@
 {
   "name": "trkbt10/mukuro",
   "version": "0.1.0",
-  "preferred-target": "native",
   "deps": {
     "moonbitlang/async": "0.16.6",
     "moonbitlang/x": "0.4.40",
     "mizchi/x": "0.1.4",
-    "mizchi/sqlite": "0.2.3"
+    "mizchi/sqlite": "0.2.3",
+    "trkbt10/subprocess": "0.2.0"
   },
   "readme": "README.mbt.md",
   "repository": "",
   "license": "Apache-2.0",
   "keywords": [],
-  "description": ""
+  "description": "",
+  "preferred-target": "native"
 }

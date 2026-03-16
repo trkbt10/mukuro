@@ -4,6 +4,7 @@ import {
   "trkbt10/mukuro/core/tools" @tools,
   "trkbt10/mukuro/interfaces" @interfaces,
   "moonbitlang/core/json",
+  "moonbitlang/async",
 }
 
 warnings = "-29"
