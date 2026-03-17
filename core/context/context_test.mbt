@@ -34,8 +34,8 @@ test "DefaultContextBuilder includes history" {
     include_builtin_tools_guide: false,
   })
   let history = [
-    @types.ModelMessage::User(content="Hi", name=None),
-    @types.ModelMessage::Assistant(content="Hello!", tool_calls=None),
+    @llm_types.ModelMessage::User(content="Hi", name=None),
+    @llm_types.ModelMessage::Assistant(content="Hello!", tool_calls=None),
   ]
   let input : @interfaces.ContextInput = {
     session_history: history,
@@ -135,7 +135,7 @@ test "SystemPromptMode::Replace replaces bootstrap" {
   let messages = @interfaces.ContextBuilder::build(builder, input)
   // System message should contain custom prompt, not original
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       inspect(content.contains("Custom prompt"), content="true")
       inspect(content.contains("Original bootstrap"), content="false")
     }
@@ -172,7 +172,7 @@ test "SystemPromptMode::Append appends to bootstrap" {
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       // Both original and additional should be present
       inspect(content.contains("Original"), content="true")
       inspect(content.contains("Additional"), content="true")
@@ -186,7 +186,7 @@ test "SystemPromptWhen::First only applies on first message" {
   let builder = DefaultContextBuilder::default()
   // Not first message - system prompt should not be applied
   let input : @interfaces.ContextInput = {
-    session_history: [@types.ModelMessage::User(content="Previous", name=None)],
+    session_history: [@llm_types.ModelMessage::User(content="Previous", name=None)],
     memory_context: [],
     trace_context: None,
     skills: [],
@@ -212,7 +212,7 @@ test "SystemPromptWhen::First only applies on first message" {
   let messages = @interfaces.ContextBuilder::build(builder, input)
   // No system message should be added
   match messages[0] {
-    @types.ModelMessage::System(_) => fail("Expected no system message")
+    @llm_types.ModelMessage::System(_) => fail("Expected no system message")
     _ => ()
   }
 }
@@ -285,7 +285,7 @@ test "DefaultContextBuilder includes SOUL.md in system prompt" {
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       inspect(content.contains("Soul & Values"), content="true")
       inspect(content.contains("helpful, honest"), content="true")
     }
@@ -325,7 +325,7 @@ test "DefaultContextBuilder includes all context files" {
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       // 全セクションが含まれることを確認
       inspect(content.contains("Soul & Values"), content="true")
       inspect(content.contains("Identity"), content="true")
@@ -439,7 +439,7 @@ test "DefaultContextBuilder context_files ordering in system prompt" {
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       // 各マーカーの位置を取得
       let soul_pos = find_position(content, "SOUL_MARKER")
       let identity_pos = find_position(content, "IDENTITY_MARKER")
@@ -485,7 +485,7 @@ test "DefaultContextBuilder includes trace context in system prompt" {
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       inspect(content.contains("Recent Conversations"), content="true")
       inspect(content.contains("MoonBit, FFI"), content="true")
     }
@@ -522,7 +522,7 @@ test "DefaultContextBuilder excludes trace when include_trace is false" {
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       inspect(content.contains("Bootstrap only"), content="true")
       inspect(content.contains("Recent Conversations"), content="false")
     }
@@ -567,7 +567,7 @@ test "SystemPromptMode::Replace preserves context_files sections" {
   }
   let messages = @interfaces.ContextBuilder::build(builder, input)
   match messages[0] {
-    @types.ModelMessage::System(content) => {
+    @llm_types.ModelMessage::System(content) => {
       // Replace時、bootstrapは含まれないがcontext_filesは含まれる
       inspect(content.contains("Original bootstrap"), content="false")
       inspect(content.contains("Custom replacement"), content="true")

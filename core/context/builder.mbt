@@ -57,11 +57,11 @@ pub impl @interfaces.ContextBuilder for DefaultContextBuilder with build(
   self,
   input,
 ) {
-  let messages : Array[@types.ModelMessage] = []
+  let messages : Array[@llm_types.ModelMessage] = []
   // 1. システムプロンプトを構築
   let system_prompt = self.build_system_prompt(input)
   if system_prompt.length() > 0 {
-    messages.push(@types.ModelMessage::System(system_prompt))
+    messages.push(@llm_types.ModelMessage::System(system_prompt))
   }
   // 2. 履歴を追加
   for msg in input.session_history {
@@ -69,7 +69,7 @@ pub impl @interfaces.ContextBuilder for DefaultContextBuilder with build(
   }
   // 3. 現在のメッセージを追加
   messages.push(
-    @types.ModelMessage::User(content=input.current_message.content, name=None),
+    @llm_types.ModelMessage::User(content=input.current_message.content, name=None),
   )
   messages
 }
@@ -333,8 +333,8 @@ fn join_parts(parts : Array[String], separator : String) -> String {
 /// InboundEnvelopeからModelMessageを生成
 pub fn envelope_to_message(
   envelope : @types.InboundEnvelope,
-) -> @types.ModelMessage {
-  @types.ModelMessage::User(
+) -> @llm_types.ModelMessage {
+  @llm_types.ModelMessage::User(
     content=envelope.content,
     name=if envelope.sender_name.length() > 0 {
       Some(envelope.sender_name)

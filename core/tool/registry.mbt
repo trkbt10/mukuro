@@ -1,7 +1,7 @@
 ///|
 /// ツールエントリ（定義と実行者のペア）
 struct ToolEntry {
-  definition : @types.ToolDefinition
+  definition : @llm_types.ToolDefinition
   executor : &@interfaces.ToolExecutor
 }
 
@@ -9,7 +9,7 @@ struct ToolEntry {
 /// インメモリツールレジストリ
 pub struct InMemoryToolRegistry {
   tools : Map[String, ToolEntry]
-  mut definitions_cache : Array[@types.ToolDefinition]?
+  mut definitions_cache : Array[@llm_types.ToolDefinition]?
 }
 
 ///|
@@ -36,7 +36,7 @@ pub impl @interfaces.ToolRegistry for InMemoryToolRegistry with list_definitions
   let defs = match self.definitions_cache {
     Some(cached) => cached
     None => {
-      let built : Array[@types.ToolDefinition] = []
+      let built : Array[@llm_types.ToolDefinition] = []
       for entry in self.tools.values() {
         built.push(entry.definition)
       }
@@ -44,7 +44,7 @@ pub impl @interfaces.ToolRegistry for InMemoryToolRegistry with list_definitions
       built
     }
   }
-  let result : Array[@types.ToolDefinition] = []
+  let result : Array[@llm_types.ToolDefinition] = []
   for def in defs {
     result.push(def)
   }
@@ -75,7 +75,7 @@ pub impl @interfaces.ToolRegistry for InMemoryToolRegistry with has_tool(
 pub fn InMemoryToolRegistry::get_definition(
   self : InMemoryToolRegistry,
   name : String,
-) -> @types.ToolDefinition? {
+) -> @llm_types.ToolDefinition? {
   match self.tools.get(name) {
     Some(entry) => Some(entry.definition)
     None => None

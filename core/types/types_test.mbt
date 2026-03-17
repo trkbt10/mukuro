@@ -45,32 +45,6 @@ test "Session::new creates active session" {
 }
 
 ///|
-test "Session::add_message adds to history" {
-  let key = SessionKey::new(channel="http", chat_id="test", user_id=None)
-  let session = Session::new(key, 1000L)
-  session.add_message(ModelMessage::User(content="Hello", name=None))
-  inspect(session.history.length(), content="1")
-}
-
-///|
-test "ToolCallRequest::new creates request" {
-  let req = ToolCallRequest::new(id="call_1", name="read_file", arguments={
-    "path": "/tmp/test.txt",
-  })
-  inspect(req.id, content="call_1")
-  inspect(req.name, content="read_file")
-}
-
-///|
-test "ToolDefinition::new creates definition" {
-  let def = ToolDefinition::new(name="search", description="Search the web", parameters={
-    "type": "object",
-  })
-  inspect(def.name, content="search")
-  inspect(def.description, content="Search the web")
-}
-
-///|
 test "ModelOptions::default has empty model_name" {
   let opts = ModelOptions::default()
   inspect(opts.model_name, content="")
@@ -83,18 +57,4 @@ test "AgentConfig::default has reasonable values" {
   let config = AgentConfig::default()
   inspect(config.max_iterations, content="10")
   inspect(config.timeout_ms, content="120000")
-}
-
-///|
-test "build_json_schema creates valid schema" {
-  let schema = build_json_schema(
-    type_="object",
-    properties={ "name": { "type": "string" } },
-    required=["name"],
-  )
-  // スキーマが正しく構築されていることを確認
-  match schema {
-    { "type": "object", .. } => ()
-    _ => fail("Expected object type")
-  }
 }

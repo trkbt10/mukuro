@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn filesystem_tool() -> @types.ToolDefinition {
+pub fn filesystem_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="filesystem",
     description="Read, write, and manage files and directories. Use for: reading file contents, creating/editing files, checking file existence, listing directory contents, creating directories, and getting file metadata. Safer than shell for file operations.",

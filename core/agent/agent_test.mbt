@@ -52,10 +52,10 @@ test "AgentLoopContext::increment_iteration" {
 ///|
 test "AgentLoopContext::add_message" {
   let ctx = @agent.AgentLoopContext::new()
-  let msg1 = @types.ModelMessage::User(content="Hello", name=None)
+  let msg1 = @llm_types.ModelMessage::User(content="Hello", name=None)
   ctx.add_message(msg1)
   inspect(ctx.messages.length(), content="1")
-  let msg2 = @types.ModelMessage::Assistant(content="Hi there", tool_calls=None)
+  let msg2 = @llm_types.ModelMessage::Assistant(content="Hi there", tool_calls=None)
   ctx.add_message(msg2)
   inspect(ctx.messages.length(), content="2")
 }
@@ -63,7 +63,7 @@ test "AgentLoopContext::add_message" {
 ///|
 test "AgentLoopContext::record_tool_call" {
   let ctx = @agent.AgentLoopContext::new()
-  let call = @types.ToolCallRequest::new(
+  let call = @llm_types.ToolCallRequest::new(
     id="call_1",
     name="test_tool",
     arguments=Json::null(),

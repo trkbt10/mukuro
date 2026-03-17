@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn trace_tool() -> @types.ToolDefinition {
+pub fn trace_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="trace",
     description="Recall past conversations and context. Use this to retrieve relevant information from previous sessions. Actions: 'recent' for recent context, 'search' for semantic search, 'by_date' for specific dates, 'by_topic' for topic-based retrieval.",

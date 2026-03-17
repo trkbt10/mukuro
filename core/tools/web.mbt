@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn web_tool() -> @types.ToolDefinition {
+pub fn web_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="web",
     description="Fetch content from URLs via HTTP requests. Use for: retrieving web pages, calling REST APIs, downloading data. Supports GET/POST methods with custom headers. Note: 'search' action requires external API integration.",

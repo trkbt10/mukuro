@@ -62,7 +62,7 @@ impl @interfaces.SessionManager for MockSessionManager with append_user_message(
 ) {
   match self.sessions.get(key) {
     Some(s) => {
-      s.add_message(@types.ModelMessage::User(content~, name~))
+      s.add_message(@llm_types.ModelMessage::User(content~, name~))
       // Use touch() to update timestamp (returns new Session, but we keep reference)
       ignore(s.touch(timestamp))
     }
@@ -80,7 +80,7 @@ impl @interfaces.SessionManager for MockSessionManager with append_assistant_mes
 ) {
   match self.sessions.get(key) {
     Some(s) => {
-      s.add_message(@types.ModelMessage::Assistant(content~, tool_calls~))
+      s.add_message(@llm_types.ModelMessage::Assistant(content~, tool_calls~))
       ignore(s.touch(timestamp))
     }
     None => ()
@@ -113,7 +113,7 @@ impl @interfaces.SessionManager for MockSessionManager with record_tool_result(
   match self.sessions.get(key) {
     Some(s) => {
       s.add_message(
-        @types.ModelMessage::ToolResult(tool_call_id=call_id, content~),
+        @llm_types.ModelMessage::ToolResult(tool_call_id=call_id, content~),
       )
       ignore(s.touch(timestamp))
     }
@@ -167,10 +167,10 @@ test "handle_resume_session: returns original chat_id without resumed_ prefix" {
   )
   let original_session = @types.Session::new(original_key, 1000L)
   original_session.add_message(
-    @types.ModelMessage::User(content="Hello", name=None),
+    @llm_types.ModelMessage::User(content="Hello", name=None),
   )
   original_session.add_message(
-    @types.ModelMessage::Assistant(content="Hi!", tool_calls=None),
+    @llm_types.ModelMessage::Assistant(content="Hi!", tool_calls=None),
   )
   mock_mgr.add_session(original_key, original_session)
 
@@ -250,7 +250,7 @@ test "resume preserves session identity for subsequent messages" {
   )
   let original_session = @types.Session::new(original_key, 1000L)
   original_session.add_message(
-    @types.ModelMessage::User(content="Original message", name=None),
+    @llm_types.ModelMessage::User(content="Original message", name=None),
   )
   mock_mgr.add_session(original_key, original_session)
 
@@ -270,7 +270,7 @@ test "resume preserves session identity for subsequent messages" {
       assert_eq(s.history.length(), 2, msg="Should have 2 messages")
       // 2番目のメッセージが新しいものであること
       match s.history[1] {
-        @types.ModelMessage::User(content~, ..) =>
+        @llm_types.ModelMessage::User(content~, ..) =>
           assert_eq(
             content,
             "New message after resume",

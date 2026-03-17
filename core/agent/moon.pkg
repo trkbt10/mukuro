@@ -3,6 +3,7 @@ import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/session",
   "trkbt10/mukuro/core/tool",
+  "trkbt10/llm_interop/src/types" @llm_types,
   "moonbitlang/async" @async,
 }
 

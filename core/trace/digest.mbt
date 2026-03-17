@@ -128,19 +128,20 @@ pub async fn digest_once(
     raise EmptyInput
   }
   let system = digest_system_prompt(context_type)
-  let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::System(system),
-    @types.ModelMessage::User(content=text, name=None),
+  let messages : Array[@llm_types.ModelMessage] = [
+    @llm_types.ModelMessage::System(system),
+    @llm_types.ModelMessage::User(content=text, name=None),
   ]
   let response = orchestrator.call(messages~, tools=[], options~) catch {
     e => raise ModelCallError("Model call failed: \{e}")
   }
   match response {
-    @types.ModelResponse::Text(result) => result
-    @types.ModelResponse::ModelError(err) => raise ModelCallError(err)
-    @types.ModelResponse::RateLimited(retry_after=after) =>
+    @llm_types.ModelResponse::Text(result) => result
+    @llm_types.ModelResponse::RichText(rich) => rich.content
+    @llm_types.ModelResponse::ModelError(err) => raise ModelCallError(err)
+    @llm_types.ModelResponse::RateLimited(retry_after=after) =>
       raise ModelCallError("Rate limited, retry after \{after}s")
-    @types.ModelResponse::ToolCalls(_) =>
+    @llm_types.ModelResponse::ToolCalls(_) =>
       raise ModelCallError("Unexpected tool calls in digest response")
   }
 }
@@ -257,19 +258,20 @@ pub async fn extract_topics(
     return []
   }
   let system = topic_extraction_prompt()
-  let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::System(system),
-    @types.ModelMessage::User(content=text, name=None),
+  let messages : Array[@llm_types.ModelMessage] = [
+    @llm_types.ModelMessage::System(system),
+    @llm_types.ModelMessage::User(content=text, name=None),
   ]
   let response = orchestrator.call(messages~, tools=[], options~) catch {
     e => raise ModelCallError("Model call failed: \{e}")
   }
   let result = match response {
-    @types.ModelResponse::Text(r) => r
-    @types.ModelResponse::ModelError(err) => raise ModelCallError(err)
-    @types.ModelResponse::RateLimited(retry_after=after) =>
+    @llm_types.ModelResponse::Text(r) => r
+    @llm_types.ModelResponse::RichText(rich) => rich.content
+    @llm_types.ModelResponse::ModelError(err) => raise ModelCallError(err)
+    @llm_types.ModelResponse::RateLimited(retry_after=after) =>
       raise ModelCallError("Rate limited, retry after \{after}s")
-    @types.ModelResponse::ToolCalls(_) =>
+    @llm_types.ModelResponse::ToolCalls(_) =>
       raise ModelCallError("Unexpected tool calls in topic extraction")
   }
   // JSON配列をパース
@@ -324,7 +326,7 @@ pub async fn DigestService::create_short_term_entry(
   orchestrator : &@interfaces.ModelOrchestrator,
   session_id : String,
   date : String,
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   source_file_path : String,
   timestamp : Int64,
 ) -> @interfaces.ShortTermMemoryEntry raise DigestError {
@@ -361,20 +363,20 @@ pub async fn DigestService::create_short_term_entry(
 
 ///|
 /// メッセージ配列をテキストに変換
-fn messages_to_text(messages : Array[@types.ModelMessage]) -> String {
+fn messages_to_text(messages : Array[@llm_types.ModelMessage]) -> String {
   let parts : Array[String] = []
   for msg in messages {
     match msg {
-      @types.ModelMessage::System(_) => () // システムメッセージは除外
-      @types.ModelMessage::User(content=c, ..) =>
+      @llm_types.ModelMessage::System(_) => () // システムメッセージは除外
+      @llm_types.ModelMessage::User(content=c, ..) =>
         if not(c.is_empty()) {
           parts.push("User: \{c}")
         }
-      @types.ModelMessage::Assistant(content=c, ..) =>
+      @llm_types.ModelMessage::Assistant(content=c, ..) =>
         if not(c.is_empty()) {
           parts.push("Assistant: \{c}")
         }
-      @types.ModelMessage::ToolResult(content=c, ..) =>
+      @llm_types.ModelMessage::ToolResult(content=c, ..) =>
         if not(c.is_empty()) {
           parts.push("Tool Result: \{c}")
         }
@@ -445,10 +447,10 @@ test "parse_topic_array with invalid JSON raises ParseError" {
 
 ///|
 test "messages_to_text formats correctly" {
-  let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::System("system message"),
-    @types.ModelMessage::User(content="Hello", name=None),
-    @types.ModelMessage::Assistant(content="Hi there", tool_calls=None),
+  let messages : Array[@llm_types.ModelMessage] = [
+    @llm_types.ModelMessage::System("system message"),
+    @llm_types.ModelMessage::User(content="Hello", name=None),
+    @llm_types.ModelMessage::Assistant(content="Hi there", tool_calls=None),
   ]
   let text = messages_to_text(messages)
   assert_true(text.contains("User: Hello"))
@@ -459,9 +461,9 @@ test "messages_to_text formats correctly" {
 
 ///|
 test "messages_to_text skips empty content" {
-  let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::User(content="", name=None),
-    @types.ModelMessage::Assistant(content="response", tool_calls=None),
+  let messages : Array[@llm_types.ModelMessage] = [
+    @llm_types.ModelMessage::User(content="", name=None),
+    @llm_types.ModelMessage::Assistant(content="response", tool_calls=None),
   ]
   let text = messages_to_text(messages)
   // 空のユーザーメッセージは除外
@@ -471,8 +473,8 @@ test "messages_to_text skips empty content" {
 
 ///|
 test "messages_to_text includes tool results" {
-  let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::ToolResult(
+  let messages : Array[@llm_types.ModelMessage] = [
+    @llm_types.ModelMessage::ToolResult(
       tool_call_id="call_1",
       content="Result data",
     ),

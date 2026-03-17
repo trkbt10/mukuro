@@ -300,7 +300,8 @@ test "capability_to_tool_definition: basic conversion" {
 ///|
 test "PluginToolRegistry: register and find tools" {
   let registry = PluginToolRegistry::new()
-  let tool : @types.ToolDefinition = {
+  let tool : @llm_types.ToolDefinition = {
+    kind: @llm_types.ToolDefinitionKind::Function,
     name: "test.greet",
     description: "Test greeting",
     parameters: { "type": "object" },

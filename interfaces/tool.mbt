@@ -16,9 +16,9 @@ pub(open) trait ToolExecutor {
 /// ツールの登録と取得を管理する
 pub(open) trait ToolRegistry {
   /// ツールを登録
-  register(Self, @types.ToolDefinition, &ToolExecutor) -> Unit
+  register(Self, @llm_types.ToolDefinition, &ToolExecutor) -> Unit
   /// ツール定義一覧を取得
-  list_definitions(Self) -> Array[@types.ToolDefinition]
+  list_definitions(Self) -> Array[@llm_types.ToolDefinition]
   /// ツール実行者を取得
   get_executor(Self, String) -> &ToolExecutor?
   /// ツールが存在するか確認

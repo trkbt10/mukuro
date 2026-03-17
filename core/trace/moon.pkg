@@ -2,5 +2,6 @@ import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/types" @types,
   "trkbt10/mukuro/lib/compression" @compression,
+  "trkbt10/llm_interop/src/types" @llm_types,
   "moonbitlang/core/json",
 }

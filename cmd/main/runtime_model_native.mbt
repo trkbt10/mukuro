@@ -143,18 +143,18 @@ fn normalize_base_url(base_url : String) -> String {
 }
 
 ///|
-fn parse_openai_response(body : String) -> @types.ModelResponse {
+fn parse_openai_response(body : String) -> @llm_types.ModelResponse {
   let json : Json = @json.parse(body) catch {
-    _ => return @types.ModelResponse::ModelError("Invalid OpenAI response JSON")
+    _ => return @llm_types.ModelResponse::ModelError("Invalid OpenAI response JSON")
   }
   @protocol.parse_openai_chat_response(json)
 }
 
 ///|
-fn parse_openai_responses_response(body : String) -> @types.ModelResponse {
+fn parse_openai_responses_response(body : String) -> @llm_types.ModelResponse {
   let json : Json = @json.parse(body) catch {
     _ =>
-      return @types.ModelResponse::ModelError(
+      return @llm_types.ModelResponse::ModelError(
         "Invalid OpenAI Responses response JSON",
       )
   }
@@ -162,10 +162,10 @@ fn parse_openai_responses_response(body : String) -> @types.ModelResponse {
 }
 
 ///|
-fn parse_anthropic_response(body : String) -> @types.ModelResponse {
+fn parse_anthropic_response(body : String) -> @llm_types.ModelResponse {
   let json : Json = @json.parse(body) catch {
     _ =>
-      return @types.ModelResponse::ModelError("Invalid Anthropic response JSON")
+      return @llm_types.ModelResponse::ModelError("Invalid Anthropic response JSON")
   }
   @protocol.parse_anthropic_response(json)
 }
@@ -174,10 +174,10 @@ fn parse_anthropic_response(body : String) -> @types.ModelResponse {
 async fn call_openai_impl(
   provider : @types.ProviderConfig,
   http_client : @native.NativeHttpClient,
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   options : @types.ModelOptions,
-  tools : Array[@types.ToolDefinition],
-) -> @types.ModelResponse {
+  tools : Array[@llm_types.ToolDefinition],
+) -> @llm_types.ModelResponse {
   let headers : Map[String, String] = { "Content-Type": "application/json" }
   let api_key = provider.api_key.unwrap_or("")
   if api_key.length() > 0 {
@@ -214,14 +214,14 @@ async fn call_openai_impl(
     body: Some(string_to_body_bytes(body)),
   }
   let response = @interfaces.HttpClient::request(http_client, req) catch {
-    _ => return @types.ModelResponse::ModelError("OpenAI request failed")
+    _ => return @llm_types.ModelResponse::ModelError("OpenAI request failed")
   }
   if response.status == 429 {
-    return @types.ModelResponse::RateLimited(retry_after=60)
+    return @llm_types.ModelResponse::RateLimited(retry_after=60)
   }
   if response.status < 200 || response.status >= 300 {
     let err_body = body_bytes_to_string(response.body)
-    return @types.ModelResponse::ModelError(
+    return @llm_types.ModelResponse::ModelError(
       "OpenAI HTTP error: \{response.status}; body=\{err_body}",
     )
   }
@@ -237,10 +237,10 @@ async fn call_openai_impl(
 async fn call_anthropic_impl(
   provider : @types.ProviderConfig,
   http_client : @native.NativeHttpClient,
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   options : @types.ModelOptions,
-  tools : Array[@types.ToolDefinition],
-) -> @types.ModelResponse {
+  tools : Array[@llm_types.ToolDefinition],
+) -> @llm_types.ModelResponse {
   let api_key = provider.api_key.unwrap_or("")
   let headers : Map[String, String] = {
     "Content-Type": "application/json",
@@ -264,13 +264,13 @@ async fn call_anthropic_impl(
     body: Some(string_to_body_bytes(body)),
   }
   let response = @interfaces.HttpClient::request(http_client, req) catch {
-    _ => return @types.ModelResponse::ModelError("Anthropic request failed")
+    _ => return @llm_types.ModelResponse::ModelError("Anthropic request failed")
   }
   if response.status == 429 {
-    return @types.ModelResponse::RateLimited(retry_after=60)
+    return @llm_types.ModelResponse::RateLimited(retry_after=60)
   }
   if response.status < 200 || response.status >= 300 {
-    return @types.ModelResponse::ModelError(
+    return @llm_types.ModelResponse::ModelError(
       "Anthropic HTTP error: \{response.status}",
     )
   }
@@ -285,18 +285,18 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
   options~,
 ) {
   match test_toggle.forced_response {
-    Some(content) => return @types.ModelResponse::Text(content)
+    Some(content) => return @llm_types.ModelResponse::Text(content)
     None => ()
   }
   let provider = match self.provider_resolver.resolve() {
     Some(p) => p
     None =>
-      return @types.ModelResponse::ModelError(
+      return @llm_types.ModelResponse::ModelError(
         "Configuration not initialized or no providers configured",
       )
   }
   match validate_provider_config(provider) {
-    Some(msg) => return @types.ModelResponse::ModelError(msg)
+    Some(msg) => return @llm_types.ModelResponse::ModelError(msg)
     None => ()
   }
   if is_openai_compatible_provider(provider.name) {
@@ -316,7 +316,7 @@ pub(all) enum StreamEvent {
   /// Responses API フォーマットのイベント (event_type, data)
   ResponsesEvent(String, Json)
   /// ストリーミング完了
-  Done(@types.ModelResponse)
+  Done(@llm_types.ModelResponse)
   /// エラー
   Error(String)
 }
@@ -327,7 +327,7 @@ pub(all) enum StreamEvent {
 pub fn translate_sse_jsonl_to_responses_events(
   jsonl : String,
 ) -> Array[(String, Json)] {
-  let translator = @protocol.HarmonyToResponsesTranslator::new()
+  let translator = @harmony.HarmonyToResponsesTranslator::new(response_id="resp_generated")
   let events = @sse.parse_chat_completions_jsonl(jsonl) catch { _ => return [] }
   let result : Array[(String, Json)] = []
   for event in events {
@@ -343,7 +343,7 @@ pub fn translate_sse_jsonl_to_responses_events(
 /// 非ストリーミングレスポンスを Responses API イベント形式に変換
 /// 翻訳レイヤーの検証に使用
 pub fn model_response_to_stream_events(
-  response : @types.ModelResponse,
+  response : @llm_types.ModelResponse,
 ) -> Array[(String, Json)] {
   let events : Array[(String, Json)] = []
   // response.created
@@ -352,7 +352,7 @@ pub fn model_response_to_stream_events(
     { "type": "response.created", "response": { "id": "resp_generated" } },
   ))
   match response {
-    @types.ModelResponse::Text(content) => {
+    @llm_types.ModelResponse::Text(content) | @llm_types.ModelResponse::RichText({ content, .. }) => {
       // response.output_text.delta (full content)
       events.push((
         "response.output_text.delta",
@@ -364,7 +364,7 @@ pub fn model_response_to_stream_events(
         { "type": "response.output_text.done", "text": content, "output_index": 0 },
       ))
     }
-    @types.ModelResponse::ToolCalls(calls) =>
+    @llm_types.ModelResponse::ToolCalls(calls) =>
       for i, call in calls {
         // response.output_item.added
         events.push((

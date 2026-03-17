@@ -39,7 +39,7 @@ pub fn HistoryManager::default() -> HistoryManager {
 pub fn HistoryManager::add_message(
   self : HistoryManager,
   session : @types.Session,
-  message : @types.ModelMessage,
+  message : @llm_types.ModelMessage,
 ) -> @types.Session {
   session.history.push(message)
   // 必要に応じて切り捨て
@@ -63,7 +63,7 @@ pub fn HistoryManager::truncate_history(
     return session
   }
   // 新しい履歴を作成（古いメッセージを除去）
-  let new_history : Array[@types.ModelMessage] = []
+  let new_history : Array[@llm_types.ModelMessage] = []
   for i in excess..<history.length() {
     new_history.push(history[i])
   }
@@ -82,14 +82,14 @@ pub fn HistoryManager::truncate_history(
 pub fn get_recent_messages(
   session : @types.Session,
   count : Int,
-) -> Array[@types.ModelMessage] {
+) -> Array[@llm_types.ModelMessage] {
   let history = session.history
   let start = if history.length() > count {
     history.length() - count
   } else {
     0
   }
-  let result : Array[@types.ModelMessage] = []
+  let result : Array[@llm_types.ModelMessage] = []
   for i in start..<history.length() {
     result.push(history[i])
   }
@@ -99,12 +99,12 @@ pub fn get_recent_messages(
 ///|
 /// 履歴からシステムメッセージを除外
 pub fn filter_non_system_messages(
-  history : Array[@types.ModelMessage],
-) -> Array[@types.ModelMessage] {
-  let result : Array[@types.ModelMessage] = []
+  history : Array[@llm_types.ModelMessage],
+) -> Array[@llm_types.ModelMessage] {
+  let result : Array[@llm_types.ModelMessage] = []
   for msg in history {
     match msg {
-      @types.ModelMessage::System(_) => ()
+      @llm_types.ModelMessage::System(_) => ()
       _ => result.push(msg)
     }
   }
@@ -113,12 +113,12 @@ pub fn filter_non_system_messages(
 
 ///|
 /// メッセージの概算トークン数を計算（簡易版）
-pub fn estimate_tokens(message : @types.ModelMessage) -> Int {
+pub fn estimate_tokens(message : @llm_types.ModelMessage) -> Int {
   let content = match message {
-    @types.ModelMessage::System(text) => text
-    @types.ModelMessage::User(content~, ..) => content
-    @types.ModelMessage::Assistant(content~, ..) => content
-    @types.ModelMessage::ToolResult(content~, ..) => content
+    @llm_types.ModelMessage::System(text) => text
+    @llm_types.ModelMessage::User(content~, ..) => content
+    @llm_types.ModelMessage::Assistant(content~, ..) => content
+    @llm_types.ModelMessage::ToolResult(content~, ..) => content
   }
   // 簡易的に4文字で1トークンとして計算
   (content.to_string().length() + 3) / 4
@@ -126,7 +126,7 @@ pub fn estimate_tokens(message : @types.ModelMessage) -> Int {
 
 ///|
 /// 履歴全体の概算トークン数を計算
-pub fn estimate_history_tokens(history : Array[@types.ModelMessage]) -> Int {
+pub fn estimate_history_tokens(history : Array[@llm_types.ModelMessage]) -> Int {
   let mut total = 0
   for msg in history {
     total = total + estimate_tokens(msg)

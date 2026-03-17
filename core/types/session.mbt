@@ -26,7 +26,7 @@ pub(all) struct Session {
   /// セッションキー
   key : SessionKey
   /// 会話履歴
-  history : Array[ModelMessage]
+  history : Array[@llm_types.ModelMessage]
   /// セッション状態
   state : SessionState
   /// セッション開始時刻（Unix epoch ms）
@@ -71,7 +71,7 @@ pub fn Session::new(key : SessionKey, now : Int64) -> Session {
 
 ///|
 /// セッションにメッセージを追加
-pub fn Session::add_message(self : Session, message : ModelMessage) -> Unit {
+pub fn Session::add_message(self : Session, message : @llm_types.ModelMessage) -> Unit {
   self.history.push(message)
 }
 

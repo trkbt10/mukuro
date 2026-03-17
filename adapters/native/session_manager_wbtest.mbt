@@ -79,7 +79,7 @@ test "reconstruct_session_from_history: user message is reconstructed" {
   assert_eq(session.history.length(), 1)
   assert_eq(session.created_at, 1000L)
   match session.history[0] {
-    @types.ModelMessage::User(content~, ..) => assert_eq(content, "Hello")
+    @llm_types.ModelMessage::User(content~, ..) => assert_eq(content, "Hello")
     _ => fail("Expected User message")
   }
 }
@@ -324,7 +324,7 @@ test "reconstruct_session_from_history: ToolCall records populate AssistantMessa
 
   // 2番目のメッセージは ToolCall を含む AssistantMessage
   match session.history[1] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "")
       match tool_calls {
         Some(calls) => {
@@ -340,7 +340,7 @@ test "reconstruct_session_from_history: ToolCall records populate AssistantMessa
 
   // 3番目のメッセージは ToolResult
   match session.history[2] {
-    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+    @llm_types.ModelMessage::ToolResult(tool_call_id~, content~) => {
       assert_eq(tool_call_id, "call_001")
       assert_eq(content, "Sunny, 25°C")
     }
@@ -419,7 +419,7 @@ test "reconstruct_session_from_history: multiple ToolCalls in single AssistantMe
 
   // AssistantMessage に 2つの ToolCall が含まれる
   match session.history[1] {
-    @types.ModelMessage::Assistant(tool_calls~, ..) =>
+    @llm_types.ModelMessage::Assistant(tool_calls~, ..) =>
       match tool_calls {
         Some(calls) => {
           assert_eq(calls.length(), 2)
@@ -487,7 +487,7 @@ test "reconstruct_session_from_history: has_tool_calls false means tool_calls is
 
   // has_tool_calls: false なので tool_calls は None
   match session.history[1] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "Hi there!")
       match tool_calls {
         None => () // 正しい: tool_calls は None
@@ -525,7 +525,7 @@ test "reconstruct_session_from_history: missing has_tool_calls flag treated as f
   let session = reconstruct_session_from_history(key, records)
 
   match session.history[1] {
-    @types.ModelMessage::Assistant(tool_calls~, ..) =>
+    @llm_types.ModelMessage::Assistant(tool_calls~, ..) =>
       match tool_calls {
         None => () // 正しい: フラグなしは false 扱い
         Some(_) =>
@@ -583,23 +583,23 @@ test "reconstruct_session_from_history: simple conversation without tools" {
 
   // 全てのメッセージが正しい型
   match session.history[0] {
-    @types.ModelMessage::User(content~, ..) => assert_eq(content, "Hello")
+    @llm_types.ModelMessage::User(content~, ..) => assert_eq(content, "Hello")
     _ => fail("Expected User message at index 0")
   }
   match session.history[1] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "Hi!")
       assert_true(tool_calls is None)
     }
     _ => fail("Expected Assistant message at index 1")
   }
   match session.history[2] {
-    @types.ModelMessage::User(content~, ..) =>
+    @llm_types.ModelMessage::User(content~, ..) =>
       assert_eq(content, "How are you?")
     _ => fail("Expected User message at index 2")
   }
   match session.history[3] {
-    @types.ModelMessage::Assistant(content~, ..) =>
+    @llm_types.ModelMessage::Assistant(content~, ..) =>
       assert_eq(content, "I'm doing well, thank you!")
     _ => fail("Expected Assistant message at index 3")
   }
@@ -704,7 +704,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 1番目: User
   match session.history[0] {
-    @types.ModelMessage::User(content~, ..) =>
+    @llm_types.ModelMessage::User(content~, ..) =>
       assert_eq(
         content, "List files and then show me the content of the first file",
       )
@@ -713,7 +713,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 2番目: Assistant with tool_calls (fc_001)
   match session.history[1] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "")
       match tool_calls {
         Some(calls) => {
@@ -729,7 +729,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 3番目: ToolResult (fc_001)
   match session.history[2] {
-    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+    @llm_types.ModelMessage::ToolResult(tool_call_id~, content~) => {
       assert_eq(tool_call_id, "fc_001")
       assert_true(content.contains("README.md"))
     }
@@ -738,7 +738,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 4番目: Assistant with tool_calls (fc_002) - チェーンされた2回目
   match session.history[3] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "")
       match tool_calls {
         Some(calls) => {
@@ -754,7 +754,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 5番目: ToolResult (fc_002)
   match session.history[4] {
-    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+    @llm_types.ModelMessage::ToolResult(tool_call_id~, content~) => {
       assert_eq(tool_call_id, "fc_002")
       assert_true(content.contains("My Project"))
     }
@@ -763,7 +763,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 6番目: Assistant (final text)
   match session.history[5] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_true(content.contains("files"))
       assert_true(tool_calls is None)
     }
@@ -846,7 +846,7 @@ test "reconstruct_session_from_history: two_phase_with_follow_up" {
 
   // 重要: 2番目の AssistantMessage に tool_calls が正しく復元されていること
   match session.history[1] {
-    @types.ModelMessage::Assistant(tool_calls~, ..) =>
+    @llm_types.ModelMessage::Assistant(tool_calls~, ..) =>
       match tool_calls {
         Some(calls) => {
           assert_eq(calls.length(), 1)
@@ -863,7 +863,7 @@ test "reconstruct_session_from_history: two_phase_with_follow_up" {
 
   // 最後のメッセージがフォローアップ User
   match session.history[4] {
-    @types.ModelMessage::User(content~, ..) =>
+    @llm_types.ModelMessage::User(content~, ..) =>
       assert_eq(content, "Now show details with ls -la")
     _ => fail("Expected User message at index 4")
   }

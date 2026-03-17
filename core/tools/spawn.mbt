@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn spawn_tool() -> @types.ToolDefinition {
+pub fn spawn_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="spawn",
     description="Create autonomous sub-agents for parallel or complex tasks. Use for: delegating research, running background tasks, breaking down complex work. Sub-agents have their own conversation loop and can use tools. Parent agent can check status and retrieve results.",
@@ -237,9 +237,9 @@ pub fn AsyncSubAgentConfig::default(name~ : String) -> AsyncSubAgentConfig {
 pub fn filter_tools_for_subagent(
   registry : &@interfaces.ToolRegistry,
   allowed : Array[String],
-) -> Array[@types.ToolDefinition] {
+) -> Array[@llm_types.ToolDefinition] {
   let definitions = registry.list_definitions()
-  let result : Array[@types.ToolDefinition] = []
+  let result : Array[@llm_types.ToolDefinition] = []
   for def in definitions {
     if def.name == "spawn" {
       continue
@@ -259,19 +259,19 @@ pub async fn spawn_agent_async(
   config : AsyncSubAgentConfig,
   initial_message : String,
   model_invoke : async (
-    Array[@types.ModelMessage],
-    Array[@types.ToolDefinition],
+    Array[@llm_types.ModelMessage],
+    Array[@llm_types.ToolDefinition],
     @types.ModelOptions,
-  ) -> @types.ModelResponse,
+  ) -> @llm_types.ModelResponse,
   tool_registry : &@interfaces.ToolRegistry,
   model_options : @types.ModelOptions,
 ) -> SpawnResult {
   let agent_id = manager.generate_id()
   manager.agents[agent_id] = { agent_id, status: "running", response: None }
   let tools = filter_tools_for_subagent(tool_registry, config.allowed_tools)
-  let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::System(config.system_prompt),
-    @types.ModelMessage::User(content=initial_message, name=Some(config.name)),
+  let messages : Array[@llm_types.ModelMessage] = [
+    @llm_types.ModelMessage::System(config.system_prompt),
+    @llm_types.ModelMessage::User(content=initial_message, name=Some(config.name)),
   ]
   for iteration = 0; iteration < config.max_turns; {
     let response = model_invoke(messages, tools, model_options) catch {
@@ -287,7 +287,7 @@ pub async fn spawn_agent_async(
       }
     }
     match response {
-      @types.ModelResponse::Text(content) => {
+      @llm_types.ModelResponse::Text(content) | @llm_types.ModelResponse::RichText({ content, .. }) => {
         let result : SpawnResult = {
           agent_id,
           status: "completed",
@@ -296,7 +296,7 @@ pub async fn spawn_agent_async(
         manager.agents[agent_id] = result
         return result
       }
-      @types.ModelResponse::ToolCalls(calls) => {
+      @llm_types.ModelResponse::ToolCalls(calls) => {
         for call in calls {
           let tool_result = execute_subagent_tool_call(call, tool_registry)
           let result_content = match tool_result {
@@ -306,7 +306,7 @@ pub async fn spawn_agent_async(
               "Error: RequiresAction is not supported for sub-agents"
           }
           messages.push(
-            @types.ModelMessage::ToolResult(
+            @llm_types.ModelMessage::ToolResult(
               tool_call_id=call.id,
               content=result_content,
             ),
@@ -314,7 +314,7 @@ pub async fn spawn_agent_async(
         }
         continue iteration + 1
       }
-      @types.ModelResponse::ModelError(msg) => {
+      @llm_types.ModelResponse::ModelError(msg) => {
         let result : SpawnResult = {
           agent_id,
           status: "failed",
@@ -323,7 +323,7 @@ pub async fn spawn_agent_async(
         manager.agents[agent_id] = result
         return result
       }
-      @types.ModelResponse::RateLimited(retry_after~) => {
+      @llm_types.ModelResponse::RateLimited(retry_after~) => {
         @async.sleep(retry_after * 1000)
         continue iteration
       }
@@ -340,7 +340,7 @@ pub async fn spawn_agent_async(
 
 ///|
 async fn execute_subagent_tool_call(
-  call : @types.ToolCallRequest,
+  call : @llm_types.ToolCallRequest,
   tool_registry : &@interfaces.ToolRegistry,
 ) -> @types.ToolResult {
   if call.name == "spawn" {

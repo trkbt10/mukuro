@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn memory_tool() -> @types.ToolDefinition {
+pub fn memory_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="memory",
     description="Store and retrieve user information and preferences in long-term memory. IMPORTANT: When users ask about themselves (name, preferences, history), ALWAYS search memory first before saying you don't know. When users share personal information, store it immediately.",

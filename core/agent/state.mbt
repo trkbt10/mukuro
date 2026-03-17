@@ -36,7 +36,7 @@ pub impl Show for AgentState with output(self, logger) {
 /// エージェントループの反復結果
 pub(all) enum IterationResult {
   /// 処理継続（ツール呼び出し後など）
-  Continue(Array[@types.ModelMessage])
+  Continue(Array[@llm_types.ModelMessage])
   /// 完了（応答を返す）
   Complete(@types.OutboundMessage)
   /// エラー終了
@@ -51,9 +51,9 @@ pub(all) struct AgentLoopContext {
   /// 反復回数
   mut iteration : Int
   /// 現在のメッセージ列
-  mut messages : Array[@types.ModelMessage]
+  mut messages : Array[@llm_types.ModelMessage]
   /// ツール呼び出し履歴
-  tool_call_history : Array[@types.ToolCallRequest]
+  tool_call_history : Array[@llm_types.ToolCallRequest]
 }
 
 ///|
@@ -81,7 +81,7 @@ pub fn AgentLoopContext::increment_iteration(self : AgentLoopContext) -> Unit {
 /// メッセージを追加
 pub fn AgentLoopContext::add_message(
   self : AgentLoopContext,
-  message : @types.ModelMessage,
+  message : @llm_types.ModelMessage,
 ) -> Unit {
   self.messages.push(message)
 }
@@ -90,7 +90,7 @@ pub fn AgentLoopContext::add_message(
 /// ツール呼び出しを記録
 pub fn AgentLoopContext::record_tool_call(
   self : AgentLoopContext,
-  call : @types.ToolCallRequest,
+  call : @llm_types.ToolCallRequest,
 ) -> Unit {
   self.tool_call_history.push(call)
 }

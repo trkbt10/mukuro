@@ -368,7 +368,7 @@ pub async fn run_agent_loop(
       other => raise other
     }
     match response {
-      @types.ModelResponse::Text(content) => {
+      @llm_types.ModelResponse::Text(content) | @llm_types.ModelResponse::RichText({ content, .. }) => {
         ctx.set_state(AgentState::SendingResponse)
         // AssistantMessage を記録 - session_manager がある場合は一貫して使用
         match sm {
@@ -386,10 +386,10 @@ pub async fn run_agent_loop(
             // フォールバック: 旧方式
             record_assistant_message(hr, clk, ts, sid, content)
             session.add_message(
-              @types.ModelMessage::User(content=envelope.content, name=None),
+              @llm_types.ModelMessage::User(content=envelope.content, name=None),
             )
             session.add_message(
-              @types.ModelMessage::Assistant(content~, tool_calls=None),
+              @llm_types.ModelMessage::Assistant(content~, tool_calls=None),
             )
             deps.session_store.save(session) catch {
               e => raise AgentLoopError::SessionError(e.to_string())
@@ -407,9 +407,9 @@ pub async fn run_agent_loop(
         }
         return outbound
       }
-      @types.ModelResponse::ToolCalls(calls) => {
+      @llm_types.ModelResponse::ToolCalls(calls) => {
         ctx.add_message(
-          @types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
+          @llm_types.ModelMessage::Assistant(content="", tool_calls=Some(calls)),
         )
         // AssistantMessage を History + cache に記録（tool_calls 付き）
         // これがないと、セッション再構築時に tool_calls が失われ、
@@ -485,7 +485,7 @@ pub async fn run_agent_loop(
         }
         continue
       }
-      @types.ModelResponse::ModelError(msg) => {
+      @llm_types.ModelResponse::ModelError(msg) => {
         // Error 記録 - session_manager がある場合はそれを使用
         match sm {
           Some(mgr) =>
@@ -496,7 +496,7 @@ pub async fn run_agent_loop(
         }
         raise AgentLoopError::ModelCallFailed(msg)
       }
-      @types.ModelResponse::RateLimited(retry_after~) => {
+      @llm_types.ModelResponse::RateLimited(retry_after~) => {
         let err_msg = "Rate limited: retry_after=\{retry_after}"
         match sm {
           Some(mgr) =>
@@ -528,19 +528,19 @@ pub async fn run_agent_loop(
 /// リトライロジック付きでモデルを呼び出す (async)
 async fn call_model_with_retry(
   orchestrator : &@interfaces.ModelOrchestrator,
-  messages : Array[@types.ModelMessage],
-  tools : Array[@types.ToolDefinition],
+  messages : Array[@llm_types.ModelMessage],
+  tools : Array[@llm_types.ToolDefinition],
   options : @types.ModelOptions,
   retry_config : RetryConfig,
   retry_state : RetryState,
-) -> @types.ModelResponse raise AgentLoopError {
+) -> @llm_types.ModelResponse raise AgentLoopError {
   // リトライループ
   while true {
     let response = orchestrator.call(messages~, tools~, options~) catch {
       e => raise AgentLoopError::ModelCallFailed(e.to_string())
     }
     match response {
-      @types.ModelResponse::RateLimited(retry_after~) =>
+      @llm_types.ModelResponse::RateLimited(retry_after~) =>
         // レート制限 - リトライ可能か確認
         if retry_config.retry_on_rate_limit &&
           retry_state.can_retry(retry_config) {
@@ -556,7 +556,7 @@ async fn call_model_with_retry(
           // リトライ上限に達した
           return response
         }
-      @types.ModelResponse::ModelError(msg) =>
+      @llm_types.ModelResponse::ModelError(msg) =>
         // 一部のエラーはリトライ可能
         if is_retryable_error(msg) && retry_state.can_retry(retry_config) {
           let delay_ms = retry_state.next_delay_ms
@@ -572,7 +572,7 @@ async fn call_model_with_retry(
     }
   }
   // 到達不能
-  @types.ModelResponse::ModelError("Unexpected retry loop exit")
+  @llm_types.ModelResponse::ModelError("Unexpected retry loop exit")
 }
 
 ///|
@@ -590,7 +590,7 @@ fn is_retryable_error(error_msg : String) -> Bool {
 ///|
 /// ツール呼び出しを実行 (async)
 async fn execute_tool_call(
-  call : @types.ToolCallRequest,
+  call : @llm_types.ToolCallRequest,
   session : @types.Session,
   envelope : @types.InboundEnvelope,
   deps : AgentDependencies,
@@ -608,10 +608,10 @@ async fn execute_tool_call(
 ///|
 /// 単一のモデル呼び出しを実行（ツール呼び出しなし）(async)
 pub async fn single_model_call(
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   options : @types.ModelOptions,
   model_orchestrator : &@interfaces.ModelOrchestrator,
-) -> @types.ModelResponse raise AgentLoopError {
+) -> @llm_types.ModelResponse raise AgentLoopError {
   model_orchestrator.call(messages~, tools=[], options~) catch {
     e => raise AgentLoopError::ModelCallFailed(e.to_string())
   }

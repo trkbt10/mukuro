@@ -92,7 +92,7 @@ pub async fn ShortTermMemoryService::create_entry_from_messages(
   orchestrator : &@interfaces.ModelOrchestrator,
   session_id : String,
   date : String,
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   source_file_path : String,
   timestamp : Int64,
 ) -> @interfaces.ShortTermMemoryEntry raise ShortTermMemoryError {

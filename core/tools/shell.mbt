@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn shell_tool() -> @types.ToolDefinition {
+pub fn shell_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="shell",
     description="Execute shell commands on the local system. Use for: running programs, checking system status (ls, pwd, df), git operations, build commands, and any terminal operations. Returns stdout, stderr, and exit code. Dangerous commands (rm -rf, dd, etc.) require confirmation.",

@@ -392,7 +392,7 @@ pub fn get_plugin_tool_registry() -> @plugin.PluginToolRegistry? {
 
 ///|
 /// List available plugin tools
-pub fn list_plugin_tools() -> Array[@types.ToolDefinition] {
+pub fn list_plugin_tools() -> Array[@llm_types.ToolDefinition] {
   match global_plugin_initializer.val {
     Some(init) => init.get_tool_registry().get_all_tools()
     None => []

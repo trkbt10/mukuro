@@ -206,19 +206,19 @@ fn handle_resume_session(
 
 ///|
 /// Convert ModelMessage to JSON for API response
-fn model_message_to_json(msg : @types.ModelMessage) -> Json {
+fn model_message_to_json(msg : @llm_types.ModelMessage) -> Json {
   match msg {
-    @types.ModelMessage::System(text) =>
+    @llm_types.ModelMessage::System(text) =>
       { "role": "system", "content": text.to_json() }
-    @types.ModelMessage::User(content~, name~) =>
+    @llm_types.ModelMessage::User(content~, name~) =>
       match name {
         Some(n) =>
           { "role": "user", "content": content.to_json(), "name": n.to_json() }
         None => { "role": "user", "content": content.to_json() }
       }
-    @types.ModelMessage::Assistant(content~, ..) =>
+    @llm_types.ModelMessage::Assistant(content~, ..) =>
       { "role": "assistant", "content": content.to_json() }
-    @types.ModelMessage::ToolResult(tool_call_id~, content~) =>
+    @llm_types.ModelMessage::ToolResult(tool_call_id~, content~) =>
       {
         "role": "tool",
         "tool_call_id": tool_call_id.to_json(),

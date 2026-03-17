@@ -35,13 +35,13 @@ pub fn get_tool_entry(name : String) -> ToolEntry? {
 
 ///|
 /// すべてのビルトインツール定義を返す
-pub fn all_tool_definitions() -> Array[@types.ToolDefinition] {
+pub fn all_tool_definitions() -> Array[@llm_types.ToolDefinition] {
   all_tool_entries().map(fn(entry) { entry.definition })
 }
 
 ///|
 /// ツール名から定義を取得
-pub fn get_tool_definition(name : String) -> @types.ToolDefinition? {
+pub fn get_tool_definition(name : String) -> @llm_types.ToolDefinition? {
   match get_tool_entry(name) {
     Some(entry) => Some(entry.definition)
     None => None

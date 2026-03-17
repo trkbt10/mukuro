@@ -163,7 +163,7 @@ test "HistoryManager truncates old messages" {
   for i in 0..<4 {
     session = manager.add_message(
       session,
-      @types.ModelMessage::User(content="Message \{i}", name=None),
+      @llm_types.ModelMessage::User(content="Message \{i}", name=None),
     )
   }
   // 最大3件なので1件切り捨てられる
@@ -176,7 +176,7 @@ test "get_recent_messages returns last N messages" {
   let session = @types.Session::new(key, 1000L)
   for i in 0..<5 {
     session.history.push(
-      @types.ModelMessage::User(content="Message \{i}", name=None),
+      @llm_types.ModelMessage::User(content="Message \{i}", name=None),
     )
   }
   let recent = get_recent_messages(session, 2)

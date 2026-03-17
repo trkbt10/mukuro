@@ -56,9 +56,9 @@ fn reconstruct_session_from_history(
 ) -> @types.Session {
   let mut created_at = 0L
   let mut last_active_at = 0L
-  let history : Array[@types.ModelMessage] = []
+  let history : Array[@llm_types.ModelMessage] = []
   // AssistantMessage with tool_calls の処理状態
-  let pending_tool_calls : Array[@types.ToolCallRequest] = []
+  let pending_tool_calls : Array[@llm_types.ToolCallRequest] = []
   let mut pending_assistant_index : Int = -1
   let mut pending_assistant_content : String = ""
 
@@ -81,7 +81,7 @@ fn reconstruct_session_from_history(
 
         let content = extract_payload_content(record.payload)
         let name = extract_payload_name(record.payload)
-        history.push(@types.ModelMessage::User(content~, name~))
+        history.push(@llm_types.ModelMessage::User(content~, name~))
       }
       @interfaces.HistoryRecordType::AssistantMessage => {
         // 前の AssistantMessage に tool_calls を反映
@@ -97,12 +97,12 @@ fn reconstruct_session_from_history(
           pending_assistant_index = history.length()
           pending_assistant_content = content
           history.push(
-            @types.ModelMessage::Assistant(content~, tool_calls=None),
+            @llm_types.ModelMessage::Assistant(content~, tool_calls=None),
           )
         } else {
           pending_assistant_index = -1
           history.push(
-            @types.ModelMessage::Assistant(content~, tool_calls=None),
+            @llm_types.ModelMessage::Assistant(content~, tool_calls=None),
           )
         }
       }
@@ -121,7 +121,7 @@ fn reconstruct_session_from_history(
 
         let (call_id, content) = extract_tool_result_payload(record.payload)
         history.push(
-          @types.ModelMessage::ToolResult(tool_call_id=call_id, content~),
+          @llm_types.ModelMessage::ToolResult(tool_call_id=call_id, content~),
         )
       }
       _ => () // SessionMeta, Error は直接 history に入れない
@@ -148,14 +148,14 @@ fn reconstruct_session_from_history(
 ///|
 /// 保留中の AssistantMessage に tool_calls を反映
 fn finalize_pending_assistant(
-  history : Array[@types.ModelMessage],
-  pending_tool_calls : Array[@types.ToolCallRequest],
+  history : Array[@llm_types.ModelMessage],
+  pending_tool_calls : Array[@llm_types.ToolCallRequest],
   pending_assistant_index : Int,
   pending_assistant_content : String,
 ) -> Unit {
   if pending_assistant_index >= 0 && pending_tool_calls.length() > 0 {
     let tool_calls = pending_tool_calls.copy()
-    history[pending_assistant_index] = @types.ModelMessage::Assistant(
+    history[pending_assistant_index] = @llm_types.ModelMessage::Assistant(
       content=pending_assistant_content,
       tool_calls=Some(tool_calls),
     )
@@ -223,7 +223,7 @@ fn extract_payload_has_tool_calls(payload : Json) -> Bool {
 
 ///|
 /// payload から ToolCall を抽出
-fn extract_tool_call_payload(payload : Json) -> @types.ToolCallRequest {
+fn extract_tool_call_payload(payload : Json) -> @llm_types.ToolCallRequest {
   match payload {
     Object(obj) => {
       let call_id = match obj.get("call_id") {
@@ -238,9 +238,9 @@ fn extract_tool_call_payload(payload : Json) -> @types.ToolCallRequest {
         Some(args) => args
         _ => Json::object({})
       }
-      { id: call_id, name: tool_name, arguments }
+      { id: call_id, name: tool_name, arguments, kind: @llm_types.ToolCallKind::Function }
     }
-    _ => { id: "", name: "", arguments: Json::object({}) }
+    _ => { id: "", name: "", arguments: Json::object({}), kind: @llm_types.ToolCallKind::Function }
   }
 }
 
@@ -396,7 +396,7 @@ pub impl @interfaces.SessionManager for NativeSessionManager with append_user_me
 
   // キャッシュ更新
   let session = self.get_or_create(key, now=timestamp) catch { e => raise e }
-  session.add_message(@types.ModelMessage::User(content~, name~))
+  session.add_message(@llm_types.ModelMessage::User(content~, name~))
   self.cache[key] = session
 }
 
@@ -431,7 +431,7 @@ pub impl @interfaces.SessionManager for NativeSessionManager with append_assista
 
   // キャッシュ更新
   let session = self.get_or_create(key, now=timestamp) catch { e => raise e }
-  session.add_message(@types.ModelMessage::Assistant(content~, tool_calls~))
+  session.add_message(@llm_types.ModelMessage::Assistant(content~, tool_calls~))
   self.cache[key] = session
 }
 
@@ -492,7 +492,7 @@ pub impl @interfaces.SessionManager for NativeSessionManager with record_tool_re
   // キャッシュ更新
   let session = self.get_or_create(key, now=timestamp) catch { e => raise e }
   session.add_message(
-    @types.ModelMessage::ToolResult(tool_call_id=call_id, content~),
+    @llm_types.ModelMessage::ToolResult(tool_call_id=call_id, content~),
   )
   self.cache[key] = session
 }

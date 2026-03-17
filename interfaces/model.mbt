@@ -5,10 +5,10 @@ pub(open) trait ModelOrchestrator {
   /// モデルを呼び出し応答を取得 (async)
   async call(
     Self,
-    messages~ : Array[@types.ModelMessage],
-    tools~ : Array[@types.ToolDefinition],
+    messages~ : Array[@llm_types.ModelMessage],
+    tools~ : Array[@llm_types.ToolDefinition],
     options~ : @types.ModelOptions,
-  ) -> @types.ModelResponse
+  ) -> @llm_types.ModelResponse
 }
 
 ///|
@@ -22,10 +22,10 @@ pub(open) trait ModelProvider {
   /// モデルを呼び出し (async)
   async invoke(
     Self,
-    messages~ : Array[@types.ModelMessage],
-    tools~ : Array[@types.ToolDefinition],
+    messages~ : Array[@llm_types.ModelMessage],
+    tools~ : Array[@llm_types.ToolDefinition],
     options~ : @types.ModelOptions,
-  ) -> @types.ModelResponse
+  ) -> @llm_types.ModelResponse
 }
 
 ///|

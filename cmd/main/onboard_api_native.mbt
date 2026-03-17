@@ -222,11 +222,11 @@ async fn try_onboard_generate(body : String) -> ControlApiResponse {
   )
   let result = call_onboard_llm(p, prompt)
   match result {
-    @types.ModelResponse::Text(text) => {
+    @llm_types.ModelResponse::Text(text) => {
       let files = parse_onboard_generated_text(text)
       json_response(200, { "data": files })
     }
-    @types.ModelResponse::ModelError(msg) =>
+    @llm_types.ModelResponse::ModelError(msg) =>
       json_response(502, {
         "error": "llm_error",
         "message": Json::string("LLM call failed: " + msg),
@@ -281,10 +281,10 @@ fn build_onboard_generation_prompt(
 async fn call_onboard_llm(
   provider : @types.ProviderConfig,
   prompt : String,
-) -> @types.ModelResponse {
+) -> @llm_types.ModelResponse {
   let api_key = match provider.api_key {
     Some(k) => k
-    None => return @types.ModelResponse::ModelError("No API key")
+    None => return @llm_types.ModelResponse::ModelError("No API key")
   }
   let base_url = match provider.base_url {
     Some(url) => url
@@ -292,15 +292,15 @@ async fn call_onboard_llm(
       match get_default_provider_base_url(provider.name) {
         Some(url) => url
         None =>
-          return @types.ModelResponse::ModelError(
+          return @llm_types.ModelResponse::ModelError(
             "No base URL for provider: " + provider.name,
           )
       }
   }
-  let messages : Array[@types.ModelMessage] = [
-    @types.ModelMessage::User(content=prompt, name=None),
+  let messages : Array[@llm_types.ModelMessage] = [
+    @llm_types.ModelMessage::User(content=prompt, name=None),
   ]
-  let empty_tools : Array[@types.ToolDefinition] = []
+  let empty_tools : Array[@llm_types.ToolDefinition] = []
   let is_anthropic = provider.name == "anthropic" ||
     base_url.contains("anthropic")
   let body_json = if is_anthropic {
@@ -348,17 +348,17 @@ async fn call_onboard_llm(
     headers: req_headers,
     body: Some(body_bytes),
   }) catch {
-    _ => return @types.ModelResponse::ModelError("HTTP request failed")
+    _ => return @llm_types.ModelResponse::ModelError("HTTP request failed")
   }
   if response.status < 200 || response.status >= 300 {
     let err_body = @bytes.decode_utf8_or(response.body[:], default="")
-    return @types.ModelResponse::ModelError(
+    return @llm_types.ModelResponse::ModelError(
       "HTTP \{response.status}: " + err_body,
     )
   }
   let resp_str = @bytes.decode_utf8_or(response.body[:], default="")
   let resp_json : Json = @json.parse(resp_str) catch {
-    _ => return @types.ModelResponse::ModelError("Invalid JSON response")
+    _ => return @llm_types.ModelResponse::ModelError("Invalid JSON response")
   }
   if is_anthropic {
     @protocol.parse_anthropic_response(resp_json)

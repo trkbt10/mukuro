@@ -52,7 +52,7 @@ pub fn ContextFiles::has_soul(self : ContextFiles) -> Bool {
 /// コンテキスト構築入力
 pub(all) struct ContextInput {
   /// セッション履歴
-  session_history : Array[@types.ModelMessage]
+  session_history : Array[@llm_types.ModelMessage]
   /// 長期記憶からの関連情報
   memory_context : Array[String]
   /// Trace短期記憶（フォーマット済み）
@@ -76,7 +76,7 @@ pub(all) struct ContextInput {
 /// セッション履歴やメモリからモデルメッセージ列を構築する
 pub(open) trait ContextBuilder {
   /// コンテキストからモデルメッセージ列を構築
-  build(Self, ContextInput) -> Array[@types.ModelMessage]
+  build(Self, ContextInput) -> Array[@llm_types.ModelMessage]
 }
 
 ///|

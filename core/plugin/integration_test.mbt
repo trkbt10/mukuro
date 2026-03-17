@@ -142,7 +142,8 @@ test "plugin host: register and list plugins" {
 test "plugin tool registry: full workflow" {
   let registry = PluginToolRegistry::new()
   // Create tool definitions
-  let greet_tool : @types.ToolDefinition = {
+  let greet_tool : @llm_types.ToolDefinition = {
+    kind: @llm_types.ToolDefinitionKind::Function,
     name: "hello-world.greet",
     description: "Greet a user",
     parameters: {
@@ -152,7 +153,8 @@ test "plugin tool registry: full workflow" {
     schema: None,
     metadata: { "plugin_id": "hello-world", "capability": "greet" },
   }
-  let echo_tool : @types.ToolDefinition = {
+  let echo_tool : @llm_types.ToolDefinition = {
+    kind: @llm_types.ToolDefinitionKind::Function,
     name: "hello-world.echo",
     description: "Echo a message",
     parameters: {

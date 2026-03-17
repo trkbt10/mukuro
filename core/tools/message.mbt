@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn message_tool() -> @types.ToolDefinition {
+pub fn message_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="message",
     description="Send messages to external channels (Slack, Discord, etc.) or other chat sessions. Use for: notifying users, sending results to other channels, cross-channel communication. Note: edit/delete/react require channel-specific implementation.",

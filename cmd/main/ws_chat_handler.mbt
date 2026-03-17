@@ -232,7 +232,7 @@ async fn ChatWsHandler::handle_send_stream(
     }
   }
   // Convert response to Responses API stream events for translation verification
-  let response = @types.ModelResponse::Text(outbound.content)
+  let response = @llm_types.ModelResponse::Text(outbound.content)
   let stream_events = model_response_to_stream_events(response)
   // Send each translated event
   for evt in stream_events {
@@ -261,7 +261,7 @@ async fn ChatWsHandler::handle_load_history(
     Some(s) =>
       for msg in s.history {
         match msg {
-          @types.ModelMessage::User(content~, name~) =>
+          @llm_types.ModelMessage::User(content~, name~) =>
             match name {
               Some(n) =>
                 messages.push({
@@ -272,7 +272,7 @@ async fn ChatWsHandler::handle_load_history(
               None =>
                 messages.push({ "role": "user", "content": content.to_json() })
             }
-          @types.ModelMessage::Assistant(content~, ..) =>
+          @llm_types.ModelMessage::Assistant(content~, ..) =>
             messages.push({ "role": "assistant", "content": content.to_json() })
           _ => ()
         }

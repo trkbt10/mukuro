@@ -7,7 +7,7 @@
 // =============================================================================
 
 ///|
-pub fn datetime_tool() -> @types.ToolDefinition {
+pub fn datetime_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="datetime",
     description="Get current date, time, and timezone information. Use this when users ask about the current time, today's date, or need timestamps for scheduling. Returns ISO 8601 formatted datetime and Unix timestamps.",

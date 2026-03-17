@@ -51,7 +51,7 @@ pub(open) trait SessionManager {
     Self,
     @types.SessionKey,
     content~ : String,
-    tool_calls~ : Array[@types.ToolCallRequest]?,
+    tool_calls~ : Array[@llm_types.ToolCallRequest]?,
     timestamp~ : Int64,
   ) -> Unit raise SessionManagerError
 

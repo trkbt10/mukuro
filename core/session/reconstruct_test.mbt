@@ -99,7 +99,7 @@ test "reconstruct_session_from_history: user message is reconstructed" {
   assert_eq(session.history.length(), 1)
   assert_eq(session.created_at, 1000L)
   match session.history[0] {
-    @types.ModelMessage::User(content~, ..) => assert_eq(content, "Hello")
+    @llm_types.ModelMessage::User(content~, ..) => assert_eq(content, "Hello")
     _ => fail("Expected User message")
   }
 }
@@ -163,7 +163,7 @@ test "reconstruct_session_from_history: ToolCall records populate AssistantMessa
 
   // 2番目のメッセージは ToolCall を含む AssistantMessage
   match session.history[1] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "")
       match tool_calls {
         Some(calls) => {
@@ -179,7 +179,7 @@ test "reconstruct_session_from_history: ToolCall records populate AssistantMessa
 
   // 3番目のメッセージは ToolResult
   match session.history[2] {
-    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+    @llm_types.ModelMessage::ToolResult(tool_call_id~, content~) => {
       assert_eq(tool_call_id, "call_001")
       assert_eq(content, "Sunny, 25°C")
     }
@@ -286,7 +286,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 2番目: Assistant with tool_calls (fc_001)
   match session.history[1] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "")
       match tool_calls {
         Some(calls) => {
@@ -302,7 +302,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 4番目: Assistant with tool_calls (fc_002) - チェーンされた2回目
   match session.history[3] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "")
       match tool_calls {
         Some(calls) => {
@@ -318,7 +318,7 @@ test "reconstruct_session_from_history: chained_tool_calls" {
 
   // 6番目: Assistant (final text)
   match session.history[5] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_true(content.contains("files"))
       assert_true(tool_calls is None)
     }
@@ -401,7 +401,7 @@ test "reconstruct_session_from_history: two_phase_with_follow_up" {
 
   // 重要: 2番目の AssistantMessage に tool_calls が正しく復元されていること
   match session.history[1] {
-    @types.ModelMessage::Assistant(tool_calls~, ..) =>
+    @llm_types.ModelMessage::Assistant(tool_calls~, ..) =>
       match tool_calls {
         Some(calls) => {
           assert_eq(calls.length(), 1)
@@ -418,7 +418,7 @@ test "reconstruct_session_from_history: two_phase_with_follow_up" {
 
   // 最後のメッセージがフォローアップ User
   match session.history[4] {
-    @types.ModelMessage::User(content~, ..) =>
+    @llm_types.ModelMessage::User(content~, ..) =>
       assert_eq(content, "Now show details with ls -la")
     _ => fail("Expected User message at index 4")
   }
@@ -471,14 +471,14 @@ test "reconstruct_session_from_history: text_only_conversation_continuation" {
 
   // 最初のメッセージが User
   match session.history[0] {
-    @types.ModelMessage::User(content~, ..) =>
+    @llm_types.ModelMessage::User(content~, ..) =>
       assert_eq(content, "ブースとラプう")
     _ => fail("Expected User message at index 0")
   }
 
   // 2番目のメッセージが Assistant (text only, no tool_calls)
   match session.history[1] {
-    @types.ModelMessage::Assistant(content~, tool_calls~) => {
+    @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
       assert_eq(content, "「ブースとラプう」について、もう少し詳しく教えてください。")
       // CRITICAL: 純粋テキスト会話では tool_calls は None であること
       // これが Some([]) になっていると、Responses API で問題が発生する可能性がある
@@ -500,7 +500,7 @@ test "reconstruct_session_from_history: text_only_conversation_continuation" {
 
   // 最後のメッセージが User follow-up
   match session.history[2] {
-    @types.ModelMessage::User(content~, ..) =>
+    @llm_types.ModelMessage::User(content~, ..) =>
       assert_eq(content, "bootstrapって完了した？")
     _ => fail("Expected User message at index 2")
   }

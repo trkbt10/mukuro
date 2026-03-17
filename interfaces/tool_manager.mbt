@@ -192,7 +192,7 @@ pub(open) trait DynamicToolManager {
   list_tool_states(Self) -> Array[ToolState]
 
   /// List only enabled tools as ToolDefinition (for LLM)
-  list_enabled_definitions(Self) -> Array[@types.ToolDefinition]
+  list_enabled_definitions(Self) -> Array[@llm_types.ToolDefinition]
 
   /// Check if a tool exists
   has_tool(Self, id~ : String) -> Bool

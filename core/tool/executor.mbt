@@ -46,10 +46,10 @@ pub async fn ToolExecutionManager::execute(
 /// 複数のツール呼び出しを実行 (async)
 pub async fn ToolExecutionManager::execute_calls(
   self : ToolExecutionManager,
-  calls : Array[@types.ToolCallRequest],
+  calls : Array[@llm_types.ToolCallRequest],
   context : @types.ToolContext,
-) -> Array[(@types.ToolCallRequest, @types.ToolResult)] raise ToolExecutionError {
-  let results : Array[(@types.ToolCallRequest, @types.ToolResult)] = []
+) -> Array[(@llm_types.ToolCallRequest, @types.ToolResult)] raise ToolExecutionError {
+  let results : Array[(@llm_types.ToolCallRequest, @types.ToolResult)] = []
   for call in calls {
     let result = self.execute(call.name, call.arguments, context)
     results.push((call, result))
@@ -62,14 +62,14 @@ pub async fn ToolExecutionManager::execute_calls(
 pub fn tool_result_to_message(
   call_id : String,
   result : @types.ToolResult,
-) -> @types.ModelMessage {
+) -> @llm_types.ModelMessage {
   let content = match result {
     @types.ToolResult::Success(content~) => content
     @types.ToolResult::Error(message~) => "Error: \{message}"
     @types.ToolResult::RequiresAction(next_tool~, arguments~) =>
       "RequiresAction: \{next_tool} with \{arguments}"
   }
-  @types.ModelMessage::ToolResult(tool_call_id=call_id, content~)
+  @llm_types.ModelMessage::ToolResult(tool_call_id=call_id, content~)
 }
 
 ///|

@@ -8,6 +8,7 @@ import {
   "trkbt10/mukuro/core/session" @session,
   "trkbt10/mukuro/core/tool" @tool,
   "trkbt10/mukuro/core/types" @types,
+  "trkbt10/llm_interop/src/types" @llm_types,
 }
 
 warnings = "-29"

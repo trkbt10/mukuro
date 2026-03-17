@@ -7,10 +7,11 @@ pub fn capability_to_tool_definition(
   plugin_id : String,
   capability : String,
   schema : @interfaces.CapabilitySchema,
-) -> @types.ToolDefinition {
+) -> @llm_types.ToolDefinition {
   // Generate unique tool name
   let tool_name = "\{plugin_id}.\{capability}"
   {
+    kind: @llm_types.ToolDefinitionKind::Function,
     name: tool_name,
     description: schema.description,
     parameters: schema.parameters,
@@ -72,8 +73,8 @@ fn parse_param_type(type_str : String) -> @types.ParameterType {
 pub fn generate_tools_from_manifest(
   plugin_id : String,
   capability_schemas : Map[String, @interfaces.CapabilitySchema],
-) -> Array[@types.ToolDefinition] {
-  let tools : Array[@types.ToolDefinition] = []
+) -> Array[@llm_types.ToolDefinition] {
+  let tools : Array[@llm_types.ToolDefinition] = []
   for capability, schema in capability_schemas {
     tools.push(capability_to_tool_definition(plugin_id, capability, schema))
   }
@@ -84,8 +85,8 @@ pub fn generate_tools_from_manifest(
 /// Generate tool definitions from extended manifest
 pub fn generate_tools_from_extended_manifest(
   ext_manifest : ExtendedManifest,
-) -> Array[@types.ToolDefinition] {
-  let tools : Array[@types.ToolDefinition] = []
+) -> Array[@llm_types.ToolDefinition] {
+  let tools : Array[@llm_types.ToolDefinition] = []
   for capability, schema_parsed in ext_manifest.capability_schemas {
     // Convert parsed schema to CapabilitySchema
     let schema : @interfaces.CapabilitySchema = {
@@ -105,9 +106,9 @@ pub fn generate_tools_from_extended_manifest(
 /// Tool registration helper
 pub struct PluginToolRegistry {
   /// Tool definitions by plugin
-  tools_by_plugin : Map[String, Array[@types.ToolDefinition]]
+  tools_by_plugin : Map[String, Array[@llm_types.ToolDefinition]]
   /// All tool definitions
-  all_tools : Array[@types.ToolDefinition]
+  all_tools : Array[@llm_types.ToolDefinition]
 }
 
 ///|
@@ -121,7 +122,7 @@ pub fn PluginToolRegistry::new() -> PluginToolRegistry {
 pub fn PluginToolRegistry::register_plugin_tools(
   self : PluginToolRegistry,
   plugin_id : String,
-  tools : Array[@types.ToolDefinition],
+  tools : Array[@llm_types.ToolDefinition],
 ) -> Unit {
   self.tools_by_plugin[plugin_id] = tools
   for tool in tools {
@@ -150,7 +151,7 @@ pub fn PluginToolRegistry::unregister_plugin_tools(
 pub fn PluginToolRegistry::get_plugin_tools(
   self : PluginToolRegistry,
   plugin_id : String,
-) -> Array[@types.ToolDefinition] {
+) -> Array[@llm_types.ToolDefinition] {
   match self.tools_by_plugin.get(plugin_id) {
     Some(tools) => tools
     None => []
@@ -161,7 +162,7 @@ pub fn PluginToolRegistry::get_plugin_tools(
 /// Get all registered tools
 pub fn PluginToolRegistry::get_all_tools(
   self : PluginToolRegistry,
-) -> Array[@types.ToolDefinition] {
+) -> Array[@llm_types.ToolDefinition] {
   self.all_tools
 }
 
@@ -170,7 +171,7 @@ pub fn PluginToolRegistry::get_all_tools(
 pub fn PluginToolRegistry::find_tool(
   self : PluginToolRegistry,
   tool_name : String,
-) -> @types.ToolDefinition? {
+) -> @llm_types.ToolDefinition? {
   for tool in self.all_tools {
     if tool.name == tool_name {
       return Some(tool)

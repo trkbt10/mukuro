@@ -1,6 +1,7 @@
 import {
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
+  "trkbt10/llm_interop/src/types" @llm_types,
 }
 
 import {

@@ -1,7 +1,7 @@
 ///|
 test "InMemoryToolRegistry registers and retrieves tools" {
   let registry = InMemoryToolRegistry::new()
-  let definition = @types.ToolDefinition::new(
+  let definition = @llm_types.ToolDefinition::new(
     name="echo",
     description="Echo the input",
     parameters={ "type": "object" },
@@ -19,8 +19,8 @@ test "InMemoryToolRegistry registers and retrieves tools" {
 ///|
 test "InMemoryToolRegistry lists definitions" {
   let registry = InMemoryToolRegistry::new()
-  let def1 = @types.ToolDefinition::new(name="tool1", description="Tool 1", parameters={})
-  let def2 = @types.ToolDefinition::new(name="tool2", description="Tool 2", parameters={})
+  let def1 = @llm_types.ToolDefinition::new(name="tool1", description="Tool 1", parameters={})
+  let def2 = @llm_types.ToolDefinition::new(name="tool2", description="Tool 2", parameters={})
   let executor = DummyExecutor::new()
   @interfaces.ToolRegistry::register(registry, def1, executor)
   @interfaces.ToolRegistry::register(registry, def2, executor)
@@ -32,7 +32,7 @@ test "InMemoryToolRegistry lists definitions" {
 test "InMemoryToolRegistry count returns correct value" {
   let registry = InMemoryToolRegistry::new()
   inspect(registry.count(), content="0")
-  let def = @types.ToolDefinition::new(name="test", description="Test", parameters={})
+  let def = @llm_types.ToolDefinition::new(name="test", description="Test", parameters={})
   let executor = DummyExecutor::new()
   @interfaces.ToolRegistry::register(registry, def, executor)
   inspect(registry.count(), content="1")
@@ -43,7 +43,7 @@ test "tool_result_to_message creates correct message" {
   let result = @types.ToolResult::Success(content="Result data")
   let msg = tool_result_to_message("call_123", result)
   match msg {
-    @types.ModelMessage::ToolResult(tool_call_id~, content~) => {
+    @llm_types.ModelMessage::ToolResult(tool_call_id~, content~) => {
       inspect(tool_call_id, content="call_123")
       inspect(content, content="Result data")
     }

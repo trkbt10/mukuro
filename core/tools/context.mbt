@@ -11,7 +11,7 @@ pub struct BuiltinToolContext {
 /// ツールエントリ - 定義と実行関数を一箇所で管理
 pub struct ToolEntry {
   name : String
-  definition : @types.ToolDefinition
+  definition : @llm_types.ToolDefinition
   settings_schema : Json?
   execute : async (BuiltinToolContext, Json) -> ToolExecutionResult
 }

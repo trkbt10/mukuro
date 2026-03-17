@@ -77,7 +77,7 @@ pub impl @interfaces.ModelOrchestrator for FixedTextModelOrchestrator with call(
   ignore(messages)
   ignore(tools)
   ignore(options)
-  @types.ModelResponse::Text(self.response)
+  @llm_types.ModelResponse::Text(self.response)
 }
 
 ///|

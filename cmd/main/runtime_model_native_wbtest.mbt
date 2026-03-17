@@ -218,7 +218,7 @@ async test "ModelOrchestrator::call returns error when config not initialized" {
   )
   api_v1_settings_state.config = saved
   match result {
-    @types.ModelResponse::ModelError(msg) =>
+    @llm_types.ModelResponse::ModelError(msg) =>
       assert_true(msg.contains("not initialized"))
     _ => fail("expected ModelError")
   }
@@ -245,7 +245,7 @@ async test "ModelOrchestrator::call returns error when providers empty" {
   )
   api_v1_settings_state.config = saved
   match result {
-    @types.ModelResponse::ModelError(msg) =>
+    @llm_types.ModelResponse::ModelError(msg) =>
       assert_true(
         msg.contains("no providers configured") ||
         msg.contains("not initialized"),
@@ -281,7 +281,7 @@ async test "ModelOrchestrator::call returns error when provider validation fails
   )
   api_v1_settings_state.config = saved
   match result {
-    @types.ModelResponse::ModelError(msg) =>
+    @llm_types.ModelResponse::ModelError(msg) =>
       assert_true(msg.contains("base_url is required"))
     _ => fail("expected ModelError for missing base_url")
   }
@@ -300,7 +300,7 @@ async test "ModelOrchestrator::call uses forced response for test" {
   )
   set_forced_response_for_test(None)
   match result {
-    @types.ModelResponse::Text(content) =>
+    @llm_types.ModelResponse::Text(content) =>
       inspect(content, content="test response")
     _ => fail("expected Text response from forced test toggle")
   }
@@ -327,7 +327,7 @@ async test "ModelOrchestrator::call reflects config updates immediately" {
     options=@types.ModelOptions::default(),
   )
   match result1 {
-    @types.ModelResponse::ModelError(_) => ()
+    @llm_types.ModelResponse::ModelError(_) => ()
     _ => fail("expected ModelError for empty providers")
   }
   // config を更新 → 同じ orchestrator で validation エラーが変わる
@@ -353,7 +353,7 @@ async test "ModelOrchestrator::call reflects config updates immediately" {
   )
   api_v1_settings_state.config = saved
   match result2 {
-    @types.ModelResponse::ModelError(msg) =>
+    @llm_types.ModelResponse::ModelError(msg) =>
       assert_true(msg.contains("base_url is required"))
     _ => fail("expected ModelError for missing base_url")
   }

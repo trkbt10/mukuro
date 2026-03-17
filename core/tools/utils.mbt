@@ -11,8 +11,8 @@ pub fn make_tool_definition(
   name~ : String,
   description~ : String,
   parameters~ : Json,
-) -> @types.ToolDefinition {
-  @types.ToolDefinition::new(name~, description~, parameters~)
+) -> @llm_types.ToolDefinition {
+  @llm_types.ToolDefinition::new(name~, description~, parameters~)
 }
 
 ///|

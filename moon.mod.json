@@ -6,7 +6,8 @@
     "moonbitlang/x": "0.4.40",
     "mizchi/x": "0.1.4",
     "mizchi/sqlite": "0.2.3",
-    "trkbt10/subprocess": "0.2.0"
+    "trkbt10/subprocess": "0.2.0",
+    "trkbt10/llm_interop": "0.1.0"
   },
   "readme": "README.mbt.md",
   "repository": "",

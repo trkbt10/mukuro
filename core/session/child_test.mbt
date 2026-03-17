@@ -54,8 +54,8 @@ test "ChildSession add_message" {
     child_id="c",
     timestamp=0L,
   )
-  session.add_message(@types.ModelMessage::System("Hello"))
-  session.add_message(@types.ModelMessage::User(content="Hi", name=None))
+  session.add_message(@llm_types.ModelMessage::System("Hello"))
+  session.add_message(@llm_types.ModelMessage::User(content="Hi", name=None))
   inspect(session.messages.length(), content="2")
 }
 

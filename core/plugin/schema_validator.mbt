@@ -356,7 +356,7 @@ fn get_json_type(value : Json) -> String {
 ///|
 /// Validate tool arguments against tool definition
 pub fn validate_tool_arguments(
-  tool : @types.ToolDefinition,
+  tool : @llm_types.ToolDefinition,
   arguments : Json,
 ) -> ValidationResult {
   match tool.schema {

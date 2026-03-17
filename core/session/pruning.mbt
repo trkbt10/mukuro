@@ -26,8 +26,8 @@ pub fn ContextPruner::default() -> ContextPruner {
 /// Prune messages based on configured strategy
 pub fn ContextPruner::prune(
   self : ContextPruner,
-  messages : Array[@types.ModelMessage],
-) -> Array[@types.ModelMessage] {
+  messages : Array[@llm_types.ModelMessage],
+) -> Array[@llm_types.ModelMessage] {
   match self.config.strategy {
     @types.PruningStrategy::CacheTTL(ttl_ms) =>
       self.prune_by_ttl(messages, ttl_ms)
@@ -43,9 +43,9 @@ pub fn ContextPruner::prune(
 /// Falls back to soft trim with reasonable limit
 fn ContextPruner::prune_by_ttl(
   self : ContextPruner,
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   _ttl_ms : Int64,
-) -> Array[@types.ModelMessage] {
+) -> Array[@llm_types.ModelMessage] {
   // TTL pruning would require timestamp metadata on messages
   // For now, fall back to soft trim with a reasonable limit
   self.prune_soft_trim(messages, 50)
@@ -55,18 +55,18 @@ fn ContextPruner::prune_by_ttl(
 /// Soft trim: keep only the last N messages
 fn ContextPruner::prune_soft_trim(
   self : ContextPruner,
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   max_messages : Int,
-) -> Array[@types.ModelMessage] {
+) -> Array[@llm_types.ModelMessage] {
   if messages.length() <= max_messages {
     return messages
   }
-  let result : Array[@types.ModelMessage] = []
+  let result : Array[@llm_types.ModelMessage] = []
   // Preserve system messages if configured
   if self.config.preserve_system {
     for msg in messages {
       match msg {
-        @types.ModelMessage::System(_) => result.push(msg)
+        @llm_types.ModelMessage::System(_) => result.push(msg)
         _ => ()
       }
     }
@@ -78,10 +78,10 @@ fn ContextPruner::prune_soft_trim(
     return result
   }
   // Collect non-system messages
-  let non_system : Array[@types.ModelMessage] = []
+  let non_system : Array[@llm_types.ModelMessage] = []
   for msg in messages {
     match msg {
-      @types.ModelMessage::System(_) => ()
+      @llm_types.ModelMessage::System(_) => ()
       _ => non_system.push(msg)
     }
   }
@@ -101,13 +101,13 @@ fn ContextPruner::prune_soft_trim(
 /// Hard clear: remove all messages except system prompt
 fn ContextPruner::prune_hard_clear(
   self : ContextPruner,
-  messages : Array[@types.ModelMessage],
-) -> Array[@types.ModelMessage] {
-  let result : Array[@types.ModelMessage] = []
+  messages : Array[@llm_types.ModelMessage],
+) -> Array[@llm_types.ModelMessage] {
+  let result : Array[@llm_types.ModelMessage] = []
   if self.config.preserve_system {
     for msg in messages {
       match msg {
-        @types.ModelMessage::System(_) => result.push(msg)
+        @llm_types.ModelMessage::System(_) => result.push(msg)
         _ => ()
       }
     }
@@ -118,7 +118,7 @@ fn ContextPruner::prune_hard_clear(
 ///|
 /// Estimate token count for messages (simple heuristic)
 /// Uses ~4 characters per token as approximation
-pub fn estimate_token_count(messages : Array[@types.ModelMessage]) -> Int {
+pub fn estimate_token_count(messages : Array[@llm_types.ModelMessage]) -> Int {
   let mut total_chars = 0
   for msg in messages {
     total_chars = total_chars + get_message_content_length(msg)
@@ -129,12 +129,12 @@ pub fn estimate_token_count(messages : Array[@types.ModelMessage]) -> Int {
 
 ///|
 /// Get content length from a message
-fn get_message_content_length(msg : @types.ModelMessage) -> Int {
+fn get_message_content_length(msg : @llm_types.ModelMessage) -> Int {
   match msg {
-    @types.ModelMessage::System(content) => content.length()
-    @types.ModelMessage::User(content~, ..) => content.length()
-    @types.ModelMessage::Assistant(content~, ..) => content.length()
-    @types.ModelMessage::ToolResult(content~, ..) => content.length()
+    @llm_types.ModelMessage::System(content) => content.length()
+    @llm_types.ModelMessage::User(content~, ..) => content.length()
+    @llm_types.ModelMessage::Assistant(content~, ..) => content.length()
+    @llm_types.ModelMessage::ToolResult(content~, ..) => content.length()
   }
 }
 
@@ -142,9 +142,9 @@ fn get_message_content_length(msg : @types.ModelMessage) -> Int {
 /// Prune messages to fit within token budget
 pub fn ContextPruner::prune_to_token_budget(
   self : ContextPruner,
-  messages : Array[@types.ModelMessage],
+  messages : Array[@llm_types.ModelMessage],
   max_tokens : Int,
-) -> Array[@types.ModelMessage] {
+) -> Array[@llm_types.ModelMessage] {
   let min_tokens = match self.config.min_context_tokens {
     Some(n) => n
     None => 1000

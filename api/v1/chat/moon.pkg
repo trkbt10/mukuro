@@ -3,6 +3,7 @@ import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/core/types" @types,
   "trkbt10/mukuro/core/history" @history,
+  "trkbt10/llm_interop/src/types" @llm_types,
   "moonbitlang/core/json",
   "moonbitlang/core/random" @random,
   "moonbitlang/x/uuid" @uuid,

@@ -32,7 +32,7 @@ pub(all) struct ChildSession {
   /// 子セッションID
   child_id : String
   /// メッセージ履歴
-  messages : Array[@types.ModelMessage]
+  messages : Array[@llm_types.ModelMessage]
   /// ステータス
   mut status : ChildSessionStatus
   /// 最終結果
@@ -65,7 +65,7 @@ pub fn ChildSession::new(
 /// メッセージを追加
 pub fn ChildSession::add_message(
   self : ChildSession,
-  message : @types.ModelMessage,
+  message : @llm_types.ModelMessage,
 ) -> Unit {
   self.messages.push(message)
 }
