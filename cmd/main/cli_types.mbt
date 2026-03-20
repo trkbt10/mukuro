@@ -24,6 +24,8 @@ pub(all) enum Command {
   Onboard(OnboardOptions)
   /// Gateway操作
   Gateway(GatewayCommand)
+  /// Agent実行（CLI REPL / 単発実行）
+  Agent(AgentOptions)
   /// Cron操作
   Cron(CronCommand)
   /// Service操作
@@ -32,6 +34,15 @@ pub(all) enum Command {
   DaemonChild(String)
   /// 不明なコマンド
   Unknown(String)
+}
+
+///|
+/// Agentコマンドオプション
+pub(all) struct AgentOptions {
+  /// 単発メッセージ（指定時はREPLに入らず1回実行して終了）
+  mut message : String?
+  /// 設定ファイルパス
+  mut config_path : String?
 }
 
 ///|
@@ -172,8 +183,9 @@ pub fn get_help_message() -> String {
   let status_opts = "Gateway Status Options:\n  --json               Output status as JSON"
   let auth_log_opts = "Gateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON"
   let service_opts = "Service Options:\n  install [--user|--system] [--config PATH] [--auto-start]\n                       Install as system service\n  uninstall            Uninstall system service\n  start                Start the service\n  stop                 Stop the service\n  restart              Restart the service\n  status [--json]      Show service status\n  logs [-f] [-n LINES] View service logs"
-  let examples = "Examples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway\n  mukuro gateway --config ~/.mukuro/config.json\n  mukuro gateway --daemon\n  mukuro gateway status\n  mukuro gateway stop\n  mukuro --local gateway          # Use project-local .mukuro\n  mukuro cron list\n  mukuro service install --user\n  mukuro service status"
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro [global-options] <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway              Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  service              Manage system service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\n\{global_opts}\n\n\{gateway_opts}\n\n\{status_opts}\n\n\{auth_log_opts}\n\n\{service_opts}\n\n\{examples}"
+  let agent_opts = "Agent Options:\n  -m, --message <msg>  Send a single message and exit\n  --config <path>      Path to configuration file"
+  let examples = "Examples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway\n  mukuro gateway --config ~/.mukuro/config.json\n  mukuro gateway --daemon\n  mukuro gateway status\n  mukuro gateway stop\n  mukuro agent -m \"What is MoonBit?\"\n  mukuro agent                     # Interactive REPL\n  mukuro --local gateway          # Use project-local .mukuro\n  mukuro cron list\n  mukuro service install --user\n  mukuro service status"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro [global-options] <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway              Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  agent                Interactive agent REPL or single-shot execution\n  service              Manage system service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\n\{global_opts}\n\n\{gateway_opts}\n\n\{agent_opts}\n\n\{status_opts}\n\n\{auth_log_opts}\n\n\{service_opts}\n\n\{examples}"
 }
 
 ///|

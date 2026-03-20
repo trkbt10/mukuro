@@ -23,6 +23,7 @@ options(
     "datetime_time_native.mbt": [ "native" ],
     "edit_file_native.mbt": [ "native" ],
     "filesystem_native.mbt": [ "native" ],
+    "memory_native.mbt": [ "native" ],
     "shell_native.mbt": [ "native" ],
     "tools_wbtest.mbt": [ "native" ],
     "web_native.mbt": [ "native" ],

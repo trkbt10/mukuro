@@ -261,6 +261,20 @@ fn merge_provider_from_env(
         Some(key) => Some(key)
         None => provider.api_key
       }
+    "gemini" | "google" =>
+      match env.get_env(name="GEMINI_API_KEY") {
+        Some(key) => Some(key)
+        None =>
+          match env.get_env(name="GOOGLE_API_KEY") {
+            Some(key) => Some(key)
+            None => provider.api_key
+          }
+      }
+    "groq" =>
+      match env.get_env(name="GROQ_API_KEY") {
+        Some(key) => Some(key)
+        None => provider.api_key
+      }
     _ => provider.api_key
   }
   { ..provider, api_key, }

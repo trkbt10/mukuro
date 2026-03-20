@@ -132,6 +132,15 @@ fn build_workspace_context_metadata() -> Map[String, Json] {
     None => load_memory_from_text()
   }
 
+  // MEMORY.md の読み込み（memory.json/memory.txt に加えてコンテキストに注入）
+  match read_text_file_optional(context_path("MEMORY.md")) {
+    Some(content) =>
+      if content.trim().length() > 0 {
+        metadata["memory_md"] = Json::string(content)
+      }
+    None => ()
+  }
+
   match read_text_file_optional(context_path("skills.json")) {
     Some(content) => {
       let parsed : Json = @json.parse(content) catch { _ => Json::null() }

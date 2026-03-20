@@ -5,7 +5,12 @@
 
 ///|
 fn is_openai_compatible_provider(provider : String) -> Bool {
-  provider != "anthropic"
+  provider != "anthropic" && provider != "gemini"
+}
+
+///|
+fn is_gemini_provider(provider : String) -> Bool {
+  provider == "gemini" || provider == "google"
 }
 
 ///|
@@ -35,7 +40,19 @@ fn validate_provider_config(p : @types.ProviderConfig) -> String? {
       "provider is required\n\nRun 'mukuro onboard --provider <provider> --api-key <key>' to initialize configuration.",
     )
   }
-  if is_openai_compatible_provider(p.name) {
+  if is_gemini_provider(p.name) {
+    match p.api_key {
+      None => return Some("api_key is required for gemini provider")
+      Some(k) =>
+        if k.is_empty() {
+          return Some("api_key is required for gemini provider")
+        }
+    }
+    if p.default_model.is_empty() {
+      return Some("model is required for gemini provider")
+    }
+    None
+  } else if is_openai_compatible_provider(p.name) {
     match p.base_url {
       None =>
         return Some(
@@ -53,6 +70,7 @@ fn validate_provider_config(p : @types.ProviderConfig) -> String? {
     }
     None
   } else {
+    // anthropic
     match p.api_key {
       None => return Some("api_key is required for anthropic provider")
       Some(k) =>
@@ -278,6 +296,85 @@ async fn call_anthropic_impl(
 }
 
 ///|
+async fn call_gemini_impl(
+  provider : @types.ProviderConfig,
+  http_client : @native.NativeHttpClient,
+  messages : Array[@llm_types.ModelMessage],
+  options : @types.ModelOptions,
+  tools : Array[@llm_types.ToolDefinition],
+) -> @llm_types.ModelResponse {
+  let api_key = provider.api_key.unwrap_or("")
+  let headers = @gemini.auth_headers()
+  let model = options.model_name
+  let body = @gemini.build_body(
+    messages,
+    tools,
+    max_tokens=options.max_tokens,
+    temperature=options.temperature,
+  ).stringify()
+  let base = match provider.base_url {
+    Some(url) => normalize_base_url(url)
+    None => @gemini.default_base_url()
+  }
+  let path = @gemini.completion_path(base, model, api_key)
+  let req : @interfaces.HttpRequest = {
+    url: path,
+    http_method: @interfaces.HttpMethod::Post,
+    headers,
+    body: Some(string_to_body_bytes(body)),
+  }
+  let response = @interfaces.HttpClient::request(http_client, req) catch {
+    _ => return @llm_types.ModelResponse::ModelError("Gemini request failed")
+  }
+  if response.status == 429 {
+    return @llm_types.ModelResponse::RateLimited(retry_after=60)
+  }
+  if response.status < 200 || response.status >= 300 {
+    let err_body = body_bytes_to_string(response.body)
+    return @llm_types.ModelResponse::ModelError(
+      "Gemini HTTP error: \{response.status}; body=\{err_body}",
+    )
+  }
+  let json : Json = @json.parse(body_bytes_to_string(response.body)) catch {
+    _ => return @llm_types.ModelResponse::ModelError("Invalid Gemini response JSON")
+  }
+  @gemini.parse_response(json)
+}
+
+///|
+/// プロバイダ名に基づいて適切な実装を呼び出す
+async fn call_provider(
+  provider : @types.ProviderConfig,
+  http_client : @native.NativeHttpClient,
+  messages : Array[@llm_types.ModelMessage],
+  options : @types.ModelOptions,
+  tools : Array[@llm_types.ToolDefinition],
+) -> @llm_types.ModelResponse {
+  if is_gemini_provider(provider.name) {
+    call_gemini_impl(provider, http_client, messages, options, tools)
+  } else if is_openai_compatible_provider(provider.name) {
+    call_openai_impl(provider, http_client, messages, options, tools)
+  } else {
+    call_anthropic_impl(provider, http_client, messages, options, tools)
+  }
+}
+
+///|
+/// config から名前でプロバイダを取得
+fn find_provider_by_name(name : String) -> @types.ProviderConfig? {
+  let config = match api_v1_settings_state.get_config() {
+    Some(c) => c
+    None => return None
+  }
+  for p in config.providers {
+    if p.name == name {
+      return Some(p)
+    }
+  }
+  None
+}
+
+///|
 pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
   self,
   messages~,
@@ -299,11 +396,57 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
     Some(msg) => return @llm_types.ModelResponse::ModelError(msg)
     None => ()
   }
-  if is_openai_compatible_provider(provider.name) {
-    call_openai_impl(provider, self.http_client, messages, options, tools)
-  } else {
-    call_anthropic_impl(provider, self.http_client, messages, options, tools)
+  // フェイルオーバー: fallback.enabled なら複数プロバイダを順に試行
+  let config = api_v1_settings_state.get_config()
+  let fallback_enabled = match config {
+    Some(c) => c.fallback.enabled && c.fallback.providers.length() > 0
+    None => false
   }
+  if not(fallback_enabled) {
+    return call_provider(provider, self.http_client, messages, options, tools)
+  }
+  // プライマリプロバイダでまず試行
+  let primary_result = call_provider(
+    provider, self.http_client, messages, options, tools,
+  )
+  match primary_result {
+    @llm_types.ModelResponse::ModelError(_)
+    | @llm_types.ModelResponse::RateLimited(..) => ()
+    _ => return primary_result // 成功
+  }
+  // フェイルオーバーチェーン
+  let fallback_providers = config.unwrap().fallback.providers
+  for fb_name in fallback_providers {
+    if fb_name == provider.name {
+      continue // プライマリは既に試行済み
+    }
+    let fb_provider = match find_provider_by_name(fb_name) {
+      Some(p) => p
+      None => continue
+    }
+    match validate_provider_config(fb_provider) {
+      Some(_) => continue
+      None => ()
+    }
+    // フォールバック先のモデル名で options を調整
+    let fb_options = if fb_provider.default_model.length() > 0 {
+      { ..options, model_name: fb_provider.default_model }
+    } else {
+      options
+    }
+    let fb_result = call_provider(
+      fb_provider, self.http_client, messages, fb_options, tools,
+    )
+    match fb_result {
+      @llm_types.ModelResponse::ModelError(_)
+      | @llm_types.ModelResponse::RateLimited(..) => continue
+      _ => return fb_result // 成功
+    }
+  }
+  // 全プロバイダ失敗
+  @llm_types.ModelResponse::ModelError(
+    "All providers failed (primary + \{fallback_providers.length()} fallbacks)",
+  )
 }
 
 // =============================================================================

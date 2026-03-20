@@ -70,6 +70,7 @@ pub fn parse_args(args : Array[String]) -> Command {
       } else {
         Command::Cron(CronCommand::Unknown(""))
       }
+    "agent" => parse_agent_args(slice_from_1(args)[:])
     "service" =>
       if args.length() > 1 {
         parse_service_args(slice_from_1(args)[:])
@@ -398,6 +399,35 @@ fn parse_service_status_opts(args : ArrayView[String]) -> ServiceStatusOptions {
     }
   }
   opts
+}
+
+///|
+/// agentコマンドの引数をパース
+fn parse_agent_args(args : ArrayView[String]) -> Command {
+  let opts : AgentOptions = { message: None, config_path: None }
+  let arr = array_view_to_array(args)
+  let mut i = 0
+  while i < arr.length() {
+    let arg = arr[i]
+    match arg {
+      "-m" | "--message" =>
+        if i + 1 < arr.length() {
+          opts.message = Some(arr[i + 1])
+          i = i + 2
+        } else {
+          i = i + 1
+        }
+      "--config" =>
+        if i + 1 < arr.length() {
+          opts.config_path = Some(arr[i + 1])
+          i = i + 2
+        } else {
+          i = i + 1
+        }
+      _ => i = i + 1
+    }
+  }
+  Command::Agent(opts)
 }
 
 ///|

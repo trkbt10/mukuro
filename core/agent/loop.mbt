@@ -346,9 +346,17 @@ pub async fn run_agent_loop(
     None => record_user_message(hr, clk, ts, sid, envelope.content)
   }
   // 6. エージェントループ
+  // コンテキストプルーニング: トークン予算を超える場合は古いメッセージを削除
+  let pruner = @session.ContextPruner::new(@types.ContextPruningConfig::default())
   while not(ctx.is_max_iterations(options.max_iterations)) {
     ctx.set_state(AgentState::WaitingForModel)
     ctx.increment_iteration()
+    // トークン予算チェック: max_tokens の 4 倍をコンテキスト上限とする
+    let context_budget = match options.model_options.max_tokens {
+      Some(max) => max * 4
+      None => 65536 // デフォルト 65K トークン
+    }
+    ctx.messages = pruner.prune_to_token_budget(ctx.messages, context_budget)
     // リトライ状態を初期化
     let retry_state = RetryState::new(options.retry_config)
     // モデル呼び出し（リトライロジック付き）

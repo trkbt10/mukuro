@@ -30,6 +30,7 @@ import {
   "trkbt10/llm_interop/types" @llm_types,
   "trkbt10/llm_interop/dialects/openai" @openai,
   "trkbt10/llm_interop/dialects/anthropic" @anthropic,
+  "trkbt10/llm_interop/dialects/gemini" @gemini,
   "trkbt10/llm_interop/dialects/harmony" @harmony,
   "trkbt10/mukuro/core/history" @history,
   "trkbt10/mukuro/core/tool" @tool,
@@ -51,6 +52,7 @@ options(
   targets: {
     "api_v1_e2e_native_test.mbt": [ "native" ],
     "config_constants_native.mbt": [ "native" ],
+    "cli_repl_native.mbt": [ "native" ],
     "config_file_native.mbt": [ "native" ],
     "control_api_native.mbt": [ "native" ],
     "control_api_native_test.mbt": [ "native" ],

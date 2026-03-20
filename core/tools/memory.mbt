@@ -67,15 +67,97 @@ pub fn memory_settings_schema() -> Json {
 // =============================================================================
 
 ///|
-/// メモリストア（インメモリ実装）
+/// メモリストア（インメモリ + MEMORY.md ファイル永続化）
 pub struct MemoryStore {
   data : Map[String, Json]
   metadata : Map[String, Int64]
+  /// MEMORY.md ファイルパス（設定時に永続化が有効）
+  mut persist_path : String?
 }
 
 ///|
 pub fn MemoryStore::new() -> MemoryStore {
-  { data: {}, metadata: {} }
+  { data: {}, metadata: {}, persist_path: None }
+}
+
+///|
+/// 永続化パスを設定して MEMORY.md を有効化
+pub fn MemoryStore::set_persist_path(
+  self : MemoryStore,
+  path : String,
+) -> Unit {
+  self.persist_path = Some(path)
+}
+
+///|
+/// MEMORY.md からデータをロード
+pub fn MemoryStore::load_from_markdown(
+  self : MemoryStore,
+  content : String,
+) -> Unit {
+  // フォーマット: ## key\nvalue\n\n
+  let mut current_key : String? = None
+  let mut current_value = StringBuilder::new()
+  let lines = content.split("\n")
+  for line_view in lines {
+    let line = line_view.to_string()
+    if line.starts_with("## ") {
+      // 前のエントリを保存
+      match current_key {
+        Some(k) => {
+          let v = current_value.to_string().trim(chars=" \t\r\n").to_string()
+          if v.length() > 0 {
+            let json_val : Json = @json.parse(v) catch {
+              _ => Json::string(v)
+            }
+            self.data[k] = json_val
+          }
+        }
+        None => ()
+      }
+      current_key = Some(line.substring(start=3).trim(chars=" \t\r\n").to_string())
+      current_value = StringBuilder::new()
+    } else {
+      match current_key {
+        Some(_) => {
+          if current_value.to_string().length() > 0 {
+            current_value.write_char('\n')
+          }
+          current_value.write_string(line)
+        }
+        None => ()
+      }
+    }
+  }
+  // 最後のエントリ
+  match current_key {
+    Some(k) => {
+      let v = current_value.to_string().trim(chars=" \t\r\n").to_string()
+      if v.length() > 0 {
+        let json_val : Json = @json.parse(v) catch {
+          _ => Json::string(v)
+        }
+        self.data[k] = json_val
+      }
+    }
+    None => ()
+  }
+}
+
+///|
+/// MemoryStore の内容を MEMORY.md フォーマットで文字列化
+pub fn MemoryStore::to_markdown(self : MemoryStore) -> String {
+  let buf = StringBuilder::new()
+  buf.write_string("# Long-term Memory\n\n")
+  for key, value in self.data {
+    buf.write_string("## \{key}\n")
+    match value {
+      String(s) => buf.write_string(s)
+      _ => buf.write_string(value.stringify())
+    }
+    buf.write_string("\n\n")
+  }
+  buf.to_string()
 }
 
 ///|
@@ -164,6 +246,7 @@ fn execute_memory(store : MemoryStore, args : Json) -> ToolExecutionResult {
         _ => return ToolExecutionResult::error("Missing value argument")
       }
       store.set(key, value)
+      persist_memory(store)
       ToolExecutionResult::success({ "key": key, "stored": true })
     }
     "delete" => {
@@ -172,6 +255,9 @@ fn execute_memory(store : MemoryStore, args : Json) -> ToolExecutionResult {
         None => return ToolExecutionResult::error("Missing key argument")
       }
       let deleted = store.delete(key)
+      if deleted {
+        persist_memory(store)
+      }
       ToolExecutionResult::success({ "key": key, "deleted": deleted })
     }
     "list" => {
