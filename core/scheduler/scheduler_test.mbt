@@ -315,6 +315,31 @@ test "build_heartbeat_prompt formats pending tasks" {
 }
 
 ///|
+test "cron roundtrip preserves specific values" {
+  let scheduler = @scheduler.TaskScheduler::new()
+  let task = @scheduler.ScheduledTask::new(
+    id="specific",
+    name="Specific Time",
+    cron_expr="30 10 15 6 1",
+    payload=Json::string("monthly"),
+  )
+  scheduler.register(task)
+  let json = @scheduler.scheduler_to_json(scheduler)
+  let restored = @scheduler.scheduler_from_json(json)
+  let tasks = restored.get_all_tasks()
+  inspect(tasks.length(), content="1")
+  // 元の cron 式で同じ時刻がマッチするか検証
+  inspect(tasks[0].cron.matches(30, 10, 15, 6, 1), content="true")
+  inspect(tasks[0].cron.matches(0, 10, 15, 6, 1), content="false")
+}
+
+///|
+test "task_from_json returns None for invalid json" {
+  let json : Json = { "name": "no-id" }
+  inspect(@scheduler.task_from_json(json) is None, content="true")
+}
+
+///|
 test "build_heartbeat_prompt handles empty" {
   let pending : Array[String] = []
   let prompt = @scheduler.build_heartbeat_prompt(pending)

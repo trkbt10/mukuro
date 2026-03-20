@@ -86,6 +86,38 @@ test "AllowlistConfig from_json parses correctly" {
 }
 
 ///|
+test "AllowlistManager allows all when senders empty" {
+  let mgr = AllowlistManager::new()
+  mgr.add({
+    enabled: true,
+    channel: "telegram",
+    senders: [], // 空 = 全員許可
+    chat_ids: None,
+  })
+  inspect(mgr.is_allowed("telegram", "anyone", "chat1"), content="true")
+}
+
+///|
+test "AllowlistConfig from_json handles missing optional fields" {
+  let json : Json = { "channel": "slack" }
+  match AllowlistConfig::from_json(json) {
+    Some(config) => {
+      inspect(config.enabled, content="true") // default
+      inspect(config.senders.length(), content="0")
+      inspect(config.chat_ids is None, content="true")
+    }
+    None => fail("Expected Some")
+  }
+}
+
+///|
+test "load_allowlists_from_json handles missing section" {
+  let json : Json = { "other": "stuff" }
+  let mgr = load_allowlists_from_json(json)
+  inspect(mgr.configs.length(), content="0")
+}
+
+///|
 test "load_allowlists_from_json loads array" {
   let json : Json = {
     "allowlists": [

@@ -356,6 +356,117 @@ test "find_substring finds needle" {
 }
 
 // =============================================================================
+// Memory Markdown Roundtrip Tests
+// =============================================================================
+
+///|
+test "MemoryStore load_from_markdown parses entries" {
+  let store = MemoryStore::new()
+  let md = "# Long-term Memory\n\n## user_name\nAlice\n\n## favorite_color\nblue\n"
+  store.load_from_markdown(md)
+  match store.get("user_name") {
+    Some(String("Alice")) => ()
+    _ => fail("Expected Alice")
+  }
+  match store.get("favorite_color") {
+    Some(String("blue")) => ()
+    _ => fail("Expected blue")
+  }
+}
+
+///|
+test "MemoryStore load_from_markdown handles json values" {
+  let store = MemoryStore::new()
+  let md = "## count\n42\n\n## flag\ntrue\n"
+  store.load_from_markdown(md)
+  match store.get("count") {
+    Some(Number(n, ..)) => assert_true(n == 42.0)
+    _ => fail("Expected number 42")
+  }
+}
+
+///|
+test "MemoryStore to_markdown produces valid format" {
+  let store = MemoryStore::new()
+  store.set("key1", Json::string("value1"))
+  store.set("key2", Json::string("value2"))
+  let md = store.to_markdown()
+  assert_true(md.contains("# Long-term Memory"))
+  assert_true(md.contains("## key1"))
+  assert_true(md.contains("value1"))
+  assert_true(md.contains("## key2"))
+  assert_true(md.contains("value2"))
+}
+
+///|
+test "MemoryStore markdown roundtrip" {
+  let store1 = MemoryStore::new()
+  store1.set("name", Json::string("Bob"))
+  store1.set("age", Json::number(30.0))
+  let md = store1.to_markdown()
+  let store2 = MemoryStore::new()
+  store2.load_from_markdown(md)
+  match store2.get("name") {
+    Some(String("Bob")) => ()
+    _ => fail("Expected Bob")
+  }
+  match store2.get("age") {
+    Some(Number(n, ..)) => assert_true(n == 30.0)
+    _ => fail("Expected 30")
+  }
+}
+
+///|
+test "MemoryStore load_from_markdown empty input" {
+  let store = MemoryStore::new()
+  store.load_from_markdown("")
+  assert_eq(store.keys().length(), 0)
+}
+
+// =============================================================================
+// Shell Filter Edge Case Tests
+// =============================================================================
+
+///|
+test "is_dangerous_command allows git status/diff/log" {
+  assert_true(not(is_dangerous_command("git status")))
+  assert_true(not(is_dangerous_command("git diff HEAD")))
+  assert_true(not(is_dangerous_command("git log --oneline")))
+}
+
+///|
+test "is_dangerous_command rejects git push variants" {
+  assert_true(is_dangerous_command("git push origin main"))
+  assert_true(is_dangerous_command("git push --force"))
+}
+
+///|
+test "is_dangerous_command allows safe pip with target" {
+  // pip install with --target is safe (local install)
+  assert_true(not(is_dangerous_command("pip install --target ./venv requests")))
+  assert_true(not(is_dangerous_command("pip install -t ./lib package")))
+}
+
+///|
+test "is_dangerous_command rejects pip install global" {
+  assert_true(is_dangerous_command("pip install requests"))
+}
+
+///|
+test "is_dangerous_command allows printf (not format)" {
+  assert_true(not(is_dangerous_command("printf '%s\\n' hello")))
+}
+
+///|
+test "validate_workspace_path always checks traversal" {
+  // Even without workspace_dir, .. is rejected
+  match validate_workspace_path("../../../etc/passwd", None) {
+    Some(msg) => assert_true(msg.contains("traversal"))
+    None => fail("Expected rejection")
+  }
+}
+
+// =============================================================================
 // Dispatch Tests
 // =============================================================================
 

@@ -297,13 +297,13 @@ pub fn validate_workspace_path(
   path : String,
   workspace_dir : String?,
 ) -> String? {
+  // パストラバーサルは常にチェック（workspace_dir の有無に関わらず）
+  if path.contains("..") {
+    return Some("Path traversal not allowed: \{path}")
+  }
   match workspace_dir {
     None => None // ワークスペース制限なし
     Some(ws) => {
-      // パストラバーサル
-      if path.contains("..") {
-        return Some("Path traversal not allowed: \{path}")
-      }
       // 絶対パスの場合、ワークスペース配下かチェック
       if path.length() > 0 && char_at(path, 0) == '/' {
         if not(path.has_prefix(ws)) {

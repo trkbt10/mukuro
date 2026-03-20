@@ -36,6 +36,25 @@ test "parse_skill_markdown handles empty body" {
 }
 
 ///|
+test "parse_skill_markdown rejects unclosed frontmatter" {
+  let content = "---\nname: Broken\ndescription: No closing\nBody text"
+  inspect(parse_skill_markdown(content) is None, content="true")
+}
+
+///|
+test "parse_skill_markdown with extra frontmatter fields" {
+  let content = "---\nname: Extra\ndescription: Has extra\nauthor: someone\nversion: 1.0\n---\nInstructions here."
+  match parse_skill_markdown(content) {
+    Some(skill) => {
+      assert_eq(skill.name, "Extra")
+      assert_eq(skill.description, "Has extra")
+      assert_true(skill.instructions.contains("Instructions here"))
+    }
+    None => fail("Expected Some")
+  }
+}
+
+///|
 test "parse_skill_markdown multiline body" {
   let content = "---\nname: MultiLine\ndescription: Has multiple lines\n---\nLine 1\nLine 2\nLine 3"
   match parse_skill_markdown(content) {

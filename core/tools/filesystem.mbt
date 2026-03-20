@@ -100,13 +100,10 @@ fn execute_filesystem(
     Some(p) => p
     None => return ToolExecutionResult::error("Missing path argument")
   }
-  // パストラバーサル防止 + ワークスペース境界チェック
+  // パストラバーサル + ワークスペース境界チェック
   match validate_workspace_path(path, workspace_dir) {
     Some(err) => return ToolExecutionResult::error(err)
     None => ()
-  }
-  if path.contains("..") {
-    return ToolExecutionResult::error("Path traversal not allowed: \{path}")
   }
   let recursive = get_bool_arg(args, "recursive").unwrap_or(false)
   match action {

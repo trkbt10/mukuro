@@ -99,3 +99,45 @@ test "resolve_mcp_tool_name rejects wrong server" {
     content="true",
   )
 }
+
+///|
+test "resolve_mcp_tool_name rejects non-mcp name" {
+  inspect(resolve_mcp_tool_name("shell", "fs") is None, content="true")
+}
+
+///|
+test "parse_tools_list_response handles empty tools array" {
+  let json : Json = { "tools": [] }
+  let tools = parse_tools_list_response(json, "empty")
+  inspect(tools.length(), content="0")
+}
+
+///|
+test "parse_tools_list_response handles missing tools key" {
+  let json : Json = { "other": "data" }
+  let tools = parse_tools_list_response(json, "bad")
+  inspect(tools.length(), content="0")
+}
+
+///|
+test "parse_tool_call_result handles non-array content" {
+  let json : Json = { "result": "plain text" }
+  let result = parse_tool_call_result(json)
+  // non-matching format should stringify
+  inspect(result.length() > 0, content="true")
+}
+
+///|
+test "McpClient::new creates client" {
+  let config : McpServerConfig = {
+    name: "test",
+    command: "echo",
+    args: [],
+    env: {},
+    cwd: None,
+  }
+  let client = McpClient::new(config)
+  inspect(client.config.name, content="test")
+  inspect(client.initialized, content="false")
+  inspect(client.tools.length(), content="0")
+}

@@ -83,9 +83,6 @@ fn execute_edit_file(
     Some(err) => return ToolExecutionResult::error(err)
     None => ()
   }
-  if path.contains("..") {
-    return ToolExecutionResult::error("Path traversal not allowed: \{path}")
-  }
   let old_text = match get_string_arg(args, "old_text") {
     Some(t) => t
     None => return ToolExecutionResult::error("Missing old_text argument")
