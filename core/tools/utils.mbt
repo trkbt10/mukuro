@@ -286,6 +286,39 @@ pub fn require_int_arg(
 }
 
 // =============================================================================
+// Workspace Path Validation
+// =============================================================================
+
+///|
+/// ワークスペース境界チェック
+/// workspace_dir が Some のとき、path がその配下かどうかを検証
+/// 戻り値: None = OK, Some(error_message) = 拒否
+pub fn validate_workspace_path(
+  path : String,
+  workspace_dir : String?,
+) -> String? {
+  match workspace_dir {
+    None => None // ワークスペース制限なし
+    Some(ws) => {
+      // パストラバーサル
+      if path.contains("..") {
+        return Some("Path traversal not allowed: \{path}")
+      }
+      // 絶対パスの場合、ワークスペース配下かチェック
+      if path.length() > 0 && char_at(path, 0) == '/' {
+        if not(path.starts_with(ws)) {
+          return Some(
+            "Path outside workspace: \{path} (workspace: \{ws})",
+          )
+        }
+      }
+      // 相対パスは許可（ワークスペース内とみなす）
+      None
+    }
+  }
+}
+
+// =============================================================================
 // Result Types
 // =============================================================================
 

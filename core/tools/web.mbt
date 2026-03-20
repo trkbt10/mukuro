@@ -10,18 +10,21 @@
 pub fn web_tool() -> @llm_types.ToolDefinition {
   make_tool_definition(
     name="web",
-    description="Fetch content from URLs via HTTP requests. Use for: retrieving web pages, calling REST APIs, downloading data. Supports GET/POST methods with custom headers. Note: 'search' action requires external API integration.",
+    description="Fetch content from URLs or search the web. Actions: 'fetch' retrieves a URL, 'search' performs web search via Brave Search API (requires brave_api_key in settings) or DuckDuckGo (no key needed, fallback).",
     parameters=object_schema(
       {
         "action": {
           "type": "string",
           "enum": Json::array([Json::string("fetch"), Json::string("search")]),
-          "description": "Action: 'fetch' makes HTTP request to URL, 'search' performs web search (requires API setup)",
+          "description": "Action: 'fetch' makes HTTP request to URL, 'search' performs web search",
         },
         "url": string_param(
           "Full URL including protocol (e.g., 'https://api.example.com/data')",
         ),
         "query": string_param("Search query string (for search action)"),
+        "max_results": integer_param(
+          "Maximum number of search results to return (default: 5)",
+        ),
         "method": {
           "type": "string",
           "enum": Json::array([Json::string("GET"), Json::string("POST")]),
@@ -45,7 +48,7 @@ pub fn web_tool() -> @llm_types.ToolDefinition {
 pub fn web_settings_schema() -> Json {
   build_settings_schema(
     title="Web Settings",
-    description="Configure HTTP request behavior",
+    description="Configure HTTP request and search behavior",
     fields=[
       number_field(
         key="timeout",
@@ -64,6 +67,11 @@ pub fn web_settings_schema() -> Json {
         key="proxy_url",
         label="Proxy URL",
         description="HTTP proxy for requests (optional)",
+      ),
+      text_field(
+        key="brave_api_key",
+        label="Brave Search API Key",
+        description="API key for Brave Search (https://api.search.brave.com). Leave empty to use DuckDuckGo fallback.",
       ),
     ],
   )
@@ -106,11 +114,12 @@ fn execute_web(args : Json) -> ToolExecutionResult {
       web_fetch(url, http_method, headers, body)
     }
     "search" => {
-      let _query = match get_string_arg(args, "query") {
+      let query = match get_string_arg(args, "query") {
         Some(q) => q
         None => return ToolExecutionResult::error("Missing query argument")
       }
-      ToolExecutionResult::error("Web search requires external API integration")
+      let max_results = get_int_arg(args, "max_results").unwrap_or(5)
+      web_search(query, max_results)
     }
     _ => ToolExecutionResult::error("Unknown action: \{action}")
   }

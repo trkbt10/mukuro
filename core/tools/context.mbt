@@ -5,6 +5,7 @@ pub struct BuiltinToolContext {
   agent_manager : SubAgentManager
   trace : TraceStore
   send_message : (@types.OutboundMessage) -> Unit
+  workspace_dir : String?
 }
 
 ///|
@@ -26,6 +27,7 @@ pub fn BuiltinToolContext::new(
     agent_manager: SubAgentManager::new(),
     trace: TraceStore::new(),
     send_message,
+    workspace_dir: None,
   }
 }
 
@@ -36,8 +38,9 @@ pub fn BuiltinToolContext::make(
   agent_manager : SubAgentManager,
   trace : TraceStore,
   send_message : (@types.OutboundMessage) -> Unit,
+  workspace_dir~ : String? = None,
 ) -> BuiltinToolContext {
-  { memory, agent_manager, trace, send_message }
+  { memory, agent_manager, trace, send_message, workspace_dir }
 }
 
 ///|

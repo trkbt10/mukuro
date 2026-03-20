@@ -82,13 +82,16 @@ pub fn filesystem_entry() -> ToolEntry {
     name: "filesystem",
     definition: filesystem_tool(),
     settings_schema: Some(filesystem_settings_schema()),
-    execute: fn(_, args) { execute_filesystem(args) },
+    execute: fn(ctx, args) { execute_filesystem(args, workspace_dir=ctx.workspace_dir) },
   }
 }
 
 ///|
 /// ファイルシステムツールを実行
-fn execute_filesystem(args : Json) -> ToolExecutionResult {
+fn execute_filesystem(
+  args : Json,
+  workspace_dir~ : String? = None,
+) -> ToolExecutionResult {
   let action = match get_string_arg(args, "action") {
     Some(a) => a
     None => return ToolExecutionResult::error("Missing action argument")
@@ -97,7 +100,11 @@ fn execute_filesystem(args : Json) -> ToolExecutionResult {
     Some(p) => p
     None => return ToolExecutionResult::error("Missing path argument")
   }
-  // パストラバーサル防止
+  // パストラバーサル防止 + ワークスペース境界チェック
+  match validate_workspace_path(path, workspace_dir) {
+    Some(err) => return ToolExecutionResult::error(err)
+    None => ()
+  }
   if path.contains("..") {
     return ToolExecutionResult::error("Path traversal not allowed: \{path}")
   }

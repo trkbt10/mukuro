@@ -18,6 +18,7 @@ pub fn all_tool_entries() -> Array[ToolEntry] {
     spawn_entry(),
     shell_entry(),
     filesystem_entry(),
+    edit_file_entry(),
     web_entry(),
   ]
 }

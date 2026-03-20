@@ -21,6 +21,7 @@ options(
   "native-stub": [ "native_stubs.c" ],
   targets: {
     "datetime_time_native.mbt": [ "native" ],
+    "edit_file_native.mbt": [ "native" ],
     "filesystem_native.mbt": [ "native" ],
     "shell_native.mbt": [ "native" ],
     "tools_wbtest.mbt": [ "native" ],

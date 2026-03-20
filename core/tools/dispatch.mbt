@@ -20,6 +20,7 @@ pub async fn execute_tool(
     agent_manager: agent_manager.unwrap_or(SubAgentManager::new()),
     trace: TraceStore::new(),
     send_message: send_fn.unwrap_or(fn(_) {  }),
+    workspace_dir: None,
   }
   match execute_builtin_tool(ctx, name, args) {
     Some(result) => result
