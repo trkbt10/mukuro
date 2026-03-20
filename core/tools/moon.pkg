@@ -10,7 +10,7 @@ import {
   "moonbitlang/async" @async,
   "moonbitlang/x/time" @xtime,
   "trkbt10/subprocess" @subprocess,
-  "trkbt10/llm_interop/src/types" @llm_types,
+  "trkbt10/llm_interop/types" @llm_types,
 }
 
 import {

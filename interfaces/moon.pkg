@@ -1,6 +1,6 @@
 import {
   "trkbt10/mukuro/core/types",
-  "trkbt10/llm_interop/src/types" @llm_types,
+  "trkbt10/llm_interop/types" @llm_types,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
 }
