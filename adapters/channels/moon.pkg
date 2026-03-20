@@ -15,6 +15,7 @@ warnings = "-29"
 options(
   targets: {
     "http_native.mbt": [ "native" ],
+    "discord_native.mbt": [ "native" ],
     "telegram_native.mbt": [ "native" ],
     "websocket_native.mbt": [ "native" ],
     "websocket_native_test.mbt": [ "native" ],

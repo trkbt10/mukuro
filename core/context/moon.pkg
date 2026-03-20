@@ -2,5 +2,12 @@ import {
   "trkbt10/mukuro/core/tools" @tools,
   "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/lib/bytes" @bytes,
   "trkbt10/llm_interop/types" @llm_types,
 }
+
+options(
+  targets: {
+    "skill_loader_native.mbt": [ "native" ],
+  },
+)

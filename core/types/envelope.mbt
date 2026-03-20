@@ -42,6 +42,9 @@ pub(all) struct InboundEnvelope {
   /// メッセージ種別
   message_type : MessageType
   /// チャネル固有メタデータ
+  /// Vision/マルチモーダル: "image_url" キーに画像URLを格納
+  /// 例: metadata["image_url"] = Json::string("https://...")
+  /// 例: metadata["image_base64"] = Json::string("data:image/png;base64,...")
   metadata : Map[String, Json]
   /// 受信タイムスタンプ（Unix epoch ms）
   timestamp : Int64

@@ -144,6 +144,31 @@ fn string_to_body_bytes(s : String) -> Bytes {
 }
 
 ///|
+/// Vision: メッセージ配列から画像 URL を含む最後の User メッセージを検出
+/// 返り値: (画像URL, メッセージインデックス) または None
+fn find_vision_image(
+  messages : Array[@llm_types.ModelMessage],
+) -> (String, Int)? {
+  // 後ろから探して最初の User メッセージの name フィールドに image_url が含まれる場合
+  // (ModelMessage::User の name フィールドを image_url 伝送に流用)
+  // 実装上の制約: llm_interop の ModelMessage に画像フィールドがないため
+  // metadata 経由で渡す。呼び出し側が name に "image:URL" を格納する想定
+  let mut i = messages.length() - 1
+  while i >= 0 {
+    match messages[i] {
+      @llm_types.ModelMessage::User(name=Some(n), ..) =>
+        if n.starts_with("image:") {
+          let url = n.substring(start=6)
+          return Some((url, i))
+        }
+      _ => ()
+    }
+    i = i - 1
+  }
+  None
+}
+
+///|
 fn body_bytes_to_string(body : Bytes) -> String {
   @utf8.decode(body[:]) catch {
     _ => "<UTF-8 decode error: \{body.length()} bytes>"

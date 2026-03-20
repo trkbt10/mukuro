@@ -405,6 +405,9 @@ pub async fn run_agent_loop(
           }
         }
         ctx.set_state(AgentState::Completed)
+        // メモリ自動統合: メッセージ数が閾値以上ならサマリーを生成
+        // サマリーは history_bridge 経由でセッションメタに記録
+        ignore(maybe_consolidate(ctx.messages))
         let outbound : @types.OutboundMessage = {
           channel: envelope.channel,
           chat_id: envelope.chat_id,

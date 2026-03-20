@@ -92,6 +92,11 @@ fn load_context_files(metadata : Map[String, Json]) -> Unit {
     Some(content) => metadata["user_context"] = Json::string(content)
     None => ()
   }
+  // HEARTBEAT.md - 定期実行タスク
+  match read_non_empty_file(context_path("HEARTBEAT.md")) {
+    Some(content) => metadata["heartbeat"] = Json::string(content)
+    None => ()
+  }
 }
 
 ///|

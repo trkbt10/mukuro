@@ -1,5 +1,13 @@
 import {
   "moonbitlang/core/json",
   "moonbitlang/core/strconv" @strconv,
+  "moonbitlang/core/encoding/utf8" @moonbit_encoding_utf8,
   "moonbitlang/x/time" @xtime,
+  "trkbt10/mukuro/lib/bytes" @bytes,
 }
+
+options(
+  targets: {
+    "persistence_native.mbt": [ "native" ],
+  },
+)
