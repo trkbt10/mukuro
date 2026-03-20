@@ -304,14 +304,14 @@ async fn call_onboard_llm(
   let is_anthropic = provider.name == "anthropic" ||
     base_url.contains("anthropic")
   let body_json = if is_anthropic {
-    @protocol.build_anthropic_body(
+    @anthropic.build_body(
       provider.default_model,
       messages,
       empty_tools,
       max_tokens=Some(4096),
     )
   } else {
-    @protocol.build_openai_chat_body(
+    @openai.build_chat_body(
       provider.default_model,
       messages,
       empty_tools,
@@ -361,9 +361,9 @@ async fn call_onboard_llm(
     _ => return @llm_types.ModelResponse::ModelError("Invalid JSON response")
   }
   if is_anthropic {
-    @protocol.parse_anthropic_response(resp_json)
+    @anthropic.parse_response(resp_json)
   } else {
-    @protocol.parse_openai_chat_response(resp_json)
+    @openai.parse_chat_response(resp_json)
   }
 }
 

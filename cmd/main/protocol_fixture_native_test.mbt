@@ -51,7 +51,7 @@ fn fixture_assert_true(condition : Bool) -> Unit raise {
 ///|
 test "fixture: OpenAI Responses API text non-stream" {
   let json = read_fixture_json("openai/responses/text_nonstream.json")
-  let result = @protocol.parse_responses_api_response(json)
+  let result = @openai.parse_responses_api_response(json)
   match result {
     @llm_types.ModelResponse::Text(text) => inspect(text, content="Four.")
     _ => fail("Expected Text response")
@@ -61,7 +61,7 @@ test "fixture: OpenAI Responses API text non-stream" {
 ///|
 test "fixture: OpenAI Responses API toolcall non-stream" {
   let json = read_fixture_json("openai/responses/toolcall_nonstream.json")
-  let result = @protocol.parse_responses_api_response(json)
+  let result = @openai.parse_responses_api_response(json)
   match result {
     @llm_types.ModelResponse::ToolCalls(calls) => {
       inspect(calls.length(), content="1")
@@ -82,7 +82,7 @@ test "fixture: OpenAI Responses API toolcall non-stream" {
 ///|
 test "fixture: Groq Responses API text non-stream" {
   let json = read_fixture_json("groq/responses/text_nonstream.json")
-  let result = @protocol.parse_responses_api_response(json)
+  let result = @openai.parse_responses_api_response(json)
   match result {
     @llm_types.ModelResponse::Text(text) => inspect(text, content="4")
     _ => fail("Expected Text response")
@@ -92,7 +92,7 @@ test "fixture: Groq Responses API text non-stream" {
 ///|
 test "fixture: Groq Responses API toolcall non-stream" {
   let json = read_fixture_json("groq/responses/toolcall_nonstream.json")
-  let result = @protocol.parse_responses_api_response(json)
+  let result = @openai.parse_responses_api_response(json)
   match result {
     @llm_types.ModelResponse::ToolCalls(calls) => {
       inspect(calls.length(), content="1")
@@ -113,7 +113,7 @@ test "fixture: Groq Responses API toolcall non-stream" {
 ///|
 test "fixture: Groq Chat Completions text non-stream" {
   let json = read_fixture_json("groq/chat_completions/text_nonstream.json")
-  let result = @protocol.parse_openai_chat_response(json)
+  let result = @openai.parse_chat_response(json)
   match result {
     @llm_types.ModelResponse::Text(text) => inspect(text, content="four")
     _ => fail("Expected Text response")
@@ -123,7 +123,7 @@ test "fixture: Groq Chat Completions text non-stream" {
 ///|
 test "fixture: Groq Chat Completions toolcall non-stream" {
   let json = read_fixture_json("groq/chat_completions/toolcall_nonstream.json")
-  let result = @protocol.parse_openai_chat_response(json)
+  let result = @openai.parse_chat_response(json)
   match result {
     @llm_types.ModelResponse::ToolCalls(calls) => {
       inspect(calls.length(), content="1")
@@ -144,7 +144,7 @@ test "fixture: Groq Chat Completions toolcall non-stream" {
 ///|
 test "fixture: Anthropic Messages text non-stream" {
   let json = read_fixture_json("anthropic/messages/text_nonstream.json")
-  let result = @protocol.parse_anthropic_response(json)
+  let result = @anthropic.parse_response(json)
   match result {
     @llm_types.ModelResponse::Text(text) => inspect(text, content="Four")
     _ => fail("Expected Text response")
@@ -154,7 +154,7 @@ test "fixture: Anthropic Messages text non-stream" {
 ///|
 test "fixture: Anthropic Messages toolcall non-stream" {
   let json = read_fixture_json("anthropic/messages/toolcall_nonstream.json")
-  let result = @protocol.parse_anthropic_response(json)
+  let result = @anthropic.parse_response(json)
   match result {
     @llm_types.ModelResponse::ToolCalls(calls) => {
       inspect(calls.length(), content="1")
@@ -175,7 +175,7 @@ test "fixture: Anthropic Messages toolcall non-stream" {
 ///|
 test "fixture: OpenAI auth error via Chat Completions parser" {
   let json = read_fixture_json("openai/errors/auth_error.json")
-  let result = @protocol.parse_openai_chat_response(json)
+  let result = @openai.parse_chat_response(json)
   match result {
     @llm_types.ModelResponse::ModelError(msg) =>
       fixture_assert_true(msg.contains("API key"))
@@ -186,7 +186,7 @@ test "fixture: OpenAI auth error via Chat Completions parser" {
 ///|
 test "fixture: OpenAI auth error via Responses API parser" {
   let json = read_fixture_json("openai/errors/auth_error.json")
-  let result = @protocol.parse_responses_api_response(json)
+  let result = @openai.parse_responses_api_response(json)
   match result {
     @llm_types.ModelResponse::ModelError(msg) =>
       fixture_assert_true(msg.contains("API key"))
@@ -197,7 +197,7 @@ test "fixture: OpenAI auth error via Responses API parser" {
 ///|
 test "fixture: Groq auth error" {
   let json = read_fixture_json("groq/errors/auth_error.json")
-  let result = @protocol.parse_openai_chat_response(json)
+  let result = @openai.parse_chat_response(json)
   match result {
     @llm_types.ModelResponse::ModelError(msg) =>
       fixture_assert_true(msg.contains("Invalid API Key"))
@@ -208,7 +208,7 @@ test "fixture: Groq auth error" {
 ///|
 test "fixture: Anthropic auth error" {
   let json = read_fixture_json("anthropic/errors/auth_error.json")
-  let result = @protocol.parse_anthropic_response(json)
+  let result = @anthropic.parse_response(json)
   match result {
     @llm_types.ModelResponse::ModelError(msg) =>
       fixture_assert_true(msg.contains("invalid x-api-key"))
@@ -225,7 +225,7 @@ test "fixture: Groq Chat Completions text stream JSONL parses" {
   let content = read_fixture(
     fixture_path("groq/chat_completions/text_stream.jsonl"),
   )
-  let events = @sse.parse_chat_completions_jsonl(content)
+  let events = @sse.parse_jsonl(content)
   // 34 data lines + [DONE] (skipped) = 34 events
   fixture_assert_true(events.length() > 10)
   // Last event should have finish_reason "stop"
@@ -239,7 +239,7 @@ test "fixture: Groq Chat Completions toolcall stream JSONL parses" {
   let content = read_fixture(
     fixture_path("groq/chat_completions/toolcall_stream.jsonl"),
   )
-  let events = @sse.parse_chat_completions_jsonl(content)
+  let events = @sse.parse_jsonl(content)
   fixture_assert_true(events.length() > 5)
   // Should contain tool_calls in some event
   let full = content
@@ -250,7 +250,7 @@ test "fixture: Groq Chat Completions toolcall stream JSONL parses" {
 ///|
 test "fixture: OpenAI Responses text stream JSONL parses" {
   let content = read_fixture(fixture_path("openai/responses/text_stream.jsonl"))
-  let events = @sse.parse_event_stream_jsonl(content)
+  let events = @sse.parse_jsonl(content)
   fixture_assert_true(events.length() > 5)
   // Should have response.completed event
   let mut has_completed = false
@@ -269,7 +269,7 @@ test "fixture: Anthropic Messages text stream JSONL parses" {
   let content = read_fixture(
     fixture_path("anthropic/messages/text_stream.jsonl"),
   )
-  let events = @sse.parse_event_stream_jsonl(content)
+  let events = @sse.parse_jsonl(content)
   fixture_assert_true(events.length() > 3)
   // Should have message_start and message_stop events
   let mut has_start = false
@@ -297,7 +297,7 @@ test "fixture: Groq Chat Completions text stream accumulates to text" {
   let content = read_fixture(
     fixture_path("groq/chat_completions/text_stream.jsonl"),
   )
-  let result = @sse.accumulate_chat_completions(content)
+  let result = @openai.accumulate_chat_completions(content)
   match result {
     @llm_types.ModelResponse::Text(text) => inspect(text, content="Four")
     _ => fail("Expected Text response from accumulated stream")
@@ -309,7 +309,7 @@ test "fixture: Groq Chat Completions toolcall stream accumulates to tool calls" 
   let content = read_fixture(
     fixture_path("groq/chat_completions/toolcall_stream.jsonl"),
   )
-  let result = @sse.accumulate_chat_completions(content)
+  let result = @openai.accumulate_chat_completions(content)
   match result {
     @llm_types.ModelResponse::ToolCalls(calls) => {
       inspect(calls.length(), content="1")
@@ -326,7 +326,7 @@ test "fixture: Groq Chat Completions toolcall stream accumulates to tool calls" 
 ///|
 test "fixture: OpenAI Responses text stream accumulates to text" {
   let content = read_fixture(fixture_path("openai/responses/text_stream.jsonl"))
-  let result = @sse.accumulate_responses_api(content)
+  let result = @openai.accumulate_responses_api(content)
   match result {
     @llm_types.ModelResponse::Text(text) => inspect(text, content="Four.")
     _ => fail("Expected Text response from accumulated stream")
@@ -338,7 +338,7 @@ test "fixture: Anthropic Messages text stream accumulates to text" {
   let content = read_fixture(
     fixture_path("anthropic/messages/text_stream.jsonl"),
   )
-  let result = @sse.accumulate_anthropic_messages(content)
+  let result = @anthropic.accumulate_messages(content)
   match result {
     @llm_types.ModelResponse::Text(text) => inspect(text, content="Four")
     _ => fail("Expected Text response from accumulated stream")
@@ -353,12 +353,12 @@ test "fixture: Anthropic Messages text stream accumulates to text" {
 test "fixture: OpenAI Responses text — stream vs non-stream consistent" {
   // Non-streaming
   let ns_json = read_fixture_json("openai/responses/text_nonstream.json")
-  let ns_result = @protocol.parse_responses_api_response(ns_json)
+  let ns_result = @openai.parse_responses_api_response(ns_json)
   // Streaming
   let s_content = read_fixture(
     fixture_path("openai/responses/text_stream.jsonl"),
   )
-  let s_result = @sse.accumulate_responses_api(s_content)
+  let s_result = @openai.accumulate_responses_api(s_content)
   match (ns_result, s_result) {
     (@llm_types.ModelResponse::Text(ns_text), @llm_types.ModelResponse::Text(s_text)) =>
       inspect(ns_text, content=s_text)
@@ -370,12 +370,12 @@ test "fixture: OpenAI Responses text — stream vs non-stream consistent" {
 test "fixture: Anthropic Messages text — stream vs non-stream consistent" {
   // Non-streaming
   let ns_json = read_fixture_json("anthropic/messages/text_nonstream.json")
-  let ns_result = @protocol.parse_anthropic_response(ns_json)
+  let ns_result = @anthropic.parse_response(ns_json)
   // Streaming
   let s_content = read_fixture(
     fixture_path("anthropic/messages/text_stream.jsonl"),
   )
-  let s_result = @sse.accumulate_anthropic_messages(s_content)
+  let s_result = @anthropic.accumulate_messages(s_content)
   match (ns_result, s_result) {
     (@llm_types.ModelResponse::Text(ns_text), @llm_types.ModelResponse::Text(s_text)) =>
       inspect(ns_text, content=s_text)

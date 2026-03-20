@@ -147,7 +147,7 @@ fn parse_openai_response(body : String) -> @llm_types.ModelResponse {
   let json : Json = @json.parse(body) catch {
     _ => return @llm_types.ModelResponse::ModelError("Invalid OpenAI response JSON")
   }
-  @protocol.parse_openai_chat_response(json)
+  @openai.parse_chat_response(json)
 }
 
 ///|
@@ -158,7 +158,7 @@ fn parse_openai_responses_response(body : String) -> @llm_types.ModelResponse {
         "Invalid OpenAI Responses response JSON",
       )
   }
-  @protocol.parse_responses_api_response(json)
+  @openai.parse_responses_api_response(json)
 }
 
 ///|
@@ -167,7 +167,7 @@ fn parse_anthropic_response(body : String) -> @llm_types.ModelResponse {
     _ =>
       return @llm_types.ModelResponse::ModelError("Invalid Anthropic response JSON")
   }
-  @protocol.parse_anthropic_response(json)
+  @anthropic.parse_response(json)
 }
 
 ///|
@@ -191,7 +191,7 @@ async fn call_openai_impl(
   // use_translation が true の場合、Chat Completions を使用
   let use_chat_completions_internally = use_translation || not(use_responses_api)
   let body = (if use_chat_completions_internally {
-    @protocol.build_openai_chat_body(
+    @openai.build_chat_body(
       model,
       messages,
       tools,
@@ -199,7 +199,7 @@ async fn call_openai_impl(
       temperature=options.temperature,
     )
   } else {
-    @protocol.build_responses_api_body(model, messages, tools)
+    @openai.build_responses_api_body(model, messages, tools)
   }).stringify()
   let base = normalize_base_url(provider.base_url.unwrap_or(""))
   let path = if use_chat_completions_internally {
@@ -248,8 +248,8 @@ async fn call_anthropic_impl(
     "anthropic-version": "2023-06-01",
   }
   let model = options.model_name
-  let system = @protocol.extract_system_message(messages)
-  let body = @protocol.build_anthropic_body(
+  let system = @anthropic.extract_system_message(messages)
+  let body = @anthropic.build_body(
     model,
     messages,
     tools,
@@ -328,7 +328,7 @@ pub fn translate_sse_jsonl_to_responses_events(
   jsonl : String,
 ) -> Array[(String, Json)] {
   let translator = @harmony.HarmonyToResponsesTranslator::new(response_id="resp_generated")
-  let events = @sse.parse_chat_completions_jsonl(jsonl) catch { _ => return [] }
+  let events = @sse.parse_jsonl(jsonl) catch { _ => return [] }
   let result : Array[(String, Json)] = []
   for event in events {
     let translated = translator.translate(event)
