@@ -103,7 +103,7 @@ extern "C" fn skill_list_dir(
 ///|
 /// skills ディレクトリの .md ファイル一覧を取得
 fn list_skill_files(dir : String) -> Array[String] {
-  let dir_bytes = skill_to_cstr(dir)
+  let dir_bytes = @bytes.to_utf8_cstring(dir)
   let buffer = Bytes::new(8192)
   let bytes_written = skill_list_dir(dir_bytes, buffer, 8192)
   if bytes_written <= 0 {
@@ -136,15 +136,10 @@ extern "C" fn skill_fread(
 extern "C" fn skill_fclose(handle : Int64) -> Int = "moonbit_fclose_handle"
 
 ///|
-fn skill_to_cstr(s : String) -> Bytes {
-  @bytes.to_utf8_cstring(s)
-}
-
-///|
 /// スキルファイルを読み込み
 fn read_skill_file(path : String) -> String? {
-  let path_bytes = skill_to_cstr(path)
-  let mode_bytes = skill_to_cstr("rb")
+  let path_bytes = @bytes.to_utf8_cstring(path)
+  let mode_bytes = @bytes.to_utf8_cstring("rb")
   let handle = skill_fopen(path_bytes, mode_bytes)
   if handle == 0L {
     return None

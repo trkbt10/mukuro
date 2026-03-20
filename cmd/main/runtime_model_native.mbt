@@ -139,11 +139,6 @@ pub fn set_forced_response_for_test(response : String?) -> Unit {
 }
 
 ///|
-fn string_to_body_bytes(s : String) -> Bytes {
-  @utf8.encode(s.view())
-}
-
-///|
 /// Vision: メッセージ配列から画像 URL を含む最後の User メッセージを検出
 /// 返り値: (画像URL, メッセージインデックス) または None
 fn find_vision_image(
@@ -254,7 +249,7 @@ async fn call_openai_impl(
     url: "\{base}\{path}",
     http_method: @interfaces.HttpMethod::Post,
     headers,
-    body: Some(string_to_body_bytes(body)),
+    body: Some(@utf8.encode(body.view())),
   }
   let response = @interfaces.HttpClient::request(http_client, req) catch {
     _ => return @llm_types.ModelResponse::ModelError("OpenAI request failed")
@@ -304,7 +299,7 @@ async fn call_anthropic_impl(
     url: "https://api.anthropic.com/v1/messages",
     http_method: @interfaces.HttpMethod::Post,
     headers,
-    body: Some(string_to_body_bytes(body)),
+    body: Some(@utf8.encode(body.view())),
   }
   let response = @interfaces.HttpClient::request(http_client, req) catch {
     _ => return @llm_types.ModelResponse::ModelError("Anthropic request failed")
@@ -346,7 +341,7 @@ async fn call_gemini_impl(
     url: path,
     http_method: @interfaces.HttpMethod::Post,
     headers,
-    body: Some(string_to_body_bytes(body)),
+    body: Some(@utf8.encode(body.view())),
   }
   let response = @interfaces.HttpClient::request(http_client, req) catch {
     _ => return @llm_types.ModelResponse::ModelError("Gemini request failed")

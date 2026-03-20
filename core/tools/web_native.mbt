@@ -26,11 +26,6 @@ extern "C" fn web_fread_handle(
 // =============================================================================
 
 ///|
-fn web_escape_single_quote(s : String) -> String {
-  @util.escape_shell_single_quote(s)
-}
-
-///|
 fn web_utf8_to_string(data : Bytes, len : Int) -> String {
   let buf = StringBuilder::new()
   let mut i = 0
@@ -121,7 +116,7 @@ fn web_fetch_raw(
   headers : Map[String, Json]?,
   body : String?,
 ) -> ToolExecutionResult {
-  let escaped_url = web_escape_single_quote(url)
+  let escaped_url = @util.escape_shell_single_quote(url)
   let mut cmd = "curl -s -L --max-redirs 10 --connect-timeout 10 --max-time 30 -w '\\n%{http_code}' -X '\{http_method}'"
   let mut has_user_agent = false
   match headers {
@@ -129,8 +124,8 @@ fn web_fetch_raw(
       for key, value in h {
         match value {
           String(v) => {
-            let ek = web_escape_single_quote(key)
-            let ev = web_escape_single_quote(v)
+            let ek = @util.escape_shell_single_quote(key)
+            let ev = @util.escape_shell_single_quote(v)
             cmd = cmd + " -H '\{ek}: \{ev}'"
             if key.to_lower() == "user-agent" {
               has_user_agent = true
@@ -146,7 +141,7 @@ fn web_fetch_raw(
   }
   match body {
     Some(b) => {
-      let escaped_body = web_escape_single_quote(b)
+      let escaped_body = @util.escape_shell_single_quote(b)
       cmd = cmd + " -d '\{escaped_body}'"
     }
     None => ()
@@ -288,7 +283,7 @@ fn truncate_string(s : String, max_len : Int) -> String {
 /// Web検索を実行 (DuckDuckGo HTML API - APIキー不要)
 fn web_search(query : String, max_results : Int) -> ToolExecutionResult {
   // DuckDuckGo HTML lite を使用 (APIキー不要)
-  let escaped_query = web_escape_single_quote(query)
+  let escaped_query = @util.escape_shell_single_quote(query)
   let url = "https://html.duckduckgo.com/html/?q=" + url_encode_simple(escaped_query)
   let fetch_result = web_fetch_raw(url, "GET", None, None)
   if fetch_result.status != ToolResultStatus::Success {

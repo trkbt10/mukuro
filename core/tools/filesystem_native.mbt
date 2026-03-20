@@ -72,11 +72,6 @@ let fs_f_ok : Int = 0
 // =============================================================================
 
 ///|
-fn to_utf8_cstr(s : String) -> Bytes {
-  @bytes.to_utf8_cstring(s)
-}
-
-///|
 fn fs_utf8_to_string(data : Bytes, len : Int) -> String {
   let buf = StringBuilder::new()
   let mut i = 0
@@ -122,8 +117,8 @@ fn fs_utf8_to_string(data : Bytes, len : Int) -> String {
 
 ///|
 fn fs_exec_popen(command : String) -> (String, Int) {
-  let cmd_bytes = to_utf8_cstr(command)
-  let mode_bytes = to_utf8_cstr("r")
+  let cmd_bytes = @bytes.to_utf8_cstring(command)
+  let mode_bytes = @bytes.to_utf8_cstring("r")
   let handle = fs_popen_handle(cmd_bytes, mode_bytes)
   if handle == 0L {
     return ("", -1)
@@ -143,19 +138,14 @@ fn fs_exec_popen(command : String) -> (String, Int) {
   (stdout, exit_code)
 }
 
-///|
-fn fs_escape_single_quote(s : String) -> String {
-  @util.escape_shell_single_quote(s)
-}
-
 // =============================================================================
 // Platform Implementations
 // =============================================================================
 
 ///|
 fn fs_read(path : String) -> ToolExecutionResult {
-  let path_bytes = to_utf8_cstr(path)
-  let mode_bytes = to_utf8_cstr("rb")
+  let path_bytes = @bytes.to_utf8_cstring(path)
+  let mode_bytes = @bytes.to_utf8_cstring("rb")
   let handle = fs_fopen_handle(path_bytes, mode_bytes)
   if handle == 0L {
     return ToolExecutionResult::error("Cannot open file: \{path}")
@@ -177,8 +167,8 @@ fn fs_read(path : String) -> ToolExecutionResult {
 
 ///|
 fn fs_write(path : String, content : String) -> ToolExecutionResult {
-  let path_bytes = to_utf8_cstr(path)
-  let mode_bytes = to_utf8_cstr("wb")
+  let path_bytes = @bytes.to_utf8_cstring(path)
+  let mode_bytes = @bytes.to_utf8_cstring("wb")
   let handle = fs_fopen_handle(path_bytes, mode_bytes)
   if handle == 0L {
     return ToolExecutionResult::error("Cannot open file for writing: \{path}")
@@ -194,8 +184,8 @@ fn fs_write(path : String, content : String) -> ToolExecutionResult {
 
 ///|
 fn fs_append(path : String, content : String) -> ToolExecutionResult {
-  let path_bytes = to_utf8_cstr(path)
-  let mode_bytes = to_utf8_cstr("ab")
+  let path_bytes = @bytes.to_utf8_cstring(path)
+  let mode_bytes = @bytes.to_utf8_cstring("ab")
   let handle = fs_fopen_handle(path_bytes, mode_bytes)
   if handle == 0L {
     return ToolExecutionResult::error("Cannot open file for appending: \{path}")
@@ -213,7 +203,7 @@ fn fs_append(path : String, content : String) -> ToolExecutionResult {
 fn fs_delete(path : String, recursive : Bool) -> ToolExecutionResult {
   if recursive {
     // ディレクトリの再帰削除は rm -rf を使用
-    let escaped = fs_escape_single_quote(path)
+    let escaped = @util.escape_shell_single_quote(path)
     let (_, exit_code) = fs_exec_popen("rm -rf '\{escaped}'")
     if exit_code != 0 {
       return ToolExecutionResult::error("Cannot delete: \{path}")
@@ -271,7 +261,7 @@ fn fs_mkdir(path : String) -> ToolExecutionResult {
 ///|
 fn fs_stat(path : String) -> ToolExecutionResult {
   // stat コマンドで情報取得（macOS/Linux互換）
-  let escaped = fs_escape_single_quote(path)
+  let escaped = @util.escape_shell_single_quote(path)
   let cmd = "stat -f '%z %Sm %Sa %SB %HT' -t '%Y-%m-%dT%H:%M:%S' '\{escaped}' 2>/dev/null || stat --format='%s %y %x %w %F' '\{escaped}' 2>/dev/null"
   let (stdout, exit_code) = fs_exec_popen(cmd)
   if exit_code != 0 {

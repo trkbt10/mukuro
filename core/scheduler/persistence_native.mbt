@@ -27,11 +27,6 @@ extern "C" fn sched_fread(
 extern "C" fn sched_fclose(handle : Int64) -> Int = "moonbit_fclose_handle"
 
 ///|
-fn sched_to_utf8_cstr(s : String) -> Bytes {
-  @bytes.to_utf8_cstring(s)
-}
-
-///|
 /// TaskScheduler をファイルに保存
 pub fn save_scheduler_to_file(
   scheduler : TaskScheduler,
@@ -40,8 +35,8 @@ pub fn save_scheduler_to_file(
   let json = scheduler_to_json(scheduler)
   let content = json.stringify()
   let data = @moonbit_encoding_utf8.encode(content.view())
-  let path_bytes = sched_to_utf8_cstr(path)
-  let mode_bytes = sched_to_utf8_cstr("wb")
+  let path_bytes = @bytes.to_utf8_cstring(path)
+  let mode_bytes = @bytes.to_utf8_cstring("wb")
   let handle = sched_fopen(path_bytes, mode_bytes)
   if handle == 0L {
     return false
@@ -54,8 +49,8 @@ pub fn save_scheduler_to_file(
 ///|
 /// ファイルから TaskScheduler を読み込み
 pub fn load_scheduler_from_file(path : String) -> TaskScheduler {
-  let path_bytes = sched_to_utf8_cstr(path)
-  let mode_bytes = sched_to_utf8_cstr("rb")
+  let path_bytes = @bytes.to_utf8_cstring(path)
+  let mode_bytes = @bytes.to_utf8_cstring("rb")
   let handle = sched_fopen(path_bytes, mode_bytes)
   if handle == 0L {
     return TaskScheduler::new()
