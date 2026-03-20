@@ -180,7 +180,12 @@ pub impl @interfaces.ToolExecutor for BuiltinToolExecutorAdapter with execute(
         message=result.error_message.unwrap_or("Tool execution failed"),
       )
     @tools.ToolResultStatus::RequiresConfirmation =>
-      @types.ToolResult::Success(content=result.data.stringify())
+      // ツールが確認を要求 — モデルに伝えてユーザーに確認を促す
+      @types.ToolResult::Error(
+        message="REQUIRES_CONFIRMATION: This operation requires user approval before execution. Details: " +
+          result.data.stringify() +
+          "\nAsk the user for explicit confirmation before retrying.",
+      )
   }
 }
 

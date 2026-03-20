@@ -1,15 +1,36 @@
 ///|
 /// ツールレジストリ - すべてのツールエントリを集約
-/// 新しいツールを追加するときは all_tool_entries() に1行追加するだけ
+/// ビルトインツール + 動的登録ツール (MCP等)
 
 // =============================================================================
 // Tool Registry
 // =============================================================================
 
 ///|
+/// 動的に登録された外部ツール (MCP サーバー等)
+let external_tools : Array[ToolEntry] = []
+
+///|
+/// 外部ツールを動的に登録
+pub fn register_external_tool(entry : ToolEntry) -> Unit {
+  // 重複チェック
+  for existing in external_tools {
+    if existing.name == entry.name {
+      return
+    }
+  }
+  external_tools.push(entry)
+}
+
+///|
+/// 外部ツールをクリア
+pub fn clear_external_tools() -> Unit {
+  external_tools.clear()
+}
+
+///|
 /// すべてのビルトインツールエントリを返す
-/// 新しいツールを追加するときはここに追加
-pub fn all_tool_entries() -> Array[ToolEntry] {
+fn builtin_tool_entries() -> Array[ToolEntry] {
   [
     datetime_entry(),
     memory_entry(),
@@ -21,6 +42,16 @@ pub fn all_tool_entries() -> Array[ToolEntry] {
     edit_file_entry(),
     web_entry(),
   ]
+}
+
+///|
+/// すべてのツールエントリを返す（ビルトイン + 外部）
+pub fn all_tool_entries() -> Array[ToolEntry] {
+  let entries = builtin_tool_entries()
+  for ext in external_tools {
+    entries.push(ext)
+  }
+  entries
 }
 
 ///|

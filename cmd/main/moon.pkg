@@ -52,6 +52,7 @@ options(
   targets: {
     "api_v1_e2e_native_test.mbt": [ "native" ],
     "config_constants_native.mbt": [ "native" ],
+    "cli_config_native.mbt": [ "native" ],
     "cli_repl_native.mbt": [ "native" ],
     "config_file_native.mbt": [ "native" ],
     "control_api_native.mbt": [ "native" ],
@@ -64,6 +65,7 @@ options(
     "daemon_manager.mbt": [ "native" ],
     "daemon_spawn.mbt": [ "native" ],
     "gateway_config_native.mbt": [ "native" ],
+    "mcp_native.mbt": [ "native" ],
     "gateway_config_native_test.mbt": [ "native" ],
     "onboard_api_native.mbt": [ "native" ],
     "onboard_native.mbt": [ "native" ],

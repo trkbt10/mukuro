@@ -77,7 +77,7 @@ fn build_initialized_notification() -> @interfaces.JsonRpcRequest {
 
 ///|
 /// tools/list レスポンスからツール定義を抽出
-fn parse_tools_list_response(
+pub fn parse_tools_list_response(
   result : Json,
   server_name : String,
 ) -> Array[McpToolDef] {

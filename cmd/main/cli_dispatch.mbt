@@ -15,6 +15,7 @@ pub async fn execute_command(cmd : Command) -> CliResult {
     Command::Onboard(opts) => execute_onboard(opts)
     Command::Gateway(gateway_cmd) => execute_gateway_command(gateway_cmd)
     Command::Agent(opts) => execute_agent_command(opts)
+    Command::Config(config_cmd) => execute_config_command(config_cmd)
     Command::Cron(cron_cmd) => execute_cron_command(cron_cmd)
     Command::Service(service_cmd) => execute_service_command(service_cmd)
     Command::DaemonChild(pid_path) => execute_daemon_child(pid_path)

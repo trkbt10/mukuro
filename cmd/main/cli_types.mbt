@@ -26,6 +26,8 @@ pub(all) enum Command {
   Gateway(GatewayCommand)
   /// Agent実行（CLI REPL / 単発実行）
   Agent(AgentOptions)
+  /// Config操作
+  Config(ConfigCommand)
   /// Cron操作
   Cron(CronCommand)
   /// Service操作
@@ -33,6 +35,19 @@ pub(all) enum Command {
   /// デーモン子プロセス（内部使用）
   DaemonChild(String)
   /// 不明なコマンド
+  Unknown(String)
+}
+
+///|
+/// Configサブコマンド
+pub(all) enum ConfigCommand {
+  /// 設定ファイルパスを表示
+  Path
+  /// 現在の設定を表示
+  Show
+  /// プロバイダ一覧を表示
+  Providers
+  /// 不明
   Unknown(String)
 }
 

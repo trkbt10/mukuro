@@ -71,6 +71,7 @@ pub fn parse_args(args : Array[String]) -> Command {
         Command::Cron(CronCommand::Unknown(""))
       }
     "agent" => parse_agent_args(slice_from_1(args)[:])
+    "config" => parse_config_args(slice_from_1(args)[:])
     "service" =>
       if args.length() > 1 {
         parse_service_args(slice_from_1(args)[:])
@@ -399,6 +400,21 @@ fn parse_service_status_opts(args : ArrayView[String]) -> ServiceStatusOptions {
     }
   }
   opts
+}
+
+///|
+/// configコマンドの引数をパース
+fn parse_config_args(args : ArrayView[String]) -> Command {
+  if args.is_empty() {
+    return Command::Config(ConfigCommand::Show)
+  }
+  let arr = array_view_to_array(args)
+  match arr[0] {
+    "path" => Command::Config(ConfigCommand::Path)
+    "show" => Command::Config(ConfigCommand::Show)
+    "providers" => Command::Config(ConfigCommand::Providers)
+    _ => Command::Config(ConfigCommand::Unknown(arr[0]))
+  }
 }
 
 ///|
