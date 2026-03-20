@@ -10,6 +10,7 @@ import {
   "moonbitlang/async" @async,
   "moonbitlang/x/time" @xtime,
   "trkbt10/subprocess" @subprocess,
+  "trkbt10/mukuro/lib/util" @util,
   "trkbt10/llm_interop/types" @llm_types,
 }
 

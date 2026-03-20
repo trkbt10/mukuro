@@ -95,71 +95,18 @@ fn discord_api_call(
   token : String,
   body : String?,
 ) -> (String, Int) {
-  let escaped_url = discord_escape_sq(url)
+  let escaped_url = @util.escape_shell_single_quote(url)
   let mut cmd = "curl -s --connect-timeout 10 --max-time 15 -X \{method} -H 'Authorization: Bot \{token}' -H 'Content-Type: application/json'"
   match body {
     Some(b) => {
-      let escaped_body = discord_escape_sq(b)
+      let escaped_body = @util.escape_shell_single_quote(b)
       cmd = cmd + " -d '\{escaped_body}'"
     }
     None => ()
   }
   cmd = cmd + " '\{escaped_url}'"
-  let cmd_bytes = @bytes.to_utf8_cstring(cmd)
-  let mode_bytes = @bytes.to_utf8_cstring("r")
-  let handle = discord_popen_handle(cmd_bytes, mode_bytes)
-  if handle == 0L {
-    return ("", -1)
-  }
-  let buffer_size = 65536
-  let buffer = Bytes::new(buffer_size)
-  let bytes_read = discord_fread_handle(buffer, 1, buffer_size, handle)
-  let exit_raw = discord_pclose_handle(handle)
-  let exit_code = (exit_raw.reinterpret_as_uint() >> 8)
-    .land(0xFFU)
-    .reinterpret_as_int()
-  let stdout = if bytes_read > 0 {
-    match @bytes.decode_utf8(buffer[:bytes_read]) {
-      Some(s) => s
-      None => ""
-    }
-  } else {
-    ""
-  }
-  (stdout, exit_code)
+  channel_exec_curl(cmd)
 }
-
-///|
-fn discord_escape_sq(s : String) -> String {
-  let buf = StringBuilder::new()
-  for c in s {
-    if c == '\'' {
-      buf.write_string("'\\''")
-    } else {
-      buf.write_char(c)
-    }
-  }
-  buf.to_string()
-}
-
-///|
-#borrow(command, mode)
-extern "C" fn discord_popen_handle(
-  command : Bytes,
-  mode : Bytes,
-) -> Int64 = "moonbit_popen_bytes"
-
-///|
-extern "C" fn discord_pclose_handle(handle : Int64) -> Int = "moonbit_pclose_handle"
-
-///|
-#borrow(buffer)
-extern "C" fn discord_fread_handle(
-  buffer : Bytes,
-  size : Int,
-  nmemb : Int,
-  handle : Int64,
-) -> Int = "moonbit_fread_handle"
 
 ///|
 /// Discord メッセージ配列から InboundEnvelope を抽出
@@ -257,7 +204,7 @@ pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter with send(
   message,
 ) {
   let chat_id = message.chat_id
-  let escaped_content = discord_escape_sq(message.content)
+  let escaped_content = @util.escape_shell_single_quote(message.content)
   let body = "{\"content\":\"\{escaped_content}\"}"
   let url = self.config.api_base_url + "/channels/\{chat_id}/messages"
   let (_, _) = discord_api_call(url, "POST", self.config.bot_token, Some(body))

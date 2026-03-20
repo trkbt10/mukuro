@@ -101,7 +101,7 @@ pub fn MemoryStore::load_from_markdown(
   let lines = content.split("\n")
   for line_view in lines {
     let line = line_view.to_string()
-    if line.starts_with("## ") {
+    if line.has_prefix("## ") {
       // 前のエントリを保存
       match current_key {
         Some(k) => {
@@ -115,7 +115,7 @@ pub fn MemoryStore::load_from_markdown(
         }
         None => ()
       }
-      current_key = Some(line.substring(start=3).trim(chars=" \t\r\n").to_string())
+      current_key = Some(line[3:].to_string().trim(chars=" \t\r\n").to_string())
       current_value = StringBuilder::new()
     } else {
       match current_key {

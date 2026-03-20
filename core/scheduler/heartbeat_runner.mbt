@@ -10,11 +10,11 @@ pub fn parse_heartbeat_tasks(content : String) -> Array[(String, Bool)] {
   for line_view in lines {
     let line = line_view.to_string()
     let trimmed = line.trim(chars=" \t").to_string()
-    if trimmed.starts_with("- [ ] ") {
-      let task_name = trimmed.substring(start=6)
+    if trimmed.has_prefix("- [ ] ") {
+      let task_name = trimmed[6:].to_string()
       tasks.push((task_name, false))
-    } else if trimmed.starts_with("- [x] ") || trimmed.starts_with("- [X] ") {
-      let task_name = trimmed.substring(start=6)
+    } else if trimmed.has_prefix("- [x] ") || trimmed.has_prefix("- [X] ") {
+      let task_name = trimmed[6:].to_string()
       tasks.push((task_name, true))
     }
   }

@@ -224,3 +224,99 @@ test "TaskScheduler::due_tasks only returns enabled tasks" {
   // Task is disabled, should not be due
   inspect(due.length(), content="0")
 }
+
+// =============================================================================
+// Persistence Tests
+// =============================================================================
+
+///|
+test "task_to_json serializes task" {
+  let task = @scheduler.ScheduledTask::new(
+    id="t1",
+    name="Test",
+    cron_expr="30 10 * * *",
+    payload=Json::string("hello"),
+  )
+  let json = @scheduler.task_to_json(task)
+  match json {
+    { "id": String("t1"), "name": String("Test"), "cron": String(cron), .. } =>
+      inspect(cron.contains("30"), content="true")
+    _ => fail("Expected task JSON")
+  }
+}
+
+///|
+test "task_from_json deserializes task" {
+  let json : Json = {
+    "id": "t1",
+    "name": "Test",
+    "cron": "30 10 * * *",
+    "next_run": 0,
+    "enabled": true,
+    "payload": "hello",
+  }
+  match @scheduler.task_from_json(json) {
+    Some(task) => {
+      inspect(task.id, content="t1")
+      inspect(task.name, content="Test")
+      inspect(task.enabled, content="true")
+    }
+    None => fail("Expected Some")
+  }
+}
+
+///|
+test "scheduler_to_json and scheduler_from_json roundtrip" {
+  let scheduler = @scheduler.TaskScheduler::new()
+  let task = @scheduler.ScheduledTask::new(
+    id="rt1",
+    name="Roundtrip",
+    cron_expr="0 9 * * 1",
+    payload={ "key": "value" },
+  )
+  scheduler.register(task)
+  let json = @scheduler.scheduler_to_json(scheduler)
+  let restored = @scheduler.scheduler_from_json(json)
+  let tasks = restored.get_all_tasks()
+  inspect(tasks.length(), content="1")
+  inspect(tasks[0].id, content="rt1")
+}
+
+// =============================================================================
+// Heartbeat Runner Tests
+// =============================================================================
+
+///|
+test "parse_heartbeat_tasks extracts checked and unchecked" {
+  let content = "# Tasks\n\n- [ ] Unchecked task\n- [x] Checked task\n- [ ] Another unchecked"
+  let tasks = @scheduler.parse_heartbeat_tasks(content)
+  inspect(tasks.length(), content="3")
+  inspect(tasks[0].0, content="Unchecked task")
+  inspect(tasks[0].1, content="false")
+  inspect(tasks[1].0, content="Checked task")
+  inspect(tasks[1].1, content="true")
+}
+
+///|
+test "get_pending_heartbeat_tasks returns only unchecked" {
+  let content = "- [ ] Task A\n- [x] Task B\n- [ ] Task C"
+  let pending = @scheduler.get_pending_heartbeat_tasks(content)
+  inspect(pending.length(), content="2")
+  inspect(pending[0], content="Task A")
+  inspect(pending[1], content="Task C")
+}
+
+///|
+test "build_heartbeat_prompt formats pending tasks" {
+  let pending = ["Check server", "Review logs"]
+  let prompt = @scheduler.build_heartbeat_prompt(pending)
+  inspect(prompt.contains("Check server"), content="true")
+  inspect(prompt.contains("Review logs"), content="true")
+}
+
+///|
+test "build_heartbeat_prompt handles empty" {
+  let pending : Array[String] = []
+  let prompt = @scheduler.build_heartbeat_prompt(pending)
+  inspect(prompt.contains("No pending"), content="true")
+}

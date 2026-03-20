@@ -27,15 +27,7 @@ extern "C" fn web_fread_handle(
 
 ///|
 fn web_escape_single_quote(s : String) -> String {
-  let buf = StringBuilder::new()
-  for c in s {
-    if c == '\'' {
-      buf.write_string("'\\''")
-    } else {
-      buf.write_char(c)
-    }
-  }
-  buf.to_string()
+  @util.escape_shell_single_quote(s)
 }
 
 ///|
@@ -246,13 +238,13 @@ fn strip_html_tags(html : String) -> String {
     if c == '>' && in_tag {
       in_tag = false
       let tag = tag_buf.to_string().to_lower()
-      if tag.starts_with("script") {
+      if tag.has_prefix("script") {
         in_script = true
-      } else if tag.starts_with("/script") {
+      } else if tag.has_prefix("/script") {
         in_script = false
-      } else if tag.starts_with("style") {
+      } else if tag.has_prefix("style") {
         in_style = true
-      } else if tag.starts_with("/style") {
+      } else if tag.has_prefix("/style") {
         in_style = false
       } else if tag == "br" || tag == "br/" || tag == "br /" {
         buf.write_char('\n')

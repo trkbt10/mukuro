@@ -33,8 +33,8 @@ pub fn parse_skill_markdown(
     let line = lines[i].to_string()
     let colon_idx = find_char_in_string(line, ':')
     if colon_idx > 0 {
-      let key = line.substring(end=colon_idx).trim(chars=" \t").to_string()
-      let value = line.substring(start=colon_idx + 1).trim(chars=" \t\r\n").to_string()
+      let key = line[:colon_idx].to_string().trim(chars=" \t").to_string()
+      let value = line[colon_idx + 1:].to_string().trim(chars=" \t\r\n").to_string()
       match key {
         "name" => name = value
         "description" => description = value

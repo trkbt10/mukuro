@@ -145,15 +145,7 @@ fn fs_exec_popen(command : String) -> (String, Int) {
 
 ///|
 fn fs_escape_single_quote(s : String) -> String {
-  let buf = StringBuilder::new()
-  for c in s {
-    if c == '\'' {
-      buf.write_string("'\\''")
-    } else {
-      buf.write_char(c)
-    }
-  }
-  buf.to_string()
+  @util.escape_shell_single_quote(s)
 }
 
 // =============================================================================

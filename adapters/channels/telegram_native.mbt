@@ -85,69 +85,16 @@ fn TelegramChannelAdapter::api_url(
 ///|
 /// curl で Telegram API を呼び出す
 fn telegram_api_call(url : String, body : String?) -> (String, Int) {
-  let escaped_url = telegram_escape_sq(url)
+  let escaped_url = @util.escape_shell_single_quote(url)
   let cmd = match body {
     Some(b) => {
-      let escaped_body = telegram_escape_sq(b)
+      let escaped_body = @util.escape_shell_single_quote(b)
       "curl -s --connect-timeout 10 --max-time 35 -X POST -H 'Content-Type: application/json' -d '\{escaped_body}' '\{escaped_url}'"
     }
     None => "curl -s --connect-timeout 10 --max-time 35 '\{escaped_url}'"
   }
-  let cmd_bytes = @bytes.to_utf8_cstring(cmd)
-  let mode_bytes = @bytes.to_utf8_cstring("r")
-  let handle = telegram_popen_handle(cmd_bytes, mode_bytes)
-  if handle == 0L {
-    return ("", -1)
-  }
-  let buffer_size = 65536
-  let buffer = Bytes::new(buffer_size)
-  let bytes_read = telegram_fread_handle(buffer, 1, buffer_size, handle)
-  let exit_raw = telegram_pclose_handle(handle)
-  let exit_code = (exit_raw.reinterpret_as_uint() >> 8)
-    .land(0xFFU)
-    .reinterpret_as_int()
-  let stdout = if bytes_read > 0 {
-    match @bytes.decode_utf8(buffer[:bytes_read]) {
-      Some(s) => s
-      None => ""
-    }
-  } else {
-    ""
-  }
-  (stdout, exit_code)
+  channel_exec_curl(cmd)
 }
-
-///|
-fn telegram_escape_sq(s : String) -> String {
-  let buf = StringBuilder::new()
-  for c in s {
-    if c == '\'' {
-      buf.write_string("'\\''")
-    } else {
-      buf.write_char(c)
-    }
-  }
-  buf.to_string()
-}
-
-///|
-#borrow(command, mode)
-extern "C" fn telegram_popen_handle(
-  command : Bytes,
-  mode : Bytes,
-) -> Int64 = "moonbit_popen_bytes"
-
-///|
-extern "C" fn telegram_pclose_handle(handle : Int64) -> Int = "moonbit_pclose_handle"
-
-///|
-#borrow(buffer)
-extern "C" fn telegram_fread_handle(
-  buffer : Bytes,
-  size : Int,
-  nmemb : Int,
-  handle : Int64,
-) -> Int = "moonbit_fread_handle"
 
 ///|
 /// getUpdates レスポンスから InboundEnvelope を抽出
@@ -254,7 +201,7 @@ pub impl @interfaces.ChannelAdapter for TelegramChannelAdapter with send(
   message,
 ) {
   let chat_id = message.chat_id
-  let text = telegram_escape_sq(message.content)
+  let text = @util.escape_shell_single_quote(message.content)
   let body = "{\"chat_id\":\{chat_id},\"text\":\"\{text}\"}"
   let url = self.api_url("sendMessage")
   let (_, _) = telegram_api_call(url, Some(body))

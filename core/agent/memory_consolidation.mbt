@@ -20,7 +20,7 @@ pub fn summarize_messages_simple(
         last_user_msg.reset()
         // 最後の80文字を保持
         if content.length() > 80 {
-          last_user_msg.write_string(content.substring(end=80))
+          last_user_msg.write_string(content[:80].to_string())
           last_user_msg.write_string("...")
         } else {
           last_user_msg.write_string(content)
@@ -30,7 +30,7 @@ pub fn summarize_messages_simple(
         assistant_count = assistant_count + 1
         last_assistant_msg.reset()
         if content.length() > 80 {
-          last_assistant_msg.write_string(content.substring(end=80))
+          last_assistant_msg.write_string(content[:80].to_string())
           last_assistant_msg.write_string("...")
         } else {
           last_assistant_msg.write_string(content)

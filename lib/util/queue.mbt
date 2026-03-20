@@ -45,3 +45,22 @@ pub fn IdGenerator::current(self : IdGenerator) -> Int64 {
 pub fn IdGenerator::reset(self : IdGenerator, value : Int64) -> Unit {
   self.counter = value
 }
+
+// =============================================================================
+// Shell Utilities
+// =============================================================================
+
+///|
+/// シングルクォートをエスケープ（シェルコマンド構築用）
+/// 'text' → 'te'\''xt'
+pub fn escape_shell_single_quote(s : String) -> String {
+  let buf = StringBuilder::new()
+  for c in s {
+    if c == '\'' {
+      buf.write_string("'\\''")
+    } else {
+      buf.write_char(c)
+    }
+  }
+  buf.to_string()
+}

@@ -306,7 +306,7 @@ pub fn validate_workspace_path(
       }
       // 絶対パスの場合、ワークスペース配下かチェック
       if path.length() > 0 && char_at(path, 0) == '/' {
-        if not(path.starts_with(ws)) {
+        if not(path.has_prefix(ws)) {
           return Some(
             "Path outside workspace: \{path} (workspace: \{ws})",
           )

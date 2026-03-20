@@ -9,5 +9,6 @@ import {
 options(
   targets: {
     "skill_loader_native.mbt": [ "native" ],
+    "skill_loader_wbtest.mbt": [ "native" ],
   },
 )

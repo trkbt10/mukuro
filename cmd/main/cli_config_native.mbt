@@ -52,7 +52,7 @@ fn execute_config_providers() -> CliResult {
     let key_status = match p.api_key {
       Some(k) =>
         if k.length() > 8 {
-          k.substring(end=4) + "..." + k.substring(start=k.length() - 4)
+          k[:4].to_string() + "..." + k[k.length() - 4:].to_string()
         } else if k.length() > 0 {
           "****"
         } else {

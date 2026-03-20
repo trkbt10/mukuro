@@ -157,8 +157,8 @@ fn find_vision_image(
   while i >= 0 {
     match messages[i] {
       @llm_types.ModelMessage::User(name=Some(n), ..) =>
-        if n.starts_with("image:") {
-          let url = n.substring(start=6)
+        if n.has_prefix("image:") {
+          let url = n[6:].to_string()
           return Some((url, i))
         }
       _ => ()

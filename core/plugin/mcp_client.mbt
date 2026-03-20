@@ -150,8 +150,8 @@ pub fn resolve_mcp_tool_name(
   server_name : String,
 ) -> String? {
   let prefix = "mcp_\{server_name}_"
-  if full_name.starts_with(prefix) {
-    Some(full_name.substring(start=prefix.length()))
+  if full_name.has_prefix(prefix) {
+    Some(full_name[prefix.length():].to_string())
   } else {
     None
   }
