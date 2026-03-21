@@ -11,7 +11,7 @@ fn test_timestamp() -> Int64 {
 ///|
 test "NativeHistoryRecorder creates file on open_session" {
   // Use PID + counter for uniqueness
-  let base_dir = "/tmp/mukuro_h1_\{c_getpid()}"
+  let base_dir = "{@osenv_dirs.temp_dir()}/mukuro_h1_\{c_getpid()}"
   let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()
@@ -39,7 +39,7 @@ test "NativeHistoryRecorder creates file on open_session" {
 
 ///|
 test "NativeHistoryRecorder writes record to file" {
-  let base_dir = "/tmp/mukuro_h2_\{c_getpid()}"
+  let base_dir = "{@osenv_dirs.temp_dir()}/mukuro_h2_\{c_getpid()}"
   let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()
@@ -81,7 +81,7 @@ test "NativeHistoryRecorder writes record to file" {
 
 ///|
 test "NativeHistoryRecorder read-write round-trip via Reader" {
-  let base_dir = "/tmp/mukuro_h3_\{c_getpid()}"
+  let base_dir = "{@osenv_dirs.temp_dir()}/mukuro_h3_\{c_getpid()}"
   let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()
@@ -133,7 +133,7 @@ test "NativeHistoryRecorder read-write round-trip via Reader" {
 
 ///|
 test "NativeHistoryRecorder raises NotInitialized when not open" {
-  let recorder = NativeHistoryRecorder::new(base_dir="/tmp/mukuro_h4")
+  let recorder = NativeHistoryRecorder::new(base_dir="{@osenv_dirs.temp_dir()}/mukuro_h4")
   let record : @interfaces.HistoryRecord = {
     timestamp: 0L,
     session_id: "test",
@@ -152,7 +152,7 @@ test "NativeHistoryRecorder raises NotInitialized when not open" {
 
 ///|
 test "NativeHistoryRecorder flushes after each record" {
-  let base_dir = "/tmp/mukuro_h5_\{c_getpid()}"
+  let base_dir = "{@osenv_dirs.temp_dir()}/mukuro_h5_\{c_getpid()}"
   let _ = c_system_bytes(string_to_utf8_cstring("rm -rf \{base_dir}"))
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let timestamp = test_timestamp()

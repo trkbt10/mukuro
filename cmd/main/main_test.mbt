@@ -64,7 +64,7 @@ async test "execute_onboard success with interpolated config" {
     provider: Some("anthropic"),
     api_key: Some("sk-test123"),
     default_model: Some("claude-3"),
-    output_path: Some("/tmp/mukuro-test/onboard-test-config.json"),
+    output_path: Some("\{@osenv_dirs.temp_dir()}/mukuro-test/onboard-test-config.json"),
   }
   let result = execute_onboard(opts)
   assert_true(
@@ -80,7 +80,7 @@ async test "execute_onboard success with interpolated config" {
   ignore(
     @native.c_remove_file_bytes(
       @native.string_to_utf8_cstring(
-        "/tmp/mukuro-test/onboard-test-config.json",
+        "\{@osenv_dirs.temp_dir()}/mukuro-test/onboard-test-config.json",
       ),
     ),
   )

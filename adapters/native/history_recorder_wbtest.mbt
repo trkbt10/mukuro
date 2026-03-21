@@ -81,7 +81,7 @@ test "file_prefix matching" {
 ///|
 test "NativeHistoryRecorder - open_session creates file and allows recording" {
   // テスト用一時ディレクトリ
-  let base_dir = "/tmp/mukuro_test_history_\{c_time()}"
+  let base_dir = "{@osenv_dirs.temp_dir()}/mukuro_test_history_\{c_time()}"
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let session_id = "test:integration_test_1"
   let timestamp = 1772330000000L // 2026-03-01 あたり
@@ -131,7 +131,7 @@ test "NativeHistoryRecorder - open_session creates file and allows recording" {
 
 ///|
 test "NativeHistoryRecorder - record fails if open_session not called" {
-  let base_dir = "/tmp/mukuro_test_history_\{c_time()}_2"
+  let base_dir = "{@osenv_dirs.temp_dir()}/mukuro_test_history_\{c_time()}_2"
   let recorder = NativeHistoryRecorder::new(base_dir~)
 
   let record : @interfaces.HistoryRecord = {
@@ -155,7 +155,7 @@ test "NativeHistoryRecorder - record fails if open_session not called" {
 ///|
 test "NativeHistoryRecorder via trait object - state persists" {
   // trait object として使用した場合に mutable 状態が保持されるかテスト
-  let base_dir = "/tmp/mukuro_test_history_\{c_time()}_3"
+  let base_dir = "{@osenv_dirs.temp_dir()}/mukuro_test_history_\{c_time()}_3"
   let recorder = NativeHistoryRecorder::new(base_dir~)
   let hr : &@interfaces.HistoryRecorder = recorder
   let session_id = "test:trait_object_test"

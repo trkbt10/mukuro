@@ -19,7 +19,7 @@ fn cleanup_file(path : String) -> Unit {
 /// テスト用一時ディレクトリを取得
 fn test_workspace_context_dir() -> String {
   let base = @osenv_dirs.temp_dir_for("mukuro-test-ctx") catch {
-    _ => "/tmp/mukuro-test-ctx"
+    _ => @osenv_dirs.temp_dir() + "/mukuro-test-ctx"
   }
   base
 }

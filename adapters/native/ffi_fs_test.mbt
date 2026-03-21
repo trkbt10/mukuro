@@ -7,7 +7,7 @@
 
 ///|
 test "c_access_bytes detects existing directory" {
-  let path = @native.string_to_utf8_cstring("/tmp")
+  let path = @native.string_to_utf8_cstring(@osenv_dirs.temp_dir())
   let result = @native.c_access_bytes(path, @native.f_ok)
   assert_eq(result, 0)
 }
@@ -21,7 +21,7 @@ test "c_access_bytes returns -1 for non-existent path" {
 
 ///|
 test "c_access CString version detects existing directory" {
-  let path = @native.string_to_cstring("/tmp")
+  let path = @native.string_to_cstring(@osenv_dirs.temp_dir())
   let result = @native.c_access(path, @native.f_ok)
   assert_eq(result, 0)
 }
@@ -32,7 +32,7 @@ test "c_access CString version detects existing directory" {
 
 ///|
 test "c_mkdir_bytes creates and removes directory" {
-  let dir = "/tmp/mukuro_ffi_fs_test_\{@native.c_getpid()}"
+  let dir = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_test_\{@native.c_getpid()}"
   let path = @native.string_to_utf8_cstring(dir)
   // Create
   let mkdir_result = @native.c_mkdir_bytes(path, 493) // 0o755
@@ -46,7 +46,7 @@ test "c_mkdir_bytes creates and removes directory" {
 
 ///|
 test "c_mkdir_recursive_bytes creates nested directories" {
-  let base = "/tmp/mukuro_ffi_fs_nested_\{@native.c_getpid()}"
+  let base = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_nested_\{@native.c_getpid()}"
   let nested = "\{base}/a/b/c"
   let path = @native.string_to_utf8_cstring(nested)
   // Create recursive
@@ -62,7 +62,7 @@ test "c_mkdir_recursive_bytes creates nested directories" {
 
 ///|
 test "c_list_dir_bytes lists directory entries" {
-  let path = @native.string_to_utf8_cstring("/tmp")
+  let path = @native.string_to_utf8_cstring(@osenv_dirs.temp_dir())
   let buffer = Bytes::new(4096)
   let bytes_read = @native.c_list_dir_bytes(path, buffer, buffer.length())
   @native.ffi_assert_true(bytes_read > 0)
@@ -70,7 +70,7 @@ test "c_list_dir_bytes lists directory entries" {
 
 ///|
 test "c_list_dir CString version lists directory entries" {
-  let path = @native.string_to_cstring("/tmp")
+  let path = @native.string_to_cstring(@osenv_dirs.temp_dir())
   let buffer = Bytes::new(4096)
   let bytes_read = @native.c_list_dir(path, buffer, buffer.length())
   @native.ffi_assert_true(bytes_read > 0)
@@ -82,7 +82,7 @@ test "c_list_dir CString version lists directory entries" {
 
 ///|
 test "c_write_text_file_bytes and c_read_text_file_bytes round-trip" {
-  let file_path = "/tmp/mukuro_ffi_fs_text_\{@native.c_getpid()}.txt"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_text_\{@native.c_getpid()}.txt"
   let content = "Hello, UTF-8 Bytes!\n日本語テスト"
   // Write
   let write_result = @native.c_write_text_file_bytes(
@@ -106,7 +106,7 @@ test "c_write_text_file_bytes and c_read_text_file_bytes round-trip" {
 
 ///|
 test "c_file_exists_bytes detects file presence" {
-  let file_path = "/tmp/mukuro_ffi_fs_exists_\{@native.c_getpid()}.txt"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_exists_\{@native.c_getpid()}.txt"
   let path_bytes = @native.string_to_utf8_cstring(file_path)
   // Should not exist
   assert_eq(@native.c_file_exists_bytes(path_bytes), 0)
@@ -123,7 +123,7 @@ test "c_file_exists_bytes detects file presence" {
 
 ///|
 test "c_write_pid_file_bytes and c_read_pid_file_bytes round-trip" {
-  let file_path = "/tmp/mukuro_ffi_fs_pid_\{@native.c_getpid()}.pid"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_pid_\{@native.c_getpid()}.pid"
   let path_bytes = @native.string_to_utf8_cstring(file_path)
   let expected_pid = @native.c_getpid()
   // Write
@@ -138,7 +138,7 @@ test "c_write_pid_file_bytes and c_read_pid_file_bytes round-trip" {
 
 ///|
 test "c_chmod_file_bytes changes file permissions" {
-  let file_path = "/tmp/mukuro_ffi_fs_chmod_\{@native.c_getpid()}.txt"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_chmod_\{@native.c_getpid()}.txt"
   let path_bytes = @native.string_to_utf8_cstring(file_path)
   // Create file
   let _ = @native.c_write_text_file_bytes(
@@ -154,7 +154,7 @@ test "c_chmod_file_bytes changes file permissions" {
 
 ///|
 test "c_remove_file_bytes removes file" {
-  let file_path = "/tmp/mukuro_ffi_fs_remove_\{@native.c_getpid()}.txt"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_remove_\{@native.c_getpid()}.txt"
   let path_bytes = @native.string_to_utf8_cstring(file_path)
   // Create file
   let _ = @native.c_write_text_file_bytes(
@@ -175,7 +175,7 @@ test "c_remove_file_bytes removes file" {
 
 ///|
 test "c_write_text_file and c_read_text_file CString version round-trip" {
-  let file_path = "/tmp/mukuro_ffi_fs_cstring_\{@native.c_getpid()}.txt"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_fs_cstring_\{@native.c_getpid()}.txt"
   let content = "CString test"
   // Write
   let write_result = @native.c_write_text_file(

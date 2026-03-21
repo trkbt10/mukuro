@@ -154,7 +154,7 @@ test "history recording: multiple records after open_session" {
 ///|
 test "NativeHistoryRecorder: ChatWsHandler flow simulation" {
   // 実際の NativeHistoryRecorder を使ってフローをテスト
-  let base_dir = "/tmp/mukuro_test_ws_handler_\{@native.c_time()}"
+  let base_dir = "\{@osenv_dirs.temp_dir()}/mukuro_test_ws_handler_\{@native.c_time()}"
   let recorder = @native.NativeHistoryRecorder::new(base_dir~)
 
   // ChatWsHandler と同じように trait object として保持
@@ -204,6 +204,8 @@ test "NativeHistoryRecorder: ChatWsHandler flow simulation" {
 
 ///|
 test "create_session_history_recorder: returned trait object should work" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションコードと同じ create_session_history_recorder() を使う
   let history_recorder = create_session_history_recorder()
 
@@ -245,6 +247,7 @@ test "create_session_history_recorder: returned trait object should work" {
     msg="Should have at least 1 record from create_session_history_recorder",
   )
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 // 構造体に trait object を格納した場合のテスト用ラッパー
@@ -292,6 +295,8 @@ test "trait object in struct field: mutable state should persist" {
 
 ///|
 test "ChatWsHandler::new: history_recorder should be usable" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // 実際の ChatWsHandler::new() を使う
   let handler = ChatWsHandler::new()
   let history_recorder = create_session_history_recorder()
@@ -343,6 +348,7 @@ test "ChatWsHandler::new: history_recorder should be usable" {
 
   assert_true(records.length() >= 1, msg="Should have at least 1 record")
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 // ============================================================
@@ -351,6 +357,8 @@ test "ChatWsHandler::new: history_recorder should be usable" {
 
 ///|
 test "handle_connection flow: complete session lifecycle" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // handle_connection と同じフローをシミュレート
   let unique_suffix = @native.c_time()
   let handler = ChatWsHandler::new()
@@ -405,6 +413,7 @@ test "handle_connection flow: complete session lifecycle" {
     msg="lifecycle: Should have at least 1 record",
   )
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 // ============================================================
@@ -413,6 +422,8 @@ test "handle_connection flow: complete session lifecycle" {
 
 ///|
 test "file creation verification: history file should exist after recording" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   let unique_suffix = @native.c_time()
   let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
   let history_recorder : &@interfaces.HistoryRecorder = recorder
@@ -453,6 +464,7 @@ test "file creation verification: history file should exist after recording" {
     1,
     msg="file-verify: Should have exactly 1 record",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 // ============================================================
@@ -461,6 +473,8 @@ test "file creation verification: history file should exist after recording" {
 
 ///|
 test "handle_send simulation: agent loop should record via passed history_recorder" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // 実際の ChatWsHandler と同じフローをシミュレート
   let unique_suffix = @native.c_time()
   let handler = ChatWsHandler::new()
@@ -524,6 +538,7 @@ test "handle_send simulation: agent loop should record via passed history_record
   )
   assert_eq(records[0].record_type, @interfaces.HistoryRecordType::SessionMeta)
   assert_eq(records[1].record_type, @interfaces.HistoryRecordType::UserMessage)
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 // ============================================================
@@ -532,6 +547,8 @@ test "handle_send simulation: agent loop should record via passed history_record
 
 ///|
 test "error case: record without open_session should fail silently" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // open_session を呼ばずに record を呼ぶ
   let unique_suffix = @native.c_time()
   let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
@@ -555,6 +572,7 @@ test "error case: record without open_session should fail silently" {
 
   // record should fail because open_session was not called
   assert_true(error_caught, msg="record without open_session should fail")
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
@@ -581,6 +599,8 @@ test "data_dir verification: check actual path" {
 
 ///|
 test "error case: NotInitialized error has clear message" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
   let record : @interfaces.HistoryRecord = {
     timestamp: 1000L,
@@ -604,6 +624,7 @@ test "error case: NotInitialized error has clear message" {
     error_msg.contains("NotInitialized"),
     msg="NotInitialized should have clear message, got: \{error_msg}",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
@@ -650,7 +671,7 @@ test "error case: FileOpenFailed has path and reason" {
 ///|
 test "integration: verify file is actually created on disk" {
   // テスト用の一時ディレクトリを使用
-  let test_dir = "/tmp/mukuro_integration_test_\{@native.c_time()}"
+  let test_dir = "\{@osenv_dirs.temp_dir()}/mukuro_integration_test_\{@native.c_time()}"
   let recorder = @native.NativeHistoryRecorder::new(base_dir=test_dir)
 
   let session_id = "web_chat:integration-verify-\{@native.c_time()}"
@@ -690,6 +711,8 @@ test "integration: verify file is actually created on disk" {
 
 ///|
 test "integration: verify handle_connection creates files in data_dir" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler と同じフローを検証
   let handler = ChatWsHandler::new()
   let history_recorder = create_session_history_recorder()
@@ -733,10 +756,13 @@ test "integration: verify handle_connection creates files in data_dir" {
     records.length() >= 1,
     msg="Should have at least 1 record in data_dir, got \{records.length()}",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
 test "integration: verify create_session_history_recorder works" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // create_session_history_recorder() の戻り値を直接テスト
   let recorder = create_session_history_recorder()
   let session_id = "web_chat:create-recorder-verify-\{@native.c_time()}"
@@ -772,10 +798,13 @@ test "integration: verify create_session_history_recorder works" {
     e => fail("read_session failed: \{e}")
   }
   assert_eq(records.length(), 1, msg="Should have 1 record")
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
 test "debug: check data_dir value and file creation" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // data_dir の値を出力し、ファイル作成をステップバイステップで検証
   let data_dir = @config.data_dir()
 
@@ -825,6 +854,7 @@ test "debug: check data_dir value and file creation" {
     records.length() == 1,
     msg="debug: data_dir=\{data_dir}, is_new=\{is_new}, records=\{records.length()}",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
@@ -882,6 +912,8 @@ test "error case: Show trait works for all error variants" {
 
 ///|
 test "file existence: verify file is created on disk after record" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   let data_dir = @config.data_dir()
   let unique_id = @native.c_time()
   let session_id = "web_chat:file-exist-test-\{unique_id}"
@@ -945,6 +977,7 @@ test "file existence: verify file is created on disk after record" {
     content.contains("session_meta"),
     msg="File should contain session_meta record",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 // ============================================================
@@ -978,6 +1011,8 @@ test "get_timestamp_ms: should return valid Int64 timestamp" {
 
 ///|
 test "production flow: ChatWsHandler with actual get_timestamp_ms" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler と同じフローを再現
   let handler = ChatWsHandler::new()
   let history_recorder = create_session_history_recorder()
@@ -1040,6 +1075,7 @@ test "production flow: ChatWsHandler with actual get_timestamp_ms" {
     1,
     msg="Should have 1 SessionMeta record, got \{records.length()}",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 // ============================================================
@@ -1110,6 +1146,8 @@ async test "ASYNC: trait object mutable state in async function" {
 
 ///|
 test "SYNC CONTEXT: calling async function from sync closure" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションの run_forever 内のクロージャと同じパターン
   // 同期クロージャ内から async 関数を呼ぶ
   let data_dir = @config.data_dir()
@@ -1150,10 +1188,13 @@ test "SYNC CONTEXT: calling async function from sync closure" {
     e => fail("read_session failed: \{e}")
   }
   assert_eq(records.length(), 1, msg="Should have 1 record from sync closure")
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
 test "E2E: verify actual file creation with exact production pattern" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションと完全に同じパターン:
   // 1. ChatWsHandler::new() で handler 作成
   // 2. history_recorder.open_session() 呼び出し
@@ -1233,10 +1274,13 @@ test "E2E: verify actual file creation with exact production pattern" {
   if not(content.contains("session_meta")) {
     fail("E2E: File content does not contain 'session_meta': \{content}")
   }
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
 test "PRODUCTION PATTERN: ChatWsHandler in sync closure like run_forever" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションの正確なパターンをシミュレート
   // - ChatWsHandler::new() を呼ぶ
   // - 同期的なコールバック内で history_recorder のメソッドを呼ぶ
@@ -1288,6 +1332,7 @@ test "PRODUCTION PATTERN: ChatWsHandler in sync closure like run_forever" {
     1,
     msg="Should have 1 record from production pattern",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
@@ -1346,6 +1391,8 @@ fn simulate_handle_connection_async(
 
 ///|
 test "CRITICAL: trait object in struct preserves mutable state across calls" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler と同じ構造をシミュレート
   // struct に trait object を格納し、複数回メソッドを呼び出す
   let data_dir = @config.data_dir()
@@ -1391,10 +1438,13 @@ test "CRITICAL: trait object in struct preserves mutable state across calls" {
     e => fail("read_session failed: \{e}")
   }
   assert_eq(records.length(), 1, msg="Should have 1 record")
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
 test "CRITICAL: ChatWsHandler.history_recorder preserves state" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler を作成し、その history_recorder の状態が保持されるか確認
   let _handler = ChatWsHandler::new()
   let history_recorder = create_session_history_recorder()
@@ -1431,10 +1481,13 @@ test "CRITICAL: ChatWsHandler.history_recorder preserves state" {
     e => fail("read_session failed: \{e}")
   }
   assert_eq(records.length(), 1, msg="Should have 1 record from handler")
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
 test "CRITICAL: simulate exact production async flow" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションの handle_connection と同じフローをシミュレート
   // ただし WebSocket なしで
 
@@ -1486,6 +1539,7 @@ test "CRITICAL: simulate exact production async flow" {
     e => fail("read_session failed: \{e}")
   }
   assert_eq(records.length(), 1, msg="ASYNC SIM: Should have 1 record")
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
@@ -1532,6 +1586,8 @@ test "ChatWsHandler::new: should produce different chat_ids" {
 
 ///|
 test "resume existing session: append to existing file works" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // 既存ファイルがある場合に追記できるか確認
   let data_dir = @config.data_dir()
   let unique_id = @native.c_time()
@@ -1593,10 +1649,13 @@ test "resume existing session: append to existing file works" {
     2,
     msg="Should have 2 records (1 from each session)",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }
 
 ///|
 test "handle_connection exact flow: using handler's own chat_id and recorder" {
+  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // handle_connection の完全なフローを再現
   // このテストは、プロダクションと完全に同じシーケンスを使う
 
@@ -1650,4 +1709,5 @@ test "handle_connection exact flow: using handler's own chat_id and recorder" {
     records.length() >= 1,
     msg="Should have at least 1 record, got \{records.length()}",
   )
+  @config.set_path_mode(@config.PathMode::Standard)
 }

@@ -4,6 +4,7 @@ import {
   "trkbt10/mukuro/interfaces",
   "trkbt10/mukuro/adapters/native" @native,
   "trkbt10/mukuro/lib/bytes" @bytes,
+  "trkbt10/osenv/dirs" @osenv_dirs,
 }
 
 options(

@@ -29,7 +29,7 @@ test "c_system CString version executes shell command" {
 
 ///|
 test "c_fopen_handle and c_fclose_handle work correctly" {
-  let file_path = "/tmp/mukuro_ffi_proc_handle_\{@native.c_getpid()}.txt"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_proc_handle_\{@native.c_getpid()}.txt"
   let path_bytes = @native.string_to_utf8_cstring(file_path)
   // Create file first
   let _ = @native.c_write_text_file_bytes(
@@ -51,7 +51,7 @@ test "c_fopen_handle and c_fclose_handle work correctly" {
 
 ///|
 test "c_fwrite_handle and c_fread_handle work correctly" {
-  let file_path = "/tmp/mukuro_ffi_proc_rw_\{@native.c_getpid()}.txt"
+  let file_path = "{@osenv_dirs.temp_dir()}/mukuro_ffi_proc_rw_\{@native.c_getpid()}.txt"
   let path_bytes = @native.string_to_utf8_cstring(file_path)
   let content = @native.string_to_utf8_cstring("Hello Handle IO")
   // Write
@@ -102,7 +102,7 @@ test "c_spawn_daemon_bytes returns error code when invoked in test" {
   // c_spawn_daemon_bytes returns -2 when running in interpreter mode
   // (requires native binary), so we just verify it doesn't crash
   let path_bytes = @native.string_to_utf8_cstring(
-    "/tmp/mukuro_test_daemon_\{@native.c_getpid()}.pid",
+    "{@osenv_dirs.temp_dir()}/mukuro_test_daemon_\{@native.c_getpid()}.pid",
   )
   let result = @native.c_spawn_daemon_bytes(path_bytes)
   // Result should be -2 (interpreter mode) or actual PID (native binary)

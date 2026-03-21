@@ -1,16 +1,18 @@
 ///|
 /// gateway --config (native) テスト
 ///
-/// IMPORTANT: Tests use /tmp/mukuro-test/ to avoid polluting user config.
+/// IMPORTANT: Tests use OS temp dir to avoid polluting user config.
 
 ///|
 /// テスト用一時ディレクトリ（ユーザー設定を汚染しない）
-let test_config_dir : String = "/tmp/mukuro-test"
+fn test_config_dir() -> String {
+  @osenv_dirs.temp_dir() + "/mukuro-test"
+}
 
 ///|
 fn ensure_test_dir() -> Unit {
   ignore(
-    @native.c_mkdir_bytes(@native.string_to_utf8_cstring(test_config_dir), 493),
+    @native.c_mkdir_bytes(@native.string_to_utf8_cstring(test_config_dir()), 493),
   )
 }
 
@@ -31,7 +33,7 @@ fn cleanup_test_file(path : String) -> Unit {
 
 ///|
 test "load_gateway_config_impl loads config file correctly" {
-  let path = "\{test_config_dir}/test-gateway-config.json"
+  let path = "\{test_config_dir()}/test-gateway-config.json"
   let json = "{\n  \"gateway\": {\n    \"host\": \"0.0.0.0\",\n    \"port\": 9123,\n    \"auth_token\": \"test-token\",\n    \"auto_connect_channels\": false\n  }\n}"
   assert_true(write_test_config(path, json))
   let config = load_gateway_config_impl(path) catch {
@@ -48,7 +50,7 @@ test "load_gateway_config_impl loads config file correctly" {
 ///|
 test "load_gateway_config_impl returns error for missing config file" {
   let result : Result[@interfaces.GatewayConfig, @interfaces.ControlError] = Ok(
-    load_gateway_config_impl("\{test_config_dir}/not-found-config.json"),
+    load_gateway_config_impl("\{test_config_dir()}/not-found-config.json"),
   ) catch {
     e => Err(e)
   }
