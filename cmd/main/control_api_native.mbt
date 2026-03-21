@@ -590,13 +590,14 @@ fn validate_control_api_access(
 }
 
 ///|
-/// Default base URLs for known providers
+/// Default base URLs for known providers — delegates to llm_interop's DialectSpec (SoT)
 fn get_default_provider_base_url(provider_name : String) -> String? {
-  match provider_name {
-    "anthropic" => Some("https://api.anthropic.com")
-    "openai" => Some("https://api.openai.com")
-    "groq" => Some("https://api.groq.com/openai")
-    _ => None
+  match @gateway.ModelApi::from_string(provider_name) {
+    Some(api) => {
+      let url = api.default_base_url()
+      if url.is_empty() { None } else { Some(url) }
+    }
+    None => None
   }
 }
 
@@ -616,14 +617,13 @@ async fn fetch_live_provider_models(
   } else {
     base_url + "/v1/models"
   }
-  let headers : Map[String, String] = {}
-  headers["Accept"] = "application/json"
-  if provider_name == "anthropic" {
-    headers["x-api-key"] = api_key
-    headers["anthropic-version"] = "2023-06-01"
-  } else {
-    headers["Authorization"] = "Bearer " + api_key
+  // Auth headers from llm_interop's ModelApi (SoT)
+  let api = match @gateway.ModelApi::from_string(provider_name) {
+    Some(a) => a
+    None => @gateway.OpenAICompletions
   }
+  let headers = api.auth_headers(api_key)
+  headers["Accept"] = "application/json"
   let response = http.do_request_async({
     url,
     http_method: @interfaces.HttpMethod::Get,

@@ -278,93 +278,26 @@ fn build_onboard_generation_prompt(
 
 ///|
 /// LLMを直接呼び出す（ワンショット・ツールなし）
+/// llm_interop の chat_gateway() 経由で全プロバイダ対応
 async fn call_onboard_llm(
   provider : @types.ProviderConfig,
   prompt : String,
 ) -> @llm_types.ModelResponse {
-  let api_key = match provider.api_key {
-    Some(k) => k
-    None => return @llm_types.ModelResponse::ModelError("No API key")
-  }
-  let base_url = match provider.base_url {
-    Some(url) => url
-    None =>
-      match get_default_provider_base_url(provider.name) {
-        Some(url) => url
-        None =>
-          return @llm_types.ModelResponse::ModelError(
-            "No base URL for provider: " + provider.name,
-          )
-      }
-  }
   let messages : Array[@llm_types.ModelMessage] = [
     @llm_types.ModelMessage::User(content=prompt, name=None),
   ]
-  let empty_tools : Array[@llm_types.ToolDefinition] = []
-  let is_anthropic = provider.name == "anthropic" ||
-    base_url.contains("anthropic")
-  let body_json = if is_anthropic {
-    @anthropic.build_body(
-      provider.default_model,
-      messages,
-      empty_tools,
-      max_tokens=Some(4096),
-    )
-  } else {
-    @openai.build_chat_body(
-      provider.default_model,
-      messages,
-      empty_tools,
-      max_tokens=Some(4096),
-    )
-  }
-  let req_headers : Map[String, String] = {}
-  req_headers["Content-Type"] = "application/json"
-  if is_anthropic {
-    req_headers["x-api-key"] = api_key
-    req_headers["anthropic-version"] = "2023-06-01"
-  } else {
-    req_headers["Authorization"] = "Bearer " + api_key
-  }
-  let url = if is_anthropic {
-    if base_url.has_suffix("/") {
-      base_url + "v1/messages"
-    } else {
-      base_url + "/v1/messages"
-    }
-  } else if base_url.has_suffix("/") {
-    base_url + "v1/chat/completions"
-  } else {
-    base_url + "/v1/chat/completions"
+  let options : @types.ModelOptions = {
+    model_name: provider.default_model,
+    temperature: None,
+    max_tokens: Some(4096),
+    stop_sequences: None,
   }
   let http = @native.NativeHttpClient::new(
     timeout_seconds=60,
     user_agent="mukuro/0.1.0",
   )
-  let body_bytes = @utf8.encode(body_json.stringify())
-  let response = http.do_request_async({
-    url,
-    http_method: @interfaces.HttpMethod::Post,
-    headers: req_headers,
-    body: Some(body_bytes),
-  }) catch {
-    _ => return @llm_types.ModelResponse::ModelError("HTTP request failed")
-  }
-  if response.status < 200 || response.status >= 300 {
-    let err_body = @bytes.decode_utf8_or(response.body[:], default="")
-    return @llm_types.ModelResponse::ModelError(
-      "HTTP \{response.status}: " + err_body,
-    )
-  }
-  let resp_str = @bytes.decode_utf8_or(response.body[:], default="")
-  let resp_json : Json = @json.parse(resp_str) catch {
-    _ => return @llm_types.ModelResponse::ModelError("Invalid JSON response")
-  }
-  if is_anthropic {
-    @anthropic.parse_response(resp_json)
-  } else {
-    @openai.parse_chat_response(resp_json)
-  }
+  let transport = NativeHttpTransport::new(http)
+  call_provider_via_gateway(provider, transport, messages, options, [])
 }
 
 ///|

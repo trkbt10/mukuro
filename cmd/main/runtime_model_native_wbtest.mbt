@@ -136,6 +136,131 @@ test "validate_provider_config accepts valid anthropic provider" {
 }
 
 // =============================================================================
+// resolve_model_api
+// =============================================================================
+
+///|
+test "resolve_model_api: anthropic maps to AnthropicMessages" {
+  let p = @types.ProviderConfig::new(
+    name="anthropic",
+    api_key=Some("key"),
+    default_model="claude",
+  )
+  assert_eq(resolve_model_api(p), @gateway.AnthropicMessages)
+}
+
+///|
+test "resolve_model_api: gemini maps to GoogleGenerativeAI" {
+  let p = @types.ProviderConfig::new(
+    name="gemini",
+    api_key=Some("key"),
+    default_model="gemini-pro",
+  )
+  assert_eq(resolve_model_api(p), @gateway.GoogleGenerativeAI)
+}
+
+///|
+test "resolve_model_api: groq maps to OpenAICompletions" {
+  let p = @types.ProviderConfig::new(
+    name="groq",
+    api_key=Some("key"),
+    default_model="llama",
+  )
+  assert_eq(resolve_model_api(p), @gateway.OpenAICompletions)
+}
+
+///|
+test "resolve_model_api: openai with use_responses_api maps to OpenAIResponses" {
+  let p : @types.ProviderConfig = {
+    name: "openai",
+    api_key: Some("key"),
+    base_url: Some("https://api.openai.com"),
+    default_model: "gpt-4",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: false,
+  }
+  assert_eq(resolve_model_api(p), @gateway.OpenAIResponses)
+}
+
+///|
+test "resolve_model_api: groq with use_responses_api still maps to OpenAICompletions" {
+  let p : @types.ProviderConfig = {
+    name: "groq",
+    api_key: Some("key"),
+    base_url: Some("https://api.groq.com"),
+    default_model: "llama",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: false,
+  }
+  // groq は Responses API 未対応なので OpenAICompletions のまま
+  assert_eq(resolve_model_api(p), @gateway.OpenAICompletions)
+}
+
+///|
+test "resolve_model_api: ollama maps to Ollama" {
+  let p = @types.ProviderConfig::new(
+    name="ollama",
+    api_key=None,
+    default_model="llama3",
+  )
+  assert_eq(resolve_model_api(p), @gateway.Ollama)
+}
+
+///|
+test "resolve_model_api: unknown provider maps to OpenAICompletions" {
+  let p = @types.ProviderConfig::new(
+    name="custom-provider",
+    api_key=Some("key"),
+    default_model="model",
+  )
+  assert_eq(resolve_model_api(p), @gateway.OpenAICompletions)
+}
+
+// =============================================================================
+// to_gateway_provider_config
+// =============================================================================
+
+///|
+test "to_gateway_provider_config converts mukuro config correctly" {
+  let p : @types.ProviderConfig = {
+    name: "anthropic",
+    api_key: Some("sk-ant-test"),
+    base_url: None,
+    default_model: "claude-sonnet-4-20250514",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: false,
+    use_harmony_parser: false,
+  }
+  let gw = to_gateway_provider_config(p)
+  assert_eq(gw.id, "anthropic")
+  assert_eq(gw.api_key, "sk-ant-test")
+  assert_eq(gw.api, @gateway.AnthropicMessages)
+  // base_url should fall back to default
+  assert_true(gw.base_url.contains("anthropic"))
+}
+
+///|
+test "to_gateway_provider_config strips trailing slash from base_url" {
+  let p : @types.ProviderConfig = {
+    name: "groq",
+    api_key: Some("key"),
+    base_url: Some("https://api.groq.com/openai/"),
+    default_model: "llama",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: false,
+    use_harmony_parser: false,
+  }
+  let gw = to_gateway_provider_config(p)
+  assert_eq(gw.base_url, "https://api.groq.com/openai")
+}
+
+// =============================================================================
 // ConfigProviderResolver
 // =============================================================================
 
@@ -360,58 +485,6 @@ async test "ModelOrchestrator::call reflects config updates immediately" {
 }
 
 // =============================================================================
-// is_openai_compatible_provider
-// =============================================================================
-
-///|
-test "is_openai_compatible_provider returns false for anthropic" {
-  assert_true(not(is_openai_compatible_provider("anthropic")))
-}
-
-///|
-test "is_openai_compatible_provider returns true for groq" {
-  assert_true(is_openai_compatible_provider("groq"))
-}
-
-///|
-test "is_openai_compatible_provider returns true for openai" {
-  assert_true(is_openai_compatible_provider("openai"))
-}
-
-///|
-test "is_openai_compatible_provider returns true for ollama" {
-  assert_true(is_openai_compatible_provider("ollama"))
-}
-
-// =============================================================================
-// normalize_base_url
-// =============================================================================
-
-///|
-test "normalize_base_url strips trailing slash" {
-  inspect(
-    normalize_base_url("https://api.groq.com/openai/"),
-    content="https://api.groq.com/openai",
-  )
-}
-
-///|
-test "normalize_base_url trims whitespace" {
-  inspect(
-    normalize_base_url("  https://api.openai.com  "),
-    content="https://api.openai.com",
-  )
-}
-
-///|
-test "normalize_base_url preserves clean url" {
-  inspect(
-    normalize_base_url("https://api.anthropic.com"),
-    content="https://api.anthropic.com",
-  )
-}
-
-// =============================================================================
 // build_agent_loop_options_from_config
 // =============================================================================
 
@@ -494,69 +567,4 @@ test "build_agent_loop_options_from_config uses empty model when no providers" {
   inspect(options.model_options.model_name, content="")
   inspect(options.max_iterations, content="5")
   inspect(options.timeout_ms, content="30000")
-}
-
-// =============================================================================
-// needs_harmony_translation
-// =============================================================================
-
-///|
-test "needs_harmony_translation returns false when use_responses_api is false" {
-  let p : @types.ProviderConfig = {
-    name: "groq",
-    api_key: Some("key"),
-    base_url: Some("https://api.groq.com/openai"),
-    default_model: "llama",
-    timeout_ms: 30000,
-    max_retries: 3,
-    use_responses_api: false,
-    use_harmony_parser: false,
-  }
-  assert_true(not(needs_harmony_translation(p)))
-}
-
-///|
-test "needs_harmony_translation returns true for groq provider with use_responses_api true" {
-  let p : @types.ProviderConfig = {
-    name: "groq",
-    api_key: Some("key"),
-    base_url: Some("https://api.groq.com/openai"),
-    default_model: "llama",
-    timeout_ms: 30000,
-    max_retries: 3,
-    use_responses_api: true,
-    use_harmony_parser: false,
-  }
-  assert_true(needs_harmony_translation(p))
-}
-
-///|
-test "needs_harmony_translation returns true when base_url contains groq" {
-  let p : @types.ProviderConfig = {
-    name: "custom",
-    api_key: Some("key"),
-    base_url: Some("https://api.groq.com/openai"),
-    default_model: "llama",
-    timeout_ms: 30000,
-    max_retries: 3,
-    use_responses_api: true,
-    use_harmony_parser: false,
-  }
-  assert_true(needs_harmony_translation(p))
-}
-
-///|
-test "needs_harmony_translation returns false for openai provider with use_responses_api true" {
-  let p : @types.ProviderConfig = {
-    name: "openai",
-    api_key: Some("sk-key"),
-    base_url: Some("https://api.openai.com"),
-    default_model: "gpt-4",
-    timeout_ms: 30000,
-    max_retries: 3,
-    use_responses_api: true,
-    use_harmony_parser: false,
-  }
-  // OpenAI supports Responses API natively, so no translation needed
-  assert_true(not(needs_harmony_translation(p)))
 }

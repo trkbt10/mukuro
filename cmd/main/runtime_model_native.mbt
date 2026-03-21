@@ -2,36 +2,105 @@
 /// RuntimeModelOrchestrator（Native実装）
 /// config は常に api_v1_settings_state.get_config() から取得する。
 /// RuntimeModelOrchestrator は http_client と provider_resolver を保持し、ProviderConfig はキャッシュしない。
+/// LLM プロトコルロジックは llm_interop に委譲する。
+
+// =============================================================================
+// NativeHttpTransport — llm_interop の HttpTransport を NativeHttpClient で実装
+// =============================================================================
 
 ///|
-fn is_openai_compatible_provider(provider : String) -> Bool {
-  provider != "anthropic" && provider != "gemini"
+pub struct NativeHttpTransport {
+  client : @native.NativeHttpClient
 }
 
 ///|
-fn is_gemini_provider(provider : String) -> Bool {
-  provider == "gemini" || provider == "google"
+pub fn NativeHttpTransport::new(
+  client : @native.NativeHttpClient,
+) -> NativeHttpTransport {
+  { client, }
 }
 
 ///|
-/// Groq プロバイダーは Responses API をネイティブサポートしていないため、
-/// use_responses_api: true の場合でも Chat Completions に翻訳する必要がある
-fn needs_harmony_translation(provider : @types.ProviderConfig) -> Bool {
-  // use_responses_api が true でも、プロバイダーが Responses API をサポートしていない場合
-  // Chat Completions にフォールバックし、HarmonyToResponsesTranslator で翻訳する
-  if not(provider.use_responses_api) {
-    return false
+pub impl @llm_client.HttpTransport for NativeHttpTransport with request(
+  self,
+  req,
+) {
+  let headers : Map[String, String] = {}
+  for key, value in req.headers {
+    headers[key] = value
   }
-  // Groq は Responses API 未対応
-  if provider.name == "groq" {
-    return true
+  let body_bytes : Bytes? = match req.body {
+    Some(text) => Some(@utf8.encode(text.view()))
+    None => None
   }
-  // base_url に "groq" が含まれる場合も翻訳が必要
-  match provider.base_url {
-    Some(url) => url.contains("groq")
-    None => false
+  let http_req : @interfaces.HttpRequest = {
+    url: req.url,
+    http_method: @interfaces.HttpMethod::Post,
+    headers,
+    body: body_bytes,
+  }
+  let response = @interfaces.HttpClient::request(self.client, http_req) catch {
+    e =>
+      raise @llm_client.transport_network_error("HTTP request failed: \{e}")
+  }
+  {
+    status: response.status,
+    body: body_bytes_to_string(response.body),
   }
 }
+
+// =============================================================================
+// mukuro ProviderConfig → llm_interop gateway ProviderConfig 変換
+// =============================================================================
+
+///|
+/// mukuro のプロバイダ名から ModelApi を解決する
+fn resolve_model_api(provider : @types.ProviderConfig) -> @gateway.ModelApi {
+  // use_responses_api フラグによる OpenAI Responses API の選択
+  if provider.use_responses_api {
+    let api = @gateway.ModelApi::from_string(provider.name)
+    match api {
+      // Responses API をネイティブサポートするプロバイダのみ OpenAIResponses を使う
+      Some(@gateway.ModelApi::OpenAICompletions) => return @gateway.OpenAIResponses
+      _ => ()
+    }
+  }
+  // 標準的な変換: プロバイダ名 → ModelApi
+  match @gateway.ModelApi::from_string(provider.name) {
+    Some(api) => api
+    None =>
+      // 未知のプロバイダは OpenAI Compatible として扱う
+      @gateway.OpenAICompletions
+  }
+}
+
+///|
+/// mukuro の ProviderConfig → llm_interop の gateway.ProviderConfig に変換
+fn to_gateway_provider_config(
+  p : @types.ProviderConfig,
+) -> @gateway.ProviderConfig {
+  let api = resolve_model_api(p)
+  let base_url = match p.base_url {
+    Some(url) => {
+      let trimmed = url.trim(chars=" \t\n\r").to_string()
+      if trimmed.has_suffix("/") {
+        trimmed.unsafe_substring(start=0, end=trimmed.length() - 1)
+      } else {
+        trimmed
+      }
+    }
+    None => api.default_base_url()
+  }
+  {
+    ..@gateway.ProviderConfig::new(p.name, api),
+    base_url,
+    api_key: p.api_key.unwrap_or(""),
+  }
+}
+
+// =============================================================================
+// Validation
+// =============================================================================
 
 ///|
 fn validate_provider_config(p : @types.ProviderConfig) -> String? {
@@ -40,50 +109,60 @@ fn validate_provider_config(p : @types.ProviderConfig) -> String? {
       "provider is required\n\nRun 'mukuro onboard --provider <provider> --api-key <key>' to initialize configuration.",
     )
   }
-  if is_gemini_provider(p.name) {
-    match p.api_key {
-      None => return Some("api_key is required for gemini provider")
-      Some(k) =>
-        if k.is_empty() {
-          return Some("api_key is required for gemini provider")
-        }
+  let api = resolve_model_api(p)
+  let surface = api.to_dialect()
+  match surface {
+    @gateway.Gemini => {
+      match p.api_key {
+        None => return Some("api_key is required for gemini provider")
+        Some(k) =>
+          if k.is_empty() {
+            return Some("api_key is required for gemini provider")
+          }
+      }
+      if p.default_model.is_empty() {
+        return Some("model is required for gemini provider")
+      }
+      None
     }
-    if p.default_model.is_empty() {
-      return Some("model is required for gemini provider")
+    @gateway.Anthropic => {
+      match p.api_key {
+        None => return Some("api_key is required for anthropic provider")
+        Some(k) =>
+          if k.is_empty() {
+            return Some("api_key is required for anthropic provider")
+          }
+      }
+      if p.default_model.is_empty() {
+        return Some("model is required for anthropic provider")
+      }
+      None
     }
-    None
-  } else if is_openai_compatible_provider(p.name) {
-    match p.base_url {
-      None =>
-        return Some(
-          "base_url is required for openai-compatible providers (e.g. OpenAI/Groq/Ollama)",
-        )
-      Some(url) =>
-        if url.trim(chars=" \t\n\r").is_empty() {
+    // OpenAI, Codex — OpenAI-compatible providers
+    _ => {
+      match p.base_url {
+        None =>
           return Some(
             "base_url is required for openai-compatible providers (e.g. OpenAI/Groq/Ollama)",
           )
-        }
+        Some(url) =>
+          if url.trim(chars=" \t\n\r").is_empty() {
+            return Some(
+              "base_url is required for openai-compatible providers (e.g. OpenAI/Groq/Ollama)",
+            )
+          }
+      }
+      if p.default_model.is_empty() {
+        return Some("model is required for openai-compatible providers")
+      }
+      None
     }
-    if p.default_model.is_empty() {
-      return Some("model is required for openai-compatible providers")
-    }
-    None
-  } else {
-    // anthropic
-    match p.api_key {
-      None => return Some("api_key is required for anthropic provider")
-      Some(k) =>
-        if k.is_empty() {
-          return Some("api_key is required for anthropic provider")
-        }
-    }
-    if p.default_model.is_empty() {
-      return Some("model is required for anthropic provider")
-    }
-    None
   }
 }
+
+// =============================================================================
+// ConfigProviderResolver
+// =============================================================================
 
 ///|
 /// config から ProviderConfig を解決する実装
@@ -112,6 +191,10 @@ pub impl @interfaces.ProviderResolver for ConfigProviderResolver with resolve(
   }
 }
 
+// =============================================================================
+// RuntimeModelOrchestrator
+// =============================================================================
+
 ///|
 pub struct RuntimeModelOrchestrator {
   http_client : @native.NativeHttpClient
@@ -139,243 +222,36 @@ pub fn set_forced_response_for_test(response : String?) -> Unit {
 }
 
 ///|
-/// Vision: メッセージ配列から画像 URL を含む最後の User メッセージを検出
-/// 返り値: (画像URL, メッセージインデックス) または None
-fn find_vision_image(
-  messages : Array[@llm_types.ModelMessage],
-) -> (String, Int)? {
-  // 後ろから探して最初の User メッセージの name フィールドに image_url が含まれる場合
-  // (ModelMessage::User の name フィールドを image_url 伝送に流用)
-  // 実装上の制約: llm_interop の ModelMessage に画像フィールドがないため
-  // metadata 経由で渡す。呼び出し側が name に "image:URL" を格納する想定
-  let mut i = messages.length() - 1
-  while i >= 0 {
-    match messages[i] {
-      @llm_types.ModelMessage::User(name=Some(n), ..) =>
-        if n.has_prefix("image:") {
-          let url = n[6:].to_string()
-          return Some((url, i))
-        }
-      _ => ()
-    }
-    i = i - 1
-  }
-  None
-}
-
-///|
-fn body_bytes_to_string(body : Bytes) -> String {
-  @utf8.decode(body[:]) catch {
-    _ => "<UTF-8 decode error: \{body.length()} bytes>"
-  }
-}
-
-///|
-fn normalize_base_url(base_url : String) -> String {
-  let trimmed = base_url.trim(chars=" \t\n\r").to_string()
-  if trimmed.has_suffix("/") {
-    trimmed.unsafe_substring(start=0, end=trimmed.length() - 1)
-  } else {
-    trimmed
-  }
-}
-
-///|
-fn parse_openai_response(body : String) -> @llm_types.ModelResponse {
-  let json : Json = @json.parse(body) catch {
-    _ => return @llm_types.ModelResponse::ModelError("Invalid OpenAI response JSON")
-  }
-  @openai.parse_chat_response(json)
-}
-
-///|
-fn parse_openai_responses_response(body : String) -> @llm_types.ModelResponse {
-  let json : Json = @json.parse(body) catch {
-    _ =>
-      return @llm_types.ModelResponse::ModelError(
-        "Invalid OpenAI Responses response JSON",
-      )
-  }
-  @openai.parse_responses_api_response(json)
-}
-
-///|
-fn parse_anthropic_response(body : String) -> @llm_types.ModelResponse {
-  let json : Json = @json.parse(body) catch {
-    _ =>
-      return @llm_types.ModelResponse::ModelError("Invalid Anthropic response JSON")
-  }
-  @anthropic.parse_response(json)
-}
-
-///|
-async fn call_openai_impl(
+/// 単一プロバイダでの LLM 呼び出し（llm_interop 経由）
+async fn call_provider_via_gateway(
   provider : @types.ProviderConfig,
-  http_client : @native.NativeHttpClient,
+  transport : &@llm_client.HttpTransport,
   messages : Array[@llm_types.ModelMessage],
   options : @types.ModelOptions,
   tools : Array[@llm_types.ToolDefinition],
 ) -> @llm_types.ModelResponse {
-  let headers : Map[String, String] = { "Content-Type": "application/json" }
-  let api_key = provider.api_key.unwrap_or("")
-  if api_key.length() > 0 {
-    headers["Authorization"] = "Bearer \{api_key}"
-  }
-  let model = options.model_name
-  let use_responses_api = provider.use_responses_api
-  // Harmony Translation: use_responses_api: true だが Responses API 未対応のプロバイダーの場合
-  // Chat Completions を使用してリクエストを送信し、レスポンスを翻訳する
-  let use_translation = needs_harmony_translation(provider)
-  // use_translation が true の場合、Chat Completions を使用
-  let use_chat_completions_internally = use_translation || not(use_responses_api)
-  let body = (if use_chat_completions_internally {
-    @openai.build_chat_body(
-      model,
-      messages,
-      tools,
-      max_tokens=options.max_tokens,
-      temperature=options.temperature,
-    )
-  } else {
-    @openai.build_responses_api_body(model, messages, tools)
-  }).stringify()
-  let base = normalize_base_url(provider.base_url.unwrap_or(""))
-  let path = if use_chat_completions_internally {
-    "/v1/chat/completions"
-  } else {
-    "/v1/responses"
-  }
-  let req : @interfaces.HttpRequest = {
-    url: "\{base}\{path}",
-    http_method: @interfaces.HttpMethod::Post,
-    headers,
-    body: Some(@utf8.encode(body.view())),
-  }
-  let response = @interfaces.HttpClient::request(http_client, req) catch {
-    _ => return @llm_types.ModelResponse::ModelError("OpenAI request failed")
-  }
-  if response.status == 429 {
-    return @llm_types.ModelResponse::RateLimited(retry_after=60)
-  }
-  if response.status < 200 || response.status >= 300 {
-    let err_body = body_bytes_to_string(response.body)
-    return @llm_types.ModelResponse::ModelError(
-      "OpenAI HTTP error: \{response.status}; body=\{err_body}",
-    )
-  }
-  // Responses API モードでも、翻訳が必要な場合は Chat Completions レスポンスをパース
-  if use_chat_completions_internally {
-    parse_openai_response(body_bytes_to_string(response.body))
-  } else {
-    parse_openai_responses_response(body_bytes_to_string(response.body))
-  }
-}
-
-///|
-async fn call_anthropic_impl(
-  provider : @types.ProviderConfig,
-  http_client : @native.NativeHttpClient,
-  messages : Array[@llm_types.ModelMessage],
-  options : @types.ModelOptions,
-  tools : Array[@llm_types.ToolDefinition],
-) -> @llm_types.ModelResponse {
-  let api_key = provider.api_key.unwrap_or("")
-  let headers : Map[String, String] = {
-    "Content-Type": "application/json",
-    "x-api-key": api_key,
-    "anthropic-version": "2023-06-01",
-  }
-  let model = options.model_name
-  let system = @anthropic.extract_system_message(messages)
-  let body = @anthropic.build_body(
-    model,
+  let gw_provider = to_gateway_provider_config(provider)
+  @llm_client.chat_gateway(
+    gw_provider,
+    transport,
     messages,
     tools,
-    system~,
+    options.model_name,
     max_tokens=options.max_tokens,
     temperature=options.temperature,
-  ).stringify()
-  let req : @interfaces.HttpRequest = {
-    url: "https://api.anthropic.com/v1/messages",
-    http_method: @interfaces.HttpMethod::Post,
-    headers,
-    body: Some(@utf8.encode(body.view())),
-  }
-  let response = @interfaces.HttpClient::request(http_client, req) catch {
-    _ => return @llm_types.ModelResponse::ModelError("Anthropic request failed")
-  }
-  if response.status == 429 {
-    return @llm_types.ModelResponse::RateLimited(retry_after=60)
-  }
-  if response.status < 200 || response.status >= 300 {
-    return @llm_types.ModelResponse::ModelError(
-      "Anthropic HTTP error: \{response.status}",
-    )
-  }
-  parse_anthropic_response(body_bytes_to_string(response.body))
-}
-
-///|
-async fn call_gemini_impl(
-  provider : @types.ProviderConfig,
-  http_client : @native.NativeHttpClient,
-  messages : Array[@llm_types.ModelMessage],
-  options : @types.ModelOptions,
-  tools : Array[@llm_types.ToolDefinition],
-) -> @llm_types.ModelResponse {
-  let api_key = provider.api_key.unwrap_or("")
-  let headers = @gemini.auth_headers()
-  let model = options.model_name
-  let body = @gemini.build_body(
-    messages,
-    tools,
-    max_tokens=options.max_tokens,
-    temperature=options.temperature,
-  ).stringify()
-  let base = match provider.base_url {
-    Some(url) => normalize_base_url(url)
-    None => @gemini.default_base_url()
-  }
-  let path = @gemini.completion_path(base, model, api_key)
-  let req : @interfaces.HttpRequest = {
-    url: path,
-    http_method: @interfaces.HttpMethod::Post,
-    headers,
-    body: Some(@utf8.encode(body.view())),
-  }
-  let response = @interfaces.HttpClient::request(http_client, req) catch {
-    _ => return @llm_types.ModelResponse::ModelError("Gemini request failed")
-  }
-  if response.status == 429 {
-    return @llm_types.ModelResponse::RateLimited(retry_after=60)
-  }
-  if response.status < 200 || response.status >= 300 {
-    let err_body = body_bytes_to_string(response.body)
-    return @llm_types.ModelResponse::ModelError(
-      "Gemini HTTP error: \{response.status}; body=\{err_body}",
-    )
-  }
-  let json : Json = @json.parse(body_bytes_to_string(response.body)) catch {
-    _ => return @llm_types.ModelResponse::ModelError("Invalid Gemini response JSON")
-  }
-  @gemini.parse_response(json)
-}
-
-///|
-/// プロバイダ名に基づいて適切な実装を呼び出す
-async fn call_provider(
-  provider : @types.ProviderConfig,
-  http_client : @native.NativeHttpClient,
-  messages : Array[@llm_types.ModelMessage],
-  options : @types.ModelOptions,
-  tools : Array[@llm_types.ToolDefinition],
-) -> @llm_types.ModelResponse {
-  if is_gemini_provider(provider.name) {
-    call_gemini_impl(provider, http_client, messages, options, tools)
-  } else if is_openai_compatible_provider(provider.name) {
-    call_openai_impl(provider, http_client, messages, options, tools)
-  } else {
-    call_anthropic_impl(provider, http_client, messages, options, tools)
+  ) catch {
+    @llm_client.ClientError::ApiError(code~, message~) =>
+      if code == 429 {
+        @llm_types.ModelResponse::RateLimited(retry_after=60)
+      } else {
+        @llm_types.ModelResponse::ModelError(
+          "HTTP error: \{code}; body=\{message}",
+        )
+      }
+    @llm_client.ClientError::HttpError(msg) =>
+      @llm_types.ModelResponse::ModelError("Request failed: \{msg}")
+    @llm_client.ClientError::ParseError(msg) =>
+      @llm_types.ModelResponse::ModelError("Parse error: \{msg}")
   }
 }
 
@@ -416,6 +292,7 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
     Some(msg) => return @llm_types.ModelResponse::ModelError(msg)
     None => ()
   }
+  let transport = NativeHttpTransport::new(self.http_client)
   // フェイルオーバー: fallback.enabled なら複数プロバイダを順に試行
   let config = api_v1_settings_state.get_config()
   let fallback_enabled = match config {
@@ -423,11 +300,13 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
     None => false
   }
   if not(fallback_enabled) {
-    return call_provider(provider, self.http_client, messages, options, tools)
+    return call_provider_via_gateway(
+      provider, transport, messages, options, tools,
+    )
   }
   // プライマリプロバイダでまず試行
-  let primary_result = call_provider(
-    provider, self.http_client, messages, options, tools,
+  let primary_result = call_provider_via_gateway(
+    provider, transport, messages, options, tools,
   )
   match primary_result {
     @llm_types.ModelResponse::ModelError(_)
@@ -454,8 +333,8 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
     } else {
       options
     }
-    let fb_result = call_provider(
-      fb_provider, self.http_client, messages, fb_options, tools,
+    let fb_result = call_provider_via_gateway(
+      fb_provider, transport, messages, fb_options, tools,
     )
     match fb_result {
       @llm_types.ModelResponse::ModelError(_)
@@ -470,41 +349,44 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
 }
 
 // =============================================================================
-// Streaming API with Harmony Translation
+// Utilities (kept)
 // =============================================================================
 
 ///|
-/// ストリーミングイベントの型
-pub(all) enum StreamEvent {
-  /// Responses API フォーマットのイベント (event_type, data)
-  ResponsesEvent(String, Json)
-  /// ストリーミング完了
-  Done(@llm_types.ModelResponse)
-  /// エラー
-  Error(String)
+/// Vision: メッセージ配列から画像 URL を含む最後の User メッセージを検出
+/// 返り値: (画像URL, メッセージインデックス) または None
+fn find_vision_image(
+  messages : Array[@llm_types.ModelMessage],
+) -> (String, Int)? {
+  let mut i = messages.length() - 1
+  while i >= 0 {
+    match messages[i] {
+      @llm_types.ModelMessage::User(name=Some(n), ..) =>
+        if n.has_prefix("image:") {
+          let url = n[6:].to_string()
+          return Some((url, i))
+        }
+      _ => ()
+    }
+    i = i - 1
+  }
+  None
 }
 
 ///|
-/// SSE JSONL をパースして Responses API イベントに翻訳
-/// Chat Completions SSE フォーマットから Responses API イベントを生成
-pub fn translate_sse_jsonl_to_responses_events(
-  jsonl : String,
-) -> Array[(String, Json)] {
-  let translator = @harmony.HarmonyToResponsesTranslator::new(response_id="resp_generated")
-  let events = @sse.parse_jsonl(jsonl) catch { _ => return [] }
-  let result : Array[(String, Json)] = []
-  for event in events {
-    let translated = translator.translate(event)
-    for evt in translated {
-      result.push(evt)
-    }
+fn body_bytes_to_string(body : Bytes) -> String {
+  @utf8.decode(body[:]) catch {
+    _ => "<UTF-8 decode error: \{body.length()} bytes>"
   }
-  result
 }
+
+// =============================================================================
+// ModelResponse → Responses API events (WebSocket 表示層)
+// =============================================================================
 
 ///|
 /// 非ストリーミングレスポンスを Responses API イベント形式に変換
-/// 翻訳レイヤーの検証に使用
+/// WebSocket チャットハンドラーがクライアントにイベント列として送信するために使用
 pub fn model_response_to_stream_events(
   response : @llm_types.ModelResponse,
 ) -> Array[(String, Json)] {
