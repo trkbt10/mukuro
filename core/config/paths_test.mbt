@@ -24,9 +24,9 @@ test "config_dir in local mode returns mukuro_dir_name" {
 
 ///|
 test "config_dir in custom mode returns custom path" {
-  set_path_mode(PathMode::Custom("/tmp/my-mukuro"))
+  set_path_mode(PathMode::Custom("/test/custom-path"))
   let dir = config_dir()
-  assert_eq(dir, "/tmp/my-mukuro")
+  assert_eq(dir, "/test/custom-path")
   // Reset
   set_path_mode(PathMode::Standard)
 }

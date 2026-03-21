@@ -1,7 +1,7 @@
 ///|
 /// Filesystem security tests
 test "resolve_path rejects path traversal with dotdot" {
-  let fs = NativeFileStore::new(base_dir=Some("/tmp/safe"))
+  let fs = NativeFileStore::new(base_dir=Some("/test/safe"))
   let result : Result[Array[String], _] = try? @interfaces.FileStore::list_dir(
     fs,
     path="../../etc",
@@ -11,7 +11,7 @@ test "resolve_path rejects path traversal with dotdot" {
 
 ///|
 test "resolve_path rejects absolute path traversal" {
-  let fs = NativeFileStore::new(base_dir=Some("/tmp/safe"))
+  let fs = NativeFileStore::new(base_dir=Some("/test/safe"))
   let result : Result[Bytes, _] = try? @interfaces.FileStore::read_file(
     fs,
     path="../../../etc/passwd",

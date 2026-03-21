@@ -617,7 +617,7 @@ test "execute_edit_file rejects path traversal" {
 ///|
 test "execute_edit_file rejects identical old/new" {
   let args : Json = {
-    "path": "/tmp/test.txt",
+    "path": "/test/test.txt",
     "old_text": "same",
     "new_text": "same",
   }

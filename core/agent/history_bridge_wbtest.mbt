@@ -158,7 +158,7 @@ test "record_tool_call writes ToolCall record" {
     "test:c1",
     "call_1",
     "read_file",
-    Json::object({ "path": Json::string("/tmp/a") }),
+    Json::object({ "path": Json::string("/test/a") }),
   )
   inspect(spy.records.length(), content="1")
   inspect(spy.records[0].record_type, content="ToolCall")

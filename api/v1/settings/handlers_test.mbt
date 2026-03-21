@@ -41,7 +41,7 @@ test "SettingsState new creates empty state" {
 test "SettingsState init sets config" {
   let state = SettingsState::new()
   let config = make_test_config()
-  state.init(config, "/tmp/config.json")
+  state.init(config, "/test/config.json")
   assert_true(state.get_config() is Some(_))
 }
 
@@ -49,7 +49,7 @@ test "SettingsState init sets config" {
 test "SettingsState update_config updates config" {
   let state = SettingsState::new()
   let config1 = make_test_config()
-  state.init(config1, "/tmp/config.json")
+  state.init(config1, "/test/config.json")
   let config2 = make_test_config()
   state.update_config(config2)
   assert_true(state.get_config() is Some(_))
@@ -71,7 +71,7 @@ test "handle_get_all returns 503 when not initialized" {
 ///|
 test "handle_get_all returns 200 when initialized" {
   let state = SettingsState::new()
-  state.init(make_test_config(), "/tmp/config.json")
+  state.init(make_test_config(), "/test/config.json")
   let handlers = create_settings_handlers(state)
   let ctx = make_ctx("GET", "/api/v1/settings", "")
   let resp = (handlers.get_all.0)(ctx)
@@ -145,7 +145,7 @@ test "handle_get_agent returns 503 when not initialized" {
 ///|
 test "handle_get_agent returns agent config when initialized" {
   let state = SettingsState::new()
-  state.init(make_test_config(), "/tmp/config.json")
+  state.init(make_test_config(), "/test/config.json")
   let handlers = create_settings_handlers(state)
   let ctx = make_ctx("GET", "/api/v1/settings/agent", "")
   let resp = (handlers.get_agent.0)(ctx)
@@ -169,7 +169,7 @@ test "handle_get_model_inference returns 503 when not initialized" {
 ///|
 test "handle_get_model_inference returns merged model+thinking" {
   let state = SettingsState::new()
-  state.init(make_test_config(), "/tmp/config.json")
+  state.init(make_test_config(), "/test/config.json")
   let handlers = create_settings_handlers(state)
   let ctx = make_ctx("GET", "/api/v1/settings/model-inference", "")
   let resp = (handlers.get_model_inference.0)(ctx)
@@ -186,7 +186,7 @@ test "handle_get_model_inference returns merged model+thinking" {
 ///|
 test "handle_update_model_inference updates both model and thinking" {
   let state = SettingsState::new()
-  state.init(make_test_config(), "/tmp/config.json")
+  state.init(make_test_config(), "/test/config.json")
   let handlers = create_settings_handlers(state)
   let body = "{\"model_name\": \"gpt-4o\", \"thinking_enabled\": true, \"thinking_level\": \"high\"}"
   let ctx = make_ctx("PUT", "/api/v1/settings/model-inference", body)
@@ -238,7 +238,7 @@ test "handle_update_provider updates use_responses_api" {
     channels: [],
     thinking: @types.ThinkingConfig::default(),
   }
-  state.init(config, "/tmp/config.json")
+  state.init(config, "/test/config.json")
   let handlers = create_settings_handlers(state)
   let ctx = @api.ApiRequestContext::new(
     meth="PUT",
@@ -271,7 +271,7 @@ test "handle_list_providers returns 503 when not initialized" {
 ///|
 test "handle_list_providers returns providers when initialized" {
   let state = SettingsState::new()
-  state.init(make_test_config(), "/tmp/config.json")
+  state.init(make_test_config(), "/test/config.json")
   let handlers = create_settings_handlers(state)
   let ctx = make_ctx("GET", "/api/v1/settings/providers", "")
   let resp = (handlers.list_providers.0)(ctx)
