@@ -1,12 +1,6 @@
 ///|
 /// gateway --config (native) テスト
 ///
-/// NOTE: execute_gateway_start() calls run_control_api_server_with_tick_blocking()
-/// which blocks forever. Unit tests should NOT call execute_gateway_start().
-///
-/// For config loading, use load_gateway_config_impl() directly.
-/// For Gateway initialization, use global_gateway.start() directly.
-///
 /// IMPORTANT: Tests use /tmp/mukuro-test/ to avoid polluting user config.
 
 ///|

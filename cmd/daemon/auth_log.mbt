@@ -40,15 +40,15 @@ fn read_auth_log_text() -> String? {
 pub fn query_gateway_auth_log(
   since_seconds : Int64,
   as_json : Bool,
-) -> CliResult {
+) -> @cli.CliResult {
   let content = read_auth_log_text().unwrap_or("")
   if content.length() == 0 {
     if as_json {
-      return CliResult::Ok(
+      return @cli.CliResult::Ok(
         "{\"path\":\"\{daemon_auth_log_path()}\",\"total\":0,\"since_seconds\":\{since_seconds}}",
       )
     }
-    return CliResult::Ok(
+    return @cli.CliResult::Ok(
       "Gateway auth log is empty or not found: \{daemon_auth_log_path()}",
     )
   }
@@ -98,7 +98,7 @@ pub fn query_gateway_auth_log(
       "events": Json::object(events_obj),
       "clients": Json::object(clients_obj),
     }
-    return CliResult::Ok(payload.stringify())
+    return @cli.CliResult::Ok(payload.stringify())
   }
 
   let mut output = "Gateway Auth Log Summary\n"
@@ -113,5 +113,5 @@ pub fn query_gateway_auth_log(
   for name, count in client_counts {
     output = output + "    - \{name}: \{count}\n"
   }
-  CliResult::Ok(output)
+  @cli.CliResult::Ok(output)
 }

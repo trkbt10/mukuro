@@ -4,12 +4,14 @@
 
 ///|
 /// Agent コマンドを実行
-async fn execute_agent_command(opts : AgentOptions) -> CliResult {
+async fn execute_agent_command(opts : @cli.AgentOptions) -> @cli.CliResult {
   // 設定ファイルを読み込み (gateway start と同じパターンを使用)
-  let config_path = opts.config_path.unwrap_or(default_runtime_config_path())
-  let config_text = read_config_text_impl(config_path) catch {
+  let config_path = opts.config_path.unwrap_or(
+    @cmd_config.default_runtime_config_path(),
+  )
+  let config_text = @cmd_config.read_config_text_impl(config_path) catch {
     _ =>
-      return CliResult::Error(
+      return @cli.CliResult::Error(
         "Configuration not found at \{config_path}. Run 'mukuro onboard' first.",
       )
   }
@@ -17,7 +19,7 @@ async fn execute_agent_command(opts : AgentOptions) -> CliResult {
     config_text,
   ) catch {
     _ =>
-      return CliResult::Error(
+      return @cli.CliResult::Error(
         "Failed to parse configuration: \{config_path}",
       )
   }
@@ -30,7 +32,7 @@ async fn execute_agent_command(opts : AgentOptions) -> CliResult {
 
 ///|
 /// 単発実行: メッセージを1回送信してレスポンスを表示
-async fn execute_agent_single(message : String) -> CliResult {
+async fn execute_agent_single(message : String) -> @cli.CliResult {
   let envelope : @types.InboundEnvelope = {
     ..@types.InboundEnvelope::default(),
     channel: "cli",
@@ -40,15 +42,15 @@ async fn execute_agent_single(message : String) -> CliResult {
     content: message,
   }
   let result = handle_inbound_with_agent_loop(envelope, None) catch {
-    e => return CliResult::Error("Agent error: \{e}")
+    e => return @cli.CliResult::Error("Agent error: \{e}")
   }
-  CliResult::Ok(result.content)
+  @cli.CliResult::Ok(result.content)
 }
 
 ///|
 /// REPL モード: stdin から入力を読み取り、エージェントに送信
-async fn execute_agent_repl() -> CliResult {
-  repl_write("mukuro agent v\{version} - Type your message (Ctrl+D to exit)\n")
+async fn execute_agent_repl() -> @cli.CliResult {
+  repl_write("mukuro agent v\{@cli.version} - Type your message (Ctrl+D to exit)\n")
   while true {
     repl_write("\n> ")
     repl_flush()
@@ -83,7 +85,7 @@ async fn execute_agent_repl() -> CliResult {
       }
     }
   }
-  CliResult::Ok("Goodbye!")
+  @cli.CliResult::Ok("Goodbye!")
 }
 
 ///|

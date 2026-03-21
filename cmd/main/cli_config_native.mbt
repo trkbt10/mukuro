@@ -2,48 +2,58 @@
 /// CLI Config コマンド — 設定ファイルの表示・管理
 
 ///|
-fn execute_config_command(cmd : ConfigCommand) -> CliResult {
+fn execute_config_command(cmd : @cli.ConfigCommand) -> @cli.CliResult {
   match cmd {
-    ConfigCommand::Path => execute_config_path()
-    ConfigCommand::Show => execute_config_show()
-    ConfigCommand::Providers => execute_config_providers()
-    ConfigCommand::Unknown(name) =>
-      CliResult::Error("Unknown config command: \{name}\n\nUsage: mukuro config [path|show|providers]")
+    @cli.ConfigCommand::Path => execute_config_path()
+    @cli.ConfigCommand::Show => execute_config_show()
+    @cli.ConfigCommand::Providers => execute_config_providers()
+    @cli.ConfigCommand::Unknown(name) =>
+      @cli.CliResult::Error(
+        "Unknown config command: \{name}\n\nUsage: mukuro config [path|show|providers]",
+      )
   }
 }
 
 ///|
 /// 設定ファイルパスを表示
-fn execute_config_path() -> CliResult {
-  CliResult::Ok(default_runtime_config_path())
+fn execute_config_path() -> @cli.CliResult {
+  @cli.CliResult::Ok(@cmd_config.default_runtime_config_path())
 }
 
 ///|
 /// 現在の設定を表示（API key はマスク）
-fn execute_config_show() -> CliResult {
-  let config_path = default_runtime_config_path()
-  let content = read_config_text_impl(config_path) catch {
-    _ => return CliResult::Error("Configuration not found at \{config_path}")
+fn execute_config_show() -> @cli.CliResult {
+  let config_path = @cmd_config.default_runtime_config_path()
+  let content = @cmd_config.read_config_text_impl(config_path) catch {
+    _ =>
+      return @cli.CliResult::Error(
+        "Configuration not found at \{config_path}",
+      )
   }
   // API key をマスク
   let masked = mask_api_keys(content)
-  CliResult::Ok("Config: \{config_path}\n\n\{masked}")
+  @cli.CliResult::Ok("Config: \{config_path}\n\n\{masked}")
 }
 
 ///|
 /// プロバイダ一覧を表示
-fn execute_config_providers() -> CliResult {
-  let config_path = default_runtime_config_path()
-  let config_text = read_config_text_impl(config_path) catch {
-    _ => return CliResult::Error("Configuration not found at \{config_path}")
+fn execute_config_providers() -> @cli.CliResult {
+  let config_path = @cmd_config.default_runtime_config_path()
+  let config_text = @cmd_config.read_config_text_impl(config_path) catch {
+    _ =>
+      return @cli.CliResult::Error(
+        "Configuration not found at \{config_path}",
+      )
   }
   let config = @config.ConfigLoaderImpl::default().load_from_string(
     config_text,
   ) catch {
-    _ => return CliResult::Error("Failed to parse configuration")
+    _ => return @cli.CliResult::Error("Failed to parse configuration")
   }
   if config.providers.is_empty() {
-    return CliResult::Ok("No providers configured.\n\nRun 'mukuro onboard' to add a provider.")
+    return @cli.CliResult::Ok(
+      "No providers configured.\n\nRun 'mukuro onboard' to add a provider.",
+    )
   }
   let buf = StringBuilder::new()
   buf.write_string("Providers (\{config.providers.length()}):\n\n")
@@ -80,7 +90,7 @@ fn execute_config_providers() -> CliResult {
     buf.write_string("  Chain: \{chain}\n")
     buf.write_string("  Cooldown: \{config.fallback.cooldown_ms}ms\n")
   }
-  CliResult::Ok(buf.to_string())
+  @cli.CliResult::Ok(buf.to_string())
 }
 
 ///|

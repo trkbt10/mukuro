@@ -1,0 +1,21 @@
+import {
+  "trkbt10/mukuro/cmd/cli" @cli,
+  "trkbt10/mukuro/cmd/config" @cmd_config,
+  "trkbt10/mukuro/core/config" @config,
+  "trkbt10/mukuro/core/control" @control,
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/adapters/native" @native,
+  "trkbt10/mukuro/lib/bytes" @bytes,
+  "moonbitlang/core/json",
+}
+
+options(
+  link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
+  targets: {
+    "config.mbt": [ "native" ],
+    "manager.mbt": [ "native" ],
+    "spawn.mbt": [ "native" ],
+    "ipc.mbt": [ "native" ],
+    "auth_log.mbt": [ "native" ],
+  },
+)

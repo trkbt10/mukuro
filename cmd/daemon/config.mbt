@@ -4,7 +4,7 @@
 
 ///|
 /// テスト用IPCレスポンスフック
-struct IpcResponseHookCell {
+priv struct IpcResponseHookCell {
   mut value : ((String) -> String?)?
 }
 
@@ -13,27 +13,27 @@ let daemon_ipc_response_hook : IpcResponseHookCell = { value: None }
 
 ///|
 /// IPCトークンのローテーション間隔（秒）
-let daemon_token_rotation_interval_sec : Int64 = 300
+pub let daemon_token_rotation_interval_sec : Int64 = 300
 
 ///|
 /// ローテーション直後に直前tokenを許容するgrace期間（秒）
-let daemon_prev_token_grace_sec : Int64 = 30
+pub let daemon_prev_token_grace_sec : Int64 = 30
 
 ///|
 /// token最大寿命（秒）
-let daemon_token_max_age_sec : Int64 = 900
+pub let daemon_token_max_age_sec : Int64 = 900
 
 ///|
 /// 認証失敗レート制御の窓（秒）
-let daemon_auth_fail_window_sec : Int64 = 10
+pub let daemon_auth_fail_window_sec : Int64 = 10
 
 ///|
 /// 窓内失敗閾値
-let daemon_auth_fail_threshold : Int = 5
+pub let daemon_auth_fail_threshold : Int = 5
 
 ///|
 /// レート制限（全IPC拒否）継続秒数
-let daemon_auth_rate_limit_sec : Int64 = 15
+pub let daemon_auth_rate_limit_sec : Int64 = 15
 
 ///|
 fn daemon_startup_config_path() -> String {
@@ -41,12 +41,12 @@ fn daemon_startup_config_path() -> String {
 }
 
 ///|
-fn daemon_auth_log_path() -> String {
+pub fn daemon_auth_log_path() -> String {
   @config.data_dir() + "/gateway-auth.log"
 }
 
 ///|
-struct DaemonStartupConfig {
+pub(all) struct DaemonStartupConfig {
   gateway_config : @interfaces.GatewayConfig
   runtime_model_config_path : String
   control_api : Bool
@@ -56,19 +56,19 @@ struct DaemonStartupConfig {
 fn daemon_startup_default() -> DaemonStartupConfig {
   {
     gateway_config: @interfaces.GatewayConfig::default(),
-    runtime_model_config_path: default_runtime_config_path(),
+    runtime_model_config_path: @cmd_config.default_runtime_config_path(),
     control_api: false,
   }
 }
 
 ///|
-fn write_daemon_startup_config(
-  opts : GatewayStartOptions,
+pub fn write_daemon_startup_config(
+  opts : @cli.GatewayStartOptions,
   config : @interfaces.GatewayConfig,
 ) -> Bool {
   let payload : Json = {
     "runtime_model_config_path": opts.config_path.unwrap_or(
-      default_runtime_config_path(),
+      @cmd_config.default_runtime_config_path(),
     ),
     "control_api": opts.control_api,
     "gateway": {
@@ -113,7 +113,7 @@ fn parse_daemon_startup_config(content : String) -> DaemonStartupConfig {
   }
   let runtime_model_config_path = match root.get("runtime_model_config_path") {
     Some(String(path)) => path
-    _ => default_runtime_config_path()
+    _ => @cmd_config.default_runtime_config_path()
   }
   let control_api = match root.get("control_api") {
     Some(True) => true
@@ -180,7 +180,7 @@ fn parse_daemon_startup_config(content : String) -> DaemonStartupConfig {
 }
 
 ///|
-fn load_daemon_startup_config() -> DaemonStartupConfig {
+pub fn load_daemon_startup_config() -> DaemonStartupConfig {
   let buffer_len = 65536
   let buffer = Bytes::new(buffer_len)
   let read_len = @native.c_read_text_file_bytes(

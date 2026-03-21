@@ -5,7 +5,7 @@
 /// デフォルト設定ファイルパスを取得
 /// Standard path のみを返す（フォールバックなし）
 pub fn default_runtime_config_path() -> String {
-  @config.config_file_for(@config.PathMode::Standard)
+  @core_config.config_file_for(@core_config.PathMode::Standard)
 }
 
 ///|

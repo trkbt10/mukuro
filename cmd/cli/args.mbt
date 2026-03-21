@@ -64,7 +64,7 @@ fn is_nodejs_environment(args : Array[String]) -> Bool {
 /// コマンドライン引数を取得
 /// Native: argv[0]（プログラム名）をスキップ
 /// JS: argv[0]（node）とargv[1]（script）をスキップ
-fn get_command_line_args() -> Array[String] {
+pub fn get_command_line_args() -> Array[String] {
   let all_args = @env.args()
   if all_args.is_empty() {
     return []
@@ -78,4 +78,20 @@ fn get_command_line_args() -> Array[String] {
     result.push(all_args[i])
   }
   result
+}
+
+///|
+/// グローバルオプションを適用
+pub fn apply_global_options(opts : GlobalOptions) -> Unit {
+  @config.set_path_mode(opts.path_mode)
+}
+
+///|
+/// CLI実行結果を出力
+pub fn print_result(result : CliResult) -> Unit {
+  match result {
+    CliResult::Ok(msg) => println(msg)
+    CliResult::Error(msg) => println("Error: \{msg}")
+    CliResult::Exit(code) => println("Exit code: \{code}")
+  }
 }

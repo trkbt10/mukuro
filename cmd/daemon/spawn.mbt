@@ -6,13 +6,13 @@
 /// デーモンモードで起動（nativeターゲット実装）
 /// posix_spawn を使用して新しいプロセスを起動し、MoonBitランタイムの
 /// fork安全性問題を回避する
-fn execute_daemon_start(
-  opts : GatewayStartOptions,
+pub fn execute_daemon_start(
+  opts : @cli.GatewayStartOptions,
   config : @interfaces.GatewayConfig,
-) -> CliResult {
+) -> @cli.CliResult {
   let exe_path = @native.cstring_to_string(@native.c_get_exe_path())
   if exe_path.contains("/.moon/bin/internal/") {
-    return CliResult::Error(
+    return @cli.CliResult::Error(
       "Daemon mode requires native binary execution.\nPlease run:\n  moon build cmd/main --target native\n  _build/native/debug/build/cmd/main/main.exe gateway start --daemon",
     )
   }
@@ -24,7 +24,7 @@ fn execute_daemon_start(
   let daemon_manager = NativeDaemonManager::new(pid_path~)
   match daemon_manager.status() {
     @control.DaemonStatus::Running(pid) =>
-      return CliResult::Error("Gateway already running (PID: \{pid})")
+      return @cli.CliResult::Error("Gateway already running (PID: \{pid})")
     @control.DaemonStatus::Stale(_) =>
       daemon_manager.pid_manager.remove_pid() catch {
         _ => ()
@@ -33,7 +33,7 @@ fn execute_daemon_start(
   }
 
   if !write_daemon_startup_config(opts, config) {
-    return CliResult::Error("Failed to persist daemon startup configuration")
+    return @cli.CliResult::Error("Failed to persist daemon startup configuration")
   }
 
   // posix_spawn でデーモンプロセスを起動
@@ -43,15 +43,15 @@ fn execute_daemon_start(
   )
 
   if daemon_pid == -2 {
-    return CliResult::Error(
+    return @cli.CliResult::Error(
       "Daemon mode requires native binary execution.\nPlease run:\n  moon build cmd/main --target native\n  _build/native/debug/build/cmd/main/main.exe gateway start --daemon",
     )
   }
   if daemon_pid < 0 {
-    return CliResult::Error("Failed to spawn daemon process")
+    return @cli.CliResult::Error("Failed to spawn daemon process")
   }
 
-  CliResult::Ok(
+  @cli.CliResult::Ok(
     "Gateway daemon started in background (PID: \{daemon_pid})\n  Host: \{config.host}\n  Port: \{config.port}\n  PID file: \{pid_path}\n  IPC socket: \{socket_path}",
   )
 }

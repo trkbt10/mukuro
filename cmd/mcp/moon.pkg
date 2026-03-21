@@ -1,0 +1,13 @@
+import {
+  "trkbt10/mukuro/core/plugin" @plugin,
+  "trkbt10/mukuro/core/plugin/runtime" @plugin_runtime,
+  "trkbt10/mukuro/core/tools" @tools,
+  "trkbt10/mukuro/interfaces",
+}
+
+options(
+  link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
+  targets: {
+    "mcp_native.mbt": [ "native" ],
+  },
+)

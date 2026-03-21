@@ -1,0 +1,6 @@
+import {
+  "trkbt10/mukuro/core/config" @config,
+  "trkbt10/mukuro/interfaces",
+  "moonbitlang/core/json",
+  "moonbitlang/core/env",
+}

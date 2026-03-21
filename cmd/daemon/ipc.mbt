@@ -3,6 +3,12 @@
 /// IPC request/response functions for daemon control
 
 ///|
+/// CLI クライアントIDを生成
+pub fn current_cli_client_id() -> String {
+  "cli-\{@native.c_getpid()}"
+}
+
+///|
 /// デーモンへIPCリクエストを送信
 fn daemon_ipc_request(command : String) -> String? {
   match daemon_ipc_response_hook.value {
@@ -35,42 +41,42 @@ fn daemon_ipc_request(command : String) -> String? {
 
 ///|
 /// デーモンへstatus要求（IPC）
-pub fn query_daemon_status(pid : Int, as_json : Bool) -> CliResult {
+pub fn query_daemon_status(pid : Int, as_json : Bool) -> @cli.CliResult {
   let response = daemon_ipc_request("status").unwrap_or("")
   if response.has_prefix("OK running ") {
     let parts = response.split(" ").collect()
     let runtime_pid = if parts.length() > 2 { parts[2] } else { "\{pid}" }
     let uptime_sec = if parts.length() > 3 { parts[3] } else { "0" }
     if as_json {
-      CliResult::Ok(
+      @cli.CliResult::Ok(
         "{\"mode\":\"daemon\",\"state\":\"running\",\"pid\":\{runtime_pid},\"uptime_sec\":\{uptime_sec},\"ipc\":\"connected\",\"pid_file\":\"\{@control.default_pid_path()}\",\"socket\":\"\{@control.default_ipc_socket_path()}\"}",
       )
     } else {
-      CliResult::Ok(
+      @cli.CliResult::Ok(
         "Gateway Status (daemon mode):\n  State: running\n  PID: \{runtime_pid}\n  Uptime: \{uptime_sec}s\n  IPC: connected\n  PID file: \{@control.default_pid_path()}\n  Socket: \{@control.default_ipc_socket_path()}",
       )
     }
   } else if response.has_prefix("ERR unauthorized") {
-    CliResult::Error("Daemon IPC authentication failed")
+    @cli.CliResult::Error("Daemon IPC authentication failed")
   } else if response == "" {
-    CliResult::Error("Daemon IPC unavailable")
+    @cli.CliResult::Error("Daemon IPC unavailable")
   } else {
-    CliResult::Error("Daemon IPC error: \{response}")
+    @cli.CliResult::Error("Daemon IPC error: \{response}")
   }
 }
 
 ///|
 /// デーモンへstop要求（IPC）
-pub fn request_daemon_stop(pid : Int) -> CliResult {
+pub fn request_daemon_stop(pid : Int) -> @cli.CliResult {
   ignore(pid)
   let response = daemon_ipc_request("stop").unwrap_or("")
   if response.has_prefix("OK stopping") {
-    CliResult::Ok("Stop request sent to gateway daemon via IPC")
+    @cli.CliResult::Ok("Stop request sent to gateway daemon via IPC")
   } else if response.has_prefix("ERR unauthorized") {
-    CliResult::Error("Daemon IPC authentication failed")
+    @cli.CliResult::Error("Daemon IPC authentication failed")
   } else if response == "" {
-    CliResult::Error("Daemon IPC unavailable")
+    @cli.CliResult::Error("Daemon IPC unavailable")
   } else {
-    CliResult::Error("Daemon IPC error: \{response}")
+    @cli.CliResult::Error("Daemon IPC error: \{response}")
   }
 }

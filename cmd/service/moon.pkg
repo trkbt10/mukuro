@@ -1,0 +1,11 @@
+import {
+  "trkbt10/mukuro/cmd/cli" @cli,
+  "trkbt10/mukuro/adapters/native" @native,
+}
+
+options(
+  link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
+  targets: {
+    "commands_native.mbt": [ "native" ],
+  },
+)

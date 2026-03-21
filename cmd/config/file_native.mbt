@@ -2,7 +2,7 @@
 /// Native config file helpers (Source of Truth)
 
 ///|
-fn read_config_text_impl(
+pub fn read_config_text_impl(
   path : String,
 ) -> String raise @interfaces.ControlError {
   let buffer_len = 65536
@@ -27,7 +27,7 @@ fn read_config_text_impl(
 }
 
 ///|
-fn parse_config_root_impl(
+pub fn parse_config_root_impl(
   raw : String,
 ) -> Map[String, Json] raise @interfaces.ControlError {
   match @config_json_accessors.parse_root_object(raw) {
@@ -37,14 +37,14 @@ fn parse_config_root_impl(
 }
 
 ///|
-fn load_config_root_impl(
+pub fn load_config_root_impl(
   config_path : String,
 ) -> Map[String, Json] raise @interfaces.ControlError {
   parse_config_root_impl(read_config_text_impl(config_path))
 }
 
 ///|
-fn parse_bool_field_impl(
+pub fn parse_bool_field_impl(
   obj : Map[String, Json],
   key : String,
   default_value : Bool,
@@ -56,7 +56,7 @@ fn parse_bool_field_impl(
 }
 
 ///|
-fn parse_string_field_impl(
+pub fn parse_string_field_impl(
   obj : Map[String, Json],
   key : String,
   default_value : String,
@@ -69,7 +69,7 @@ fn parse_string_field_impl(
 }
 
 ///|
-fn parse_int_field_impl(
+pub fn parse_int_field_impl(
   obj : Map[String, Json],
   key : String,
   default_value : Int,
@@ -81,7 +81,7 @@ fn parse_int_field_impl(
 }
 
 ///|
-fn root_gateway_object_impl(
+pub fn root_gateway_object_impl(
   root : Map[String, Json],
 ) -> Map[String, Json] raise @interfaces.ControlError {
   match root.get("gateway") {

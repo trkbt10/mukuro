@@ -8,10 +8,10 @@
 
 ///|
 /// Helper to parse service args and extract ServiceCommand
-fn parse_service_cmd(args : Array[String]) -> ServiceCommand {
-  match parse_service_args(args[:]) {
-    Command::Service(cmd) => cmd
-    _ => ServiceCommand::Unknown("parse_error")
+fn parse_service_cmd(args : Array[String]) -> @cli.ServiceCommand {
+  match @cli.parse_service_args(args[:]) {
+    @cli.Command::Service(cmd) => cmd
+    _ => @cli.ServiceCommand::Unknown("parse_error")
   }
 }
 
@@ -19,7 +19,7 @@ fn parse_service_cmd(args : Array[String]) -> ServiceCommand {
 test "parse_service_args parses install command" {
   let cmd = parse_service_cmd(["install"])
   match cmd {
-    ServiceCommand::Install(opts) => {
+    @cli.ServiceCommand::Install(opts) => {
       assert_eq(opts.user, true) // Default is user level
       assert_eq(opts.auto_start, false) // Default is no auto start
     }
@@ -31,7 +31,7 @@ test "parse_service_args parses install command" {
 test "parse_service_args parses install --system" {
   let cmd = parse_service_cmd(["install", "--system"])
   match cmd {
-    ServiceCommand::Install(opts) => assert_eq(opts.user, false)
+    @cli.ServiceCommand::Install(opts) => assert_eq(opts.user, false)
     _ => fail("Expected Install command")
   }
 }
@@ -40,7 +40,7 @@ test "parse_service_args parses install --system" {
 test "parse_service_args parses install --user" {
   let cmd = parse_service_cmd(["install", "--user"])
   match cmd {
-    ServiceCommand::Install(opts) => assert_eq(opts.user, true)
+    @cli.ServiceCommand::Install(opts) => assert_eq(opts.user, true)
     _ => fail("Expected Install command")
   }
 }
@@ -49,7 +49,7 @@ test "parse_service_args parses install --user" {
 test "parse_service_args parses install --no-auto-start" {
   let cmd = parse_service_cmd(["install", "--no-auto-start"])
   match cmd {
-    ServiceCommand::Install(opts) => assert_eq(opts.auto_start, false)
+    @cli.ServiceCommand::Install(opts) => assert_eq(opts.auto_start, false)
     _ => fail("Expected Install command")
   }
 }
@@ -58,7 +58,7 @@ test "parse_service_args parses install --no-auto-start" {
 test "parse_service_args parses install --config PATH" {
   let cmd = parse_service_cmd(["install", "--config", "/path/to/config.json"])
   match cmd {
-    ServiceCommand::Install(opts) =>
+    @cli.ServiceCommand::Install(opts) =>
       match opts.config_path {
         Some(path) => assert_eq(path, "/path/to/config.json")
         None => fail("Expected config path")
@@ -70,31 +70,31 @@ test "parse_service_args parses install --config PATH" {
 ///|
 test "parse_service_args parses uninstall command" {
   let cmd = parse_service_cmd(["uninstall"])
-  assert_true(cmd is ServiceCommand::Uninstall)
+  assert_true(cmd is @cli.ServiceCommand::Uninstall)
 }
 
 ///|
 test "parse_service_args parses start command" {
   let cmd = parse_service_cmd(["start"])
-  assert_true(cmd is ServiceCommand::Start)
+  assert_true(cmd is @cli.ServiceCommand::Start)
 }
 
 ///|
 test "parse_service_args parses stop command" {
   let cmd = parse_service_cmd(["stop"])
-  assert_true(cmd is ServiceCommand::Stop)
+  assert_true(cmd is @cli.ServiceCommand::Stop)
 }
 
 ///|
 test "parse_service_args parses restart command" {
   let cmd = parse_service_cmd(["restart"])
-  assert_true(cmd is ServiceCommand::Restart)
+  assert_true(cmd is @cli.ServiceCommand::Restart)
 }
 
 ///|
 test "parse_service_args parses status command" {
   match parse_service_cmd(["status"]) {
-    ServiceCommand::Status(opts) => assert_eq(opts.json, false)
+    @cli.ServiceCommand::Status(opts) => assert_eq(opts.json, false)
     _ => fail("Expected Status command")
   }
 }
@@ -102,7 +102,7 @@ test "parse_service_args parses status command" {
 ///|
 test "parse_service_args parses status --json" {
   match parse_service_cmd(["status", "--json"]) {
-    ServiceCommand::Status(opts) => assert_eq(opts.json, true)
+    @cli.ServiceCommand::Status(opts) => assert_eq(opts.json, true)
     _ => fail("Expected Status command")
   }
 }
@@ -110,7 +110,7 @@ test "parse_service_args parses status --json" {
 ///|
 test "parse_service_args parses logs command" {
   match parse_service_cmd(["logs"]) {
-    ServiceCommand::Logs(opts) => {
+    @cli.ServiceCommand::Logs(opts) => {
       assert_eq(opts.follow, false)
       assert_eq(opts.lines, 100) // Default is 100 lines
     }
@@ -121,7 +121,7 @@ test "parse_service_args parses logs command" {
 ///|
 test "parse_service_args parses logs -f" {
   match parse_service_cmd(["logs", "-f"]) {
-    ServiceCommand::Logs(opts) => assert_eq(opts.follow, true)
+    @cli.ServiceCommand::Logs(opts) => assert_eq(opts.follow, true)
     _ => fail("Expected Logs command")
   }
 }
@@ -129,7 +129,7 @@ test "parse_service_args parses logs -f" {
 ///|
 test "parse_service_args parses logs --follow" {
   match parse_service_cmd(["logs", "--follow"]) {
-    ServiceCommand::Logs(opts) => assert_eq(opts.follow, true)
+    @cli.ServiceCommand::Logs(opts) => assert_eq(opts.follow, true)
     _ => fail("Expected Logs command")
   }
 }
@@ -137,7 +137,7 @@ test "parse_service_args parses logs --follow" {
 ///|
 test "parse_service_args parses logs -n 100" {
   match parse_service_cmd(["logs", "-n", "100"]) {
-    ServiceCommand::Logs(opts) => assert_eq(opts.lines, 100)
+    @cli.ServiceCommand::Logs(opts) => assert_eq(opts.lines, 100)
     _ => fail("Expected Logs command")
   }
 }
@@ -145,7 +145,7 @@ test "parse_service_args parses logs -n 100" {
 ///|
 test "parse_service_args parses unknown command" {
   match parse_service_cmd(["unknown"]) {
-    ServiceCommand::Unknown(name) => assert_eq(name, "unknown")
+    @cli.ServiceCommand::Unknown(name) => assert_eq(name, "unknown")
     _ => fail("Expected Unknown command")
   }
 }
@@ -156,9 +156,9 @@ test "parse_service_args parses unknown command" {
 
 ///|
 test "ServiceConfig::default creates valid config" {
-  let config = ServiceConfig::default("/usr/local/bin/mukuro", None)
-  assert_eq(config.name, service_name)
-  assert_eq(config.display_name, service_display_name)
+  let config = @service.ServiceConfig::default("/usr/local/bin/mukuro", None)
+  assert_eq(config.name, @service.service_name)
+  assert_eq(config.display_name, @service.service_display_name)
   assert_eq(config.executable, "/usr/local/bin/mukuro")
   assert_eq(config.user_level, true)
   assert_eq(config.auto_start, true)
@@ -166,7 +166,7 @@ test "ServiceConfig::default creates valid config" {
 
 ///|
 test "ServiceConfig::default with config path" {
-  let config = ServiceConfig::default(
+  let config = @service.ServiceConfig::default(
     "/usr/local/bin/mukuro",
     Some("/etc/mukuro/config.json"),
   )
@@ -182,7 +182,7 @@ test "ServiceConfig::default with config path" {
 
 ///|
 test "generate_launchd_plist creates valid plist" {
-  let config : ServiceConfig = {
+  let config : @service.ServiceConfig = {
     name: "com.test.service",
     display_name: "Test Service",
     executable: "/usr/local/bin/test",
@@ -194,7 +194,7 @@ test "generate_launchd_plist creates valid plist" {
     stdout_log: None,
     stderr_log: None,
   }
-  let plist = generate_launchd_plist(config)
+  let plist = @service.generate_launchd_plist(config)
   assert_true(plist.contains("<?xml version=\"1.0\""))
   assert_true(plist.contains("<key>Label</key>"))
   assert_true(plist.contains("com.test.service"))
@@ -208,7 +208,7 @@ test "generate_launchd_plist creates valid plist" {
 
 ///|
 test "generate_launchd_plist includes config path" {
-  let config : ServiceConfig = {
+  let config : @service.ServiceConfig = {
     name: "com.test.service",
     display_name: "Test Service",
     executable: "/usr/local/bin/test",
@@ -220,14 +220,14 @@ test "generate_launchd_plist includes config path" {
     stdout_log: None,
     stderr_log: None,
   }
-  let plist = generate_launchd_plist(config)
+  let plist = @service.generate_launchd_plist(config)
   assert_true(plist.contains("--config"))
   assert_true(plist.contains("/etc/test/config.json"))
 }
 
 ///|
 test "generate_launchd_plist includes log paths" {
-  let config : ServiceConfig = {
+  let config : @service.ServiceConfig = {
     name: "com.test.service",
     display_name: "Test Service",
     executable: "/usr/local/bin/test",
@@ -239,7 +239,7 @@ test "generate_launchd_plist includes log paths" {
     stdout_log: Some("/var/log/test.log"),
     stderr_log: Some("/var/log/test.err"),
   }
-  let plist = generate_launchd_plist(config)
+  let plist = @service.generate_launchd_plist(config)
   assert_true(plist.contains("<key>StandardOutPath</key>"))
   assert_true(plist.contains("/var/log/test.log"))
   assert_true(plist.contains("<key>StandardErrorPath</key>"))
@@ -248,7 +248,7 @@ test "generate_launchd_plist includes log paths" {
 
 ///|
 test "generate_systemd_unit creates valid unit" {
-  let config : ServiceConfig = {
+  let config : @service.ServiceConfig = {
     name: "test-service",
     display_name: "Test Service",
     executable: "/usr/local/bin/test",
@@ -260,7 +260,7 @@ test "generate_systemd_unit creates valid unit" {
     stdout_log: None,
     stderr_log: None,
   }
-  let unit = generate_systemd_unit(config)
+  let unit = @service.generate_systemd_unit(config)
   assert_true(unit.contains("[Unit]"))
   assert_true(unit.contains("Description=Test Service"))
   assert_true(unit.contains("[Service]"))
@@ -273,7 +273,7 @@ test "generate_systemd_unit creates valid unit" {
 
 ///|
 test "generate_systemd_unit includes config path" {
-  let config : ServiceConfig = {
+  let config : @service.ServiceConfig = {
     name: "test-service",
     display_name: "Test Service",
     executable: "/usr/local/bin/test",
@@ -285,13 +285,13 @@ test "generate_systemd_unit includes config path" {
     stdout_log: None,
     stderr_log: None,
   }
-  let unit = generate_systemd_unit(config)
+  let unit = @service.generate_systemd_unit(config)
   assert_true(unit.contains("--config /etc/test/config.json"))
 }
 
 ///|
 test "generate_systemd_unit includes log paths" {
-  let config : ServiceConfig = {
+  let config : @service.ServiceConfig = {
     name: "test-service",
     display_name: "Test Service",
     executable: "/usr/local/bin/test",
@@ -303,14 +303,14 @@ test "generate_systemd_unit includes log paths" {
     stdout_log: Some("/var/log/test.log"),
     stderr_log: Some("/var/log/test.err"),
   }
-  let unit = generate_systemd_unit(config)
+  let unit = @service.generate_systemd_unit(config)
   assert_true(unit.contains("StandardOutput=append:/var/log/test.log"))
   assert_true(unit.contains("StandardError=append:/var/log/test.err"))
 }
 
 ///|
 test "generate_systemd_unit without auto_start omits WantedBy" {
-  let config : ServiceConfig = {
+  let config : @service.ServiceConfig = {
     name: "test-service",
     display_name: "Test Service",
     executable: "/usr/local/bin/test",
@@ -322,7 +322,7 @@ test "generate_systemd_unit without auto_start omits WantedBy" {
     stdout_log: None,
     stderr_log: None,
   }
-  let unit = generate_systemd_unit(config)
+  let unit = @service.generate_systemd_unit(config)
   assert_true(not(unit.contains("WantedBy=")))
 }
 
@@ -332,28 +332,28 @@ test "generate_systemd_unit without auto_start omits WantedBy" {
 
 ///|
 test "get_launchd_plist_path returns user path" {
-  let path = get_launchd_plist_path(true)
+  let path = @service.get_launchd_plist_path(true)
   assert_true(path.contains("Library/LaunchAgents"))
-  assert_true(path.contains(service_name))
+  assert_true(path.contains(@service.service_name))
   assert_true(path.contains(".plist"))
 }
 
 ///|
 test "get_launchd_plist_path returns system path" {
-  let path = get_launchd_plist_path(false)
-  assert_eq(path, "/Library/LaunchDaemons/\{service_name}.plist")
+  let path = @service.get_launchd_plist_path(false)
+  assert_eq(path, "/Library/LaunchDaemons/\{@service.service_name}.plist")
 }
 
 ///|
 test "get_systemd_unit_path returns user path" {
-  let path = get_systemd_unit_path(true)
+  let path = @service.get_systemd_unit_path(true)
   assert_true(path.contains(".config/systemd/user"))
   assert_true(path.contains("mukuro-gateway.service"))
 }
 
 ///|
 test "get_systemd_unit_path returns system path" {
-  let path = get_systemd_unit_path(false)
+  let path = @service.get_systemd_unit_path(false)
   assert_eq(path, "/etc/systemd/system/mukuro-gateway.service")
 }
 
@@ -363,7 +363,7 @@ test "get_systemd_unit_path returns system path" {
 
 ///|
 test "ServiceStatus::to_json creates valid JSON" {
-  let status : ServiceStatus = {
+  let status : @service.ServiceStatus = {
     installed: true,
     running: true,
     pid: Some(12345),
@@ -379,7 +379,7 @@ test "ServiceStatus::to_json creates valid JSON" {
 
 ///|
 test "ServiceStatus::to_json handles null pid" {
-  let status : ServiceStatus = {
+  let status : @service.ServiceStatus = {
     installed: false,
     running: false,
     pid: None,

@@ -4,23 +4,23 @@
 
 ///|
 /// Native版PidManager（FFI経由でPIDファイルを管理）
-struct NativePidManager {
+pub(all) struct NativePidManager {
   pid_path : String
 }
 
 ///|
-fn NativePidManager::new(pid_path~ : String) -> NativePidManager {
+pub fn NativePidManager::new(pid_path~ : String) -> NativePidManager {
   { pid_path, }
 }
 
 ///|
-fn NativePidManager::exists(self : NativePidManager) -> Bool {
+pub fn NativePidManager::exists(self : NativePidManager) -> Bool {
   @native.c_file_exists_bytes(@native.string_to_utf8_cstring(self.pid_path)) ==
   1
 }
 
 ///|
-fn NativePidManager::read_pid(
+pub fn NativePidManager::read_pid(
   self : NativePidManager,
 ) -> Int raise @control.DaemonError {
   let pid = @native.c_read_pid_file_bytes(
@@ -35,7 +35,7 @@ fn NativePidManager::read_pid(
 }
 
 ///|
-fn NativePidManager::remove_pid(
+pub fn NativePidManager::remove_pid(
   self : NativePidManager,
 ) -> Unit raise @control.DaemonError {
   let result = @native.c_remove_file_bytes(
@@ -50,13 +50,13 @@ fn NativePidManager::remove_pid(
 
 ///|
 /// Native版DaemonManager（concrete型を使用）
-struct NativeDaemonManager {
+pub(all) struct NativeDaemonManager {
   pid_manager : NativePidManager
   process_checker : @native.NativeProcessChecker
 }
 
 ///|
-fn NativeDaemonManager::new(pid_path~ : String) -> NativeDaemonManager {
+pub fn NativeDaemonManager::new(pid_path~ : String) -> NativeDaemonManager {
   {
     pid_manager: NativePidManager::new(pid_path~),
     process_checker: @native.NativeProcessChecker::new(),
@@ -64,7 +64,7 @@ fn NativeDaemonManager::new(pid_path~ : String) -> NativeDaemonManager {
 }
 
 ///|
-fn NativeDaemonManager::status(
+pub fn NativeDaemonManager::status(
   self : NativeDaemonManager,
 ) -> @control.DaemonStatus {
   if !self.pid_manager.exists() {
@@ -81,7 +81,7 @@ fn NativeDaemonManager::status(
 }
 
 ///|
-fn NativeDaemonManager::stop_remote(
+pub fn NativeDaemonManager::stop_remote(
   self : NativeDaemonManager,
 ) -> Unit raise @control.DaemonError {
   match self.status() {
@@ -130,27 +130,27 @@ pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus {
 
 ///|
 /// デーモンを停止（PIDファイル経由でシグナル送信）
-pub fn stop_daemon(pid_path~ : String) -> CliResult {
+pub fn stop_daemon(pid_path~ : String) -> @cli.CliResult {
   let daemon_manager = NativeDaemonManager::new(pid_path~)
 
   daemon_manager.stop_remote() catch {
     @control.DaemonError::ProcessNotFound(0) =>
-      return CliResult::Error("Gateway is not running (no PID file)")
+      return @cli.CliResult::Error("Gateway is not running (no PID file)")
     @control.DaemonError::ProcessNotFound(pid) =>
-      return CliResult::Ok(
+      return @cli.CliResult::Ok(
         "Gateway PID file found (\{pid}) but process not running (cleaned up)",
       )
     @control.DaemonError::SignalError(e) =>
-      return CliResult::Error("Failed to stop gateway: \{e}")
+      return @cli.CliResult::Error("Failed to stop gateway: \{e}")
     @control.DaemonError::AlreadyRunning(pid) =>
-      return CliResult::Error("Unexpected state: running \{pid}")
+      return @cli.CliResult::Error("Unexpected state: running \{pid}")
     @control.DaemonError::PidFileReadError(e) =>
-      return CliResult::Error("Failed to read PID file: \{e}")
+      return @cli.CliResult::Error("Failed to read PID file: \{e}")
     @control.DaemonError::PidFileWriteError(e) =>
-      return CliResult::Error("Failed to write PID file: \{e}")
+      return @cli.CliResult::Error("Failed to write PID file: \{e}")
     @control.DaemonError::InitError(e) =>
-      return CliResult::Error("Init error: \{e}")
+      return @cli.CliResult::Error("Init error: \{e}")
   }
 
-  CliResult::Ok("Stop signal sent to gateway daemon")
+  @cli.CliResult::Ok("Stop signal sent to gateway daemon")
 }

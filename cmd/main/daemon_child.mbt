@@ -3,11 +3,6 @@
 /// Main daemon loop with token rotation and rate limiting
 
 ///|
-fn current_cli_client_id() -> String {
-  "cli-\{@native.c_getpid()}"
-}
-
-///|
 fn read_last_ipc_client_id() -> String {
   let buffer = Bytes::new(128)
   let read_len = @native.c_ipc_get_last_client_id(buffer, 128)
@@ -48,7 +43,7 @@ fn append_auth_audit_detail(
 
 ///|
 /// --daemon-child 引数で起動された場合のデーモン子プロセス処理
-pub async fn execute_daemon_child(pid_path : String) -> CliResult {
+pub async fn execute_daemon_child(pid_path : String) -> @cli.CliResult {
   // デーモン子プロセスとして初期化（setsid, PIDファイル書き込み）
   let init_result = @native.c_daemon_child_init_bytes(
     @native.string_to_utf8_cstring(pid_path),
@@ -56,17 +51,17 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
   if init_result != 0 {
     // エラー時は即座に終了
     @native.c_exit(1)
-    return CliResult::Exit(1)
+    return @cli.CliResult::Exit(1)
   }
 
-  let startup = load_daemon_startup_config()
+  let startup = @daemon.load_daemon_startup_config()
   let config_path = startup.runtime_model_config_path
-  let config_text = read_config_text_impl(config_path) catch {
+  let config_text = @cmd_config.read_config_text_impl(config_path) catch {
     _ => {
       @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
       |> ignore
       @native.c_exit(1)
-      return CliResult::Exit(1)
+      return @cli.CliResult::Exit(1)
     }
   }
   let mukuro_config = @config.ConfigLoaderImpl::default().load_from_string(
@@ -76,7 +71,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
       @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
       |> ignore
       @native.c_exit(1)
-      return CliResult::Exit(1)
+      return @cli.CliResult::Exit(1)
     }
   }
   // SQLite メタデータストアの初期化（履歴検索用）
@@ -91,7 +86,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
     |> ignore
     @native.c_exit(1)
-    return CliResult::Exit(1)
+    return @cli.CliResult::Exit(1)
   }
 
   let self_pid = @native.c_getpid()
@@ -122,7 +117,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
     |> ignore
     @native.c_exit(1)
-    return CliResult::Exit(1)
+    return @cli.CliResult::Exit(1)
   }
 
   let ipc_start = @native.c_ipc_server_start()
@@ -130,7 +125,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
     |> ignore
     @native.c_exit(1)
-    return CliResult::Exit(1)
+    return @cli.CliResult::Exit(1)
   }
 
   let daemon_tick = fn() {
@@ -154,15 +149,15 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
       @native.c_write_gateway_snapshot(self_pid, uptime_sec, 1) |> ignore
       last_snapshot_uptime = uptime_sec
     }
-    if now - last_token_rotated_at >= daemon_token_rotation_interval_sec ||
-      now - token_issued_at >= daemon_token_max_age_sec {
+    if now - last_token_rotated_at >= @daemon.daemon_token_rotation_interval_sec ||
+      now - token_issued_at >= @daemon.daemon_token_max_age_sec {
       let next_token = @native.c_generate_gateway_token()
       if next_token > 0 && next_token != token {
         if @native.c_write_gateway_token_record(next_token, session_id, now) ==
           0 {
           prev_token = token
           prev_token_issued_at = token_issued_at
-          prev_token_grace_until = now + daemon_prev_token_grace_sec
+          prev_token_grace_until = now + @daemon.daemon_prev_token_grace_sec
           token = next_token
           token_issued_at = now
           last_token_rotated_at = now
@@ -175,7 +170,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     let is_rate_limited = auth_rate_limited_until != 0 &&
       now < auth_rate_limited_until
     let current_token_for_auth = if is_rate_limited ||
-      now - token_issued_at >= daemon_token_max_age_sec {
+      now - token_issued_at >= @daemon.daemon_token_max_age_sec {
       -1
     } else {
       token
@@ -183,7 +178,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     let prev_token_for_auth = if is_rate_limited ||
       prev_token == -1 ||
       now >= prev_token_grace_until ||
-      now - prev_token_issued_at >= daemon_token_max_age_sec {
+      now - prev_token_issued_at >= @daemon.daemon_token_max_age_sec {
       -1
     } else {
       prev_token
@@ -193,7 +188,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
     )
     if !is_rate_limited && ipc_result == 3 {
       if auth_fail_window_started_at == 0 ||
-        now - auth_fail_window_started_at > daemon_auth_fail_window_sec {
+        now - auth_fail_window_started_at > @daemon.daemon_auth_fail_window_sec {
         auth_fail_window_started_at = now
         auth_failed_in_window = 1
       } else {
@@ -210,14 +205,14 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
         (now - token_issued_at).to_int(),
         auth_rate_limited_until,
       )
-      if auth_failed_in_window >= daemon_auth_fail_threshold {
-        auth_rate_limited_until = now + daemon_auth_rate_limit_sec
+      if auth_failed_in_window >= @daemon.daemon_auth_fail_threshold {
+        auth_rate_limited_until = now + @daemon.daemon_auth_rate_limit_sec
         auth_failed_in_window = 0
         auth_fail_window_started_at = 0
         append_auth_audit_detail(
           now,
           2,
-          daemon_auth_rate_limit_sec.to_int(),
+          @daemon.daemon_auth_rate_limit_sec.to_int(),
           "ipc",
           read_last_ipc_client_id(),
           @native.c_ipc_get_last_session_id(),
@@ -246,7 +241,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
       @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
       |> ignore
       @native.c_exit(1)
-      return CliResult::Exit(1)
+      return @cli.CliResult::Exit(1)
     }
     let mut local_signal = 0
     run_control_api_server_with_tick_blocking(
@@ -275,7 +270,7 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
         @native.c_remove_file_bytes(@native.string_to_utf8_cstring(pid_path))
         |> ignore
         @native.c_exit(1)
-        return CliResult::Exit(1)
+        return @cli.CliResult::Exit(1)
       }
     }
     local_signal
@@ -305,5 +300,5 @@ pub async fn execute_daemon_child(pid_path : String) -> CliResult {
 
   // 正常終了
   @native.c_exit(0)
-  CliResult::Exit(0)
+  @cli.CliResult::Exit(0)
 }

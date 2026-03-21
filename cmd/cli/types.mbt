@@ -192,9 +192,10 @@ pub(all) enum CliResult {
 
 ///|
 /// ヘルプメッセージを取得
-pub fn get_help_message() -> String {
+/// config_path: デフォルト設定ファイルパス（表示用）
+pub fn get_help_message(config_path~ : String) -> String {
   let global_opts = "Global Options:\n  --local              Use .mukuro in current directory (project-local)\n  --data-dir <path>    Use custom data directory"
-  let gateway_opts = "Gateway Options:\n  --config <path>      Path to configuration file\n                       (default: \{default_runtime_config_path()})\n  --host <host>        Host to bind (default: \{@interfaces.gateway_default_host})\n  --port <port>        Port to bind (default: \{@interfaces.gateway_default_port})\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode"
+  let gateway_opts = "Gateway Options:\n  --config <path>      Path to configuration file\n                       (default: \{config_path})\n  --host <host>        Host to bind (default: \{@interfaces.gateway_default_host})\n  --port <port>        Port to bind (default: \{@interfaces.gateway_default_port})\n  --daemon, -D         Run as daemon (background process)\n  --control-api        Serve HTTP control API (works with --daemon)\n  --debug, -d          Enable debug mode"
   let status_opts = "Gateway Status Options:\n  --json               Output status as JSON"
   let auth_log_opts = "Gateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON"
   let service_opts = "Service Options:\n  install [--user|--system] [--config PATH] [--auto-start]\n                       Install as system service\n  uninstall            Uninstall system service\n  start                Start the service\n  stop                 Stop the service\n  restart              Restart the service\n  status [--json]      Show service status\n  logs [-f] [-n LINES] View service logs"

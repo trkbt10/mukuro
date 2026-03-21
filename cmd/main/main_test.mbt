@@ -1,187 +1,12 @@
 ///|
-/// CLI テスト
-
-///|
-test "parse_args empty returns Help" {
-  let cmd = parse_args([])
-  assert_true(
-    match cmd {
-      Command::Help => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args help" {
-  let cmd = parse_args(["help"])
-  assert_true(
-    match cmd {
-      Command::Help => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args --help" {
-  let cmd = parse_args(["--help"])
-  assert_true(
-    match cmd {
-      Command::Help => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args version" {
-  let cmd = parse_args(["version"])
-  assert_true(
-    match cmd {
-      Command::Version => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args --version" {
-  let cmd = parse_args(["--version"])
-  assert_true(
-    match cmd {
-      Command::Version => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args onboard with options" {
-  let cmd = parse_args([
-    "onboard", "--provider", "anthropic", "--api-key", "sk-xxx", "--model", "claude-3",
-  ])
-  assert_true(
-    match cmd {
-      Command::Onboard(opts) =>
-        opts.provider == Some("anthropic") &&
-        opts.api_key == Some("sk-xxx") &&
-        opts.default_model == Some("claude-3")
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway start" {
-  let cmd = parse_args(["gateway", "start"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(_)) => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway start with options" {
-  let cmd = parse_args([
-    "gateway", "start", "--host", "0.0.0.0", "--port", "9000",
-  ])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) =>
-        opts.host == Some("0.0.0.0") && opts.port == Some(9000)
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway status" {
-  let cmd = parse_args(["gateway", "status"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Status(opts)) => opts.json == false
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway status --json" {
-  let cmd = parse_args(["gateway", "status", "--json"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Status(opts)) => opts.json == true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway stop" {
-  let cmd = parse_args(["gateway", "stop"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Stop) => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway auth-log defaults" {
-  let cmd = parse_args(["gateway", "auth-log"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::AuthLog(opts)) =>
-        opts.since_seconds == 3600 && opts.json == false
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway auth-log with options" {
-  let cmd = parse_args(["gateway", "auth-log", "--since", "120", "--json"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::AuthLog(opts)) =>
-        opts.since_seconds == 120 && opts.json == true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args cron list" {
-  let cmd = parse_args(["cron", "list"])
-  assert_true(
-    match cmd {
-      Command::Cron(CronCommand::List) => true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args unknown command" {
-  let cmd = parse_args(["unknown"])
-  assert_true(
-    match cmd {
-      Command::Unknown("unknown") => true
-      _ => false
-    },
-  )
-}
+/// cmd/main 統合テスト（execute系）
 
 ///|
 async test "execute_command Help" {
-  let result = execute_command(Command::Help)
+  let result = execute_command(@cli.Command::Help)
   assert_true(
     match result {
-      CliResult::Ok(msg) => msg.contains("mukuro")
+      @cli.CliResult::Ok(msg) => msg.contains("mukuro")
       _ => false
     },
   )
@@ -189,10 +14,10 @@ async test "execute_command Help" {
 
 ///|
 async test "execute_command Version" {
-  let result = execute_command(Command::Version)
+  let result = execute_command(@cli.Command::Version)
   assert_true(
     match result {
-      CliResult::Ok(msg) => msg.contains("0.1.0")
+      @cli.CliResult::Ok(msg) => msg.contains("0.1.0")
       _ => false
     },
   )
@@ -200,7 +25,7 @@ async test "execute_command Version" {
 
 ///|
 async test "execute_onboard missing provider" {
-  let opts : OnboardOptions = {
+  let opts : @cli.OnboardOptions = {
     provider: None,
     api_key: Some("key"),
     default_model: None,
@@ -209,7 +34,7 @@ async test "execute_onboard missing provider" {
   let result = execute_onboard(opts)
   assert_true(
     match result {
-      CliResult::Error(msg) => msg.contains("--provider")
+      @cli.CliResult::Error(msg) => msg.contains("--provider")
       _ => false
     },
   )
@@ -217,7 +42,7 @@ async test "execute_onboard missing provider" {
 
 ///|
 async test "execute_onboard missing api_key" {
-  let opts : OnboardOptions = {
+  let opts : @cli.OnboardOptions = {
     provider: Some("anthropic"),
     api_key: None,
     default_model: None,
@@ -226,7 +51,7 @@ async test "execute_onboard missing api_key" {
   let result = execute_onboard(opts)
   assert_true(
     match result {
-      CliResult::Error(msg) => msg.contains("--api-key")
+      @cli.CliResult::Error(msg) => msg.contains("--api-key")
       _ => false
     },
   )
@@ -235,7 +60,7 @@ async test "execute_onboard missing api_key" {
 ///|
 async test "execute_onboard success with interpolated config" {
   // Use test-specific output path to avoid polluting user config
-  let opts : OnboardOptions = {
+  let opts : @cli.OnboardOptions = {
     provider: Some("anthropic"),
     api_key: Some("sk-test123"),
     default_model: Some("claude-3"),
@@ -244,7 +69,7 @@ async test "execute_onboard success with interpolated config" {
   let result = execute_onboard(opts)
   assert_true(
     match result {
-      CliResult::Ok(msg) =>
+      @cli.CliResult::Ok(msg) =>
         msg.contains("anthropic") &&
         msg.contains("sk-test123") &&
         msg.contains("claude-3")
@@ -266,7 +91,7 @@ async test "run_cli help" {
   let result = run_cli(["help"])
   assert_true(
     match result {
-      CliResult::Ok(msg) => msg.contains("Usage:")
+      @cli.CliResult::Ok(msg) => msg.contains("Usage:")
       _ => false
     },
   )
@@ -277,7 +102,7 @@ async test "run_cli gateway status" {
   let result = run_cli(["gateway", "status"])
   assert_true(
     match result {
-      CliResult::Ok(msg) => msg.contains("State:")
+      @cli.CliResult::Ok(msg) => msg.contains("State:")
       _ => false
     },
   )
@@ -288,123 +113,7 @@ async test "run_cli gateway status --json" {
   let result = run_cli(["gateway", "status", "--json"])
   assert_true(
     match result {
-      CliResult::Ok(msg) => msg.has_prefix("{\"mode\":")
-      _ => false
-    },
-  )
-}
-
-// ============================================================
-// Daemon mode tests
-// ============================================================
-
-///|
-test "parse_args gateway start --daemon" {
-  let cmd = parse_args(["gateway", "start", "--daemon"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) => opts.daemon == true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway start -D" {
-  let cmd = parse_args(["gateway", "start", "-D"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) => opts.daemon == true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway start --daemon with options" {
-  let cmd = parse_args([
-    "gateway", "start", "--daemon", "--host", "127.0.0.1", "--port", "8080",
-  ])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) =>
-        opts.daemon == true &&
-        opts.host == Some("127.0.0.1") &&
-        opts.port == Some(8080)
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway start --daemon with --control-api" {
-  let cmd = parse_args(["gateway", "start", "--daemon", "--control-api"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) =>
-        opts.daemon == true && opts.control_api == true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway start without daemon" {
-  let cmd = parse_args(["gateway", "start", "--port", "9000"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) =>
-        opts.daemon == false && opts.port == Some(9000)
-      _ => false
-    },
-  )
-}
-
-///|
-/// NOTE: This test is disabled on native because daemon spawn times out (5s).
-/// The daemon spawn behavior is tested in daemon_e2e_native_test.mbt instead.
-/// This test was originally for verifying error handling on non-native targets.
-test "execute_gateway_start with daemon and control-api is parsing only" {
-  // Only test that parsing works correctly
-  let cmd = parse_args(["gateway", "start", "--daemon", "--control-api"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) =>
-        opts.daemon == true && opts.control_api == true
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args gateway start --control-api" {
-  let cmd = parse_args(["gateway", "start", "--control-api"])
-  assert_true(
-    match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) =>
-        opts.control_api == true && opts.daemon == false
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args daemon-child internal command" {
-  let cmd = parse_args(["--daemon-child", ".mukuro/gateway.pid"])
-  assert_true(
-    match cmd {
-      Command::DaemonChild(path) => path == ".mukuro/gateway.pid"
-      _ => false
-    },
-  )
-}
-
-///|
-test "parse_args daemon-child without pid_path returns Unknown" {
-  let cmd = parse_args(["--daemon-child"])
-  assert_true(
-    match cmd {
-      Command::Unknown(msg) => msg.contains("requires pid_path")
+      @cli.CliResult::Ok(msg) => msg.has_prefix("{\"mode\":")
       _ => false
     },
   )
@@ -445,12 +154,14 @@ test "DaemonStatus::Stale pattern" {
 
 ///|
 test "query_daemon_status returns auth error when ipc unauthorized" {
-  set_daemon_ipc_response_hook_for_test(fn(_cmd) { Some("ERR unauthorized") })
-  let result = query_daemon_status(12345, false)
-  clear_daemon_ipc_response_hook_for_test()
+  @daemon.set_daemon_ipc_response_hook_for_test(fn(_cmd) {
+    Some("ERR unauthorized")
+  })
+  let result = @daemon.query_daemon_status(12345, false)
+  @daemon.clear_daemon_ipc_response_hook_for_test()
   assert_true(
     match result {
-      CliResult::Error(msg) => msg.contains("authentication failed")
+      @cli.CliResult::Error(msg) => msg.contains("authentication failed")
       _ => false
     },
   )
@@ -458,12 +169,14 @@ test "query_daemon_status returns auth error when ipc unauthorized" {
 
 ///|
 test "request_daemon_stop returns auth error when ipc unauthorized" {
-  set_daemon_ipc_response_hook_for_test(fn(_cmd) { Some("ERR unauthorized") })
-  let result = request_daemon_stop(12345)
-  clear_daemon_ipc_response_hook_for_test()
+  @daemon.set_daemon_ipc_response_hook_for_test(fn(_cmd) {
+    Some("ERR unauthorized")
+  })
+  let result = @daemon.request_daemon_stop(12345)
+  @daemon.clear_daemon_ipc_response_hook_for_test()
   assert_true(
     match result {
-      CliResult::Error(msg) => msg.contains("authentication failed")
+      @cli.CliResult::Error(msg) => msg.contains("authentication failed")
       _ => false
     },
   )
@@ -474,7 +187,7 @@ async test "dispatch_inbound runs integrated agent loop" {
   let result = dispatch_echo_for_test("hello")
   assert_true(
     match result {
-      CliResult::Ok(msg) => msg.contains("Echo: hello")
+      @cli.CliResult::Ok(msg) => msg.contains("Echo: hello")
       _ => false
     },
   )
@@ -483,12 +196,13 @@ async test "dispatch_inbound runs integrated agent loop" {
 ///|
 async test "execute_gateway auth-log returns runtime-dependent result" {
   let result = execute_gateway_command(
-    GatewayCommand::AuthLog({ since_seconds: 60, json: true }),
+    @cli.GatewayCommand::AuthLog({ since_seconds: 60, json: true }),
   )
   assert_true(
     match result {
-      CliResult::Ok(msg) => msg.contains("since_seconds")
-      CliResult::Error(msg) => msg.contains("only supported on native target")
+      @cli.CliResult::Ok(msg) => msg.contains("since_seconds")
+      @cli.CliResult::Error(msg) =>
+        msg.contains("only supported on native target")
       _ => false
     },
   )

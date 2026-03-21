@@ -4,16 +4,16 @@
 
 ///|
 /// オンボーディングを実行
-pub fn execute_onboard(opts : OnboardOptions) -> CliResult {
+pub fn execute_onboard(opts : @cli.OnboardOptions) -> @cli.CliResult {
   // プロバイダの確認
   let provider = match opts.provider {
     Some(p) => p
-    None => return CliResult::Error("Missing required option: --provider")
+    None => return @cli.CliResult::Error("Missing required option: --provider")
   }
   // APIキーの確認
   let api_key = match opts.api_key {
     Some(k) => k
-    None => return CliResult::Error("Missing required option: --api-key")
+    None => return @cli.CliResult::Error("Missing required option: --api-key")
   }
   // デフォルトモデルはオプション (use provider-specific default if empty)
   let default_model = match opts.default_model {
@@ -26,7 +26,9 @@ pub fn execute_onboard(opts : OnboardOptions) -> CliResult {
       }
   }
   // 出力パスのデフォルト
-  let output_path = opts.output_path.unwrap_or(default_runtime_config_path())
+  let output_path = opts.output_path.unwrap_or(
+    @cmd_config.default_runtime_config_path(),
+  )
   // 設定JSONを新しいproviders配列形式で構築
   let config_json =
     $|{

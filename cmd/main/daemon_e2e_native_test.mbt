@@ -39,7 +39,7 @@ test "native e2e stale status triggers artifact cleanup" {
   @native.c_write_gateway_snapshot(999999, 1, 1) |> ignore
   @native.c_write_gateway_token(123456) |> ignore
 
-  let status = get_daemon_status(pid_path=@control.default_pid_path())
+  let status = @daemon.get_daemon_status(pid_path=@control.default_pid_path())
   assert_true(
     match status {
       @control.DaemonStatus::Stale(pid) => pid == 999999
@@ -83,7 +83,7 @@ async test "native e2e gateway status --json reports stale daemon" {
   let result = run_cli(["gateway", "status", "--json"])
   assert_true(
     match result {
-      CliResult::Ok(msg) =>
+      @cli.CliResult::Ok(msg) =>
         msg.contains("\"mode\":\"daemon\"") &&
         msg.contains("\"state\":\"stale\"") &&
         msg.contains("\"stale_pid\":999998")
@@ -107,7 +107,7 @@ async test "native e2e gateway stop cleans stale pid file" {
   let result = run_cli(["gateway", "stop"])
   assert_true(
     match result {
-      CliResult::Ok(msg) =>
+      @cli.CliResult::Ok(msg) =>
         msg.contains("Cleaned up stale PID file") && msg.contains("999997")
       _ => false
     },
@@ -128,7 +128,7 @@ async test "native e2e gateway stop cleans stale pid file" {
 /// and MoonBit config (uses cache_dir). The test would pass if paths were aligned.
 /// TODO: Align path logic between C and MoonBit, then re-enable this test.
 test "native e2e token file with insecure permission is rejected" {
-  // Skip: C FFI uses {cwd}/.mukuro/ while MoonBit uses cache_dir()/
+  // Skip: C FFI uses {cwd}/mukuro_dir_name while MoonBit uses cache_dir()/
   // cleanup_daemon_artifacts()
   // @native.c_write_gateway_token(123456) |> ignore
   // @native.c_chmod_file(

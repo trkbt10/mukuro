@@ -1,0 +1,17 @@
+import {
+  "trkbt10/mukuro/core/config" @core_config,
+  "trkbt10/mukuro/core/config/json_accessors" @config_json_accessors,
+  "trkbt10/mukuro/interfaces",
+  "trkbt10/mukuro/adapters/native" @native,
+  "trkbt10/mukuro/lib/bytes" @bytes,
+}
+
+options(
+  link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
+  targets: {
+    "constants_native.mbt": [ "native" ],
+    "file_native.mbt": [ "native" ],
+    "gateway_native.mbt": [ "native" ],
+    "gateway_native_test.mbt": [ "native" ],
+  },
+)
