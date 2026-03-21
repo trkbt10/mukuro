@@ -2,7 +2,7 @@
 /// E2E tests for WebSocket transport
 /// These tests require Node.js and the ws package to be installed
 /// Run the WebSocket test plugin manually before running these tests:
-///   cd .mukuro/plugins/ws_test && node plugin.js
+///   cd test-plugins/ws_test && node plugin.js
 ///
 /// NOTE: These tests use async test for WebSocket connections.
 

@@ -11,12 +11,12 @@
 
 ///| 状態ファイルパス
 fn onboard_state_path() -> String {
-  @config.data_dir() + "/.mukuro/onboard-state.json"
+  @config.data_dir() + "/onboard-state.json"
 }
 
 ///| 状態ディレクトリパス
 fn onboard_state_dir() -> String {
-  @config.data_dir() + "/.mukuro"
+  @config.data_dir()
 }
 
 ///| オンボーディング状態を読み込み

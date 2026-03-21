@@ -483,7 +483,7 @@ export interface ToolSettingsSchema {
 // Onboard Types
 // ============================================================================
 
-/** Onboarding status - Source of Truth is .mukuro/onboard-state.json */
+/** Onboarding status - Source of Truth is data_dir/onboard-state.json */
 export type OnboardStatusValue = 'not_started' | 'in_progress' | 'completed';
 
 export interface OnboardStatusResponse {

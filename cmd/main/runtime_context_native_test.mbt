@@ -16,36 +16,59 @@ fn cleanup_file(path : String) -> Unit {
 }
 
 ///|
-fn cleanup_workspace_context_files() -> Unit {
-  cleanup_file(".mukuro/test-runtime-context/bootstrap.md")
-  cleanup_file(".mukuro/test-runtime-context/memory.json")
-  cleanup_file(".mukuro/test-runtime-context/memory.txt")
-  cleanup_file(".mukuro/test-runtime-context/skills.json")
+/// テスト用一時ディレクトリを取得
+fn test_workspace_context_dir() -> String {
+  let base = @osenv_dirs.temp_dir_for("mukuro-test-ctx") catch {
+    _ => "/tmp/mukuro-test-ctx"
+  }
+  base
+}
+
+///|
+fn cleanup_workspace_context_files(dir : String) -> Unit {
+  cleanup_file(dir + "/bootstrap.md")
+  cleanup_file(dir + "/memory.json")
+  cleanup_file(dir + "/memory.txt")
+  cleanup_file(dir + "/skills.json")
   // OpenClaw互換ファイル
-  cleanup_file(".mukuro/test-runtime-context/SOUL.md")
-  cleanup_file(".mukuro/test-runtime-context/AGENTS.md")
-  cleanup_file(".mukuro/test-runtime-context/TOOLS.md")
-  cleanup_file(".mukuro/test-runtime-context/IDENTITY.md")
-  cleanup_file(".mukuro/test-runtime-context/USER.md")
+  cleanup_file(dir + "/SOUL.md")
+  cleanup_file(dir + "/AGENTS.md")
+  cleanup_file(dir + "/TOOLS.md")
+  cleanup_file(dir + "/IDENTITY.md")
+  cleanup_file(dir + "/USER.md")
+}
+
+///|
+/// テスト用ディレクトリを作成してworkspace contextとして設定
+fn setup_test_workspace_context() -> String {
+  let dir = test_workspace_context_dir()
+  ignore(@native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(dir), 493))
+  set_workspace_context_dir_for_process(dir)
+  dir
+}
+
+///|
+/// テスト後のクリーンアップ: workspace context dirをデフォルトに戻す
+fn teardown_test_workspace_context(dir : String) -> Unit {
+  cleanup_workspace_context_files(dir)
+  // カスタムパスをクリアしてデフォルト（@config.data_dir()）に戻す
+  set_workspace_context_dir_for_process(@config.data_dir())
 }
 
 ///|
 test "enrich_envelope_with_workspace_context_impl injects bootstrap/memory/skills" {
-  set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
-  cleanup_workspace_context_files()
+  let dir = setup_test_workspace_context()
+  cleanup_workspace_context_files(dir)
   assert_true(
-    write_text(
-      ".mukuro/test-runtime-context/bootstrap.md", "You are workspace agent",
-    ),
+    write_text(dir + "/bootstrap.md", "You are workspace agent"),
+  )
+  assert_true(
+    write_text(dir + "/memory.json", "[\"loves tea\", \"uses vim\"]"),
   )
   assert_true(
     write_text(
-      ".mukuro/test-runtime-context/memory.json", "[\"loves tea\", \"uses vim\"]",
-    ),
-  )
-  assert_true(
-    write_text(
-      ".mukuro/test-runtime-context/skills.json", "[{\"name\":\"web_search\",\"description\":\"search\",\"instructions\":\"latest\"}]",
+      dir + "/skills.json",
+      "[{\"name\":\"web_search\",\"description\":\"search\",\"instructions\":\"latest\"}]",
     ),
   )
 
@@ -78,18 +101,15 @@ test "enrich_envelope_with_workspace_context_impl injects bootstrap/memory/skill
       _ => false
     },
   )
-  cleanup_workspace_context_files()
-  set_workspace_context_dir_for_process(".mukuro")
+  teardown_test_workspace_context(dir)
 }
 
 ///|
 test "enrich_envelope_with_workspace_context_impl keeps existing metadata override" {
-  set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
-  cleanup_workspace_context_files()
+  let dir = setup_test_workspace_context()
+  cleanup_workspace_context_files(dir)
   assert_true(
-    write_text(
-      ".mukuro/test-runtime-context/bootstrap.md", "workspace bootstrap",
-    ),
+    write_text(dir + "/bootstrap.md", "workspace bootstrap"),
   )
 
   let envelope : @types.InboundEnvelope = {
@@ -109,8 +129,7 @@ test "enrich_envelope_with_workspace_context_impl keeps existing metadata overri
       _ => false
     },
   )
-  cleanup_workspace_context_files()
-  set_workspace_context_dir_for_process(".mukuro")
+  teardown_test_workspace_context(dir)
 }
 
 // ============================================================
@@ -119,27 +138,21 @@ test "enrich_envelope_with_workspace_context_impl keeps existing metadata overri
 
 ///|
 test "enrich_envelope_with_workspace_context_impl injects context_files" {
-  set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
-  cleanup_workspace_context_files()
+  let dir = setup_test_workspace_context()
+  cleanup_workspace_context_files(dir)
   // 各ファイルを作成
+  assert_true(write_text(dir + "/SOUL.md", "Be helpful and kind"))
   assert_true(
-    write_text(".mukuro/test-runtime-context/SOUL.md", "Be helpful and kind"),
+    write_text(dir + "/AGENTS.md", "Follow code standards"),
   )
   assert_true(
-    write_text(
-      ".mukuro/test-runtime-context/AGENTS.md", "Follow code standards",
-    ),
+    write_text(dir + "/TOOLS.md", "Use pnpm for packages"),
   )
   assert_true(
-    write_text(".mukuro/test-runtime-context/TOOLS.md", "Use pnpm for packages"),
+    write_text(dir + "/IDENTITY.md", "You are Mukuro Assistant"),
   )
   assert_true(
-    write_text(
-      ".mukuro/test-runtime-context/IDENTITY.md", "You are Mukuro Assistant",
-    ),
-  )
-  assert_true(
-    write_text(".mukuro/test-runtime-context/USER.md", "User prefers dark mode"),
+    write_text(dir + "/USER.md", "User prefers dark mode"),
   )
 
   let envelope : @types.InboundEnvelope = {
@@ -188,19 +201,18 @@ test "enrich_envelope_with_workspace_context_impl injects context_files" {
       _ => false
     },
   )
-  cleanup_workspace_context_files()
-  set_workspace_context_dir_for_process(".mukuro")
+  teardown_test_workspace_context(dir)
 }
 
 ///|
 test "enrich_envelope_with_workspace_context_impl ignores empty context_files" {
-  set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
-  cleanup_workspace_context_files()
+  let dir = setup_test_workspace_context()
+  cleanup_workspace_context_files(dir)
   // 空白のみのファイルを作成
-  assert_true(write_text(".mukuro/test-runtime-context/SOUL.md", "   "))
+  assert_true(write_text(dir + "/SOUL.md", "   "))
   // 内容のあるファイルを作成
   assert_true(
-    write_text(".mukuro/test-runtime-context/IDENTITY.md", "Real identity"),
+    write_text(dir + "/IDENTITY.md", "Real identity"),
   )
 
   let envelope : @types.InboundEnvelope = {
@@ -223,21 +235,18 @@ test "enrich_envelope_with_workspace_context_impl ignores empty context_files" {
       _ => false
     },
   )
-  cleanup_workspace_context_files()
-  set_workspace_context_dir_for_process(".mukuro")
+  teardown_test_workspace_context(dir)
 }
 
 ///|
 test "enrich_envelope_with_workspace_context_impl respects metadata override" {
   // 既存メタデータが優先される（ワークスペースファイルで上書きされない）
-  set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
-  cleanup_workspace_context_files()
+  let dir = setup_test_workspace_context()
+  cleanup_workspace_context_files(dir)
   // ワークスペースにファイルを作成
+  assert_true(write_text(dir + "/SOUL.md", "Workspace soul"))
   assert_true(
-    write_text(".mukuro/test-runtime-context/SOUL.md", "Workspace soul"),
-  )
-  assert_true(
-    write_text(".mukuro/test-runtime-context/IDENTITY.md", "Workspace identity"),
+    write_text(dir + "/IDENTITY.md", "Workspace identity"),
   )
 
   let envelope : @types.InboundEnvelope = {
@@ -268,15 +277,14 @@ test "enrich_envelope_with_workspace_context_impl respects metadata override" {
       _ => false
     },
   )
-  cleanup_workspace_context_files()
-  set_workspace_context_dir_for_process(".mukuro")
+  teardown_test_workspace_context(dir)
 }
 
 ///|
 test "enrich_envelope_with_workspace_context_impl handles missing files gracefully" {
   // ファイルが存在しない場合はメタデータキーが追加されない
-  set_workspace_context_dir_for_process(".mukuro/test-runtime-context")
-  cleanup_workspace_context_files()
+  let dir = setup_test_workspace_context()
+  cleanup_workspace_context_files(dir)
   // ファイルを一切作成しない
 
   let envelope : @types.InboundEnvelope = {
@@ -296,5 +304,5 @@ test "enrich_envelope_with_workspace_context_impl handles missing files graceful
   inspect(enriched.metadata.contains("tools_config"), content="false")
   inspect(enriched.metadata.contains("identity"), content="false")
   inspect(enriched.metadata.contains("user_context"), content="false")
-  set_workspace_context_dir_for_process(".mukuro")
+  teardown_test_workspace_context(dir)
 }

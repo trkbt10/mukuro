@@ -6,18 +6,18 @@ test "config_dir defaults to standard mode" {
   // Reset to default state
   set_path_mode(PathMode::Standard)
   let dir = config_dir()
-  // On macOS/Linux, should not be ".mukuro" (unless home is empty)
+  // On macOS/Linux, should not be mukuro_dir_name (unless home is empty)
   let home = @osenv_dirs.home_dir()
   if home is Some(h) && not(h.is_empty()) {
-    assert_true(not(dir == ".mukuro"))
+    assert_true(not(dir == mukuro_dir_name))
   }
 }
 
 ///|
-test "config_dir in local mode returns .mukuro" {
+test "config_dir in local mode returns mukuro_dir_name" {
   set_path_mode(PathMode::Local)
   let dir = config_dir()
-  assert_eq(dir, ".mukuro")
+  assert_eq(dir, mukuro_dir_name)
   // Reset
   set_path_mode(PathMode::Standard)
 }
@@ -35,7 +35,7 @@ test "config_dir in custom mode returns custom path" {
 test "config_file returns correct path" {
   set_path_mode(PathMode::Local)
   let path = config_file()
-  assert_eq(path, ".mukuro/config.json")
+  assert_eq(path, mukuro_dir_name + "/config.json")
   set_path_mode(PathMode::Standard)
 }
 
@@ -58,7 +58,7 @@ test "get_path_mode returns current mode" {
 test "pid_file returns cache_dir based path" {
   set_path_mode(PathMode::Local)
   let path = pid_file()
-  assert_eq(path, ".mukuro/gateway.pid")
+  assert_eq(path, mukuro_dir_name + "/gateway.pid")
   set_path_mode(PathMode::Standard)
 }
 
@@ -66,7 +66,7 @@ test "pid_file returns cache_dir based path" {
 test "state_file returns data_dir based path" {
   set_path_mode(PathMode::Local)
   let path = state_file()
-  assert_eq(path, ".mukuro/gateway-state.json")
+  assert_eq(path, mukuro_dir_name + "/gateway-state.json")
   set_path_mode(PathMode::Standard)
 }
 
@@ -74,6 +74,6 @@ test "state_file returns data_dir based path" {
 test "workspace_dir returns data_dir based path" {
   set_path_mode(PathMode::Local)
   let path = workspace_dir()
-  assert_eq(path, ".mukuro/workspace")
+  assert_eq(path, mukuro_dir_name + "/workspace")
   set_path_mode(PathMode::Standard)
 }

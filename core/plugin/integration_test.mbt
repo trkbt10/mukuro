@@ -27,7 +27,7 @@ test "plugin loader: scan and load manifest" {
     #|    }
     #|  }
     #|}
-  manifests[".mukuro/plugins/test-plugin/manifest.json"] = manifest_content
+  manifests["test-workspace/plugins/test-plugin/manifest.json"] = manifest_content
   fn read_file(path : String) -> String raise {
     match manifests.get(path) {
       Some(content) => content
@@ -36,7 +36,7 @@ test "plugin loader: scan and load manifest" {
   }
   // Load manifest
   let loaded = load_plugin_manifest(
-    ".mukuro/plugins/test-plugin", "manifest.json", read_file,
+    "test-workspace/plugins/test-plugin", "manifest.json", read_file,
   ) catch {
     e => {
       println("Error: \{e}")
@@ -119,7 +119,7 @@ test "schema validator: validate greet parameters" {
 
 ///|
 test "plugin host: register and list plugins" {
-  let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
+  let host = PluginHostImpl::new(plugin_dir="test-workspace/plugins")
   let manifest : @interfaces.PluginManifest = {
     id: "test-plugin",
     name: "Test Plugin",
@@ -183,11 +183,11 @@ test "plugin tool registry: full workflow" {
 
 ///|
 async test "dynamic plugin manager: enable/disable workflow" {
-  let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
+  let host = PluginHostImpl::new(plugin_dir="test-workspace/plugins")
   let manifests : Map[String, String] = {}
   let manifest_json =
     #|{"id": "my-plugin", "name": "My Plugin", "version": "1.0.0", "type": "tool", "transport": "http", "http": {"port": 9200, "endpoints": {}}, "capabilities": []}
-  manifests[".mukuro/plugins/my-plugin/manifest.json"] = manifest_json
+  manifests["test-workspace/plugins/my-plugin/manifest.json"] = manifest_json
   let list_fn : (String) -> Array[String] raise = fn(_path) { ["my-plugin"] }
   fn read_fn(path : String) -> String raise {
     match manifests.get(path) {
@@ -198,13 +198,13 @@ async test "dynamic plugin manager: enable/disable workflow" {
   let exists_fn : (String) -> Bool = fn(path) { manifests.contains(path) }
   let manager = DynamicPluginManagerImpl::with_fs(
     host~,
-    plugin_dir=".mukuro/plugins",
+    plugin_dir="test-workspace/plugins",
     list_dir=list_fn,
     read_file=read_fn,
     file_exists=exists_fn,
   )
   // Load plugin
-  manager.load_plugin(".mukuro/plugins/my-plugin/manifest.json") catch {
+  manager.load_plugin("test-workspace/plugins/my-plugin/manifest.json") catch {
     _ => panic()
   }
   // Get state

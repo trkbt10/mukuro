@@ -567,8 +567,8 @@ test "data_dir verification: check actual path" {
 
   // data_dir が期待されるパスパターンであることを確認
   // macOS: ~/Library/Application Support/mukuro/
-  // または --local フラグ時: .mukuro
-  let is_valid_path = data_dir.has_suffix("/mukuro") || data_dir == ".mukuro"
+  // または --local フラグ時: @config.mukuro_dir_name
+  let is_valid_path = data_dir.has_suffix("/mukuro") || data_dir == @config.mukuro_dir_name
   assert_true(
     is_valid_path,
     msg="data_dir should be valid path, got: \{data_dir}",

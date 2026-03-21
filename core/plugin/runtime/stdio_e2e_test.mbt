@@ -6,7 +6,7 @@
 test "StdioTransportAdapter: greet method" {
   let config : @interfaces.PluginStdioConfig = {
     command: "node",
-    args: [".mukuro/plugins/stdio_test/plugin.js"],
+    args: ["test-plugins/stdio_test/plugin.js"],
     cwd: None,
     env: {},
     framing: @interfaces.StdioFraming::NewlineDelimited,
@@ -37,7 +37,7 @@ test "StdioTransportAdapter: greet method" {
 test "StdioTransportAdapter: echo method" {
   let config : @interfaces.PluginStdioConfig = {
     command: "node",
-    args: [".mukuro/plugins/stdio_test/plugin.js"],
+    args: ["test-plugins/stdio_test/plugin.js"],
     cwd: None,
     env: {},
     framing: @interfaces.StdioFraming::NewlineDelimited,
@@ -68,7 +68,7 @@ test "StdioTransportAdapter: echo method" {
 test "StdioTransportAdapter: describe method" {
   let config : @interfaces.PluginStdioConfig = {
     command: "node",
-    args: [".mukuro/plugins/stdio_test/plugin.js"],
+    args: ["test-plugins/stdio_test/plugin.js"],
     cwd: None,
     env: {},
     framing: @interfaces.StdioFraming::NewlineDelimited,
@@ -99,7 +99,7 @@ test "StdioTransportAdapter: describe method" {
 test "NativeStdioClient: direct request" {
   let client = NativeStdioClient::new(
     command="node",
-    args=[".mukuro/plugins/stdio_test/plugin.js"],
+    args=["test-plugins/stdio_test/plugin.js"],
     cwd=None,
     env={},
   )

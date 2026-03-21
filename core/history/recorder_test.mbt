@@ -244,39 +244,39 @@ test "record_to_json_line then parse roundtrip" {
 ///|
 test "history_dir_for_date - basic" {
   assert_eq(
-    history_dir_for_date(".mukuro", 2026, 2, 28),
-    ".mukuro/history/2026/02/28",
+    history_dir_for_date("/test/base", 2026, 2, 28),
+    "/test/base/history/2026/02/28",
   )
 }
 
 ///|
 test "history_dir_for_date - zero padding" {
   assert_eq(
-    history_dir_for_date(".mukuro", 2026, 1, 5),
-    ".mukuro/history/2026/01/05",
+    history_dir_for_date("/test/base", 2026, 1, 5),
+    "/test/base/history/2026/01/05",
   )
 }
 
 ///|
 test "history_dir_for_date - december" {
   assert_eq(
-    history_dir_for_date("/home/user/.mukuro", 2025, 12, 31),
-    "/home/user/.mukuro/history/2025/12/31",
+    history_dir_for_date("/home/user/data", 2025, 12, 31),
+    "/home/user/data/history/2025/12/31",
   )
 }
 
 ///|
 test "history_file_path - basic" {
   let path = history_file_path(
-    ".mukuro", "web_chat", "abc123", 2026, 2, 28, 1709164800L,
+    "/test/base", "web_chat", "abc123", 2026, 2, 28, 1709164800L,
   )
-  assert_eq(path, ".mukuro/history/2026/02/28/web_chat-abc123-1709164800.jsonl")
+  assert_eq(path, "/test/base/history/2026/02/28/web_chat-abc123-1709164800.jsonl")
 }
 
 ///|
 test "history_file_path - sanitizes dangerous characters" {
   let path = history_file_path(
-    ".mukuro", "chan/nel", "../evil", 2026, 1, 1, 1000L,
+    "/test/base", "chan/nel", "../evil", 2026, 1, 1, 1000L,
   )
   assert_true(not(path.contains("../")))
   assert_true(path.has_suffix(".jsonl"))

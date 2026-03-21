@@ -1,6 +1,6 @@
 ///|
 test "PluginRegistry: register and list plugins" {
-  let registry = PluginRegistry::new(plugin_dir=".mukuro/plugins")
+  let registry = PluginRegistry::new(plugin_dir="test-workspace/plugins")
   let manifest : @interfaces.PluginManifest = {
     id: "test-plugin",
     name: "Test Plugin",
@@ -20,7 +20,7 @@ test "PluginRegistry: register and list plugins" {
 
 ///|
 test "PluginRegistry: get status" {
-  let registry = PluginRegistry::new(plugin_dir=".mukuro/plugins")
+  let registry = PluginRegistry::new(plugin_dir="test-workspace/plugins")
   let manifest : @interfaces.PluginManifest = {
     id: "test-plugin",
     name: "Test Plugin",
@@ -114,7 +114,7 @@ test "JsonRpcRequest: to_json and from_json" {
 
 ///|
 test "PluginHostImpl: handle webhook message_received" {
-  let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
+  let host = PluginHostImpl::new(plugin_dir="test-workspace/plugins")
   let request = @interfaces.JsonRpcRequest::new(
     rpc_method="message_received",
     params=Some(
@@ -143,7 +143,7 @@ test "PluginHostImpl: handle webhook message_received" {
 
 ///|
 test "WebhookServer: handle request" {
-  let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
+  let host = PluginHostImpl::new(plugin_dir="test-workspace/plugins")
   let server = WebhookServer::new(host, port=9000)
   server.register_route("/webhook/test", "test-plugin")
   let body =
@@ -355,7 +355,7 @@ test "parse_plugin_tool_name: invalid name" {
 
 ///|
 test "PluginToolExecutor: create executor" {
-  let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
+  let host = PluginHostImpl::new(plugin_dir="test-workspace/plugins")
   let executor = PluginToolExecutor::new(
     plugin_host=host,
     plugin_id="test-plugin",
@@ -367,7 +367,7 @@ test "PluginToolExecutor: create executor" {
 
 ///|
 test "create_plugin_tool_executor: from tool name" {
-  let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
+  let host = PluginHostImpl::new(plugin_dir="test-workspace/plugins")
   let executor = create_plugin_tool_executor(host, "my-plugin.hello")
   assert_true(executor is Some(_))
   match executor {
@@ -381,16 +381,16 @@ test "create_plugin_tool_executor: from tool name" {
 
 ///|
 test "create_plugin_tool_executor: invalid tool name" {
-  let host = PluginHostImpl::new(plugin_dir=".mukuro/plugins")
+  let host = PluginHostImpl::new(plugin_dir="test-workspace/plugins")
   let executor = create_plugin_tool_executor(host, "invalid-no-dots")
   assert_true(executor is None)
 }
 
 ///|
 test "PluginSystemInitializer: create initializer" {
-  let initializer = PluginSystemInitializer::new(plugin_dir=".mukuro/plugins")
+  let initializer = PluginSystemInitializer::new(plugin_dir="test-workspace/plugins")
   let host = initializer.get_host()
   let registry = initializer.get_tool_registry()
-  assert_eq(host.get_plugin_dir(), ".mukuro/plugins")
+  assert_eq(host.get_plugin_dir(), "test-workspace/plugins")
   assert_eq(registry.get_all_tools().length(), 0)
 }

@@ -81,7 +81,7 @@ fn make_test_ctx(
 
 ///|
 test "handle_data_list returns all context file types" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -104,8 +104,8 @@ test "handle_data_list returns all context file types" {
 
 ///|
 test "handle_data_list shows existing files" {
-  let storage = MockFileStorage::new(".mukuro")
-  storage.files[".mukuro/SOUL.md"] = "Be kind"
+  let storage = MockFileStorage::new("test-workspace")
+  storage.files["test-workspace/SOUL.md"] = "Be kind"
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -126,8 +126,8 @@ test "handle_data_list shows existing files" {
 
 ///|
 test "handle_data_get returns file content" {
-  let storage = MockFileStorage::new(".mukuro")
-  storage.files[".mukuro/SOUL.md"] = "Soul content here"
+  let storage = MockFileStorage::new("test-workspace")
+  storage.files["test-workspace/SOUL.md"] = "Soul content here"
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -147,7 +147,7 @@ test "handle_data_get returns file content" {
 
 ///|
 test "handle_data_get returns empty for non-existent file" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -168,7 +168,7 @@ test "handle_data_get returns empty for non-existent file" {
 
 ///|
 test "handle_data_get returns 404 for invalid file type" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -187,7 +187,7 @@ test "handle_data_get returns 404 for invalid file type" {
 
 ///|
 test "handle_data_get returns 400 when name is missing" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -206,7 +206,7 @@ test "handle_data_get returns 400 when name is missing" {
 
 ///|
 test "handle_data_update writes file content" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -224,12 +224,12 @@ test "handle_data_update writes file content" {
   assert_eq(resp.status, 200)
   assert_true(resp.body.contains("ok"))
   // Verify file was written
-  assert_eq(storage.files.get(".mukuro/SOUL.md"), Some("New soul content"))
+  assert_eq(storage.files.get("test-workspace/SOUL.md"), Some("New soul content"))
 }
 
 ///|
 test "handle_data_update returns 400 for missing content" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -248,7 +248,7 @@ test "handle_data_update returns 400 for missing content" {
 
 ///|
 test "handle_data_update returns 404 for invalid file type" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -272,8 +272,8 @@ test "handle_data_update returns 404 for invalid file type" {
 
 ///|
 test "handle_data_delete removes file" {
-  let storage = MockFileStorage::new(".mukuro")
-  storage.files[".mukuro/SOUL.md"] = "Soul content"
+  let storage = MockFileStorage::new("test-workspace")
+  storage.files["test-workspace/SOUL.md"] = "Soul content"
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -288,12 +288,12 @@ test "handle_data_delete removes file" {
   let resp = (handlers.data_delete.0)(ctx2)
   assert_eq(resp.status, 200)
   // File should be removed
-  assert_eq(storage.files.get(".mukuro/SOUL.md"), None)
+  assert_eq(storage.files.get("test-workspace/SOUL.md"), None)
 }
 
 ///|
 test "handle_data_delete returns 404 for invalid file type" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -315,7 +315,7 @@ test "handle_data_delete returns 404 for invalid file type" {
 
 ///|
 test "handle_templates_list returns all templates" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -337,7 +337,7 @@ test "handle_templates_list returns all templates" {
 
 ///|
 test "handle_templates_list uses installed templates when available" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   templates.templates["SOUL.md"] = "Custom installed template"
   let state = ContextState::new(
@@ -361,7 +361,7 @@ test "handle_templates_list uses installed templates when available" {
 
 ///|
 test "handle_templates_get returns embedded template" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),
@@ -383,7 +383,7 @@ test "handle_templates_get returns embedded template" {
 
 ///|
 test "handle_templates_get prefers installed template" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   templates.templates["SOUL.md"] = "Custom installed soul template"
   let state = ContextState::new(
@@ -403,7 +403,7 @@ test "handle_templates_get prefers installed template" {
 
 ///|
 test "handle_templates_get returns 404 for invalid template" {
-  let storage = MockFileStorage::new(".mukuro")
+  let storage = MockFileStorage::new("test-workspace")
   let templates = MockTemplateStorage::new()
   let state = ContextState::new(
     create_mock_data_io(storage),

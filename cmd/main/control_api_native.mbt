@@ -743,7 +743,7 @@ pub async fn handle_control_api_request(
         None => ()
       }
     }
-    // Onboard API endpoints (Source of Truth: .mukuro/onboard-state.json)
+    // Onboard API endpoints (Source of Truth: @config.data_dir()/onboard-state.json)
     if meth_str == "GET" && path == "/api/v1/onboard/status" {
       return try_onboard_status()
     }

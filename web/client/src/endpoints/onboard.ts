@@ -9,7 +9,7 @@ import type {
 export class OnboardApi {
   constructor(private readonly http: HttpClient) {}
 
-  /** Get onboarding status (Source of Truth: .mukuro/onboard-state.json) */
+  /** Get onboarding status (Source of Truth: data_dir/onboard-state.json) */
   async status(): Promise<OnboardStatusResponse> {
     const res = await this.http.get<ApiResponse<OnboardStatusResponse>>(
       '/onboard/status',
