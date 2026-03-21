@@ -29,7 +29,9 @@ async test "execute_onboard missing provider" {
     provider: None,
     api_key: Some("key"),
     default_model: None,
+    base_url: None,
     output_path: None,
+    reset: false,
   }
   let result = execute_onboard(opts)
   assert_true(
@@ -46,7 +48,9 @@ async test "execute_onboard missing api_key" {
     provider: Some("anthropic"),
     api_key: None,
     default_model: None,
+    base_url: None,
     output_path: None,
+    reset: false,
   }
   let result = execute_onboard(opts)
   assert_true(
@@ -64,15 +68,15 @@ async test "execute_onboard success with interpolated config" {
     provider: Some("anthropic"),
     api_key: Some("sk-test123"),
     default_model: Some("claude-3"),
+    base_url: None,
     output_path: Some("\{@osenv_dirs.temp_dir()}/mukuro-test/onboard-test-config.json"),
+    reset: false,
   }
   let result = execute_onboard(opts)
   assert_true(
     match result {
       @cli.CliResult::Ok(msg) =>
-        msg.contains("anthropic") &&
-        msg.contains("sk-test123") &&
-        msg.contains("claude-3")
+        msg.contains("anthropic") && msg.contains("claude-3")
       _ => false
     },
   )

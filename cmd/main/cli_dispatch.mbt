@@ -11,11 +11,7 @@ let global_gateway : @control.Gateway = create_global_gateway(@cli.version)
 pub async fn execute_command(cmd : @cli.Command) -> @cli.CliResult {
   match cmd {
     @cli.Command::Help =>
-      @cli.CliResult::Ok(
-        @cli.get_help_message(
-          config_path=@cmd_config.default_runtime_config_path(),
-        ),
-      )
+      @cli.CliResult::Ok(@cli.get_help_message())
     @cli.Command::Version => @cli.CliResult::Ok(@cli.get_version_message())
     @cli.Command::Onboard(opts) => execute_onboard(opts)
     @cli.Command::Gateway(gateway_cmd) => execute_gateway_command(gateway_cmd)
@@ -27,7 +23,7 @@ pub async fn execute_command(cmd : @cli.Command) -> @cli.CliResult {
     @cli.Command::DaemonChild(pid_path) => execute_daemon_child(pid_path)
     @cli.Command::Unknown(name) =>
       @cli.CliResult::Error(
-        "Unknown command: \{name}\n\n\{@cli.get_help_message(config_path=@cmd_config.default_runtime_config_path())}",
+        "Unknown command: \{name}\n\n\{@cli.get_help_message()}",
       )
   }
 }
@@ -91,24 +87,23 @@ pub async fn dispatch_echo_for_test(content : String) -> @cli.CliResult {
 ///|
 /// CLIを実行（引数配列を受け取る） (async)
 pub async fn run_cli(args : Array[String]) -> @cli.CliResult {
-  let (global_opts, remaining) = @cli.parse_global_options(args)
-  @cli.apply_global_options(global_opts)
-  let cmd = @cli.parse_args(remaining)
-  execute_command(cmd)
+  try {
+    let cmd = @cli.parse_cli(args)
+    execute_command(cmd)
+  } catch {
+    err => @cli.CliResult::Error(err.to_string())
+  }
 }
 
 ///|
 pub async fn run_cli_from_env_async() -> Unit {
   let args = @cli.get_command_line_args()
-  if args.is_empty() {
-    println(
-      @cli.get_help_message(
-        config_path=@cmd_config.default_runtime_config_path(),
-      ),
-    )
-  } else {
-    let result = run_cli(args)
+  try {
+    let cmd = @cli.parse_cli(args)
+    let result = execute_command(cmd)
     @cli.print_result(result)
+  } catch {
+    err => println(err.to_string())
   }
 }
 
@@ -116,32 +111,18 @@ pub async fn run_cli_from_env_async() -> Unit {
 /// Synchronous entry point - async operations require native target
 pub fn run_cli_from_env() -> Unit {
   let args = @cli.get_command_line_args()
-  if args.is_empty() {
-    println(
-      @cli.get_help_message(
-        config_path=@cmd_config.default_runtime_config_path(),
-      ),
-    )
-  } else {
-    // Parse global options first
-    let (global_opts, remaining) = @cli.parse_global_options(args)
-    @cli.apply_global_options(global_opts)
-    // For non-async commands, parse and handle directly
-    let cmd = @cli.parse_args(remaining)
+  try {
+    let cmd = @cli.parse_cli(args)
     match cmd {
       @cli.Command::Help =>
-        @cli.print_result(
-          @cli.CliResult::Ok(
-            @cli.get_help_message(
-              config_path=@cmd_config.default_runtime_config_path(),
-            ),
-          ),
-        )
+        @cli.print_result(@cli.CliResult::Ok(@cli.get_help_message()))
       @cli.Command::Version =>
         @cli.print_result(@cli.CliResult::Ok(@cli.get_version_message()))
       _ =>
         println("Note: This command requires native target for async support")
     }
+  } catch {
+    err => println(err.to_string())
   }
 }
 

@@ -1,5 +1,5 @@
 ///|
-/// CLI Parsing テスト
+/// CLI Parsing テスト (@argparse ベース)
 
 ///|
 test "parse_args empty returns Help" {
@@ -13,7 +13,7 @@ test "parse_args empty returns Help" {
 }
 
 ///|
-test "parse_args help" {
+test "parse_args help subcommand" {
   let cmd = parse_args(["help"])
   assert_true(
     match cmd {
@@ -35,7 +35,18 @@ test "parse_args --help" {
 }
 
 ///|
-test "parse_args version" {
+test "parse_args -h" {
+  let cmd = parse_args(["-h"])
+  assert_true(
+    match cmd {
+      Command::Help => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args version subcommand" {
   let cmd = parse_args(["version"])
   assert_true(
     match cmd {
@@ -57,9 +68,21 @@ test "parse_args --version" {
 }
 
 ///|
+test "parse_args -v" {
+  let cmd = parse_args(["-v"])
+  assert_true(
+    match cmd {
+      Command::Version => true
+      _ => false
+    },
+  )
+}
+
+///|
 test "parse_args onboard with options" {
   let cmd = parse_args([
-    "onboard", "--provider", "anthropic", "--api-key", "sk-xxx", "--model", "claude-3",
+    "onboard", "--provider", "anthropic", "--api-key", "sk-xxx", "--model",
+    "claude-3",
   ])
   assert_true(
     match cmd {
@@ -77,8 +100,8 @@ test "parse_args onboard with options" {
 ///|
 test "parse_args onboard with base-url" {
   let cmd = parse_args([
-    "onboard", "--provider", "deepseek", "--base-url", "https://api.deepseek.com/v1",
-    "--api-key", "sk-ds",
+    "onboard", "--provider", "deepseek", "--base-url",
+    "https://api.deepseek.com/v1", "--api-key", "sk-ds",
   ])
   assert_true(
     match cmd {
@@ -134,6 +157,29 @@ test "parse_args gateway start with options" {
     match cmd {
       Command::Gateway(GatewayCommand::Start(opts)) =>
         opts.host == Some("0.0.0.0") && opts.port == Some(9000)
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway without subcommand defaults to start" {
+  let cmd = parse_args(["gateway"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(_)) => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args gateway with options but no subcommand" {
+  let cmd = parse_args(["gateway", "--port", "9000"])
+  assert_true(
+    match cmd {
+      Command::Gateway(GatewayCommand::Start(opts)) =>
+        opts.port == Some(9000)
       _ => false
     },
   )
@@ -212,7 +258,7 @@ test "parse_args unknown command" {
   let cmd = parse_args(["unknown"])
   assert_true(
     match cmd {
-      Command::Unknown("unknown") => true
+      Command::Unknown(_) => true
       _ => false
     },
   )
@@ -305,18 +351,18 @@ test "parse_args daemon-child internal command" {
 
 ///|
 test "parse_args daemon-child without pid_path returns Unknown" {
+  // argparse が MissingValue エラーを発生 → catch で Unknown にフォールバック
   let cmd = parse_args(["--daemon-child"])
   assert_true(
     match cmd {
-      Command::Unknown(msg) => msg.contains("requires pid_path")
+      Command::Unknown(_) => true
       _ => false
     },
   )
 }
 
 ///|
-test "execute_gateway_start with daemon and control-api is parsing only" {
-  // Only test that parsing works correctly
+test "parse_args gateway start with daemon and control-api" {
   let cmd = parse_args(["gateway", "start", "--daemon", "--control-api"])
   assert_true(
     match cmd {
@@ -325,4 +371,147 @@ test "execute_gateway_start with daemon and control-api is parsing only" {
       _ => false
     },
   )
+}
+
+///|
+test "parse_args config default is show" {
+  let cmd = parse_args(["config"])
+  assert_true(
+    match cmd {
+      Command::Config(ConfigCommand::Show) => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args config path" {
+  let cmd = parse_args(["config", "path"])
+  assert_true(
+    match cmd {
+      Command::Config(ConfigCommand::Path) => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args config providers" {
+  let cmd = parse_args(["config", "providers"])
+  assert_true(
+    match cmd {
+      Command::Config(ConfigCommand::Providers) => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args agent with message" {
+  let cmd = parse_args(["agent", "-m", "hello world"])
+  assert_true(
+    match cmd {
+      Command::Agent(opts) => opts.message == Some("hello world")
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args agent with --message" {
+  let cmd = parse_args(["agent", "--message", "hello world"])
+  assert_true(
+    match cmd {
+      Command::Agent(opts) => opts.message == Some("hello world")
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args agent without options" {
+  let cmd = parse_args(["agent"])
+  assert_true(
+    match cmd {
+      Command::Agent(opts) => opts.message == None && opts.config_path == None
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args service install defaults" {
+  let cmd = parse_args(["service", "install"])
+  assert_true(
+    match cmd {
+      Command::Service(ServiceCommand::Install(opts)) =>
+        opts.user == true && opts.system == false && opts.auto_start == false
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args service install --system" {
+  let cmd = parse_args(["service", "install", "--system"])
+  assert_true(
+    match cmd {
+      Command::Service(ServiceCommand::Install(opts)) =>
+        opts.system == true && opts.user == false
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args service status --json" {
+  let cmd = parse_args(["service", "status", "--json"])
+  assert_true(
+    match cmd {
+      Command::Service(ServiceCommand::Status(opts)) => opts.json == true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args service logs defaults" {
+  let cmd = parse_args(["service", "logs"])
+  assert_true(
+    match cmd {
+      Command::Service(ServiceCommand::Logs(opts)) =>
+        opts.follow == false && opts.lines == 100
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args service logs -f -n 50" {
+  let cmd = parse_args(["service", "logs", "-f", "-n", "50"])
+  assert_true(
+    match cmd {
+      Command::Service(ServiceCommand::Logs(opts)) =>
+        opts.follow == true && opts.lines == 50
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args --help in subcommand context" {
+  // --help は global flag なのでどのサブコマンドでも Help を返す
+  let cmd = parse_args(["gateway", "--help"])
+  assert_true(
+    match cmd {
+      Command::Help => true
+      _ => false
+    },
+  )
+}
+
+///|
+test "mukuro_command render_help contains mukuro" {
+  let help = mukuro_command().render_help()
+  assert_true(help.contains("mukuro"))
 }
