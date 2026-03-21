@@ -560,3 +560,67 @@ test "needs_harmony_translation returns false for openai provider with use_respo
   // OpenAI supports Responses API natively, so no translation needed
   assert_true(not(needs_harmony_translation(p)))
 }
+
+///|
+test "needs_harmony_translation returns true for ollama with use_responses_api" {
+  let p : @types.ProviderConfig = {
+    name: "ollama",
+    api_key: None,
+    base_url: Some("http://localhost:11434"),
+    default_model: "gpt-oss-20b",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: false,
+  }
+  // Ollama は Responses API 未対応 → harmony 翻訳必要
+  assert_true(needs_harmony_translation(p))
+}
+
+///|
+test "needs_harmony_translation returns true when use_harmony_parser forced" {
+  let p : @types.ProviderConfig = {
+    name: "openai",
+    api_key: Some("key"),
+    base_url: Some("https://api.openai.com"),
+    default_model: "gpt-4",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: true, // 強制的に harmony 翻訳
+  }
+  // use_harmony_parser: true → supports_native が false になる → 翻訳必要
+  assert_true(needs_harmony_translation(p))
+}
+
+///|
+test "needs_harmony_translation returns false for ollama without use_responses_api" {
+  let p : @types.ProviderConfig = {
+    name: "ollama",
+    api_key: None,
+    base_url: Some("http://localhost:11434"),
+    default_model: "llama-3.3-70b",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: false,
+    use_harmony_parser: false,
+  }
+  // use_responses_api: false → 翻訳不要
+  assert_true(not(needs_harmony_translation(p)))
+}
+
+///|
+test "needs_harmony_translation returns true for openrouter" {
+  let p : @types.ProviderConfig = {
+    name: "openrouter",
+    api_key: Some("sk-or-key"),
+    base_url: Some("https://openrouter.ai/api/v1"),
+    default_model: "anthropic/claude-sonnet-4-20250514",
+    timeout_ms: 30000,
+    max_retries: 3,
+    use_responses_api: true,
+    use_harmony_parser: false,
+  }
+  // OpenRouter は Responses API 未対応
+  assert_true(needs_harmony_translation(p))
+}
