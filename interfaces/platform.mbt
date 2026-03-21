@@ -17,13 +17,13 @@ pub(open) trait Clock {
 /// ログ出力を抽象化
 pub(open) trait Logger {
   /// デバッグログ
-  debug(Self, message~ : String) -> Unit
+  async debug(Self, message~ : String) -> Unit
   /// 情報ログ
-  info(Self, message~ : String) -> Unit
+  async info(Self, message~ : String) -> Unit
   /// 警告ログ
-  warn(Self, message~ : String) -> Unit
+  async warn(Self, message~ : String) -> Unit
   /// エラーログ
-  error(Self, message~ : String) -> Unit
+  async error(Self, message~ : String) -> Unit
 }
 
 ///|
@@ -82,7 +82,7 @@ pub fn LogContext::with_component(component~ : String) -> LogContext {
 /// JSON形式でログを出力し、コンテキスト情報を付与する
 pub(open) trait StructuredLogger {
   /// 構造化ログを出力
-  log_structured(
+  async log_structured(
     Self,
     level~ : LogLevel,
     message~ : String,

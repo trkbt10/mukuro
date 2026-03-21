@@ -49,7 +49,7 @@ pub fn NativePlatform::get_info(
 }
 
 ///|
-pub fn NativePlatform::log(
+pub async fn NativePlatform::log(
   self : NativePlatform,
   level : @interfaces.LogLevel,
   message : String,

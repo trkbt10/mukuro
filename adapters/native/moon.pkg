@@ -1,6 +1,7 @@
 import {
   "moonbitlang/async",
   "moonbitlang/async/io",
+  "moonbitlang/async/stdio" @stdio,
   "mizchi/x/http" @xhttp,
   "mizchi/sqlite" @sqlite,
   "trkbt10/mukuro/interfaces",
@@ -38,8 +39,6 @@ options(
     "ffi_process_test.mbt": [ "native" ],
     "ffi_signal.mbt": [ "native" ],
     "ffi_signal_test.mbt": [ "native" ],
-    "ffi_stdio.mbt": [ "native" ],
-    "ffi_stdio_test.mbt": [ "native" ],
     "ffi_test_helpers.mbt": [ "native" ],
     "ffi_time.mbt": [ "native" ],
     "ffi_time_test.mbt": [ "native" ],

@@ -50,11 +50,10 @@ async fn execute_agent_single(message : String) -> @cli.CliResult {
 ///|
 /// REPL モード: stdin から入力を読み取り、エージェントに送信
 async fn execute_agent_repl() -> @cli.CliResult {
-  repl_write("mukuro agent v\{@cli.version} - Type your message (Ctrl+D to exit)\n")
+  @stdio.stdout.write("mukuro agent v\{@cli.version} - Type your message (Ctrl+D to exit)\n")
   while true {
-    repl_write("\n> ")
-    repl_flush()
-    let line = repl_read_line()
+    @stdio.stdout.write("\n> ")
+    let line = @stdio.stdin.read_until("\n")
     match line {
       None => break // EOF (Ctrl+D)
       Some(input) => {
@@ -75,38 +74,15 @@ async fn execute_agent_repl() -> @cli.CliResult {
         }
         let result = handle_inbound_with_agent_loop(envelope, None) catch {
           e => {
-            repl_write("Error: \{e}\n")
+            @stdio.stdout.write("Error: \{e}\n")
             continue
           }
         }
-        repl_write("\n")
-        repl_write(result.content)
-        repl_write("\n")
+        @stdio.stdout.write("\n")
+        @stdio.stdout.write(result.content)
+        @stdio.stdout.write("\n")
       }
     }
   }
   @cli.CliResult::Ok("Goodbye!")
-}
-
-///|
-fn repl_read_line() -> String? {
-  let buffer = Bytes::new(8192)
-  let bytes_read = @native.c_read_stdin_line(buffer, 8192)
-  if bytes_read <= 0 {
-    return None
-  }
-  @bytes.decode_utf8(buffer[:bytes_read])
-}
-
-///|
-fn repl_write(text : String) -> Unit {
-  let data = @utf8.encode(text.view())
-  let _ = @native.c_write_stdout(data, data.length())
-
-}
-
-///|
-fn repl_flush() -> Unit {
-  let _ = @native.c_fflush_stdout()
-
 }

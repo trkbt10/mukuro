@@ -1836,55 +1836,6 @@ int moonbit_system(const char* command_utf16) {
 }
 
 /*
- * stdinから1行読み取る（改行含む）
- * buffer: 出力バッファ
- * buffer_len: バッファサイズ
- * returns: 読み取ったバイト数（0=EOF、-1=エラー）
- */
-int moonbit_read_stdin_line(unsigned char* buffer, int buffer_len) {
-    if (!buffer || buffer_len <= 0) return -1;
-
-    if (fgets((char*)buffer, buffer_len, stdin) == NULL) {
-        if (feof(stdin)) return 0;
-        return -1;
-    }
-
-    return (int)strlen((const char*)buffer);
-}
-
-/*
- * stdoutに書き込む（改行なし）
- * data: 出力データ
- * len: データ長
- * returns: 書き込んだバイト数、エラー時-1
- */
-int moonbit_write_stdout(const unsigned char* data, int len) {
-    if (!data || len <= 0) return -1;
-
-    size_t written = fwrite(data, 1, (size_t)len, stdout);
-    fflush(stdout);
-    return (int)written;
-}
-
-/*
- * stderrにバイト列を書き込む
- */
-int moonbit_write_stderr(const unsigned char* data, int len) {
-    if (!data || len <= 0) return -1;
-
-    size_t written = fwrite(data, 1, (size_t)len, stderr);
-    fflush(stderr);
-    return (int)written;
-}
-
-/*
- * fflush wrapper (stdout)
- */
-int moonbit_fflush_stdout(void) {
-    return fflush(stdout);
-}
-
-/*
  * List directory entries without using shell
  * Uses opendir/readdir/closedir (POSIX)
  * path: UTF-16LE encoded directory path

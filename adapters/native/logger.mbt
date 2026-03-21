@@ -34,7 +34,7 @@ pub fn NativeLogger::default() -> NativeLogger {
 }
 
 ///|
-fn NativeLogger::log(
+async fn NativeLogger::log(
   self : NativeLogger,
   level : @interfaces.LogLevel,
   message : String,
@@ -52,16 +52,10 @@ fn NativeLogger::log(
 }
 
 ///|
-fn output_line(output : LogOutput, line : String) -> Unit {
+async fn output_line(output : LogOutput, line : String) -> Unit {
   match output {
-    LogOutput::Stdout => {
-      let data = @utf8.encode(line + "\n")
-      let _ = c_write_stdout(data, data.length())
-    }
-    LogOutput::Stderr => {
-      let data = @utf8.encode(line + "\n")
-      let _ = c_write_stderr(data, data.length())
-    }
+    LogOutput::Stdout => @stdio.stdout.write(line + "\n")
+    LogOutput::Stderr => @stdio.stderr.write(line + "\n")
     LogOutput::File(path) =>
       native_append_file_text(path, line + "\n") catch {
         _ => ()
@@ -143,7 +137,7 @@ pub fn NativeStructuredLogger::add_component_level(
 }
 
 ///|
-fn NativeStructuredLogger::output_log(
+async fn NativeStructuredLogger::output_log(
   self : NativeStructuredLogger,
   level : @interfaces.LogLevel,
   message : String,
