@@ -7,8 +7,8 @@ test "config_dir defaults to standard mode" {
   set_path_mode(PathMode::Standard)
   let dir = config_dir()
   // On macOS/Linux, should not be ".mukuro" (unless home is empty)
-  let home = @dirs.home_dir()
-  if not(home.is_empty()) {
+  let home = @osenv_dirs.home_dir()
+  if home is Some(h) && not(h.is_empty()) {
     assert_true(not(dir == ".mukuro"))
   }
 }

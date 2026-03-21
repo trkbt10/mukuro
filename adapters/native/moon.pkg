@@ -12,7 +12,8 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
   "trkbt10/mukuro/lib/bytes" @bytes,
-  "trkbt10/mukuro/lib/dirs" @dirs,
+  "trkbt10/osenv/dirs" @osenv_dirs,
+  "trkbt10/osenv/path" @osenv_path,
   "trkbt10/llm_interop/types" @llm_types,
 }
 

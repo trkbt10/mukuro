@@ -65,7 +65,7 @@ test "SessionMetadata struct fields" {
 /// Test default_metadata_db_path returns expected path structure
 test "default_metadata_db_path format" {
   // Use OS temp directory to avoid writing to production paths
-  let test_temp_dir = @dirs.temp_dir_for("mukuro-test")
+  let test_temp_dir = @osenv_dirs.temp_dir_for("mukuro-test")
   @config.set_path_mode(@config.PathMode::Custom(test_temp_dir))
   let path = default_metadata_db_path()
   // Reset immediately

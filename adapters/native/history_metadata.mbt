@@ -118,7 +118,7 @@ pub impl @interfaces.HistoryMetadataStore for NativeHistoryMetadataStore with up
   }
   // file_path を相対パスに変換して保存（ポータビリティのため）
   let base_dir = @config.data_dir()
-  let relative_path = @dirs.to_relative_path(metadata.file_path, base_dir)
+  let relative_path = @osenv_path.to_relative(metadata.file_path, base_dir)
   // バインド
   let values : Array[@sqlite.SqlValue] = [
     text_value(metadata.session_id),
@@ -581,7 +581,7 @@ fn read_session_metadata(
     tool_call_count: get_int64(stmt.column(8)).to_int(),
     created_at: get_int64(stmt.column(9)),
     updated_at: get_int64(stmt.column(10)),
-    file_path: @dirs.to_absolute_path(stored_path, base_dir),
+    file_path: @osenv_path.to_absolute(stored_path, base_dir),
     model_name: get_text_or_none(stmt.column(12)),
   }
 }

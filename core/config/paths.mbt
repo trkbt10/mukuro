@@ -43,7 +43,10 @@ pub fn get_path_mode() -> PathMode {
 /// 現在のモードに応じた設定ディレクトリを取得
 pub fn config_dir() -> String {
   match path_mode.val {
-    Standard => @dirs.config_dir_for(app_name)
+    Standard => {
+      let dir : String? = try { @osenv_dirs.config_dir_for(app_name) } catch { _ => None }
+      dir.unwrap()
+    }
     Local => mukuro_dir_name
     Custom(base) => base
   }
@@ -59,7 +62,10 @@ pub fn config_file() -> String {
 /// 指定したPathModeに対応する設定ファイルパスを取得
 pub fn config_file_for(mode : PathMode) -> String {
   let dir = match mode {
-    Standard => @dirs.config_dir_for(app_name)
+    Standard => {
+      let d : String? = try { @osenv_dirs.config_dir_for(app_name) } catch { _ => None }
+      d.unwrap()
+    }
     Local => mukuro_dir_name
     Custom(base) => base
   }
@@ -70,7 +76,10 @@ pub fn config_file_for(mode : PathMode) -> String {
 /// 現在のモードに応じたデータディレクトリを取得
 pub fn data_dir() -> String {
   match path_mode.val {
-    Standard => @dirs.data_dir_for(app_name)
+    Standard => {
+      let dir : String? = try { @osenv_dirs.data_dir_for(app_name) } catch { _ => None }
+      dir.unwrap()
+    }
     Local => mukuro_dir_name
     Custom(base) => base
   }
@@ -80,7 +89,10 @@ pub fn data_dir() -> String {
 /// 現在のモードに応じたキャッシュ/ランタイムディレクトリを取得
 pub fn cache_dir() -> String {
   match path_mode.val {
-    Standard => @dirs.cache_dir_for(app_name)
+    Standard => {
+      let dir : String? = try { @osenv_dirs.cache_dir_for(app_name) } catch { _ => None }
+      dir.unwrap()
+    }
     Local => mukuro_dir_name
     Custom(base) => base
   }
