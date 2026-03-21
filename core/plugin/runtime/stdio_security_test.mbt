@@ -55,18 +55,18 @@ test "validate_env_key rejects starting with digit" {
 
 ///|
 test "escape_shell_single_quote handles normal string" {
-  let result = escape_shell_single_quote("hello")
+  let result = @util.escape_shell_single_quote("hello")
   assert_eq(result, "hello")
 }
 
 ///|
 test "escape_shell_single_quote escapes single quotes" {
-  let result = escape_shell_single_quote("it's")
+  let result = @util.escape_shell_single_quote("it's")
   assert_eq(result, "it'\\''s")
 }
 
 ///|
 test "escape_shell_single_quote handles multiple quotes" {
-  let result = escape_shell_single_quote("a'b'c")
+  let result = @util.escape_shell_single_quote("a'b'c")
   assert_eq(result, "a'\\''b'\\''c")
 }

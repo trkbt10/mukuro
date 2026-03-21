@@ -2,22 +2,21 @@
 package "trkbt10/mukuro/core/tool"
 
 import {
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
 // Values
-pub fn is_error(@types.ToolResult) -> Bool
+pub fn is_error(@trkbt10/mukuro/core/types.ToolResult) -> Bool
 
-pub fn is_success(@types.ToolResult) -> Bool
+pub fn is_success(@trkbt10/mukuro/core/types.ToolResult) -> Bool
 
 pub fn load_tool_from_manifest(String) -> @interfaces.ToolState raise @interfaces.ToolManagerError
 
 pub fn load_user_defined_tools(ToolLoaderIO) -> Array[@interfaces.ToolState]
 
-pub fn requires_action(@types.ToolResult) -> Bool
+pub fn requires_action(@trkbt10/mukuro/core/types.ToolResult) -> Bool
 
-pub fn tool_result_to_message(String, @types.ToolResult) -> @types.ModelMessage
+pub fn tool_result_to_message(String, @trkbt10/mukuro/core/types.ToolResult) -> @trkbt10/llm_interop/types.ModelMessage
 
 // Errors
 pub(all) suberror ToolExecutionError {
@@ -31,10 +30,10 @@ pub(all) suberror ToolExecutionError {
 // Types and methods
 pub struct InMemoryToolRegistry {
   tools : Map[String, ToolEntry]
-  mut definitions_cache : Array[@types.ToolDefinition]?
+  mut definitions_cache : Array[@trkbt10/llm_interop/types.ToolDefinition]?
 }
 pub fn InMemoryToolRegistry::count(Self) -> Int
-pub fn InMemoryToolRegistry::get_definition(Self, String) -> @types.ToolDefinition?
+pub fn InMemoryToolRegistry::get_definition(Self, String) -> @trkbt10/llm_interop/types.ToolDefinition?
 pub fn InMemoryToolRegistry::list_names(Self) -> Array[String]
 pub fn InMemoryToolRegistry::new() -> Self
 pub fn InMemoryToolRegistry::remove(Self, String) -> Bool
@@ -45,8 +44,8 @@ type ToolEntry
 pub struct ToolExecutionManager {
   registry : &@interfaces.ToolRegistry
 }
-pub async fn ToolExecutionManager::execute(Self, String, Json, @types.ToolContext) -> @types.ToolResult raise ToolExecutionError
-pub async fn ToolExecutionManager::execute_calls(Self, Array[@types.ToolCallRequest], @types.ToolContext) -> Array[(@types.ToolCallRequest, @types.ToolResult)] raise ToolExecutionError
+pub async fn ToolExecutionManager::execute(Self, String, Json, @trkbt10/mukuro/core/types.ToolContext) -> @trkbt10/mukuro/core/types.ToolResult raise ToolExecutionError
+pub async fn ToolExecutionManager::execute_calls(Self, Array[@trkbt10/llm_interop/types.ToolCallRequest], @trkbt10/mukuro/core/types.ToolContext) -> Array[(@trkbt10/llm_interop/types.ToolCallRequest, @trkbt10/mukuro/core/types.ToolResult)] raise ToolExecutionError
 pub fn ToolExecutionManager::new(&@interfaces.ToolRegistry) -> Self
 
 pub(all) struct ToolLoaderIO {

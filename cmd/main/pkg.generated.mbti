@@ -4,21 +4,17 @@ package "trkbt10/mukuro/cmd/main"
 import {
   "mizchi/x/http",
   "moonbitlang/async/websocket",
+  "trkbt10/llm_interop/client",
   "trkbt10/mukuro/adapters/channels",
   "trkbt10/mukuro/adapters/native",
-  "trkbt10/mukuro/core/config",
+  "trkbt10/mukuro/cmd/cli",
   "trkbt10/mukuro/core/control",
   "trkbt10/mukuro/core/plugin",
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
 // Values
 pub fn bootstrap_runtime_channels_from_config(String) -> Unit
-
-pub fn clear_daemon_ipc_response_hook_for_test() -> Unit
-
-pub fn config_not_found_message(String) -> String
 
 pub fn control_api_healthcheck_message() -> String
 
@@ -26,57 +22,33 @@ pub fn create_global_gateway(String) -> @control.Gateway
 
 pub fn create_session_history_recorder() -> &@interfaces.HistoryRecorder
 
-pub fn default_runtime_config_path() -> String
+pub async fn dispatch_echo_for_test(String) -> @cli.CliResult
 
-pub fn detect_platform() -> ServicePlatform
+pub fn enrich_envelope_with_workspace_context_impl(@trkbt10/mukuro/core/types.InboundEnvelope) -> @trkbt10/mukuro/core/types.InboundEnvelope
 
-pub async fn dispatch_echo_for_test(String) -> CliResult
+pub async fn execute_command(@cli.Command) -> @cli.CliResult
 
-pub fn enrich_envelope_with_workspace_context_impl(@types.InboundEnvelope) -> @types.InboundEnvelope
+pub fn execute_cron_command(@cli.CronCommand) -> @cli.CliResult
 
-pub fn escape_systemd_arg(String) -> String
+pub async fn execute_daemon_child(String) -> @cli.CliResult
 
-pub fn escape_xml(String) -> String
+pub async fn execute_gateway_command(@cli.GatewayCommand) -> @cli.CliResult
 
-pub async fn execute_command(Command) -> CliResult
+pub fn execute_onboard(@cli.OnboardOptions) -> @cli.CliResult
 
-pub fn execute_cron_command(CronCommand) -> CliResult
-
-pub async fn execute_daemon_child(String) -> CliResult
-
-pub async fn execute_gateway_command(GatewayCommand) -> CliResult
-
-pub fn execute_onboard(OnboardOptions) -> CliResult
-
-pub fn execute_onboard_impl(String, String, String, String, String) -> CliResult
-
-pub fn execute_service_command(ServiceCommand) -> CliResult
-
-pub fn generate_launchd_plist(ServiceConfig) -> String
-
-pub fn generate_systemd_unit(ServiceConfig) -> String
-
-pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus
-
-pub fn get_help_message() -> String
-
-pub fn get_launchd_plist_path(Bool) -> String
+pub fn execute_onboard_impl(String, String, String, String, String) -> @cli.CliResult
 
 pub fn get_plugin_host() -> @plugin.PluginHostImpl?
 
 pub fn get_plugin_tool_registry() -> @plugin.PluginToolRegistry?
 
-pub fn get_systemd_unit_path(Bool) -> String
-
-pub fn get_version_message() -> String
-
 pub fn get_workspace_context_dir() -> String
 
 pub async fn handle_control_api_request(@control.Gateway, @http.RequestMethod, String, Map[String, String], String) -> ControlApiResponse
 
-pub async fn handle_inbound_with_agent_loop(@types.InboundEnvelope, &@interfaces.HistoryRecorder?) -> @types.OutboundMessage
+pub async fn handle_inbound_with_agent_loop(@trkbt10/mukuro/core/types.InboundEnvelope, &@interfaces.HistoryRecorder?) -> @trkbt10/mukuro/core/types.OutboundMessage
 
-pub fn init_api_v1_state(@types.MukuroConfig, String) -> Unit
+pub fn init_api_v1_state(@trkbt10/mukuro/core/types.MukuroConfig, String) -> Unit
 
 pub fn initialize_metadata_store() -> Unit
 
@@ -88,27 +60,17 @@ pub async fn initialize_plugin_system_with_native_transport() -> Unit
 
 pub fn is_plugin_tool(String) -> Bool
 
-pub fn list_plugin_tools() -> Array[@types.ToolDefinition]
+pub fn list_plugin_tools() -> Array[@trkbt10/llm_interop/types.ToolDefinition]
 
-pub fn load_gateway_config_impl(String) -> @interfaces.GatewayConfig raise @interfaces.ControlError
-
-pub fn parse_args(Array[String]) -> Command
+pub fn model_response_to_stream_events(@trkbt10/llm_interop/types.ModelResponse) -> Array[(String, Json)]
 
 pub fn parse_chat_ws_message(String) -> (ChatWsMessageType, String?, String?)
 
-pub fn parse_global_options(Array[String]) -> (GlobalOptions, Array[String])
-
-pub fn parse_service_args(ArrayView[String]) -> Command
-
 pub fn poll_plugin_changes() -> Unit
 
-pub async fn pump_registered_channels_once((@types.InboundEnvelope) -> Unit) -> Int
+pub async fn pump_registered_channels_once((@trkbt10/mukuro/core/types.InboundEnvelope) -> Unit) -> Int
 
 pub async fn pump_registered_channels_to_gateway(@control.Gateway, @interfaces.AuthContext) -> Int
-
-pub fn query_daemon_status(Int, Bool) -> CliResult
-
-pub fn query_gateway_auth_log(Int64, Bool) -> CliResult
 
 pub fn register_builtin_tools() -> Unit
 
@@ -116,9 +78,7 @@ pub fn registered_channel_names_for_test() -> Array[String]
 
 pub fn reinitialize_session_manager() -> Unit
 
-pub fn request_daemon_stop(Int) -> CliResult
-
-pub async fn run_cli(Array[String]) -> CliResult
+pub async fn run_cli(Array[String]) -> @cli.CliResult
 
 pub fn run_cli_from_env() -> Unit
 
@@ -132,21 +92,13 @@ pub async fn run_plugin_watch_loop() -> Unit
 
 pub fn runtime_channel_holding_count_for_test() -> Int
 
-pub fn runtime_config_exists(String) -> Bool
-
 pub fn runtime_model_unavailable_reason_impl() -> String?
 
 pub fn runtime_websocket_config_for_test(String) -> @channels.WebSocketChannelConfig?
 
-pub fn sent_message_at(Int) -> @types.OutboundMessage?
+pub fn sent_message_at(Int) -> @trkbt10/mukuro/core/types.OutboundMessage?
 
 pub fn sent_messages_count() -> Int
-
-pub let service_display_name : String
-
-pub let service_name : String
-
-pub fn set_daemon_ipc_response_hook_for_test((String) -> String?) -> Unit
 
 pub fn set_forced_response_for_test(String?) -> Unit
 
@@ -158,11 +110,7 @@ pub fn setup_plugin_watcher(String) -> Unit raise
 
 pub fn start_plugin_watching() -> Unit raise
 
-pub fn stop_daemon(pid_path~ : String) -> CliResult
-
 pub fn stop_plugin_watching() -> Unit
-
-pub let version : String
 
 // Errors
 
@@ -178,29 +126,13 @@ pub fn ChatWsHandler::new(resume_chat_id? : String?) -> Self
 
 pub(all) enum ChatWsMessageType {
   Send
+  SendStream
   LoadHistory
   Ping
   Unknown
 }
 pub impl Eq for ChatWsMessageType
 pub impl Show for ChatWsMessageType
-
-pub(all) enum CliResult {
-  Ok(String)
-  Error(String)
-  Exit(Int)
-}
-
-pub(all) enum Command {
-  Help
-  Version
-  Onboard(OnboardOptions)
-  Gateway(GatewayCommand)
-  Cron(CronCommand)
-  Service(ServiceCommand)
-  DaemonChild(String)
-  Unknown(String)
-}
 
 pub struct ConfigProviderResolver {
   _unit : Unit
@@ -214,61 +146,17 @@ pub(all) struct ControlApiResponse {
   headers : Map[String, String]
 }
 
-pub(all) enum CronCommand {
-  List
-  Unknown(String)
-}
-
-type DaemonStartupConfig
-
-pub(all) struct GatewayAuthLogOptions {
-  mut since_seconds : Int64
-  mut json : Bool
-}
-
-pub(all) enum GatewayCommand {
-  Start(GatewayStartOptions)
-  Status(GatewayStatusOptions)
-  Stop
-  AuthLog(GatewayAuthLogOptions)
-  Unknown(String)
-}
-
-pub(all) struct GatewayStartOptions {
-  mut config_path : String?
-  mut host : String?
-  mut port : Int?
-  mut debug : Bool
-  mut daemon : Bool
-  mut control_api : Bool
-}
-
-pub(all) struct GatewayStatusOptions {
-  mut json : Bool
-}
-
-pub(all) struct GlobalOptions {
-  mut path_mode : @config.PathMode
-}
-
 type InMemorySessionStore
 pub impl @interfaces.SessionStore for InMemorySessionStore
-
-type IpcResponseHookCell
 
 type LocalOutboundDispatcher
 pub impl @interfaces.OutboundDispatcher for LocalOutboundDispatcher
 
-type NativeDaemonManager
-
-type NativePidManager
-
-pub(all) struct OnboardOptions {
-  mut provider : String?
-  mut api_key : String?
-  mut default_model : String?
-  mut output_path : String?
+pub struct NativeHttpTransport {
+  client : @native.NativeHttpClient
 }
+pub fn NativeHttpTransport::new(@native.NativeHttpClient) -> Self
+pub impl @client.HttpTransport for NativeHttpTransport
 
 type RuntimeChannelsCell
 
@@ -278,62 +166,6 @@ pub struct RuntimeModelOrchestrator {
 }
 pub fn RuntimeModelOrchestrator::new(&@interfaces.ProviderResolver) -> Self
 pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator
-
-pub(all) enum ServiceCommand {
-  Install(ServiceInstallOptions)
-  Uninstall
-  Start
-  Stop
-  Restart
-  Status(ServiceStatusOptions)
-  Logs(ServiceLogsOptions)
-  Unknown(String)
-}
-
-pub(all) struct ServiceConfig {
-  name : String
-  display_name : String
-  executable : String
-  args : Array[String]
-  working_dir : String
-  config_path : String?
-  user_level : Bool
-  auto_start : Bool
-  stdout_log : String?
-  stderr_log : String?
-}
-pub fn ServiceConfig::default(String, String?) -> Self
-
-pub(all) struct ServiceInstallOptions {
-  mut user : Bool
-  mut system : Bool
-  mut config_path : String?
-  mut auto_start : Bool
-}
-
-pub(all) struct ServiceLogsOptions {
-  mut follow : Bool
-  mut lines : Int
-}
-
-pub(all) enum ServicePlatform {
-  MacOS
-  Linux
-  Windows
-  Unknown
-}
-
-pub(all) struct ServiceStatus {
-  installed : Bool
-  running : Bool
-  pid : Int?
-  message : String
-}
-pub fn ServiceStatus::to_json(Self) -> Json
-
-pub(all) struct ServiceStatusOptions {
-  mut json : Bool
-}
 
 type TestToggle
 

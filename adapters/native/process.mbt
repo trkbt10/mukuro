@@ -72,16 +72,6 @@ pub fn validate_command_name(command : String) -> Unit raise ProcessError {
 }
 
 ///|
-/// Escape single quotes for shell commands
-pub fn escape_shell_single_quote(s : String) -> String {
-  let parts : Array[String] = s
-    .split("'")
-    .map(fn(sv) { sv.to_string() })
-    .collect()
-  parts.join("'\\''")
-}
-
-///|
 fn build_command(
   command : String,
   args : Array[String],
@@ -90,12 +80,12 @@ fn build_command(
   validate_command_name(command)
   let mut cmd = command
   for arg in args {
-    let escaped = escape_shell_single_quote(arg)
+    let escaped = @util.escape_shell_single_quote(arg)
     cmd = cmd + " '" + escaped + "'"
   }
   match options.cwd {
     Some(cwd) => {
-      let escaped_cwd = escape_shell_single_quote(cwd)
+      let escaped_cwd = @util.escape_shell_single_quote(cwd)
       cmd = "cd '" + escaped_cwd + "' && " + cmd
     }
     None => ()
@@ -184,7 +174,7 @@ pub fn NativeProcessExecutor::command_exists(
 ) -> Bool {
   try {
     validate_command_name(command)
-    let escaped = escape_shell_single_quote(command)
+    let escaped = @util.escape_shell_single_quote(command)
     let result = self.shell("command -v '" + escaped + "'")
     result.exit_code == 0
   } catch {

@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/cmd/config"
+
+import {
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn config_not_found_message(String) -> String
+
+pub fn default_runtime_config_path() -> String
+
+pub fn load_config_root_impl(String) -> Map[String, Json] raise @interfaces.ControlError
+
+pub fn load_gateway_config_impl(String) -> @interfaces.GatewayConfig raise @interfaces.ControlError
+
+pub fn parse_bool_field_impl(Map[String, Json], String, Bool) -> Bool raise @interfaces.ControlError
+
+pub fn parse_config_root_impl(String) -> Map[String, Json] raise @interfaces.ControlError
+
+pub fn parse_int_field_impl(Map[String, Json], String, Int) -> Int raise @interfaces.ControlError
+
+pub fn parse_string_field_impl(Map[String, Json], String, String) -> String raise @interfaces.ControlError
+
+pub fn read_config_text_impl(String) -> String raise @interfaces.ControlError
+
+pub fn root_gateway_object_impl(Map[String, Json]) -> Map[String, Json] raise @interfaces.ControlError
+
+pub fn runtime_config_exists(String) -> Bool
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

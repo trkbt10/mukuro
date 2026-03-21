@@ -2,18 +2,17 @@
 package "trkbt10/mukuro/core/trace"
 
 import {
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
 // Values
 pub fn calculate_window_ncd_tfidf_distances(Array[String], NcdTfidfConfig) -> Array[Double]
 
-pub async fn digest_once(&@interfaces.ModelOrchestrator, String, DigestContextType, @types.ModelOptions) -> String raise DigestError
+pub async fn digest_once(&@interfaces.ModelOrchestrator, String, DigestContextType, @trkbt10/mukuro/core/types.ModelOptions) -> String raise DigestError
 
 pub fn estimate_tokens(String) -> Int
 
-pub async fn extract_topics(&@interfaces.ModelOrchestrator, String, @types.ModelOptions) -> Array[String] raise DigestError
+pub async fn extract_topics(&@interfaces.ModelOrchestrator, String, @trkbt10/mukuro/core/types.ModelOptions) -> Array[String] raise DigestError
 
 pub fn segment_by_ncd_tfidf(String, NcdTfidfConfig) -> SegmentResult
 
@@ -63,7 +62,7 @@ pub impl Show for DigestContextType
 pub struct DigestService {
   config : DigestServiceConfig
 }
-pub async fn DigestService::create_short_term_entry(Self, &@interfaces.ModelOrchestrator, String, String, Array[@types.ModelMessage], String, Int64) -> @interfaces.ShortTermMemoryEntry raise DigestError
+pub async fn DigestService::create_short_term_entry(Self, &@interfaces.ModelOrchestrator, String, String, Array[@trkbt10/llm_interop/types.ModelMessage], String, Int64) -> @interfaces.ShortTermMemoryEntry raise DigestError
 pub async fn DigestService::digest_batch(Self, &@interfaces.ModelOrchestrator, Array[String], DigestContextType) -> Array[String] raise DigestError
 pub async fn DigestService::digest_iterative(Self, &@interfaces.ModelOrchestrator, String, DigestContextType) -> String raise DigestError
 pub fn DigestService::new(config~ : DigestServiceConfig) -> Self
@@ -72,7 +71,7 @@ pub fn DigestService::with_defaults() -> Self
 pub(all) struct DigestServiceConfig {
   iterative : IterativeDigestConfig
   batch : BatchDigestConfig
-  model_options : @types.ModelOptions
+  model_options : @trkbt10/mukuro/core/types.ModelOptions
 }
 pub fn DigestServiceConfig::default() -> Self
 
@@ -136,7 +135,7 @@ pub struct ShortTermMemoryService {
   config : ShortTermMemoryConfig
   digest_service : DigestService
 }
-pub async fn ShortTermMemoryService::create_entry_from_messages(Self, &@interfaces.ModelOrchestrator, String, String, Array[@types.ModelMessage], String, Int64) -> @interfaces.ShortTermMemoryEntry raise ShortTermMemoryError
+pub async fn ShortTermMemoryService::create_entry_from_messages(Self, &@interfaces.ModelOrchestrator, String, String, Array[@trkbt10/llm_interop/types.ModelMessage], String, Int64) -> @interfaces.ShortTermMemoryEntry raise ShortTermMemoryError
 pub fn ShortTermMemoryService::delete_entry(Self, &@interfaces.TraceStore, String) -> Unit raise ShortTermMemoryError
 pub fn ShortTermMemoryService::format_for_prompt(Self, Array[@interfaces.ShortTermMemoryEntry]) -> String
 pub fn ShortTermMemoryService::get_daily_entries(Self, &@interfaces.TraceStore, String) -> Array[@interfaces.ShortTermMemoryEntry] raise ShortTermMemoryError

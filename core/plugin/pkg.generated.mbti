@@ -2,20 +2,19 @@
 package "trkbt10/mukuro/core/plugin"
 
 import {
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
 // Values
-pub fn build_tool_parameters(Json) -> Array[@types.ToolParameter]
+pub fn build_tool_parameters(Json) -> Array[@trkbt10/mukuro/core/types.ToolParameter]
 
-pub fn capability_to_tool_definition(String, String, @interfaces.CapabilitySchema) -> @types.ToolDefinition
+pub fn capability_to_tool_definition(String, String, @interfaces.CapabilitySchema) -> @trkbt10/llm_interop/types.ToolDefinition
 
 pub fn create_plugin_tool_executor(PluginHostImpl, String) -> PluginToolExecutor?
 
-pub fn generate_tools_from_extended_manifest(ExtendedManifest) -> Array[@types.ToolDefinition]
+pub fn generate_tools_from_extended_manifest(ExtendedManifest) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
 
-pub fn generate_tools_from_manifest(String, Map[String, @interfaces.CapabilitySchema]) -> Array[@types.ToolDefinition]
+pub fn generate_tools_from_manifest(String, Map[String, @interfaces.CapabilitySchema]) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
 
 pub fn load_all_plugins(PluginLoaderConfig, (String) -> Array[String] raise, (String) -> String raise) -> Array[LoadedPlugin] raise
 
@@ -29,13 +28,25 @@ pub fn parse_manifest(Json) -> @interfaces.PluginManifest?
 
 pub fn parse_plugin_tool_name(String) -> (String, String)?
 
+pub fn parse_tool_call_result(Json) -> String
+
+pub fn parse_tools_list_response(Json, String) -> Array[McpToolDef]
+
 pub fn resolve_env_vars(String, (String) -> String?) -> String
+
+pub fn resolve_mcp_tool_name(String, String) -> String?
 
 pub fn scan_plugins_directory(String, (String) -> Array[String] raise) -> Array[String] raise
 
-pub fn validate_tool_arguments(@types.ToolDefinition, Json) -> ValidationResult
+pub fn validate_tool_arguments(@trkbt10/llm_interop/types.ToolDefinition, Json) -> ValidationResult
 
 // Errors
+pub(all) suberror McpError {
+  ConnectionFailed(String)
+  ProtocolError(String)
+  ToolNotFound(String)
+}
+
 pub(all) suberror PluginExecutorError {
   InvalidArguments(String)
   ExecutionFailed(String)
@@ -101,6 +112,32 @@ pub struct LoadedPlugin {
   raw_manifest : Json
 }
 
+pub struct McpClient {
+  config : McpServerConfig
+  tools : Array[McpToolDef]
+  initialized : Bool
+}
+pub fn McpClient::get_tool_definitions(Self) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
+pub fn McpClient::get_tools(Self) -> Array[McpToolDef]
+pub fn McpClient::new(McpServerConfig) -> Self
+
+pub(all) struct McpServerConfig {
+  name : String
+  command : String
+  args : Array[String]
+  env : Map[String, String]
+  cwd : String?
+}
+pub fn McpServerConfig::from_json(String, Json) -> Self?
+
+pub(all) struct McpToolDef {
+  name : String
+  description : String
+  input_schema : Json
+  server_name : String
+}
+pub fn McpToolDef::to_tool_definition(Self) -> @trkbt10/llm_interop/types.ToolDefinition
+
 pub struct PluginAuthConfigParsed {
   mode : String
   host_token : String?
@@ -112,7 +149,7 @@ pub struct PluginHostImpl {
   registry : PluginRegistry
   transport_handlers : Map[String, &@interfaces.PluginTransportHandler]
   http_handlers : Map[String, HttpPluginHandler]
-  incoming_messages : Array[@types.InboundEnvelope]
+  incoming_messages : Array[@trkbt10/mukuro/core/types.InboundEnvelope]
   mut request_id : Int
   mut loader_config : PluginLoaderConfig?
   extended_manifests : Map[String, ExtendedManifest]
@@ -120,7 +157,7 @@ pub struct PluginHostImpl {
 pub async fn PluginHostImpl::auto_start_plugins(Self) -> Unit
 pub fn PluginHostImpl::create_connect_request(Self, String, Json) -> @interfaces.JsonRpcRequest
 pub fn PluginHostImpl::create_disconnect_request(Self, String) -> @interfaces.JsonRpcRequest
-pub fn PluginHostImpl::create_send_request(Self, String, @types.OutboundMessage) -> @interfaces.JsonRpcRequest
+pub fn PluginHostImpl::create_send_request(Self, String, @trkbt10/mukuro/core/types.OutboundMessage) -> @interfaces.JsonRpcRequest
 pub fn PluginHostImpl::get_extended_manifest(Self, String) -> ExtendedManifest?
 pub fn PluginHostImpl::get_http_handler(Self, String) -> HttpPluginHandler?
 pub fn PluginHostImpl::get_plugin_dir(Self) -> String
@@ -130,7 +167,7 @@ pub fn PluginHostImpl::handle_webhook(Self, String, @interfaces.JsonRpcRequest) 
 pub fn PluginHostImpl::list_plugins(Self) -> Array[@interfaces.PluginManifest]
 pub fn PluginHostImpl::load_plugins_with_fs(Self, (String) -> Array[String] raise, (String) -> String raise) -> Unit raise
 pub fn PluginHostImpl::new(plugin_dir~ : String) -> Self
-pub fn PluginHostImpl::pop_message(Self) -> @types.InboundEnvelope?
+pub fn PluginHostImpl::pop_message(Self) -> @trkbt10/mukuro/core/types.InboundEnvelope?
 pub fn PluginHostImpl::register_plugin(Self, @interfaces.PluginManifest) -> Unit
 pub fn PluginHostImpl::register_plugin_with_transport(Self, @interfaces.PluginManifest, &@interfaces.PluginTransportHandler) -> Unit
 pub async fn PluginHostImpl::send_notification(Self, String, @interfaces.JsonRpcRequest) -> Unit
@@ -188,19 +225,19 @@ pub struct PluginToolExecutor {
   plugin_id : String
   method_name : String
 }
-pub async fn PluginToolExecutor::execute(Self, tool_name~ : String, arguments~ : Json, context~ : @types.ToolContext) -> @types.ToolResult raise PluginExecutorError
+pub async fn PluginToolExecutor::execute(Self, tool_name~ : String, arguments~ : Json, context~ : @trkbt10/mukuro/core/types.ToolContext) -> @trkbt10/mukuro/core/types.ToolResult raise PluginExecutorError
 pub fn PluginToolExecutor::new(plugin_host~ : PluginHostImpl, plugin_id~ : String, method_name~ : String) -> Self
 pub impl @interfaces.ToolExecutor for PluginToolExecutor
 
 pub struct PluginToolRegistry {
-  tools_by_plugin : Map[String, Array[@types.ToolDefinition]]
-  all_tools : Array[@types.ToolDefinition]
+  tools_by_plugin : Map[String, Array[@trkbt10/llm_interop/types.ToolDefinition]]
+  all_tools : Array[@trkbt10/llm_interop/types.ToolDefinition]
 }
-pub fn PluginToolRegistry::find_tool(Self, String) -> @types.ToolDefinition?
-pub fn PluginToolRegistry::get_all_tools(Self) -> Array[@types.ToolDefinition]
-pub fn PluginToolRegistry::get_plugin_tools(Self, String) -> Array[@types.ToolDefinition]
+pub fn PluginToolRegistry::find_tool(Self, String) -> @trkbt10/llm_interop/types.ToolDefinition?
+pub fn PluginToolRegistry::get_all_tools(Self) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
+pub fn PluginToolRegistry::get_plugin_tools(Self, String) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
 pub fn PluginToolRegistry::new() -> Self
-pub fn PluginToolRegistry::register_plugin_tools(Self, String, Array[@types.ToolDefinition]) -> Unit
+pub fn PluginToolRegistry::register_plugin_tools(Self, String, Array[@trkbt10/llm_interop/types.ToolDefinition]) -> Unit
 pub fn PluginToolRegistry::unregister_plugin_tools(Self, String) -> Unit
 
 pub struct SchemaValidator {

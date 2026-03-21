@@ -2,8 +2,6 @@
 package "trkbt10/mukuro/core/types"
 
 // Values
-pub fn build_json_schema(type_~ : String, properties~ : Map[String, Json], required~ : Array[String]) -> Json
-
 pub fn to_model_inference_json(ModelOptions, ThinkingConfig) -> Json
 
 // Errors
@@ -77,13 +75,6 @@ pub(all) struct ModelAlias {
   model_name : String
 }
 
-pub(all) enum ModelMessage {
-  System(String)
-  User(content~ : String, name~ : String?)
-  Assistant(content~ : String, tool_calls~ : Array[ToolCallRequest]?)
-  ToolResult(tool_call_id~ : String, content~ : String)
-}
-
 pub(all) struct ModelOptions {
   model_name : String
   temperature : Double?
@@ -93,13 +84,6 @@ pub(all) struct ModelOptions {
 pub fn ModelOptions::default() -> Self
 pub fn ModelOptions::to_json(Self) -> Json
 pub fn ModelOptions::to_settings_json(Self) -> Json
-
-pub(all) enum ModelResponse {
-  Text(String)
-  ToolCalls(Array[ToolCallRequest])
-  ModelError(String)
-  RateLimited(retry_after~ : Int)
-}
 
 pub(all) struct MukuroConfig {
   agent : AgentConfig
@@ -168,13 +152,13 @@ pub fn RetryConfig::to_settings_json(Self) -> Json
 
 pub(all) struct Session {
   key : SessionKey
-  history : Array[ModelMessage]
+  history : Array[@trkbt10/llm_interop/types.ModelMessage]
   state : SessionState
   created_at : Int64
   last_active_at : Int64
   metadata : Map[String, Json]
 }
-pub fn Session::add_message(Self, ModelMessage) -> Unit
+pub fn Session::add_message(Self, @trkbt10/llm_interop/types.ModelMessage) -> Unit
 pub fn Session::new(SessionKey, Int64) -> Self
 pub fn Session::touch(Self, Int64) -> Self
 
@@ -243,28 +227,11 @@ pub(all) enum ThinkingLevel {
 pub fn ThinkingLevel::from_string(String) -> Self
 pub fn ThinkingLevel::to_string(Self) -> String
 
-pub(all) struct ToolCallRequest {
-  id : String
-  name : String
-  arguments : Json
-}
-pub fn ToolCallRequest::default() -> Self
-pub fn ToolCallRequest::new(id~ : String, name~ : String, arguments~ : Json) -> Self
-
 pub(all) struct ToolContext {
   session : Session
   envelope : InboundEnvelope
   config : Map[String, Json]
 }
-
-pub(all) struct ToolDefinition {
-  name : String
-  description : String
-  parameters : Json
-  schema : Json?
-  metadata : Map[String, String]
-}
-pub fn ToolDefinition::new(name~ : String, description~ : String, parameters~ : Json) -> Self
 
 pub(all) struct ToolMetadata {
   name : String
@@ -275,23 +242,6 @@ pub(all) struct ToolMetadata {
   enabled : Bool
 }
 pub fn ToolMetadata::new(name~ : String, description~ : String, category~ : String) -> Self
-
-pub(all) struct ToolParam {
-  name : String
-  description : String
-  param_type : ToolParamType
-  required : Bool
-  default_value : Json?
-}
-
-pub(all) enum ToolParamType {
-  String_
-  Number
-  Integer
-  Boolean
-  Array_(ToolParamType)
-  Object(Map[String, ToolParamType])
-}
 
 pub(all) struct ToolParameter {
   name : String

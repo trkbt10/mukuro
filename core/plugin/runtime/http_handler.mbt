@@ -346,33 +346,5 @@ pub fn HttpTransportHandler::create_request(
 /// Parse JSON-RPC response from HTTP response body
 pub fn parse_jsonrpc_response(body : String) -> @interfaces.JsonRpcResponse? {
   let json = @json.parse(body) catch { _ => return None }
-  match json {
-    { "jsonrpc": String(ver), .. } if ver == "2.0" => {
-      let result = match json {
-        { "result": r, .. } => Some(r)
-        _ => None
-      }
-      let error : @interfaces.JsonRpcError? = match json {
-        { "error": Object(e), .. } => {
-          let code = match e.get("code") {
-            Some(Number(n, ..)) => n.to_int()
-            _ => -32603
-          }
-          let message = match e.get("message") {
-            Some(String(m)) => m
-            _ => "Unknown error"
-          }
-          let data = e.get("data")
-          Some({ code, message, data })
-        }
-        _ => None
-      }
-      let id = match json {
-        { "id": Number(i, ..), .. } => Some(i.to_int())
-        _ => None
-      }
-      Some({ jsonrpc: ver, result, error, id })
-    }
-    _ => None
-  }
+  parse_jsonrpc_response_json(json)
 }

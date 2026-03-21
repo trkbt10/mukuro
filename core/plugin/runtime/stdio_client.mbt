@@ -90,16 +90,6 @@ pub fn validate_env_key(key : String) -> Unit raise StdioClientError {
 }
 
 ///|
-/// Escape single quotes for shell
-pub fn escape_shell_single_quote(s : String) -> String {
-  let parts : Array[String] = s
-    .split("'")
-    .map(fn(sv) { sv.to_string() })
-    .collect()
-  parts.join("'\\''")
-}
-
-///|
 /// Build the shell command for piping
 fn NativeStdioClient::build_pipe_command(
   self : NativeStdioClient,
@@ -112,11 +102,11 @@ fn NativeStdioClient::build_pipe_command(
     _ => raise StdioClientError::ProcessFailed("Invalid command")
   }
   // Escape single quotes in input
-  let escaped_input = escape_shell_single_quote(input)
+  let escaped_input = @util.escape_shell_single_quote(input)
   // Build command with args
   let mut cmd = self.command
   for arg in self.args {
-    let escaped_arg = escape_shell_single_quote(arg)
+    let escaped_arg = @util.escape_shell_single_quote(arg)
     cmd = cmd + " '" + escaped_arg + "'"
   }
   // Add environment variables prefix
@@ -125,13 +115,13 @@ fn NativeStdioClient::build_pipe_command(
     validate_env_key(key) catch {
       e => raise e
     }
-    let escaped_value = escape_shell_single_quote(value)
+    let escaped_value = @util.escape_shell_single_quote(value)
     env_prefix = env_prefix + key + "='" + escaped_value + "' "
   }
   // Add working directory prefix
   let cwd_prefix = match self.cwd {
     Some(dir) => {
-      let escaped_dir = escape_shell_single_quote(dir)
+      let escaped_dir = @util.escape_shell_single_quote(dir)
       "cd '" + escaped_dir + "' && "
     }
     None => ""

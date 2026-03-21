@@ -6,6 +6,7 @@ import {
   "trkbt10/mukuro/core/tool" @tool,
   "trkbt10/mukuro/adapters/native" @native,
   "trkbt10/mukuro/lib/bytes" @bytes,
+  "trkbt10/mukuro/lib/util" @util,
   "moonbitlang/core/json",
   "moonbitlang/core/encoding/utf8",
 }

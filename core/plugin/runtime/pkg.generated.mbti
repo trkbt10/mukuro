@@ -17,8 +17,6 @@ pub fn create_plugin_watcher_with_interval(String, Int) -> NativePluginWatcher
 
 pub fn create_tool_loader_io() -> @tool.ToolLoaderIO
 
-pub fn escape_shell_single_quote(String) -> String
-
 pub fn get_native_transport_factory() -> NativeTransportFactory
 
 pub fn load_native_user_defined_tools() -> Array[@interfaces.ToolState]

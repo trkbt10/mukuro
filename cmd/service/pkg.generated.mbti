@@ -1,0 +1,64 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/cmd/service"
+
+import {
+  "trkbt10/mukuro/cmd/cli",
+}
+
+// Values
+pub fn detect_platform() -> ServicePlatform
+
+pub fn escape_systemd_arg(String) -> String
+
+pub fn escape_xml(String) -> String
+
+pub fn execute_service_command(@cli.ServiceCommand) -> @cli.CliResult
+
+pub fn generate_launchd_plist(ServiceConfig) -> String
+
+pub fn generate_systemd_unit(ServiceConfig) -> String
+
+pub fn get_launchd_plist_path(Bool) -> String
+
+pub fn get_systemd_unit_path(Bool) -> String
+
+pub let service_display_name : String
+
+pub let service_name : String
+
+// Errors
+
+// Types and methods
+pub(all) struct ServiceConfig {
+  name : String
+  display_name : String
+  executable : String
+  args : Array[String]
+  working_dir : String
+  config_path : String?
+  user_level : Bool
+  auto_start : Bool
+  stdout_log : String?
+  stderr_log : String?
+}
+pub fn ServiceConfig::default(String, String?) -> Self
+
+pub(all) enum ServicePlatform {
+  MacOS
+  Linux
+  Windows
+  Unknown
+}
+
+pub(all) struct ServiceStatus {
+  installed : Bool
+  running : Bool
+  pid : Int?
+  message : String
+}
+pub fn ServiceStatus::to_json(Self) -> Json
+
+// Type aliases
+
+// Traits
+

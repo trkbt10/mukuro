@@ -4,7 +4,6 @@ package "trkbt10/mukuro/adapters/native"
 import {
   "mizchi/sqlite",
   "trkbt10/mukuro/core/control",
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
@@ -160,8 +159,6 @@ pub fn cstring_to_string(CString) -> String
 pub fn default_metadata_db_path() -> String
 
 pub let dir_permission : Int
-
-pub fn escape_shell_single_quote(String) -> String
 
 pub let f_ok : Int
 
@@ -325,7 +322,7 @@ pub impl @interfaces.ProcessExecutor for NativeProcessExecutor
 
 pub struct NativeSessionManager {
   base_dir : String
-  cache : Map[@types.SessionKey, @types.Session]
+  cache : Map[@trkbt10/mukuro/core/types.SessionKey, @trkbt10/mukuro/core/types.Session]
   cache_max_size : Int
   open_recorders : Map[String, NativeHistoryRecorder]
   metadata_store : &@interfaces.HistoryMetadataStore?

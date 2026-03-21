@@ -2,7 +2,27 @@
 package "trkbt10/mukuro/core/scheduler"
 
 // Values
+pub fn build_heartbeat_prompt(Array[String]) -> String
+
+pub fn get_pending_heartbeat_tasks(String) -> Array[String]
+
+pub fn load_scheduler_from_file(String) -> TaskScheduler
+
 pub fn parse_cron(String) -> CronExpression raise CronParseError
+
+pub fn parse_heartbeat_tasks(String) -> Array[(String, Bool)]
+
+pub fn register_heartbeat_cron(TaskScheduler, Int) -> Unit
+
+pub fn save_scheduler_to_file(TaskScheduler, String) -> Bool
+
+pub fn scheduler_from_json(Json) -> TaskScheduler
+
+pub fn scheduler_to_json(TaskScheduler) -> Json
+
+pub fn task_from_json(Json) -> ScheduledTask?
+
+pub fn task_to_json(ScheduledTask) -> Json
 
 // Errors
 pub(all) suberror CronParseError {

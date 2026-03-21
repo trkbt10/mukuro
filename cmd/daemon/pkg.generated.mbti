@@ -1,0 +1,76 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/cmd/daemon"
+
+import {
+  "trkbt10/mukuro/adapters/native",
+  "trkbt10/mukuro/cmd/cli",
+  "trkbt10/mukuro/core/control",
+  "trkbt10/mukuro/interfaces",
+}
+
+// Values
+pub fn clear_daemon_ipc_response_hook_for_test() -> Unit
+
+pub fn current_cli_client_id() -> String
+
+pub let daemon_auth_fail_threshold : Int
+
+pub let daemon_auth_fail_window_sec : Int64
+
+pub fn daemon_auth_log_path() -> String
+
+pub let daemon_auth_rate_limit_sec : Int64
+
+pub let daemon_prev_token_grace_sec : Int64
+
+pub let daemon_token_max_age_sec : Int64
+
+pub let daemon_token_rotation_interval_sec : Int64
+
+pub fn execute_daemon_start(@cli.GatewayStartOptions, @interfaces.GatewayConfig) -> @cli.CliResult
+
+pub fn get_daemon_status(pid_path~ : String) -> @control.DaemonStatus
+
+pub fn load_daemon_startup_config() -> DaemonStartupConfig
+
+pub fn query_daemon_status(Int, Bool) -> @cli.CliResult
+
+pub fn query_gateway_auth_log(Int64, Bool) -> @cli.CliResult
+
+pub fn request_daemon_stop(Int) -> @cli.CliResult
+
+pub fn set_daemon_ipc_response_hook_for_test((String) -> String?) -> Unit
+
+pub fn stop_daemon(pid_path~ : String) -> @cli.CliResult
+
+pub fn write_daemon_startup_config(@cli.GatewayStartOptions, @interfaces.GatewayConfig) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) struct DaemonStartupConfig {
+  gateway_config : @interfaces.GatewayConfig
+  runtime_model_config_path : String
+  control_api : Bool
+}
+
+pub(all) struct NativeDaemonManager {
+  pid_manager : NativePidManager
+  process_checker : @native.NativeProcessChecker
+}
+pub fn NativeDaemonManager::new(pid_path~ : String) -> Self
+pub fn NativeDaemonManager::status(Self) -> @control.DaemonStatus
+pub fn NativeDaemonManager::stop_remote(Self) -> Unit raise @control.DaemonError
+
+pub(all) struct NativePidManager {
+  pid_path : String
+}
+pub fn NativePidManager::exists(Self) -> Bool
+pub fn NativePidManager::new(pid_path~ : String) -> Self
+pub fn NativePidManager::read_pid(Self) -> Int raise @control.DaemonError
+pub fn NativePidManager::remove_pid(Self) -> Unit raise @control.DaemonError
+
+// Type aliases
+
+// Traits
+

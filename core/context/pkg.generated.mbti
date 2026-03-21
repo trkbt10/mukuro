@@ -2,16 +2,19 @@
 package "trkbt10/mukuro/core/context"
 
 import {
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
 // Values
 pub fn create_skill(name~ : String, description~ : String, instructions~ : String) -> @interfaces.SkillDefinition
 
-pub fn envelope_to_message(@types.InboundEnvelope) -> @types.ModelMessage
+pub fn envelope_to_message(@trkbt10/mukuro/core/types.InboundEnvelope) -> @trkbt10/llm_interop/types.ModelMessage
+
+pub fn load_skills_into_loader(SkillLoader, String) -> Unit
 
 pub fn parse_skill_from_json(Json) -> @interfaces.SkillDefinition?
+
+pub fn parse_skill_markdown(String) -> @interfaces.SkillDefinition?
 
 pub fn parse_skills_from_json(Json) -> Array[@interfaces.SkillDefinition]
 
@@ -24,8 +27,8 @@ pub(all) struct ContextOptions {
   include_trace : Bool
   include_builtin_tools_guide : Bool
   max_context_tokens : Int
-  default_system_prompt_mode : @types.SystemPromptMode
-  default_system_prompt_when : @types.SystemPromptWhen
+  default_system_prompt_mode : @trkbt10/mukuro/core/types.SystemPromptMode
+  default_system_prompt_when : @trkbt10/mukuro/core/types.SystemPromptWhen
 }
 pub fn ContextOptions::default() -> Self
 

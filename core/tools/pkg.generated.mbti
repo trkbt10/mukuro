@@ -2,12 +2,11 @@
 package "trkbt10/mukuro/core/tools"
 
 import {
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
 // Values
-pub fn all_tool_definitions() -> Array[@types.ToolDefinition]
+pub fn all_tool_definitions() -> Array[@trkbt10/llm_interop/types.ToolDefinition]
 
 pub fn all_tool_entries() -> Array[ToolEntry]
 
@@ -15,27 +14,35 @@ pub fn all_tool_names() -> Array[String]
 
 pub fn boolean_param(String) -> Json
 
-pub fn build_outbound_message(String, String, String, String?) -> @types.OutboundMessage
+pub fn build_outbound_message(String, String, String, String?) -> @trkbt10/mukuro/core/types.OutboundMessage
 
 pub fn build_settings_schema(title~ : String, description? : String, fields~ : Array[SettingsFieldDef]) -> Json
 
+pub fn clear_external_tools() -> Unit
+
 pub fn datetime_entry() -> ToolEntry
 
-pub fn datetime_tool() -> @types.ToolDefinition
+pub fn datetime_tool() -> @trkbt10/llm_interop/types.ToolDefinition
 
-pub fn execute_builtin_tool(BuiltinToolContext, String, Json) -> ToolExecutionResult?
+pub fn edit_file_entry() -> ToolEntry
 
-pub fn execute_simple_tool(String, Json) -> ToolExecutionResult
+pub fn edit_file_settings_schema() -> Json
 
-pub fn execute_tool(String, Json, MemoryStore?, SubAgentManager?, ((@types.OutboundMessage) -> Unit)?) -> ToolExecutionResult
+pub fn edit_file_tool() -> @trkbt10/llm_interop/types.ToolDefinition
+
+pub async fn execute_builtin_tool(BuiltinToolContext, String, Json) -> ToolExecutionResult?
+
+pub async fn execute_simple_tool(String, Json) -> ToolExecutionResult
+
+pub async fn execute_tool(String, Json, MemoryStore?, SubAgentManager?, ((@trkbt10/mukuro/core/types.OutboundMessage) -> Unit)?) -> ToolExecutionResult
 
 pub fn filesystem_entry() -> ToolEntry
 
 pub fn filesystem_settings_schema() -> Json
 
-pub fn filesystem_tool() -> @types.ToolDefinition
+pub fn filesystem_tool() -> @trkbt10/llm_interop/types.ToolDefinition
 
-pub fn filter_tools_for_subagent(&@interfaces.ToolRegistry, Array[String]) -> Array[@types.ToolDefinition]
+pub fn filter_tools_for_subagent(&@interfaces.ToolRegistry, Array[String]) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
 
 pub fn get_array_arg(Json, String) -> Array[Json]?
 
@@ -51,7 +58,7 @@ pub fn get_settings_schema(String) -> Json?
 
 pub fn get_string_arg(Json, String) -> String?
 
-pub fn get_tool_definition(String) -> @types.ToolDefinition?
+pub fn get_tool_definition(String) -> @trkbt10/llm_interop/types.ToolDefinition?
 
 pub fn get_tool_entry(String) -> ToolEntry?
 
@@ -63,21 +70,25 @@ pub fn is_dangerous_command(String) -> Bool
 
 pub fn is_sync_tool(String) -> Bool
 
-pub fn make_tool_definition(name~ : String, description~ : String, parameters~ : Json) -> @types.ToolDefinition
+pub fn make_tool_definition(name~ : String, description~ : String, parameters~ : Json) -> @trkbt10/llm_interop/types.ToolDefinition
 
 pub fn memory_entry() -> ToolEntry
 
 pub fn memory_settings_schema() -> Json
 
-pub fn memory_tool() -> @types.ToolDefinition
+pub fn memory_tool() -> @trkbt10/llm_interop/types.ToolDefinition
 
 pub fn message_entry() -> ToolEntry
 
-pub fn message_tool() -> @types.ToolDefinition
+pub fn message_tool() -> @trkbt10/llm_interop/types.ToolDefinition
 
 pub fn number_field(key~ : String, label~ : String, description? : String, default_value? : Double, min? : Double?, max? : Double?) -> SettingsFieldDef
 
 pub fn object_schema(Json, Array[String]) -> Json
+
+pub fn register_external_tool(ToolEntry) -> Unit
+
+pub fn replace_text(String, String, String, Int) -> (String, Int)
 
 pub fn require_int_arg(Json, String) -> Int raise ToolExecutionError
 
@@ -89,13 +100,13 @@ pub fn shell_entry() -> ToolEntry
 
 pub fn shell_settings_schema() -> Json
 
-pub fn shell_tool() -> @types.ToolDefinition
+pub fn shell_tool() -> @trkbt10/llm_interop/types.ToolDefinition
 
-pub async fn spawn_agent_async(SubAgentManager, AsyncSubAgentConfig, String, async (Array[@types.ModelMessage], Array[@types.ToolDefinition], @types.ModelOptions) -> @types.ModelResponse, &@interfaces.ToolRegistry, @types.ModelOptions) -> SpawnResult
+pub async fn spawn_agent_async(SubAgentManager, AsyncSubAgentConfig, String, async (Array[@trkbt10/llm_interop/types.ModelMessage], Array[@trkbt10/llm_interop/types.ToolDefinition], @trkbt10/mukuro/core/types.ModelOptions) -> @trkbt10/llm_interop/types.ModelResponse, &@interfaces.ToolRegistry, @trkbt10/mukuro/core/types.ModelOptions) -> SpawnResult
 
 pub fn spawn_entry() -> ToolEntry
 
-pub fn spawn_tool() -> @types.ToolDefinition
+pub fn spawn_tool() -> @trkbt10/llm_interop/types.ToolDefinition
 
 pub fn string_param(String) -> Json
 
@@ -107,13 +118,15 @@ pub fn trace_entry() -> ToolEntry
 
 pub fn trace_settings_schema() -> Json
 
-pub fn trace_tool() -> @types.ToolDefinition
+pub fn trace_tool() -> @trkbt10/llm_interop/types.ToolDefinition
+
+pub fn validate_workspace_path(String, String?) -> String?
 
 pub fn web_entry() -> ToolEntry
 
 pub fn web_settings_schema() -> Json
 
-pub fn web_tool() -> @types.ToolDefinition
+pub fn web_tool() -> @trkbt10/llm_interop/types.ToolDefinition
 
 // Errors
 pub(all) suberror ToolExecutionError {
@@ -137,22 +150,27 @@ pub struct BuiltinToolContext {
   memory : MemoryStore
   agent_manager : SubAgentManager
   trace : TraceStore
-  send_message : (@types.OutboundMessage) -> Unit
+  send_message : (@trkbt10/mukuro/core/types.OutboundMessage) -> Unit
+  workspace_dir : String?
 }
-pub fn BuiltinToolContext::make(MemoryStore, SubAgentManager, TraceStore, (@types.OutboundMessage) -> Unit) -> Self
-pub fn BuiltinToolContext::new((@types.OutboundMessage) -> Unit) -> Self
+pub fn BuiltinToolContext::make(MemoryStore, SubAgentManager, TraceStore, (@trkbt10/mukuro/core/types.OutboundMessage) -> Unit, workspace_dir? : String?) -> Self
+pub fn BuiltinToolContext::new((@trkbt10/mukuro/core/types.OutboundMessage) -> Unit) -> Self
 
 pub struct MemoryStore {
   data : Map[String, Json]
   metadata : Map[String, Int64]
+  mut persist_path : String?
 }
 pub fn MemoryStore::clear(Self) -> Unit
 pub fn MemoryStore::delete(Self, String) -> Bool
 pub fn MemoryStore::get(Self, String) -> Json?
 pub fn MemoryStore::has(Self, String) -> Bool
 pub fn MemoryStore::keys(Self) -> Array[String]
+pub fn MemoryStore::load_from_markdown(Self, String) -> Unit
 pub fn MemoryStore::new() -> Self
 pub fn MemoryStore::set(Self, String, Json) -> Unit
+pub fn MemoryStore::set_persist_path(Self, String) -> Unit
+pub fn MemoryStore::to_markdown(Self) -> String
 
 pub(all) struct SettingsFieldDef {
   key : String
@@ -193,11 +211,11 @@ pub struct SubAgentManager {
 pub fn SubAgentManager::generate_id(Self) -> String
 pub fn SubAgentManager::new() -> Self
 
-pub struct ToolEntry {
+pub(all) struct ToolEntry {
   name : String
-  definition : @types.ToolDefinition
+  definition : @trkbt10/llm_interop/types.ToolDefinition
   settings_schema : Json?
-  execute : (BuiltinToolContext, Json) -> ToolExecutionResult
+  execute : async (BuiltinToolContext, Json) -> ToolExecutionResult
 }
 
 pub(all) struct ToolExecutionResult {

@@ -2,22 +2,27 @@
 package "trkbt10/mukuro/core/agent"
 
 import {
-  "trkbt10/mukuro/core/types",
   "trkbt10/mukuro/interfaces",
 }
 
 // Values
 pub fn calculate_backoff_delay(Int, Int, Int, Double) -> Int
 
+pub let consolidation_threshold : Int
+
+pub fn maybe_consolidate(Array[@trkbt10/llm_interop/types.ModelMessage]) -> String?
+
 pub fn record_session_meta(&@interfaces.HistoryRecorder?, &@interfaces.Clock?, Int64, String, Json) -> Unit
 
-pub async fn run_agent_loop(@types.InboundEnvelope, AgentLoopOptions, AgentDependencies) -> @types.OutboundMessage raise AgentLoopError
+pub async fn run_agent_loop(@trkbt10/mukuro/core/types.InboundEnvelope, AgentLoopOptions, AgentDependencies) -> @trkbt10/mukuro/core/types.OutboundMessage raise AgentLoopError
 
 pub fn safe_close(&@interfaces.HistoryRecorder?) -> Unit
 
 pub fn safe_open_session(&@interfaces.HistoryRecorder?, String, Int64) -> Bool?
 
-pub async fn single_model_call(Array[@types.ModelMessage], @types.ModelOptions, &@interfaces.ModelOrchestrator) -> @types.ModelResponse raise AgentLoopError
+pub async fn single_model_call(Array[@trkbt10/llm_interop/types.ModelMessage], @trkbt10/mukuro/core/types.ModelOptions, &@interfaces.ModelOrchestrator) -> @trkbt10/llm_interop/types.ModelResponse raise AgentLoopError
+
+pub fn summarize_messages_simple(Array[@trkbt10/llm_interop/types.ModelMessage]) -> String
 
 // Errors
 pub(all) suberror AgentLoopError {
@@ -46,21 +51,21 @@ pub(all) struct AgentDependencies {
 pub(all) struct AgentLoopContext {
   mut state : AgentState
   mut iteration : Int
-  mut messages : Array[@types.ModelMessage]
-  tool_call_history : Array[@types.ToolCallRequest]
+  mut messages : Array[@trkbt10/llm_interop/types.ModelMessage]
+  tool_call_history : Array[@trkbt10/llm_interop/types.ToolCallRequest]
 }
-pub fn AgentLoopContext::add_message(Self, @types.ModelMessage) -> Unit
+pub fn AgentLoopContext::add_message(Self, @trkbt10/llm_interop/types.ModelMessage) -> Unit
 pub fn AgentLoopContext::increment_iteration(Self) -> Unit
 pub fn AgentLoopContext::is_completed(Self) -> Bool
 pub fn AgentLoopContext::is_error(Self) -> Bool
 pub fn AgentLoopContext::is_max_iterations(Self, Int) -> Bool
 pub fn AgentLoopContext::new() -> Self
-pub fn AgentLoopContext::record_tool_call(Self, @types.ToolCallRequest) -> Unit
+pub fn AgentLoopContext::record_tool_call(Self, @trkbt10/llm_interop/types.ToolCallRequest) -> Unit
 pub fn AgentLoopContext::set_state(Self, AgentState) -> Unit
 
 pub(all) struct AgentLoopOptions {
   max_iterations : Int
-  model_options : @types.ModelOptions
+  model_options : @trkbt10/mukuro/core/types.ModelOptions
   timeout_ms : Int64
   retry_config : RetryConfig
 }
@@ -68,7 +73,7 @@ pub fn AgentLoopOptions::default() -> Self
 
 pub(all) enum AgentState {
   Idle
-  Processing(@types.InboundEnvelope)
+  Processing(@trkbt10/mukuro/core/types.InboundEnvelope)
   WaitingForModel
   ExecutingTool(tool_name~ : String, call_id~ : String)
   SendingResponse
@@ -78,8 +83,8 @@ pub(all) enum AgentState {
 pub impl Show for AgentState
 
 pub(all) enum IterationResult {
-  Continue(Array[@types.ModelMessage])
-  Complete(@types.OutboundMessage)
+  Continue(Array[@trkbt10/llm_interop/types.ModelMessage])
+  Complete(@trkbt10/mukuro/core/types.OutboundMessage)
   Failed(String)
 }
 

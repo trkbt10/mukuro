@@ -10,6 +10,7 @@ import {
 }
 
 // Values
+pub fn load_allowlists_from_json(Json) -> AllowlistManager
 
 // Errors
 pub(all) suberror ChannelError {
@@ -24,6 +25,21 @@ pub(all) suberror ChannelError {
 pub impl Show for ChannelError
 
 // Types and methods
+pub(all) struct AllowlistConfig {
+  enabled : Bool
+  channel : String
+  senders : Array[String]
+  chat_ids : Array[String]?
+}
+pub fn AllowlistConfig::from_json(Json) -> Self?
+
+pub struct AllowlistManager {
+  configs : Array[AllowlistConfig]
+}
+pub fn AllowlistManager::add(Self, AllowlistConfig) -> Unit
+pub fn AllowlistManager::is_allowed(Self, String, String, String) -> Bool
+pub fn AllowlistManager::new() -> Self
+
 pub(all) struct ChannelBaseConfig {
   name : String
   enabled : Bool
@@ -51,6 +67,25 @@ pub(all) enum ChannelStatus {
   Reconnecting
   Error(String)
 }
+
+pub struct DiscordChannelAdapter {
+  config : DiscordChannelConfig
+  base : ChannelBaseConfig
+  mut connected : Bool
+  last_message_id : String?
+  inbox : Array[@types.InboundEnvelope]
+}
+pub fn DiscordChannelAdapter::new(DiscordChannelConfig) -> Self
+pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter
+
+pub(all) struct DiscordChannelConfig {
+  bot_token : String
+  api_base_url : String
+  channel_ids : Array[String]
+  polling_interval : Int
+}
+pub fn DiscordChannelConfig::default(bot_token~ : String) -> Self
+pub fn DiscordChannelConfig::from_json(Json) -> Self?
 
 pub(all) struct EventHandler {
   handler : (@interfaces.ChannelEvent) -> Unit
@@ -101,6 +136,24 @@ pub(all) struct SendResult {
 }
 pub fn SendResult::failure(error~ : String) -> Self
 pub fn SendResult::success(message_id~ : String) -> Self
+
+pub struct TelegramChannelAdapter {
+  config : TelegramChannelConfig
+  base : ChannelBaseConfig
+  mut connected : Bool
+  mut last_update_id : Int64
+  inbox : Array[@types.InboundEnvelope]
+}
+pub fn TelegramChannelAdapter::new(TelegramChannelConfig) -> Self
+pub impl @interfaces.ChannelAdapter for TelegramChannelAdapter
+
+pub(all) struct TelegramChannelConfig {
+  bot_token : String
+  api_base_url : String
+  polling_timeout : Int
+}
+pub fn TelegramChannelConfig::default(bot_token~ : String) -> Self
+pub fn TelegramChannelConfig::from_json(Json) -> Self?
 
 pub struct WebSocketChannelAdapter {
   config : WebSocketChannelConfig

@@ -3,7 +3,6 @@ package "trkbt10/mukuro/interfaces"
 
 import {
   "moonbitlang/core/builtin",
-  "trkbt10/mukuro/core/types",
 }
 
 // Values
@@ -297,7 +296,7 @@ pub fn CapabilitySchema::to_json(Self) -> Json
 pub fn CapabilitySchema::with_params(description~ : String, parameters~ : Json) -> Self
 
 pub(all) enum ChannelEvent {
-  MessageReceived(@types.InboundEnvelope)
+  MessageReceived(@trkbt10/mukuro/core/types.InboundEnvelope)
   Connected(channel~ : String)
   Disconnected(channel~ : String)
   Error(channel~ : String, message~ : String)
@@ -337,13 +336,13 @@ pub fn ContextFiles::empty() -> Self
 pub fn ContextFiles::has_soul(Self) -> Bool
 
 pub(all) struct ContextInput {
-  session_history : Array[@types.ModelMessage]
+  session_history : Array[@trkbt10/llm_interop/types.ModelMessage]
   memory_context : Array[String]
   trace_context : String?
   skills : Array[SkillDefinition]
   bootstrap : String
-  current_message : @types.InboundEnvelope
-  system_prompt_config : @types.SystemPromptConfig?
+  current_message : @trkbt10/mukuro/core/types.InboundEnvelope
+  system_prompt_config : @trkbt10/mukuro/core/types.SystemPromptConfig?
   is_first_message : Bool
   context_files : ContextFiles
 }
@@ -913,7 +912,7 @@ pub(all) enum Schedule {
 pub(all) struct ScheduledTask {
   id : String
   schedule : Schedule
-  envelope_template : @types.InboundEnvelope
+  envelope_template : @trkbt10/mukuro/core/types.InboundEnvelope
   enabled : Bool
 }
 
@@ -1071,8 +1070,8 @@ pub(open) trait ChannelAdapter {
   async connect(Self) -> Unit
   async disconnect(Self) -> Unit
   is_connected(Self) -> Bool
-  async send(Self, @types.OutboundMessage) -> Unit
-  async receive(Self) -> @types.InboundEnvelope
+  async send(Self, @trkbt10/mukuro/core/types.OutboundMessage) -> Unit
+  async receive(Self) -> @trkbt10/mukuro/core/types.InboundEnvelope
 }
 
 pub(open) trait ChannelManager {
@@ -1090,14 +1089,14 @@ pub(open) trait Clock {
 }
 
 pub(open) trait ConfigLoader {
-  load(Self, path~ : String) -> @types.MukuroConfig raise ConfigError
-  load_with_env(Self, path~ : String, env~ : &Environment) -> @types.MukuroConfig raise ConfigError
-  load_from_env(Self, env~ : &Environment) -> @types.MukuroConfig raise ConfigError
-  default_config(Self) -> @types.MukuroConfig
+  load(Self, path~ : String) -> @trkbt10/mukuro/core/types.MukuroConfig raise ConfigError
+  load_with_env(Self, path~ : String, env~ : &Environment) -> @trkbt10/mukuro/core/types.MukuroConfig raise ConfigError
+  load_from_env(Self, env~ : &Environment) -> @trkbt10/mukuro/core/types.MukuroConfig raise ConfigError
+  default_config(Self) -> @trkbt10/mukuro/core/types.MukuroConfig
 }
 
 pub(open) trait ConfigValidator {
-  validate(Self, config~ : @types.MukuroConfig) -> Unit raise ConfigError
+  validate(Self, config~ : @trkbt10/mukuro/core/types.MukuroConfig) -> Unit raise ConfigError
 }
 
 pub(open) trait ConnectablePlugin {
@@ -1106,7 +1105,7 @@ pub(open) trait ConnectablePlugin {
 }
 
 pub(open) trait ContextBuilder {
-  build(Self, ContextInput) -> Array[@types.ModelMessage]
+  build(Self, ContextInput) -> Array[@trkbt10/llm_interop/types.ModelMessage]
 }
 
 pub(open) trait DynamicPluginManager {
@@ -1131,7 +1130,7 @@ pub(open) trait DynamicToolManager {
   reload_tool(Self, id~ : String) -> Unit raise ToolManagerError
   get_tool_state(Self, id~ : String) -> ToolState?
   list_tool_states(Self) -> Array[ToolState]
-  list_enabled_definitions(Self) -> Array[@types.ToolDefinition]
+  list_enabled_definitions(Self) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
   has_tool(Self, id~ : String) -> Bool
 }
 
@@ -1159,8 +1158,8 @@ pub(open) trait FileStore {
 
 pub(open) trait GatewayEventListener {
   on_state_change(Self, old~ : GatewayState, new~ : GatewayState) -> Unit
-  on_message_received(Self, envelope~ : @types.InboundEnvelope) -> Unit
-  on_message_sent(Self, message~ : @types.OutboundMessage) -> Unit
+  on_message_received(Self, envelope~ : @trkbt10/mukuro/core/types.InboundEnvelope) -> Unit
+  on_message_sent(Self, message~ : @trkbt10/mukuro/core/types.OutboundMessage) -> Unit
   on_error(Self, error~ : String) -> Unit
 }
 
@@ -1169,8 +1168,8 @@ pub(open) trait GatewayService {
   async stop(Self) -> Unit raise ControlError
   async status(Self) -> GatewayStatus
   authenticate(Self, token~ : String) -> AuthResult
-  async dispatch_inbound(Self, auth~ : AuthContext, envelope~ : @types.InboundEnvelope) -> Unit raise ControlError
-  async dispatch_outbound(Self, auth~ : AuthContext, message~ : @types.OutboundMessage) -> Unit raise ControlError
+  async dispatch_inbound(Self, auth~ : AuthContext, envelope~ : @trkbt10/mukuro/core/types.InboundEnvelope) -> Unit raise ControlError
+  async dispatch_outbound(Self, auth~ : AuthContext, message~ : @trkbt10/mukuro/core/types.OutboundMessage) -> Unit raise ControlError
 }
 
 pub(open) trait HealthAggregator {
@@ -1260,17 +1259,17 @@ pub(open) trait MessagingPlugin {
 }
 
 pub(open) trait ModelOrchestrator {
-  async call(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse
+  async call(Self, messages~ : Array[@trkbt10/llm_interop/types.ModelMessage], tools~ : Array[@trkbt10/llm_interop/types.ToolDefinition], options~ : @trkbt10/mukuro/core/types.ModelOptions) -> @trkbt10/llm_interop/types.ModelResponse
 }
 
 pub(open) trait ModelProvider {
   name(Self) -> String
   is_available(Self) -> Bool
-  async invoke(Self, messages~ : Array[@types.ModelMessage], tools~ : Array[@types.ToolDefinition], options~ : @types.ModelOptions) -> @types.ModelResponse
+  async invoke(Self, messages~ : Array[@trkbt10/llm_interop/types.ModelMessage], tools~ : Array[@trkbt10/llm_interop/types.ToolDefinition], options~ : @trkbt10/mukuro/core/types.ModelOptions) -> @trkbt10/llm_interop/types.ModelResponse
 }
 
 pub(open) trait OutboundDispatcher {
-  async dispatch(Self, @types.OutboundMessage) -> Unit
+  async dispatch(Self, @trkbt10/mukuro/core/types.OutboundMessage) -> Unit
 }
 
 pub(open) trait PluginAuthenticator {
@@ -1314,7 +1313,7 @@ pub(open) trait ProcessExecutor {
 }
 
 pub(open) trait ProviderResolver {
-  resolve(Self) -> @types.ProviderConfig?
+  resolve(Self) -> @trkbt10/mukuro/core/types.ProviderConfig?
 }
 
 pub(open) trait Scheduler {
@@ -1327,27 +1326,27 @@ pub(open) trait Scheduler {
 }
 
 pub(open) trait SessionManager {
-  get(Self, @types.SessionKey) -> @types.Session? raise SessionManagerError
-  get_or_create(Self, @types.SessionKey, now~ : Int64) -> @types.Session raise SessionManagerError
-  append_user_message(Self, @types.SessionKey, content~ : String, name~ : String?, timestamp~ : Int64) -> Unit raise SessionManagerError
-  append_assistant_message(Self, @types.SessionKey, content~ : String, tool_calls~ : Array[@types.ToolCallRequest]?, timestamp~ : Int64) -> Unit raise SessionManagerError
-  record_tool_call(Self, @types.SessionKey, call_id~ : String, tool_name~ : String, arguments~ : Json, timestamp~ : Int64) -> Unit raise SessionManagerError
-  record_tool_result(Self, @types.SessionKey, call_id~ : String, content~ : String, timestamp~ : Int64) -> Unit raise SessionManagerError
-  record_error(Self, @types.SessionKey, message~ : String, timestamp~ : Int64) -> Unit raise SessionManagerError
-  delete(Self, @types.SessionKey) -> Unit raise SessionManagerError
-  list_keys(Self) -> Array[@types.SessionKey] raise SessionManagerError
-  close_session(Self, @types.SessionKey) -> Unit raise SessionManagerError
+  get(Self, @trkbt10/mukuro/core/types.SessionKey) -> @trkbt10/mukuro/core/types.Session? raise SessionManagerError
+  get_or_create(Self, @trkbt10/mukuro/core/types.SessionKey, now~ : Int64) -> @trkbt10/mukuro/core/types.Session raise SessionManagerError
+  append_user_message(Self, @trkbt10/mukuro/core/types.SessionKey, content~ : String, name~ : String?, timestamp~ : Int64) -> Unit raise SessionManagerError
+  append_assistant_message(Self, @trkbt10/mukuro/core/types.SessionKey, content~ : String, tool_calls~ : Array[@trkbt10/llm_interop/types.ToolCallRequest]?, timestamp~ : Int64) -> Unit raise SessionManagerError
+  record_tool_call(Self, @trkbt10/mukuro/core/types.SessionKey, call_id~ : String, tool_name~ : String, arguments~ : Json, timestamp~ : Int64) -> Unit raise SessionManagerError
+  record_tool_result(Self, @trkbt10/mukuro/core/types.SessionKey, call_id~ : String, content~ : String, timestamp~ : Int64) -> Unit raise SessionManagerError
+  record_error(Self, @trkbt10/mukuro/core/types.SessionKey, message~ : String, timestamp~ : Int64) -> Unit raise SessionManagerError
+  delete(Self, @trkbt10/mukuro/core/types.SessionKey) -> Unit raise SessionManagerError
+  list_keys(Self) -> Array[@trkbt10/mukuro/core/types.SessionKey] raise SessionManagerError
+  close_session(Self, @trkbt10/mukuro/core/types.SessionKey) -> Unit raise SessionManagerError
 }
 
 pub(open) trait SessionResolver {
-  resolve(Self, @types.InboundEnvelope) -> @types.SessionKey
+  resolve(Self, @trkbt10/mukuro/core/types.InboundEnvelope) -> @trkbt10/mukuro/core/types.SessionKey
 }
 
 pub(open) trait SessionStore {
-  get(Self, @types.SessionKey) -> @types.Session? raise
-  save(Self, @types.Session) -> Unit raise
-  delete(Self, @types.SessionKey) -> Unit raise
-  list_keys(Self) -> Array[@types.SessionKey] raise
+  get(Self, @trkbt10/mukuro/core/types.SessionKey) -> @trkbt10/mukuro/core/types.Session? raise
+  save(Self, @trkbt10/mukuro/core/types.Session) -> Unit raise
+  delete(Self, @trkbt10/mukuro/core/types.SessionKey) -> Unit raise
+  list_keys(Self) -> Array[@trkbt10/mukuro/core/types.SessionKey] raise
 }
 
 pub(open) trait StructuredLogger {
@@ -1358,12 +1357,12 @@ pub(open) trait StructuredLogger {
 }
 
 pub(open) trait ToolExecutor {
-  async execute(Self, tool_name~ : String, arguments~ : Json, context~ : @types.ToolContext) -> @types.ToolResult
+  async execute(Self, tool_name~ : String, arguments~ : Json, context~ : @trkbt10/mukuro/core/types.ToolContext) -> @trkbt10/mukuro/core/types.ToolResult
 }
 
 pub(open) trait ToolRegistry {
-  register(Self, @types.ToolDefinition, &ToolExecutor) -> Unit
-  list_definitions(Self) -> Array[@types.ToolDefinition]
+  register(Self, @trkbt10/llm_interop/types.ToolDefinition, &ToolExecutor) -> Unit
+  list_definitions(Self) -> Array[@trkbt10/llm_interop/types.ToolDefinition]
   get_executor(Self, String) -> &ToolExecutor?
   has_tool(Self, String) -> Bool
 }

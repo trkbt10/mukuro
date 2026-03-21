@@ -1,0 +1,133 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "trkbt10/mukuro/cmd/cli"
+
+import {
+  "trkbt10/mukuro/core/config",
+}
+
+// Values
+pub fn apply_global_options(GlobalOptions) -> Unit
+
+pub fn get_command_line_args() -> Array[String]
+
+pub fn get_help_message(config_path~ : String) -> String
+
+pub fn get_version_message() -> String
+
+pub fn parse_args(Array[String]) -> Command
+
+pub fn parse_global_options(Array[String]) -> (GlobalOptions, Array[String])
+
+pub fn parse_service_args(ArrayView[String]) -> Command
+
+pub fn print_result(CliResult) -> Unit
+
+pub let version : String
+
+// Errors
+
+// Types and methods
+pub(all) struct AgentOptions {
+  mut message : String?
+  mut config_path : String?
+}
+
+pub(all) enum CliResult {
+  Ok(String)
+  Error(String)
+  Exit(Int)
+}
+
+pub(all) enum Command {
+  Help
+  Version
+  Onboard(OnboardOptions)
+  Gateway(GatewayCommand)
+  Agent(AgentOptions)
+  Config(ConfigCommand)
+  Cron(CronCommand)
+  Service(ServiceCommand)
+  DaemonChild(String)
+  Unknown(String)
+}
+
+pub(all) enum ConfigCommand {
+  Path
+  Show
+  Providers
+  Unknown(String)
+}
+
+pub(all) enum CronCommand {
+  List
+  Unknown(String)
+}
+
+pub(all) struct GatewayAuthLogOptions {
+  mut since_seconds : Int64
+  mut json : Bool
+}
+
+pub(all) enum GatewayCommand {
+  Start(GatewayStartOptions)
+  Status(GatewayStatusOptions)
+  Stop
+  AuthLog(GatewayAuthLogOptions)
+  Unknown(String)
+}
+
+pub(all) struct GatewayStartOptions {
+  mut config_path : String?
+  mut host : String?
+  mut port : Int?
+  mut debug : Bool
+  mut daemon : Bool
+  mut control_api : Bool
+}
+
+pub(all) struct GatewayStatusOptions {
+  mut json : Bool
+}
+
+pub(all) struct GlobalOptions {
+  mut path_mode : @config.PathMode
+}
+
+pub(all) struct OnboardOptions {
+  mut provider : String?
+  mut api_key : String?
+  mut default_model : String?
+  mut output_path : String?
+}
+
+pub(all) enum ServiceCommand {
+  Install(ServiceInstallOptions)
+  Uninstall
+  Start
+  Stop
+  Restart
+  Status(ServiceStatusOptions)
+  Logs(ServiceLogsOptions)
+  Unknown(String)
+}
+
+pub(all) struct ServiceInstallOptions {
+  mut user : Bool
+  mut system : Bool
+  mut config_path : String?
+  mut auto_start : Bool
+}
+
+pub(all) struct ServiceLogsOptions {
+  mut follow : Bool
+  mut lines : Int
+}
+
+pub(all) struct ServiceStatusOptions {
+  mut json : Bool
+}
+
+// Type aliases
+
+// Traits
+
