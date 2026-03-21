@@ -158,8 +158,12 @@ pub(all) struct OnboardOptions {
   mut api_key : String?
   /// デフォルトモデル
   mut default_model : String?
+  /// ベースURL（カスタムプロバイダー用）
+  mut base_url : String?
   /// 出力先設定ファイルパス
   mut output_path : String?
+  /// 設定をリセットして初期化
+  mut reset : Bool
 }
 
 ///|
@@ -200,8 +204,9 @@ pub fn get_help_message(config_path~ : String) -> String {
   let auth_log_opts = "Gateway Auth Log Options:\n  --since <seconds>    Lookback window in seconds (default: 3600)\n  --json               Output summary as JSON"
   let service_opts = "Service Options:\n  install [--user|--system] [--config PATH] [--auto-start]\n                       Install as system service\n  uninstall            Uninstall system service\n  start                Start the service\n  stop                 Stop the service\n  restart              Restart the service\n  status [--json]      Show service status\n  logs [-f] [-n LINES] View service logs"
   let agent_opts = "Agent Options:\n  -m, --message <msg>  Send a single message and exit\n  --config <path>      Path to configuration file"
-  let examples = "Examples:\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro gateway\n  mukuro gateway --config ~/.mukuro/config.json\n  mukuro gateway --daemon\n  mukuro gateway status\n  mukuro gateway stop\n  mukuro agent -m \"What is MoonBit?\"\n  mukuro agent                     # Interactive REPL\n  mukuro --local gateway          # Use project-local .mukuro\n  mukuro cron list\n  mukuro service install --user\n  mukuro service status"
-  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro [global-options] <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway              Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  agent                Interactive agent REPL or single-shot execution\n  service              Manage system service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\n\{global_opts}\n\n\{gateway_opts}\n\n\{agent_opts}\n\n\{status_opts}\n\n\{auth_log_opts}\n\n\{service_opts}\n\n\{examples}"
+  let onboard_opts = "Onboard Options:\n  --provider <name>    Provider name (anthropic, openai, gemini, deepseek, groq,\n                       openrouter, ollama, moonshot, or custom)\n  --api-key <key>      API key (auto-detected from env if not specified)\n  --model <model>      Default model (auto-set from provider if not specified)\n  --base-url <url>     Base URL for custom/OpenAI-compatible endpoints\n  --output <path>      Config file path\n  --reset              Reset config before writing (default: merge)"
+  let examples = "Examples:\n  mukuro onboard                                 # Show providers & detected keys\n  mukuro onboard --provider anthropic --api-key sk-xxx\n  mukuro onboard --provider openai               # Use OPENAI_API_KEY env var\n  mukuro onboard --provider deepseek --base-url https://api.deepseek.com/v1\n  mukuro onboard --provider anthropic --reset     # Reset and reconfigure\n  mukuro gateway\n  mukuro gateway --daemon\n  mukuro gateway status\n  mukuro agent -m \"What is MoonBit?\"\n  mukuro agent                     # Interactive REPL\n  mukuro --local gateway          # Use project-local .mukuro\n  mukuro config providers          # List configured providers\n  mukuro service install --user\n  mukuro service status"
+  "mukuro - MoonBit Agent Framework v\{version}\n\nUsage: mukuro [global-options] <command> [options]\n\nCommands:\n  onboard              Initialize mukuro configuration\n  gateway              Start the gateway service\n  gateway status       Show gateway status\n  gateway stop         Stop the gateway service\n  gateway auth-log     Show auth audit log summary\n  agent                Interactive agent REPL or single-shot execution\n  config               View configuration\n  service              Manage system service\n  cron list            List scheduled cron jobs\n  version              Show version information\n  help                 Show this help message\n\n\{global_opts}\n\n\{onboard_opts}\n\n\{gateway_opts}\n\n\{agent_opts}\n\n\{status_opts}\n\n\{auth_log_opts}\n\n\{service_opts}\n\n\{examples}"
 }
 
 ///|

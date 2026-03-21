@@ -99,7 +99,9 @@ fn parse_onboard_args(args : ArrayView[String]) -> Command {
     provider: None,
     api_key: None,
     default_model: None,
+    base_url: None,
     output_path: None,
+    reset: false,
   }
   let arr = array_view_to_array(args)
   let mut i = 0
@@ -127,6 +129,13 @@ fn parse_onboard_args(args : ArrayView[String]) -> Command {
         } else {
           i = i + 1
         }
+      "--base-url" =>
+        if i + 1 < arr.length() {
+          opts.base_url = Some(arr[i + 1])
+          i = i + 2
+        } else {
+          i = i + 1
+        }
       "--output" =>
         if i + 1 < arr.length() {
           opts.output_path = Some(arr[i + 1])
@@ -134,6 +143,10 @@ fn parse_onboard_args(args : ArrayView[String]) -> Command {
         } else {
           i = i + 1
         }
+      "--reset" => {
+        opts.reset = true
+        i = i + 1
+      }
       _ => i = i + 1
     }
   }

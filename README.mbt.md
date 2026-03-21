@@ -13,9 +13,10 @@ The name comes from the MoonBit reinterpretation of OpenClaw:
 
 ## Features
 
-- Gateway lifecycle via CLI (`start`, `status`, `stop`)
+- Gateway lifecycle via CLI (`gateway`, `gateway status`, `gateway stop`)
 - Background daemon mode on native target (`--daemon`)
 - HTTP Control API (`/status`, `/health*`, `/dispatch*`)
+- Interactive agent REPL and single-shot execution
 - File-based runtime bootstrap for model and channels
 
 ## Setup
@@ -23,47 +24,70 @@ The name comes from the MoonBit reinterpretation of OpenClaw:
 Requirements:
 
 - MoonBit toolchain (`moon`)
+- SQLite3 (`-lsqlite3`)
+- zlib (`-lz`)
 
 ```bash
-moon build cmd/main --target native
+moon build --target native
 ```
+
+The CLI binary is built to `_build/native/debug/build/cmd/main/main.exe`.
 
 ## Quick Start
 
 ```bash
+MUKURO=_build/native/debug/build/cmd/main/main.exe
+
 # 1) Generate initial config
-_build/native/debug/build/cmd/main/main.exe onboard \
+$MUKURO onboard \
   --provider anthropic \
   --api-key YOUR_API_KEY \
-  --model claude-3-5-sonnet-latest
+  --model claude-sonnet-4-20250514
 
-# 2) Start gateway
-_build/native/debug/build/cmd/main/main.exe gateway start --config .mukuro/config.json
+# 2) Start gateway (uses default config path automatically)
+$MUKURO gateway
 
 # 3) Check status
-_build/native/debug/build/cmd/main/main.exe gateway status
+$MUKURO gateway status
 
 # 4) Stop gateway
-_build/native/debug/build/cmd/main/main.exe gateway stop
+$MUKURO gateway stop
 ```
+
+The default config path is OS-standard:
+- macOS: `~/Library/Application Support/mukuro/config.json`
+- Linux: `~/.local/share/mukuro/config.json`
+
+Use `--local` to store config in `.mukuro/` relative to the current directory instead.
 
 ## Operations
 
 ```bash
 # Start in daemon mode
-_build/native/debug/build/cmd/main/main.exe gateway start --daemon --config .mukuro/config.json
+$MUKURO gateway --daemon
+
+# Specify custom config
+$MUKURO gateway --config /path/to/config.json
+
+# Override host/port (default: 127.0.0.1:6960)
+$MUKURO gateway --host 0.0.0.0 --port 8080
 
 # Status as JSON
-_build/native/debug/build/cmd/main/main.exe gateway status --json
+$MUKURO gateway status --json
+
+# Interactive agent REPL
+$MUKURO agent
+
+# Single-shot agent execution
+$MUKURO agent -m "What is MoonBit?"
+
+# Use project-local data directory
+$MUKURO --local gateway
 ```
 
 ## Control API
 
-Start with Control API enabled:
-
-```bash
-_build/native/debug/build/cmd/main/main.exe gateway start --control-api --host 127.0.0.1 --port 8080
-```
+The gateway always serves the HTTP Control API when running in foreground mode.
 
 Endpoints:
 
@@ -77,9 +101,9 @@ Endpoints:
 Examples:
 
 ```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" http://127.0.0.1:8080/status
+curl -H "Authorization: Bearer YOUR_TOKEN" http://127.0.0.1:6960/status
 
-curl -X POST http://127.0.0.1:8080/dispatch \
+curl -X POST http://127.0.0.1:6960/dispatch \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"channel":"test","chat_id":"chat-1","sender_id":"u1","content":"hello"}'
@@ -92,16 +116,14 @@ Auth notes:
 
 ## Configuration Example
 
-`.mukuro/config.json`
-
 ```json
 {
   "provider": "anthropic",
   "api_key": "YOUR_API_KEY",
-  "default_model": "claude-3-5-sonnet-latest",
+  "default_model": "claude-sonnet-4-20250514",
   "gateway": {
     "host": "127.0.0.1",
-    "port": 8080,
+    "port": 6960,
     "auth_token": "change-me",
     "auto_connect_channels": true
   }
@@ -110,21 +132,24 @@ Auth notes:
 
 ## Targets
 
-- `native`: recommended, main features supported
-- `js/wasm`: partial support (`gateway start` and related runtime features are limited)
+- `native`: recommended, all features supported
+- `js/wasm`: partial support (`gateway` and related runtime features are limited)
 
 ## Utility Commands
 
 ```bash
-_build/native/debug/build/cmd/main/main.exe help
-_build/native/debug/build/cmd/main/main.exe version
-_build/native/debug/build/cmd/main/main.exe cron list
+$MUKURO help
+$MUKURO version
+$MUKURO cron list
+$MUKURO config path
+$MUKURO config show
 ```
 
 ## Development
 
 ```bash
-moon test
-moon check
-moon info && moon fmt
+moon build --target native          # build
+moon test --target native           # run all tests
+moon check --target native          # type check
+moon info && moon fmt               # regenerate .mbti files & format
 ```

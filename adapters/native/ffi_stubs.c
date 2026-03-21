@@ -1490,6 +1490,25 @@ int moonbit_unsetenv_bytes(const unsigned char* name) {
 }
 
 /*
+ * getenv with UTF-8 bytes — NULL-safe
+ * Copies the value into the provided buffer.
+ * Returns the length of the value on success, -1 if the variable is not set.
+ */
+int moonbit_getenv_bytes(const unsigned char* name, unsigned char* buffer, int buffer_len) {
+    const char* value = getenv((const char*)name);
+    if (value == NULL) {
+        return -1;
+    }
+    int len = (int)strlen(value);
+    if (len >= buffer_len) {
+        len = buffer_len - 1;
+    }
+    memcpy(buffer, value, len);
+    buffer[len] = '\0';
+    return len;
+}
+
+/*
  * system with UTF-8 bytes
  */
 int moonbit_system_bytes(const unsigned char* command) {

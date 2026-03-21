@@ -66,7 +66,49 @@ test "parse_args onboard with options" {
       Command::Onboard(opts) =>
         opts.provider == Some("anthropic") &&
         opts.api_key == Some("sk-xxx") &&
-        opts.default_model == Some("claude-3")
+        opts.default_model == Some("claude-3") &&
+        opts.base_url == None &&
+        opts.reset == false
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args onboard with base-url" {
+  let cmd = parse_args([
+    "onboard", "--provider", "deepseek", "--base-url", "https://api.deepseek.com/v1",
+    "--api-key", "sk-ds",
+  ])
+  assert_true(
+    match cmd {
+      Command::Onboard(opts) =>
+        opts.provider == Some("deepseek") &&
+        opts.base_url == Some("https://api.deepseek.com/v1") &&
+        opts.api_key == Some("sk-ds")
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args onboard with reset flag" {
+  let cmd = parse_args(["onboard", "--provider", "anthropic", "--reset"])
+  assert_true(
+    match cmd {
+      Command::Onboard(opts) =>
+        opts.provider == Some("anthropic") && opts.reset == true
+      _ => false
+    },
+  )
+}
+
+///|
+test "parse_args onboard without provider shows list" {
+  let cmd = parse_args(["onboard"])
+  assert_true(
+    match cmd {
+      Command::Onboard(opts) => opts.provider == None
       _ => false
     },
   )

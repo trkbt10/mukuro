@@ -17,5 +17,5 @@ pub fn runtime_config_exists(path : String) -> Bool {
 ///|
 /// 設定ファイル未検出時のエラーメッセージ
 pub fn config_not_found_message(path : String) -> String {
-  "Configuration file not found: \{path}\n\nRun 'mukuro onboard --provider <provider> --api-key <key>' to initialize configuration."
+  "Configuration file not found: \{path}\n\nRun 'mukuro onboard' to see available providers and initialize configuration."
 }

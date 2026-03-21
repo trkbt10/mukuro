@@ -43,6 +43,16 @@ pub extern "C" fn c_setenv_bytes(
 #borrow(name)
 pub extern "C" fn c_unsetenv_bytes(name : Bytes) -> Int = "moonbit_unsetenv_bytes"
 
+///|
+/// getenv - UTF-8 Bytes版（NULL安全）
+/// バッファに値をコピーし、長さを返す。未設定の場合は -1
+#borrow(name, buffer)
+pub extern "C" fn c_getenv_bytes(
+  name : Bytes,
+  buffer : Bytes,
+  buffer_len : Int,
+) -> Int = "moonbit_getenv_bytes"
+
 // ============================================================
 // errno
 // ============================================================
