@@ -6,7 +6,7 @@ import {
 
 options(
   "is-main": true,
-  link: { "native": { "cc-flags": "-lpthread -lsqlite3" } },
+  link: { "native": { "cc-flags": "-lpthread -lsqlite3 -lz" } },
   "native-stub": [ "native_stubs.c" ],
   targets: { "main.mbt": [ "native" ], "plugin.mbt": [ "native" ] },
 )

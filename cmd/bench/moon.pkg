@@ -15,4 +15,5 @@ warnings = "-29"
 
 options(
   "is-main": true,
+  link: { "native": { "cc-flags": "-lsqlite3 -lpthread -lz" } },
 )
