@@ -14,30 +14,23 @@ fn is_gemini_provider(provider : String) -> Bool {
 }
 
 ///|
-/// Responses API をネイティブサポートするプロバイダかどうか
-/// OpenAI 本体のみがネイティブサポート。
-/// Groq, Ollama, vLLM, OpenRouter 等の互換プロバイダは未対応。
-fn supports_native_responses_api(provider : @types.ProviderConfig) -> Bool {
-  // 明示的に harmony_parser が指定されていれば、ネイティブサポートなし
-  if provider.use_harmony_parser {
-    return false
-  }
-  // OpenAI 本体のみネイティブサポート
-  match provider.name {
-    "openai" => true
-    _ => false
-  }
-}
-
-///|
-/// use_responses_api: true だがプロバイダが Responses API 未対応の場合、
-/// Chat Completions + Harmony 翻訳が必要
+/// Groq プロバイダーは Responses API をネイティブサポートしていないため、
+/// use_responses_api: true の場合でも Chat Completions に翻訳する必要がある
 fn needs_harmony_translation(provider : @types.ProviderConfig) -> Bool {
+  // use_responses_api が true でも、プロバイダーが Responses API をサポートしていない場合
+  // Chat Completions にフォールバックし、HarmonyToResponsesTranslator で翻訳する
   if not(provider.use_responses_api) {
     return false
   }
-  // ネイティブサポートがなければ翻訳が必要
-  not(supports_native_responses_api(provider))
+  // Groq は Responses API 未対応
+  if provider.name == "groq" {
+    return true
+  }
+  // base_url に "groq" が含まれる場合も翻訳が必要
+  match provider.base_url {
+    Some(url) => url.contains("groq")
+    None => false
+  }
 }
 
 ///|
