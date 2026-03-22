@@ -122,7 +122,11 @@ fn parse_discord_messages(
           {
             "content": String(content),
             "channel_id": String(channel_id),
-            "author": { "id": String(author_id), "username": String(username), .. },
+            "author": {
+              "id": String(author_id),
+              "username": String(username),
+              ..
+            },
             ..
           } => {
             // Bot 自身のメッセージは無視
@@ -162,12 +166,15 @@ pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter with name(self) {
 }
 
 ///|
-pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter with connect(
-  self,
-) {
+pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter with connect(self) {
   // /users/@me で接続確認
   let url = self.config.api_base_url + "/users/@me"
-  let (body, exit_code) = discord_api_call(url, "GET", self.config.bot_token, None)
+  let (body, exit_code) = discord_api_call(
+    url,
+    "GET",
+    self.config.bot_token,
+    None,
+  )
   if exit_code != 0 || body.is_empty() {
     self.connected = false
     return
@@ -211,16 +218,20 @@ pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter with send(
 }
 
 ///|
-pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter with receive(
-  self,
-) {
+pub impl @interfaces.ChannelAdapter for DiscordChannelAdapter with receive(self) {
   if self.inbox.length() > 0 {
     return self.inbox.remove(0)
   }
   // 監視チャネルからメッセージを取得
   for channel_id in self.config.channel_ids {
-    let url = self.config.api_base_url + "/channels/\{channel_id}/messages?limit=10"
-    let (body, exit_code) = discord_api_call(url, "GET", self.config.bot_token, None)
+    let url = self.config.api_base_url +
+      "/channels/\{channel_id}/messages?limit=10"
+    let (body, exit_code) = discord_api_call(
+      url,
+      "GET",
+      self.config.bot_token,
+      None,
+    )
     if exit_code != 0 || body.is_empty() {
       continue
     }

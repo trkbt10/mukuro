@@ -12,7 +12,10 @@ fn test_config_dir() -> String {
 ///|
 fn ensure_test_dir() -> Unit {
   ignore(
-    @native.c_mkdir_bytes(@native.string_to_utf8_cstring(test_config_dir()), 493),
+    @native.c_mkdir_bytes(
+      @native.string_to_utf8_cstring(test_config_dir()),
+      493,
+    ),
   )
 }
 

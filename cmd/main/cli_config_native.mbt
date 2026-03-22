@@ -26,9 +26,7 @@ fn execute_config_show() -> @cli.CliResult {
   let config_path = @cmd_config.default_runtime_config_path()
   let content = @cmd_config.read_config_text_impl(config_path) catch {
     _ =>
-      return @cli.CliResult::Error(
-        "Configuration not found at \{config_path}",
-      )
+      return @cli.CliResult::Error("Configuration not found at \{config_path}")
   }
   // API key をマスク
   let masked = mask_api_keys(content)
@@ -41,13 +39,9 @@ fn execute_config_providers() -> @cli.CliResult {
   let config_path = @cmd_config.default_runtime_config_path()
   let config_text = @cmd_config.read_config_text_impl(config_path) catch {
     _ =>
-      return @cli.CliResult::Error(
-        "Configuration not found at \{config_path}",
-      )
+      return @cli.CliResult::Error("Configuration not found at \{config_path}")
   }
-  let config = @config.ConfigLoaderImpl::default().load_from_string(
-    config_text,
-  ) catch {
+  let config = @config.ConfigLoaderImpl::default().load_from_string(config_text) catch {
     _ => return @cli.CliResult::Error("Failed to parse configuration")
   }
   if config.providers.is_empty() {

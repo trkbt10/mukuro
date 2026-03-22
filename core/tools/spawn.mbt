@@ -271,7 +271,10 @@ pub async fn spawn_agent_async(
   let tools = filter_tools_for_subagent(tool_registry, config.allowed_tools)
   let messages : Array[@llm_types.ModelMessage] = [
     @llm_types.ModelMessage::System(config.system_prompt),
-    @llm_types.ModelMessage::User(content=initial_message, name=Some(config.name)),
+    @llm_types.ModelMessage::User(
+      content=initial_message,
+      name=Some(config.name),
+    ),
   ]
   for iteration = 0; iteration < config.max_turns; {
     let response = model_invoke(messages, tools, model_options) catch {
@@ -287,7 +290,8 @@ pub async fn spawn_agent_async(
       }
     }
     match response {
-      @llm_types.ModelResponse::Text(content) | @llm_types.ModelResponse::RichText({ content, .. }) => {
+      @llm_types.ModelResponse::Text(content)
+      | @llm_types.ModelResponse::RichText({ content, .. }) => {
         let result : SpawnResult = {
           agent_id,
           status: "completed",

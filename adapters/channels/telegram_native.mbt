@@ -14,19 +14,15 @@ pub(all) struct TelegramChannelConfig {
 }
 
 ///|
-pub fn TelegramChannelConfig::default(bot_token~ : String) -> TelegramChannelConfig {
-  {
-    bot_token,
-    api_base_url: "https://api.telegram.org",
-    polling_timeout: 30,
-  }
+pub fn TelegramChannelConfig::default(
+  bot_token~ : String,
+) -> TelegramChannelConfig {
+  { bot_token, api_base_url: "https://api.telegram.org", polling_timeout: 30 }
 }
 
 ///|
 /// JSON から Telegram 設定をパース
-pub fn TelegramChannelConfig::from_json(
-  json : Json,
-) -> TelegramChannelConfig? {
+pub fn TelegramChannelConfig::from_json(json : Json) -> TelegramChannelConfig? {
   match json {
     { "token": String(token), .. } => {
       let api_base = match json {
@@ -114,7 +110,12 @@ fn parse_telegram_updates(
               new_last_id = update_id
             }
             match msg {
-              { "text": String(text), "chat": { "id": Number(chat_id, ..), .. }, "from": from, .. } => {
+              {
+                "text": String(text),
+                "chat": { "id": Number(chat_id, ..), .. },
+                "from": from,
+                ..
+              } => {
                 let sender_id = match from {
                   { "id": Number(id, ..), .. } => id.to_int64().to_string()
                   _ => "unknown"
@@ -218,8 +219,7 @@ pub impl @interfaces.ChannelAdapter for TelegramChannelAdapter with receive(
   // long polling で新メッセージを取得
   let offset = self.last_update_id + 1L
   let timeout = self.config.polling_timeout
-  let url = self.api_url("getUpdates") +
-    "?offset=\{offset}&timeout=\{timeout}"
+  let url = self.api_url("getUpdates") + "?offset=\{offset}&timeout=\{timeout}"
   let (body, exit_code) = telegram_api_call(url, None)
   if exit_code != 0 || body.is_empty() {
     return @types.InboundEnvelope::default()
@@ -227,7 +227,10 @@ pub impl @interfaces.ChannelAdapter for TelegramChannelAdapter with receive(
   let json : Json = @json.parse(body) catch {
     _ => return @types.InboundEnvelope::default()
   }
-  let (envelopes, new_last_id) = parse_telegram_updates(json, self.last_update_id)
+  let (envelopes, new_last_id) = parse_telegram_updates(
+    json,
+    self.last_update_id,
+  )
   self.last_update_id = new_last_id
   if envelopes.is_empty() {
     return @types.InboundEnvelope::default()

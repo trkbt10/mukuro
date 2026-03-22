@@ -122,7 +122,10 @@ test "reconstruct_session_from_history: SessionMeta is ignored in history" {
 
 ///|
 test "NativeSessionManager::new creates manager with empty cache" {
-  let mgr = NativeSessionManager::new(base_dir="\{@osenv_dirs.temp_dir()}/test", cache_max_size=10)
+  let mgr = NativeSessionManager::new(
+    base_dir="\{@osenv_dirs.temp_dir()}/test",
+    cache_max_size=10,
+  )
   assert_eq(mgr.base_dir, "\{@osenv_dirs.temp_dir()}/test")
   assert_eq(mgr.cache_max_size, 10)
   assert_eq(mgr.cache.length(), 0)
@@ -130,7 +133,10 @@ test "NativeSessionManager::new creates manager with empty cache" {
 
 ///|
 test "add_to_cache: adds session to cache" {
-  let mgr = NativeSessionManager::new(base_dir="\{@osenv_dirs.temp_dir()}/test", cache_max_size=10)
+  let mgr = NativeSessionManager::new(
+    base_dir="\{@osenv_dirs.temp_dir()}/test",
+    cache_max_size=10,
+  )
   let key = @types.SessionKey::new(
     channel="test",
     chat_id="chat_1",
@@ -144,7 +150,10 @@ test "add_to_cache: adds session to cache" {
 
 ///|
 test "add_to_cache: evicts all when cache is full" {
-  let mgr = NativeSessionManager::new(base_dir="\{@osenv_dirs.temp_dir()}/test", cache_max_size=2)
+  let mgr = NativeSessionManager::new(
+    base_dir="\{@osenv_dirs.temp_dir()}/test",
+    cache_max_size=2,
+  )
   // Add 2 sessions
   let key1 = @types.SessionKey::new(
     channel="test",
@@ -192,7 +201,10 @@ test "get: returns None for non-existent session" {
 
 ///|
 test "get: returns cached session" {
-  let mgr = NativeSessionManager::new(base_dir="\{@osenv_dirs.temp_dir()}/test", cache_max_size=10)
+  let mgr = NativeSessionManager::new(
+    base_dir="\{@osenv_dirs.temp_dir()}/test",
+    cache_max_size=10,
+  )
   let key = @types.SessionKey::new(
     channel="test",
     chat_id="cached",
@@ -226,7 +238,10 @@ test "get_or_create: creates new session with correct timestamp" {
 
 ///|
 test "delete: removes session from cache" {
-  let mgr = NativeSessionManager::new(base_dir="\{@osenv_dirs.temp_dir()}/test", cache_max_size=10)
+  let mgr = NativeSessionManager::new(
+    base_dir="\{@osenv_dirs.temp_dir()}/test",
+    cache_max_size=10,
+  )
   let key = @types.SessionKey::new(
     channel="test",
     chat_id="to_delete",
@@ -243,7 +258,10 @@ test "delete: removes session from cache" {
 
 ///|
 test "list_keys: returns cached keys when no metadata store" {
-  let mgr = NativeSessionManager::new(base_dir="\{@osenv_dirs.temp_dir()}/test", cache_max_size=10)
+  let mgr = NativeSessionManager::new(
+    base_dir="\{@osenv_dirs.temp_dir()}/test",
+    cache_max_size=10,
+  )
   let key1 = @types.SessionKey::new(
     channel="test",
     chat_id="chat_1",

@@ -204,7 +204,9 @@ test "NativeHistoryRecorder: ChatWsHandler flow simulation" {
 
 ///|
 test "create_session_history_recorder: returned trait object should work" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションコードと同じ create_session_history_recorder() を使う
   let history_recorder = create_session_history_recorder()
@@ -295,7 +297,9 @@ test "trait object in struct field: mutable state should persist" {
 
 ///|
 test "ChatWsHandler::new: history_recorder should be usable" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // 実際の ChatWsHandler::new() を使う
   let handler = ChatWsHandler::new()
@@ -357,7 +361,9 @@ test "ChatWsHandler::new: history_recorder should be usable" {
 
 ///|
 test "handle_connection flow: complete session lifecycle" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // handle_connection と同じフローをシミュレート
   let unique_suffix = @native.c_time()
@@ -422,7 +428,9 @@ test "handle_connection flow: complete session lifecycle" {
 
 ///|
 test "file creation verification: history file should exist after recording" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   let unique_suffix = @native.c_time()
   let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
@@ -473,7 +481,9 @@ test "file creation verification: history file should exist after recording" {
 
 ///|
 test "handle_send simulation: agent loop should record via passed history_recorder" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // 実際の ChatWsHandler と同じフローをシミュレート
   let unique_suffix = @native.c_time()
@@ -547,7 +557,9 @@ test "handle_send simulation: agent loop should record via passed history_record
 
 ///|
 test "error case: record without open_session should fail silently" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // open_session を呼ばずに record を呼ぶ
   let unique_suffix = @native.c_time()
@@ -586,7 +598,8 @@ test "data_dir verification: check actual path" {
   // data_dir が期待されるパスパターンであることを確認
   // macOS: ~/Library/Application Support/mukuro/
   // または --local フラグ時: @config.mukuro_dir_name
-  let is_valid_path = data_dir.has_suffix("/mukuro") || data_dir == @config.mukuro_dir_name
+  let is_valid_path = data_dir.has_suffix("/mukuro") ||
+    data_dir == @config.mukuro_dir_name
   assert_true(
     is_valid_path,
     msg="data_dir should be valid path, got: \{data_dir}",
@@ -599,7 +612,9 @@ test "data_dir verification: check actual path" {
 
 ///|
 test "error case: NotInitialized error has clear message" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   let recorder = @native.NativeHistoryRecorder::new(base_dir=@config.data_dir())
   let record : @interfaces.HistoryRecord = {
@@ -711,7 +726,9 @@ test "integration: verify file is actually created on disk" {
 
 ///|
 test "integration: verify handle_connection creates files in data_dir" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler と同じフローを検証
   let handler = ChatWsHandler::new()
@@ -761,7 +778,9 @@ test "integration: verify handle_connection creates files in data_dir" {
 
 ///|
 test "integration: verify create_session_history_recorder works" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // create_session_history_recorder() の戻り値を直接テスト
   let recorder = create_session_history_recorder()
@@ -803,7 +822,9 @@ test "integration: verify create_session_history_recorder works" {
 
 ///|
 test "debug: check data_dir value and file creation" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // data_dir の値を出力し、ファイル作成をステップバイステップで検証
   let data_dir = @config.data_dir()
@@ -912,7 +933,9 @@ test "error case: Show trait works for all error variants" {
 
 ///|
 test "file existence: verify file is created on disk after record" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   let data_dir = @config.data_dir()
   let unique_id = @native.c_time()
@@ -1011,7 +1034,9 @@ test "get_timestamp_ms: should return valid Int64 timestamp" {
 
 ///|
 test "production flow: ChatWsHandler with actual get_timestamp_ms" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler と同じフローを再現
   let handler = ChatWsHandler::new()
@@ -1146,7 +1171,9 @@ async test "ASYNC: trait object mutable state in async function" {
 
 ///|
 test "SYNC CONTEXT: calling async function from sync closure" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションの run_forever 内のクロージャと同じパターン
   // 同期クロージャ内から async 関数を呼ぶ
@@ -1193,7 +1220,9 @@ test "SYNC CONTEXT: calling async function from sync closure" {
 
 ///|
 test "E2E: verify actual file creation with exact production pattern" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションと完全に同じパターン:
   // 1. ChatWsHandler::new() で handler 作成
@@ -1279,7 +1308,9 @@ test "E2E: verify actual file creation with exact production pattern" {
 
 ///|
 test "PRODUCTION PATTERN: ChatWsHandler in sync closure like run_forever" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションの正確なパターンをシミュレート
   // - ChatWsHandler::new() を呼ぶ
@@ -1391,7 +1422,9 @@ fn simulate_handle_connection_async(
 
 ///|
 test "CRITICAL: trait object in struct preserves mutable state across calls" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler と同じ構造をシミュレート
   // struct に trait object を格納し、複数回メソッドを呼び出す
@@ -1443,7 +1476,9 @@ test "CRITICAL: trait object in struct preserves mutable state across calls" {
 
 ///|
 test "CRITICAL: ChatWsHandler.history_recorder preserves state" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // ChatWsHandler を作成し、その history_recorder の状態が保持されるか確認
   let _handler = ChatWsHandler::new()
@@ -1486,7 +1521,9 @@ test "CRITICAL: ChatWsHandler.history_recorder preserves state" {
 
 ///|
 test "CRITICAL: simulate exact production async flow" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // プロダクションの handle_connection と同じフローをシミュレート
   // ただし WebSocket なしで
@@ -1586,7 +1623,9 @@ test "ChatWsHandler::new: should produce different chat_ids" {
 
 ///|
 test "resume existing session: append to existing file works" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // 既存ファイルがある場合に追記できるか確認
   let data_dir = @config.data_dir()
@@ -1654,7 +1693,9 @@ test "resume existing session: append to existing file works" {
 
 ///|
 test "handle_connection exact flow: using handler's own chat_id and recorder" {
-  let test_dir = @osenv_dirs.temp_dir() + "/mukuro_ws_test_" + @native.c_time().to_string()
+  let test_dir = @osenv_dirs.temp_dir() +
+    "/mukuro_ws_test_" +
+    @native.c_time().to_string()
   @config.set_path_mode(@config.PathMode::Custom(test_dir))
   // handle_connection の完全なフローを再現
   // このテストは、プロダクションと完全に同じシーケンスを使う

@@ -360,8 +360,10 @@ test "fixture: OpenAI Responses text — stream vs non-stream consistent" {
   )
   let s_result = @openai.accumulate_responses_api(s_content)
   match (ns_result, s_result) {
-    (@llm_types.ModelResponse::Text(ns_text), @llm_types.ModelResponse::Text(s_text)) =>
-      inspect(ns_text, content=s_text)
+    (
+      @llm_types.ModelResponse::Text(ns_text),
+      @llm_types.ModelResponse::Text(s_text),
+    ) => inspect(ns_text, content=s_text)
     _ => fail("Expected both to be Text responses")
   }
 }
@@ -377,8 +379,10 @@ test "fixture: Anthropic Messages text — stream vs non-stream consistent" {
   )
   let s_result = @anthropic.accumulate_messages(s_content)
   match (ns_result, s_result) {
-    (@llm_types.ModelResponse::Text(ns_text), @llm_types.ModelResponse::Text(s_text)) =>
-      inspect(ns_text, content=s_text)
+    (
+      @llm_types.ModelResponse::Text(ns_text),
+      @llm_types.ModelResponse::Text(s_text),
+    ) => inspect(ns_text, content=s_text)
     _ => fail("Expected both to be Text responses")
   }
 }

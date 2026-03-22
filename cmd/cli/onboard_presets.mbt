@@ -93,9 +93,7 @@ pub fn format_provider_list() -> String {
       Some(v) => " (\{v})"
       None => " (no key needed)"
     }
-    buf.write_string(
-      "  - \{preset.name}: \{preset.default_model}\{env_hint}\n",
-    )
+    buf.write_string("  - \{preset.name}: \{preset.default_model}\{env_hint}\n")
   }
   buf.to_string()
 }
@@ -120,7 +118,7 @@ pub fn merge_provider_into_config(
   if not(replaced) {
     new_providers.push(provider)
   }
-  { ..config, providers: new_providers, }
+  { ..config, providers: new_providers }
 }
 
 ///|
@@ -151,9 +149,7 @@ pub fn build_post_onboard_guidance(
     buf.write_string(
       "  1. Add your API key:\n     mukuro onboard --provider \{provider_name} --api-key <your-key>\{env_hint}\n",
     )
-    buf.write_string(
-      "  2. Start the agent:\n     mukuro agent -m \"Hello!\"\n",
-    )
+    buf.write_string("  2. Start the agent:\n     mukuro agent -m \"Hello!\"\n")
   } else {
     buf.write_string("Next steps:\n")
     buf.write_string("  Start the agent:  mukuro agent -m \"Hello!\"\n")

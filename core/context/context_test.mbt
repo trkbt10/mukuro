@@ -186,7 +186,9 @@ test "SystemPromptWhen::First only applies on first message" {
   let builder = DefaultContextBuilder::default()
   // Not first message - system prompt should not be applied
   let input : @interfaces.ContextInput = {
-    session_history: [@llm_types.ModelMessage::User(content="Previous", name=None)],
+    session_history: [
+      @llm_types.ModelMessage::User(content="Previous", name=None),
+    ],
     memory_context: [],
     trace_context: None,
     skills: [],

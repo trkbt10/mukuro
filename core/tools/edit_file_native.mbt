@@ -18,11 +18,11 @@ fn edit_file_platform(
     _ => return ToolExecutionResult::error("Failed to read file content")
   }
   // 置換実行
-  let (new_content, replacements) = replace_text(content, old_text, new_text, count)
+  let (new_content, replacements) = replace_text(
+    content, old_text, new_text, count,
+  )
   if replacements == 0 {
-    return ToolExecutionResult::error(
-      "old_text not found in file: \{path}",
-    )
+    return ToolExecutionResult::error("old_text not found in file: \{path}")
   }
   // ファイル書き込み
   let write_result = fs_write(path, new_content)

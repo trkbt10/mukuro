@@ -9,22 +9,23 @@
 // Onboard State (Single Source of Truth)
 // =============================================================================
 
-///| 状態ファイルパス
+///|
+/// 状態ファイルパス
 fn onboard_state_path() -> String {
   @config.data_dir() + "/onboard-state.json"
 }
 
-///| 状態ディレクトリパス
+///|
+/// 状態ディレクトリパス
 fn onboard_state_dir() -> String {
   @config.data_dir()
 }
 
-///| オンボーディング状態を読み込み
+///|
+/// オンボーディング状態を読み込み
 fn load_onboard_state() -> Json {
   let path = onboard_state_path()
-  let content = @native.native_read_file_text(path) catch {
-    _ => return {}
-  }
+  let content = @native.native_read_file_text(path) catch { _ => return {} }
   if content.length() == 0 {
     return {}
   }
@@ -33,23 +34,24 @@ fn load_onboard_state() -> Json {
   }
 }
 
-///| オンボーディング状態を保存
+///|
+/// オンボーディング状態を保存
 fn save_onboard_state(state : Json) -> Bool {
   // ディレクトリを作成
   let dir = onboard_state_dir()
-  ignore(
-    @native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(dir), 493),
-  ) // 0o755
+  ignore(@native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(dir), 493)) // 0o755
   // ファイルに書き込み
   let path = onboard_state_path()
   let content = state.stringify()
   @native.c_write_text_file_bytes(
     @native.string_to_utf8_cstring(path),
     @native.string_to_utf8_cstring(content),
-  ) == 0
+  ) ==
+  0
 }
 
-///| エポック秒を文字列として取得（ISO8601より確実）
+///|
+/// エポック秒を文字列として取得（ISO8601より確実）
 fn get_epoch_timestamp() -> String {
   let epoch = @native.c_time()
   epoch.to_string()
@@ -73,13 +75,14 @@ fn try_onboard_status() -> ControlApiResponse {
     { "status": String(s), .. } => s
     _ =>
       // 状態未初期化の場合、プロバイダの有無で判定
-      if has_provider { "in_progress" } else { "not_started" }
+      if has_provider {
+        "in_progress"
+      } else {
+        "not_started"
+      }
   }
   json_response(200, {
-    "data": {
-      "status": status,
-      "has_provider": Json::boolean(has_provider),
-    },
+    "data": { "status": status, "has_provider": Json::boolean(has_provider) },
   })
 }
 
@@ -98,10 +101,7 @@ fn try_onboard_start() -> ControlApiResponse {
   }
   // 状態を in_progress に更新
   let now = get_epoch_timestamp()
-  let new_state : Json = {
-    "status": "in_progress",
-    "started_at": now,
-  }
+  let new_state : Json = { "status": "in_progress", "started_at": now }
   if not(save_onboard_state(new_state)) {
     return json_response(500, {
       "error": "save_failed",
@@ -145,9 +145,10 @@ fn try_onboard_complete() -> ControlApiResponse {
   let bootstrap_filename = @api_context.ContextFileType::Bootstrap.filename()
   let bootstrap_path = @config.data_dir() + "/" + bootstrap_filename
   let bootstrap_exists = @native.c_access_bytes(
-    @bytes.to_utf8_cstring(bootstrap_path),
-    0,
-  ) == 0
+      @bytes.to_utf8_cstring(bootstrap_path),
+      0,
+    ) ==
+    0
   if bootstrap_exists {
     ignore(@native.c_remove_bytes(@bytes.to_utf8_cstring(bootstrap_path)))
   }
@@ -278,7 +279,7 @@ fn build_onboard_generation_prompt(
 
 ///|
 /// LLMを直接呼び出す（ワンショット・ツールなし）
-/// llm_interop の chat_gateway() 経由で全プロバイダ対応
+/// Responses API パイプライン経由で全プロバイダ対応
 async fn call_onboard_llm(
   provider : @types.ProviderConfig,
   prompt : String,

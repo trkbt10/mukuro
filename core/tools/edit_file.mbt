@@ -65,14 +65,16 @@ pub fn edit_file_entry() -> ToolEntry {
     name: "edit_file",
     definition: edit_file_tool(),
     settings_schema: Some(edit_file_settings_schema()),
-    execute: fn(ctx, args) { execute_edit_file(args, workspace_dir=ctx.workspace_dir) },
+    execute: fn(ctx, args) {
+      execute_edit_file(args, workspace_dir=ctx.workspace_dir)
+    },
   }
 }
 
 ///|
 fn execute_edit_file(
   args : Json,
-  workspace_dir~ : String? = None,
+  workspace_dir? : String? = None,
 ) -> ToolExecutionResult {
   let path = match get_string_arg(args, "path") {
     Some(p) => p

@@ -18,8 +18,7 @@ pub impl Show for AgentLoopError with output(self, logger) {
     ToolExecutionFailed(msg) =>
       logger.write_string("ToolExecutionFailed: \{msg}")
     SessionError(msg) => logger.write_string("SessionError: \{msg}")
-    ConfigurationError(msg) =>
-      logger.write_string("ConfigurationError: \{msg}")
+    ConfigurationError(msg) => logger.write_string("ConfigurationError: \{msg}")
     RateLimitExceeded(retry_count~, last_retry_after~) =>
       logger.write_string(
         "RateLimitExceeded(retry_count=\{retry_count}, last_retry_after=\{last_retry_after})",
@@ -347,7 +346,9 @@ pub async fn run_agent_loop(
   }
   // 6. エージェントループ
   // コンテキストプルーニング: トークン予算を超える場合は古いメッセージを削除
-  let pruner = @session.ContextPruner::new(@types.ContextPruningConfig::default())
+  let pruner = @session.ContextPruner::new(
+    @types.ContextPruningConfig::default(),
+  )
   while not(ctx.is_max_iterations(options.max_iterations)) {
     ctx.set_state(AgentState::WaitingForModel)
     ctx.increment_iteration()
@@ -376,7 +377,8 @@ pub async fn run_agent_loop(
       other => raise other
     }
     match response {
-      @llm_types.ModelResponse::Text(content) | @llm_types.ModelResponse::RichText({ content, .. }) => {
+      @llm_types.ModelResponse::Text(content)
+      | @llm_types.ModelResponse::RichText({ content, .. }) => {
         ctx.set_state(AgentState::SendingResponse)
         // AssistantMessage を記録 - session_manager がある場合は一貫して使用
         match sm {

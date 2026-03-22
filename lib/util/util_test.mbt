@@ -78,10 +78,7 @@ test "escape_shell_single_quote no quotes" {
 
 ///|
 test "escape_shell_single_quote with quotes" {
-  inspect(
-    escape_shell_single_quote("it's a test"),
-    content="it'\\''s a test",
-  )
+  inspect(escape_shell_single_quote("it's a test"), content="it'\\''s a test")
 }
 
 ///|

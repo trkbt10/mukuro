@@ -12,10 +12,10 @@ import {
 options(
   link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
   targets: {
+    "auth_log.mbt": [ "native" ],
     "config.mbt": [ "native" ],
+    "ipc.mbt": [ "native" ],
     "manager.mbt": [ "native" ],
     "spawn.mbt": [ "native" ],
-    "ipc.mbt": [ "native" ],
-    "auth_log.mbt": [ "native" ],
   },
 )

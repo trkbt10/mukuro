@@ -103,10 +103,7 @@ test "AgentLoopError Show formats detailed messages" {
   let config_err = @agent.AgentLoopError::ConfigurationError(
     "missing api_key in config",
   )
-  inspect(
-    config_err,
-    content="ConfigurationError: missing api_key in config",
-  )
+  inspect(config_err, content="ConfigurationError: missing api_key in config")
 
   // RateLimitExceeded
   let rate_err = @agent.AgentLoopError::RateLimitExceeded(

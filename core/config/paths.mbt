@@ -44,7 +44,9 @@ pub fn get_path_mode() -> PathMode {
 pub fn config_dir() -> String {
   match path_mode.val {
     Standard => {
-      let dir : String? = try { @osenv_dirs.config_dir_for(app_name) } catch { _ => None }
+      let dir : String? = @osenv_dirs.config_dir_for(app_name) catch {
+        _ => None
+      }
       dir.unwrap()
     }
     Local => mukuro_dir_name
@@ -63,7 +65,7 @@ pub fn config_file() -> String {
 pub fn config_file_for(mode : PathMode) -> String {
   let dir = match mode {
     Standard => {
-      let d : String? = try { @osenv_dirs.config_dir_for(app_name) } catch { _ => None }
+      let d : String? = @osenv_dirs.config_dir_for(app_name) catch { _ => None }
       d.unwrap()
     }
     Local => mukuro_dir_name
@@ -77,7 +79,7 @@ pub fn config_file_for(mode : PathMode) -> String {
 pub fn data_dir() -> String {
   match path_mode.val {
     Standard => {
-      let dir : String? = try { @osenv_dirs.data_dir_for(app_name) } catch { _ => None }
+      let dir : String? = @osenv_dirs.data_dir_for(app_name) catch { _ => None }
       dir.unwrap()
     }
     Local => mukuro_dir_name
@@ -90,7 +92,9 @@ pub fn data_dir() -> String {
 pub fn cache_dir() -> String {
   match path_mode.val {
     Standard => {
-      let dir : String? = try { @osenv_dirs.cache_dir_for(app_name) } catch { _ => None }
+      let dir : String? = @osenv_dirs.cache_dir_for(app_name) catch {
+        _ => None
+      }
       dir.unwrap()
     }
     Local => mukuro_dir_name

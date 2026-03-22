@@ -73,7 +73,9 @@ pub(all) struct McpToolDef {
 
 ///|
 /// McpToolDef を llm_interop の ToolDefinition に変換
-pub fn McpToolDef::to_tool_definition(self : McpToolDef) -> @llm_types.ToolDefinition {
+pub fn McpToolDef::to_tool_definition(
+  self : McpToolDef,
+) -> @llm_types.ToolDefinition {
   @llm_types.ToolDefinition::new(
     name="mcp_\{self.server_name}_\{self.name}",
     description="[MCP:\{self.server_name}] \{self.description}",

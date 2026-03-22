@@ -224,7 +224,10 @@ test "handle_data_update writes file content" {
   assert_eq(resp.status, 200)
   assert_true(resp.body.contains("ok"))
   // Verify file was written
-  assert_eq(storage.files.get("test-workspace/SOUL.md"), Some("New soul content"))
+  assert_eq(
+    storage.files.get("test-workspace/SOUL.md"),
+    Some("New soul content"),
+  )
 }
 
 ///|

@@ -28,16 +28,16 @@ pub fn initialize_mcp_servers(config_json : Json) -> Unit {
     // 1. initialize ハンドシェイク
     let init_req = @interfaces.JsonRpcRequest::new(
       rpc_method="initialize",
-      params=Some(
-        {
-          "protocolVersion": "2024-11-05",
-          "capabilities": {},
-          "clientInfo": { "name": "mukuro", "version": "0.1.0" },
-        },
-      ),
+      params=Some({
+        "protocolVersion": "2024-11-05",
+        "capabilities": {},
+        "clientInfo": { "name": "mukuro", "version": "0.1.0" },
+      }),
       id=Some(1),
     )
-    let init_response = stdio_client.send_request(init_req) catch { _ => continue }
+    let init_response = stdio_client.send_request(init_req) catch {
+      _ => continue
+    }
     ignore(init_response)
     // 2. initialized 通知
     let notif = @interfaces.JsonRpcRequest::new(
@@ -45,14 +45,18 @@ pub fn initialize_mcp_servers(config_json : Json) -> Unit {
       params=None,
       id=None,
     )
-    ignore(stdio_client.send_request(notif)) catch { _ => () }
+    ignore(stdio_client.send_request(notif)) catch {
+      _ => ()
+    }
     // 3. tools/list でツール一覧取得
     let list_req = @interfaces.JsonRpcRequest::new(
       rpc_method="tools/list",
       params=None,
       id=Some(2),
     )
-    let list_response = stdio_client.send_request(list_req) catch { _ => continue }
+    let list_response = stdio_client.send_request(list_req) catch {
+      _ => continue
+    }
     let tools_json = match list_response.result {
       Some(r) => r
       None => continue
@@ -109,9 +113,7 @@ fn execute_mcp_tool(
   }
   match response.error {
     Some(err) =>
-      return @tools.ToolExecutionResult::error(
-        "MCP error: \{err.message}",
-      )
+      return @tools.ToolExecutionResult::error("MCP error: \{err.message}")
     None => ()
   }
   match response.result {

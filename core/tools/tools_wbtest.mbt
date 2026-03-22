@@ -344,7 +344,9 @@ test "strip_html_tags removes basic tags" {
 
 ///|
 test "strip_html_tags removes script and style" {
-  let result = strip_html_tags("<p>Hi</p><script>alert(1)</script><style>.x{}</style><p>End</p>")
+  let result = strip_html_tags(
+    "<p>Hi</p><script>alert(1)</script><style>.x{}</style><p>End</p>",
+  )
   assert_eq(result, "Hi\n\nEnd\n")
 }
 
@@ -510,13 +512,19 @@ test "validate_workspace_path allows when no workspace set" {
 
 ///|
 test "validate_workspace_path allows path inside workspace" {
-  let result = validate_workspace_path("/home/user/project/file.txt", Some("/home/user/project"))
+  let result = validate_workspace_path(
+    "/home/user/project/file.txt",
+    Some("/home/user/project"),
+  )
   assert_eq(result, None)
 }
 
 ///|
 test "validate_workspace_path rejects path outside workspace" {
-  let result = validate_workspace_path("/etc/passwd", Some("/home/user/project"))
+  let result = validate_workspace_path(
+    "/etc/passwd",
+    Some("/home/user/project"),
+  )
   match result {
     Some(msg) => assert_true(msg.contains("outside workspace"))
     None => fail("Expected rejection")
@@ -525,7 +533,10 @@ test "validate_workspace_path rejects path outside workspace" {
 
 ///|
 test "validate_workspace_path rejects path traversal" {
-  let result = validate_workspace_path("../../../etc/passwd", Some("/home/user/project"))
+  let result = validate_workspace_path(
+    "../../../etc/passwd",
+    Some("/home/user/project"),
+  )
   match result {
     Some(msg) => assert_true(msg.contains("traversal"))
     None => fail("Expected rejection")
@@ -534,7 +545,10 @@ test "validate_workspace_path rejects path traversal" {
 
 ///|
 test "validate_workspace_path allows relative paths" {
-  let result = validate_workspace_path("src/main.mbt", Some("/home/user/project"))
+  let result = validate_workspace_path(
+    "src/main.mbt",
+    Some("/home/user/project"),
+  )
   assert_eq(result, None)
 }
 

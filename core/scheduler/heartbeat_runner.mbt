@@ -65,6 +65,8 @@ pub fn build_heartbeat_prompt(pending_tasks : Array[String]) -> String {
   for task in pending_tasks {
     buf.write_string("- [ ] \{task}\n")
   }
-  buf.write_string("\nFor each task, determine if action is needed and take appropriate steps.")
+  buf.write_string(
+    "\nFor each task, determine if action is needed and take appropriate steps.",
+  )
   buf.to_string()
 }

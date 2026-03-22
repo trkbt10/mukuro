@@ -28,10 +28,7 @@ extern "C" fn sched_fclose(handle : Int64) -> Int = "moonbit_fclose_handle"
 
 ///|
 /// TaskScheduler をファイルに保存
-pub fn save_scheduler_to_file(
-  scheduler : TaskScheduler,
-  path : String,
-) -> Bool {
+pub fn save_scheduler_to_file(scheduler : TaskScheduler, path : String) -> Bool {
   let json = scheduler_to_json(scheduler)
   let content = json.stringify()
   let data = @moonbit_encoding_utf8.encode(content.view())

@@ -4,9 +4,7 @@ test "summarize_messages_simple counts messages" {
     @llm_types.ModelMessage::User(content="Hello", name=None),
     @llm_types.ModelMessage::Assistant(content="Hi there", tool_calls=None),
     @llm_types.ModelMessage::User(content="How are you?", name=None),
-    @llm_types.ModelMessage::Assistant(
-      content="I'm fine", tool_calls=None,
-    ),
+    @llm_types.ModelMessage::Assistant(content="I'm fine", tool_calls=None),
   ]
   let summary = summarize_messages_simple(messages)
   assert_true(summary.contains("2 user messages"))
@@ -45,13 +43,8 @@ test "summarize_messages_simple counts tool results" {
         @llm_types.ToolCallRequest::new(id="1", name="shell", arguments={}),
       ]),
     ),
-    @llm_types.ModelMessage::ToolResult(
-      tool_call_id="1", content="done",
-    ),
-    @llm_types.ModelMessage::Assistant(
-      content="Done!",
-      tool_calls=None,
-    ),
+    @llm_types.ModelMessage::ToolResult(tool_call_id="1", content="done"),
+    @llm_types.ModelMessage::Assistant(content="Done!", tool_calls=None),
   ]
   let summary = summarize_messages_simple(messages)
   assert_true(summary.contains("1 tool calls"))

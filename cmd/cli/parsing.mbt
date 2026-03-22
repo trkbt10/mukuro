@@ -225,18 +225,13 @@ fn config_command() -> @argparse.Command {
 
 ///|
 fn cron_command() -> @argparse.Command {
-  @argparse.Command(
-    "cron",
-    about="Manage cron jobs",
-    disable_help_flag=true,
-    subcommands=[
-      @argparse.Command(
-        "list",
-        about="List scheduled cron jobs",
-        disable_help_flag=true,
-      ),
-    ],
-  )
+  @argparse.Command("cron", about="Manage cron jobs", disable_help_flag=true, subcommands=[
+    @argparse.Command(
+      "list",
+      about="List scheduled cron jobs",
+      disable_help_flag=true,
+    ),
+  ])
 }
 
 ///|
@@ -280,24 +275,13 @@ fn service_install_command() -> @argparse.Command {
     about="Install as system service",
     disable_help_flag=true,
     flags=[
-      @argparse.FlagArg(
+      @argparse.FlagArg("user", about="Install as user-level service (default)"),
+      @argparse.FlagArg("system", about="Install as system-level service", conflicts_with=[
         "user",
-        about="Install as user-level service (default)",
-      ),
-      @argparse.FlagArg(
-        "system",
-        about="Install as system-level service",
-        conflicts_with=["user"],
-      ),
-      @argparse.FlagArg(
-        "auto-start",
-        about="Enable auto-start",
-        negatable=true,
-      ),
+      ]),
+      @argparse.FlagArg("auto-start", about="Enable auto-start", negatable=true),
     ],
-    options=[
-      @argparse.OptionArg("config", about="Path to configuration file"),
-    ],
+    options=[@argparse.OptionArg("config", about="Path to configuration file")],
   )
 }
 
@@ -318,11 +302,7 @@ fn service_logs_command() -> @argparse.Command {
     about="View service logs",
     disable_help_flag=true,
     flags=[
-      @argparse.FlagArg(
-        "follow",
-        short='f',
-        about="Follow (realtime display)",
-      ),
+      @argparse.FlagArg("follow", short='f', about="Follow (realtime display)"),
     ],
     options=[
       @argparse.OptionArg(
@@ -458,7 +438,7 @@ fn matches_to_gateway(matches : @argparse.Matches) -> Command {
   }
   match matches.subcommand {
     Some(("status", m)) => {
-      let opts : GatewayStatusOptions = { json: get_flag(m, "json"), }
+      let opts : GatewayStatusOptions = { json: get_flag(m, "json") }
       Command::Gateway(GatewayCommand::Status(opts))
     }
     Some(("stop", _)) => Command::Gateway(GatewayCommand::Stop)
@@ -554,7 +534,7 @@ fn matches_to_service(matches : @argparse.Matches) -> Command {
     Some(("stop", _)) => Command::Service(ServiceCommand::Stop)
     Some(("restart", _)) => Command::Service(ServiceCommand::Restart)
     Some(("status", m)) => {
-      let opts : ServiceStatusOptions = { json: get_flag(m, "json"), }
+      let opts : ServiceStatusOptions = { json: get_flag(m, "json") }
       Command::Service(ServiceCommand::Status(opts))
     }
     Some(("logs", m)) => {
@@ -595,11 +575,6 @@ pub fn parse_args(args : Array[String]) -> Command {
     let matches = cmd.parse(argv=args, env={})
     matches_to_command(matches)
   } catch {
-    _ =>
-      if args.is_empty() {
-        Command::Help
-      } else {
-        Command::Unknown(args[0])
-      }
+    _ => if args.is_empty() { Command::Help } else { Command::Unknown(args[0]) }
   }
 }

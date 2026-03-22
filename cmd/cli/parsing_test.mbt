@@ -81,8 +81,7 @@ test "parse_args -v" {
 ///|
 test "parse_args onboard with options" {
   let cmd = parse_args([
-    "onboard", "--provider", "anthropic", "--api-key", "sk-xxx", "--model",
-    "claude-3",
+    "onboard", "--provider", "anthropic", "--api-key", "sk-xxx", "--model", "claude-3",
   ])
   assert_true(
     match cmd {
@@ -100,8 +99,8 @@ test "parse_args onboard with options" {
 ///|
 test "parse_args onboard with base-url" {
   let cmd = parse_args([
-    "onboard", "--provider", "deepseek", "--base-url",
-    "https://api.deepseek.com/v1", "--api-key", "sk-ds",
+    "onboard", "--provider", "deepseek", "--base-url", "https://api.deepseek.com/v1",
+    "--api-key", "sk-ds",
   ])
   assert_true(
     match cmd {
@@ -178,8 +177,7 @@ test "parse_args gateway with options but no subcommand" {
   let cmd = parse_args(["gateway", "--port", "9000"])
   assert_true(
     match cmd {
-      Command::Gateway(GatewayCommand::Start(opts)) =>
-        opts.port == Some(9000)
+      Command::Gateway(GatewayCommand::Start(opts)) => opts.port == Some(9000)
       _ => false
     },
   )

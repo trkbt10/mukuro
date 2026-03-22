@@ -133,7 +133,9 @@ test "NativeHistoryRecorder read-write round-trip via Reader" {
 
 ///|
 test "NativeHistoryRecorder raises NotInitialized when not open" {
-  let recorder = NativeHistoryRecorder::new(base_dir="{@osenv_dirs.temp_dir()}/mukuro_h4")
+  let recorder = NativeHistoryRecorder::new(
+    base_dir="{@osenv_dirs.temp_dir()}/mukuro_h4",
+  )
   let record : @interfaces.HistoryRecord = {
     timestamp: 0L,
     session_id: "test",

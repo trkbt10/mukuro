@@ -10,7 +10,6 @@ fn persist_memory(store : MemoryStore) -> Unit {
       let content = store.to_markdown()
       // fs_write を再利用 (filesystem_native.mbt で定義)
       let _ = fs_write(path, content)
-
     }
     None => () // persist_path 未設定 → 永続化なし
   }

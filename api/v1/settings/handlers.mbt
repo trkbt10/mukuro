@@ -403,9 +403,9 @@ fn handle_update_provider(
           state.config = Some({ ..config, providers: new_providers })
           state.persist()
           // Return the updated provider
-          let updated_provider = new_providers.iter().find_first(fn(p) {
-            p.name == provider_name
-          })
+          let updated_provider = new_providers
+            .iter()
+            .find_first(fn(p) { p.name == provider_name })
           match updated_provider {
             Some(p) => @api.json_response(200, { "data": p.to_settings_json() })
             None => @api.json_response(200, { "ok": true })

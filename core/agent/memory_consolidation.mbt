@@ -40,7 +40,9 @@ pub fn summarize_messages_simple(
       _ => ()
     }
   }
-  buf.write_string("Session summary: \{user_count} user messages, \{assistant_count} assistant responses, \{tool_count} tool calls.")
+  buf.write_string(
+    "Session summary: \{user_count} user messages, \{assistant_count} assistant responses, \{tool_count} tool calls.",
+  )
   let user_text = last_user_msg.to_string()
   if user_text.length() > 0 {
     buf.write_string(" Last topic: \{user_text}")
@@ -54,9 +56,7 @@ pub let consolidation_threshold : Int = 6
 
 ///|
 /// セッション終了時にメモリ統合が必要かチェックし、サマリーを返す
-pub fn maybe_consolidate(
-  messages : Array[@llm_types.ModelMessage],
-) -> String? {
+pub fn maybe_consolidate(messages : Array[@llm_types.ModelMessage]) -> String? {
   if messages.length() < consolidation_threshold {
     return None
   }

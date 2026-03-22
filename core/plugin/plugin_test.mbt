@@ -388,7 +388,9 @@ test "create_plugin_tool_executor: invalid tool name" {
 
 ///|
 test "PluginSystemInitializer: create initializer" {
-  let initializer = PluginSystemInitializer::new(plugin_dir="test-workspace/plugins")
+  let initializer = PluginSystemInitializer::new(
+    plugin_dir="test-workspace/plugins",
+  )
   let host = initializer.get_host()
   let registry = initializer.get_tool_registry()
   assert_eq(host.get_plugin_dir(), "test-workspace/plugins")

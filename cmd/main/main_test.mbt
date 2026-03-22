@@ -69,7 +69,9 @@ async test "execute_onboard success with interpolated config" {
     api_key: Some("sk-test123"),
     default_model: Some("claude-3"),
     base_url: None,
-    output_path: Some("\{@osenv_dirs.temp_dir()}/mukuro-test/onboard-test-config.json"),
+    output_path: Some(
+      "\{@osenv_dirs.temp_dir()}/mukuro-test/onboard-test-config.json",
+    ),
     reset: false,
   }
   let result = execute_onboard(opts)

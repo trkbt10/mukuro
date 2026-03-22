@@ -10,8 +10,7 @@ let global_gateway : @control.Gateway = create_global_gateway(@cli.version)
 /// コマンドを実行 (async)
 pub async fn execute_command(cmd : @cli.Command) -> @cli.CliResult {
   match cmd {
-    @cli.Command::Help =>
-      @cli.CliResult::Ok(@cli.get_help_message())
+    @cli.Command::Help => @cli.CliResult::Ok(@cli.get_help_message())
     @cli.Command::Version => @cli.CliResult::Ok(@cli.get_version_message())
     @cli.Command::Onboard(opts) => execute_onboard(opts)
     @cli.Command::Gateway(gateway_cmd) => execute_gateway_command(gateway_cmd)

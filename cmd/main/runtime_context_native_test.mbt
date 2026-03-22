@@ -59,12 +59,8 @@ fn teardown_test_workspace_context(dir : String) -> Unit {
 test "enrich_envelope_with_workspace_context_impl injects bootstrap/memory/skills" {
   let dir = setup_test_workspace_context()
   cleanup_workspace_context_files(dir)
-  assert_true(
-    write_text(dir + "/bootstrap.md", "You are workspace agent"),
-  )
-  assert_true(
-    write_text(dir + "/memory.json", "[\"loves tea\", \"uses vim\"]"),
-  )
+  assert_true(write_text(dir + "/bootstrap.md", "You are workspace agent"))
+  assert_true(write_text(dir + "/memory.json", "[\"loves tea\", \"uses vim\"]"))
   assert_true(
     write_text(
       dir + "/skills.json",
@@ -108,9 +104,7 @@ test "enrich_envelope_with_workspace_context_impl injects bootstrap/memory/skill
 test "enrich_envelope_with_workspace_context_impl keeps existing metadata override" {
   let dir = setup_test_workspace_context()
   cleanup_workspace_context_files(dir)
-  assert_true(
-    write_text(dir + "/bootstrap.md", "workspace bootstrap"),
-  )
+  assert_true(write_text(dir + "/bootstrap.md", "workspace bootstrap"))
 
   let envelope : @types.InboundEnvelope = {
     channel: "test",
@@ -142,18 +136,10 @@ test "enrich_envelope_with_workspace_context_impl injects context_files" {
   cleanup_workspace_context_files(dir)
   // 各ファイルを作成
   assert_true(write_text(dir + "/SOUL.md", "Be helpful and kind"))
-  assert_true(
-    write_text(dir + "/AGENTS.md", "Follow code standards"),
-  )
-  assert_true(
-    write_text(dir + "/TOOLS.md", "Use pnpm for packages"),
-  )
-  assert_true(
-    write_text(dir + "/IDENTITY.md", "You are Mukuro Assistant"),
-  )
-  assert_true(
-    write_text(dir + "/USER.md", "User prefers dark mode"),
-  )
+  assert_true(write_text(dir + "/AGENTS.md", "Follow code standards"))
+  assert_true(write_text(dir + "/TOOLS.md", "Use pnpm for packages"))
+  assert_true(write_text(dir + "/IDENTITY.md", "You are Mukuro Assistant"))
+  assert_true(write_text(dir + "/USER.md", "User prefers dark mode"))
 
   let envelope : @types.InboundEnvelope = {
     channel: "test",
@@ -211,9 +197,7 @@ test "enrich_envelope_with_workspace_context_impl ignores empty context_files" {
   // 空白のみのファイルを作成
   assert_true(write_text(dir + "/SOUL.md", "   "))
   // 内容のあるファイルを作成
-  assert_true(
-    write_text(dir + "/IDENTITY.md", "Real identity"),
-  )
+  assert_true(write_text(dir + "/IDENTITY.md", "Real identity"))
 
   let envelope : @types.InboundEnvelope = {
     channel: "test",
@@ -245,9 +229,7 @@ test "enrich_envelope_with_workspace_context_impl respects metadata override" {
   cleanup_workspace_context_files(dir)
   // ワークスペースにファイルを作成
   assert_true(write_text(dir + "/SOUL.md", "Workspace soul"))
-  assert_true(
-    write_text(dir + "/IDENTITY.md", "Workspace identity"),
-  )
+  assert_true(write_text(dir + "/IDENTITY.md", "Workspace identity"))
 
   let envelope : @types.InboundEnvelope = {
     channel: "test",

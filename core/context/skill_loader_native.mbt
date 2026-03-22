@@ -4,9 +4,7 @@
 ///|
 /// Markdown ファイルから YAML frontmatter + 本文を抽出
 /// フォーマット: ---\nkey: value\n---\n(body)
-pub fn parse_skill_markdown(
-  content : String,
-) -> @interfaces.SkillDefinition? {
+pub fn parse_skill_markdown(content : String) -> @interfaces.SkillDefinition? {
   let lines = content.split("\n").collect()
   if lines.length() < 3 {
     return None
@@ -34,7 +32,10 @@ pub fn parse_skill_markdown(
     let colon_idx = find_char_in_string(line, ':')
     if colon_idx > 0 {
       let key = line[:colon_idx].to_string().trim(chars=" \t").to_string()
-      let value = line[colon_idx + 1:].to_string().trim(chars=" \t\r\n").to_string()
+      let value = line[colon_idx + 1:]
+        .to_string()
+        .trim(chars=" \t\r\n")
+        .to_string()
       match key {
         "name" => name = value
         "description" => description = value

@@ -479,7 +479,9 @@ test "reconstruct_session_from_history: text_only_conversation_continuation" {
   // 2番目のメッセージが Assistant (text only, no tool_calls)
   match session.history[1] {
     @llm_types.ModelMessage::Assistant(content~, tool_calls~) => {
-      assert_eq(content, "「ブースとラプう」について、もう少し詳しく教えてください。")
+      assert_eq(
+        content, "「ブースとラプう」について、もう少し詳しく教えてください。",
+      )
       // CRITICAL: 純粋テキスト会話では tool_calls は None であること
       // これが Some([]) になっていると、Responses API で問題が発生する可能性がある
       match tool_calls {
@@ -505,4 +507,3 @@ test "reconstruct_session_from_history: text_only_conversation_continuation" {
     _ => fail("Expected User message at index 2")
   }
 }
-

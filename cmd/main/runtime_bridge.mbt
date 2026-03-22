@@ -89,7 +89,9 @@ pub fn initialize_metadata_store() -> Unit {
 /// 統合セッションマネージャー（History = Source of Truth）
 /// JSONL を唯一の source of truth とし、Session はそのビューとして扱う
 /// Note: 遅延初期化で --data-dir フラグを反映する
-let global_session_manager_cell : Ref[@native.NativeSessionManager?] = Ref::new(None)
+let global_session_manager_cell : Ref[@native.NativeSessionManager?] = Ref::new(
+  None,
+)
 
 ///|
 /// グローバルセッションマネージャーを取得（遅延初期化）

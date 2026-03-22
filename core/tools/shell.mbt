@@ -120,9 +120,7 @@ pub fn is_dangerous_command(command : String) -> Bool {
     return true
   }
   // シェルインジェクション
-  if cmd.contains("| sh") ||
-    cmd.contains("| bash") ||
-    cmd.contains("| zsh") {
+  if cmd.contains("| sh") || cmd.contains("| bash") || cmd.contains("| zsh") {
     return true
   }
   if cmd.contains("$(") || cmd.contains("${") {
@@ -141,7 +139,9 @@ pub fn is_dangerous_command(command : String) -> Bool {
   if cmd.contains("npm install -g") || cmd.contains("npm i -g") {
     return true
   }
-  if cmd.contains("pip install") && not(cmd.contains("--target")) && not(cmd.contains("-t ")) {
+  if cmd.contains("pip install") &&
+    not(cmd.contains("--target")) &&
+    not(cmd.contains("-t ")) {
     return true
   }
   if cmd.contains("apt install") ||
@@ -203,8 +203,15 @@ fn contains_word(cmd : String, word : String) -> Bool {
 
 ///|
 fn is_word_boundary(c : Char) -> Bool {
-  c == ' ' || c == '\t' || c == ';' || c == '|' || c == '&' || c == '(' ||
-  c == ')' || c == '\n' || c == '\r'
+  c == ' ' ||
+  c == '\t' ||
+  c == ';' ||
+  c == '|' ||
+  c == '&' ||
+  c == '(' ||
+  c == ')' ||
+  c == '\n' ||
+  c == '\r'
 }
 
 // =============================================================================
@@ -218,7 +225,9 @@ pub fn shell_entry() -> ToolEntry {
     name: "shell",
     definition: shell_tool(),
     settings_schema: Some(shell_settings_schema()),
-    execute: async fn(ctx, args) { execute_shell(args, workspace_dir=ctx.workspace_dir) },
+    execute: async fn(ctx, args) {
+      execute_shell(args, workspace_dir=ctx.workspace_dir)
+    },
   }
 }
 
@@ -226,7 +235,7 @@ pub fn shell_entry() -> ToolEntry {
 /// シェルツールを実行（プラットフォーム固有実装を呼び出す）
 async fn execute_shell(
   args : Json,
-  workspace_dir~ : String? = None,
+  workspace_dir? : String? = None,
 ) -> ToolExecutionResult {
   let command = match get_string_arg(args, "command") {
     Some(c) => c

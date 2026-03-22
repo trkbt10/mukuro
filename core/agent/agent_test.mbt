@@ -55,7 +55,10 @@ test "AgentLoopContext::add_message" {
   let msg1 = @llm_types.ModelMessage::User(content="Hello", name=None)
   ctx.add_message(msg1)
   inspect(ctx.messages.length(), content="1")
-  let msg2 = @llm_types.ModelMessage::Assistant(content="Hi there", tool_calls=None)
+  let msg2 = @llm_types.ModelMessage::Assistant(
+    content="Hi there",
+    tool_calls=None,
+  )
   ctx.add_message(msg2)
   inspect(ctx.messages.length(), content="2")
 }

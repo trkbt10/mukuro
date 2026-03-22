@@ -82,10 +82,7 @@ pub fn MemoryStore::new() -> MemoryStore {
 
 ///|
 /// 永続化パスを設定して MEMORY.md を有効化
-pub fn MemoryStore::set_persist_path(
-  self : MemoryStore,
-  path : String,
-) -> Unit {
+pub fn MemoryStore::set_persist_path(self : MemoryStore, path : String) -> Unit {
   self.persist_path = Some(path)
 }
 
@@ -107,9 +104,7 @@ pub fn MemoryStore::load_from_markdown(
         Some(k) => {
           let v = current_value.to_string().trim(chars=" \t\r\n").to_string()
           if v.length() > 0 {
-            let json_val : Json = @json.parse(v) catch {
-              _ => Json::string(v)
-            }
+            let json_val : Json = @json.parse(v) catch { _ => Json::string(v) }
             self.data[k] = json_val
           }
         }
@@ -134,9 +129,7 @@ pub fn MemoryStore::load_from_markdown(
     Some(k) => {
       let v = current_value.to_string().trim(chars=" \t\r\n").to_string()
       if v.length() > 0 {
-        let json_val : Json = @json.parse(v) catch {
-          _ => Json::string(v)
-        }
+        let json_val : Json = @json.parse(v) catch { _ => Json::string(v) }
         self.data[k] = json_val
       }
     }

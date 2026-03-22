@@ -19,8 +19,16 @@ test "InMemoryToolRegistry registers and retrieves tools" {
 ///|
 test "InMemoryToolRegistry lists definitions" {
   let registry = InMemoryToolRegistry::new()
-  let def1 = @llm_types.ToolDefinition::new(name="tool1", description="Tool 1", parameters={})
-  let def2 = @llm_types.ToolDefinition::new(name="tool2", description="Tool 2", parameters={})
+  let def1 = @llm_types.ToolDefinition::new(
+    name="tool1",
+    description="Tool 1",
+    parameters={},
+  )
+  let def2 = @llm_types.ToolDefinition::new(
+    name="tool2",
+    description="Tool 2",
+    parameters={},
+  )
   let executor = DummyExecutor::new()
   @interfaces.ToolRegistry::register(registry, def1, executor)
   @interfaces.ToolRegistry::register(registry, def2, executor)

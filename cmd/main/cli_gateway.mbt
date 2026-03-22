@@ -32,7 +32,9 @@ async fn execute_gateway_start(
     @cmd_config.default_runtime_config_path(),
   )
   if not(@cmd_config.runtime_config_exists(config_path)) {
-    return @cli.CliResult::Error(@cmd_config.config_not_found_message(config_path))
+    return @cli.CliResult::Error(
+      @cmd_config.config_not_found_message(config_path),
+    )
   }
   bootstrap_runtime_channels_from_config(config_path)
   // プラグインシステムの初期化（native transport使用）

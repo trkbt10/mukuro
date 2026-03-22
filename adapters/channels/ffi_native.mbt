@@ -4,10 +4,7 @@
 
 ///|
 #borrow(command, mode)
-extern "C" fn channel_popen_handle(
-  command : Bytes,
-  mode : Bytes,
-) -> Int64 = "moonbit_popen_bytes"
+extern "C" fn channel_popen_handle(command : Bytes, mode : Bytes) -> Int64 = "moonbit_popen_bytes"
 
 ///|
 extern "C" fn channel_pclose_handle(handle : Int64) -> Int = "moonbit_pclose_handle"

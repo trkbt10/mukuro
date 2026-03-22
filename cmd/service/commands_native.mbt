@@ -34,7 +34,10 @@ fn execute_service_install(opts : @cli.ServiceInstallOptions) -> @cli.CliResult 
   match platform {
     ServicePlatform::MacOS => install_launchd_service(config)
     ServicePlatform::Linux => install_systemd_service(config)
-    _ => @cli.CliResult::Error("Service installation not supported on this platform")
+    _ =>
+      @cli.CliResult::Error(
+        "Service installation not supported on this platform",
+      )
   }
 }
 
@@ -126,7 +129,9 @@ fn execute_service_uninstall() -> @cli.CliResult {
     ServicePlatform::MacOS => uninstall_launchd_service()
     ServicePlatform::Linux => uninstall_systemd_service()
     _ =>
-      @cli.CliResult::Error("Service uninstallation not supported on this platform")
+      @cli.CliResult::Error(
+        "Service uninstallation not supported on this platform",
+      )
   }
 }
 

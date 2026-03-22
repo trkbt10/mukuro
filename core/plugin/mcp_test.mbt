@@ -45,7 +45,10 @@ test "McpToolDef to_tool_definition" {
   let tool : McpToolDef = {
     name: "read_file",
     description: "Read a file",
-    input_schema: { "type": "object", "properties": { "path": { "type": "string" } } },
+    input_schema: {
+      "type": "object",
+      "properties": { "path": { "type": "string" } },
+    },
     server_name: "fs",
   }
   let def = tool.to_tool_definition()

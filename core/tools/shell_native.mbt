@@ -7,9 +7,7 @@ async fn execute_shell_platform(
   cwd~ : String?,
 ) -> ToolExecutionResult {
   let result = @subprocess.exec(command, cwd?, check=false) catch {
-    _ => {
-      return ToolExecutionResult::error("Failed to execute command")
-    }
+    _ => return ToolExecutionResult::error("Failed to execute command")
   }
   ToolExecutionResult::success({
     "stdout": result.stdout,

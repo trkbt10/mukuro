@@ -33,7 +33,9 @@ pub fn execute_daemon_start(
   }
 
   if !write_daemon_startup_config(opts, config) {
-    return @cli.CliResult::Error("Failed to persist daemon startup configuration")
+    return @cli.CliResult::Error(
+      "Failed to persist daemon startup configuration",
+    )
   }
 
   // posix_spawn でデーモンプロセスを起動

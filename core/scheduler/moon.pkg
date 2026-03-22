@@ -7,7 +7,5 @@ import {
 }
 
 options(
-  targets: {
-    "persistence_native.mbt": [ "native" ],
-  },
+  targets: { "persistence_native.mbt": [ "native" ] },
 )

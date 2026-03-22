@@ -50,7 +50,9 @@ async fn execute_agent_single(message : String) -> @cli.CliResult {
 ///|
 /// REPL モード: stdin から入力を読み取り、エージェントに送信
 async fn execute_agent_repl() -> @cli.CliResult {
-  @stdio.stdout.write("mukuro agent v\{@cli.version} - Type your message (Ctrl+D to exit)\n")
+  @stdio.stdout.write(
+    "mukuro agent v\{@cli.version} - Type your message (Ctrl+D to exit)\n",
+  )
   while true {
     @stdio.stdout.write("\n> ")
     let line = @stdio.stdin.read_until("\n")

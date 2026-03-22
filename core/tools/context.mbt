@@ -38,7 +38,7 @@ pub fn BuiltinToolContext::make(
   agent_manager : SubAgentManager,
   trace : TraceStore,
   send_message : (@types.OutboundMessage) -> Unit,
-  workspace_dir~ : String? = None,
+  workspace_dir? : String? = None,
 ) -> BuiltinToolContext {
   { memory, agent_manager, trace, send_message, workspace_dir }
 }

@@ -109,9 +109,7 @@ fn read_existing_config(config_path : String) -> @types.MukuroConfig? {
     return None
   }
   let loader = @config.ConfigLoaderImpl::default()
-  let config = loader.load_from_string(content) catch {
-    _ => return None
-  }
+  let config = loader.load_from_string(content) catch { _ => return None }
   Some(config)
 }
 
@@ -127,16 +125,15 @@ fn write_onboard_config(
 ) -> Bool {
   let dir = extract_parent_dir(output_path)
   if dir.length() > 0 {
-    ignore(
-      @native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(dir), 493),
-    )
+    ignore(@native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(dir), 493))
   }
   let json = config.to_json()
   let content = json.stringify(indent=2)
   @native.c_write_text_file_bytes(
     @native.string_to_utf8_cstring(output_path),
     @native.string_to_utf8_cstring(content),
-  ) == 0
+  ) ==
+  0
 }
 
 ///|
@@ -164,7 +161,9 @@ fn extract_parent_dir(path : String) -> String {
 ///|
 /// 対話的オンボーディングウィザード
 /// openclaw の interactive setup と nemoclaw の y/N 確認パターンの交差
-pub async fn execute_onboard_interactive(output_path : String) -> @cli.CliResult {
+pub async fn execute_onboard_interactive(
+  output_path : String,
+) -> @cli.CliResult {
   @stdio.stdout.write("mukuro onboard — Interactive setup\n\n")
   // 既存設定の確認
   let existing = read_existing_config(output_path)
@@ -199,7 +198,11 @@ pub async fn execute_onboard_interactive(output_path : String) -> @cli.CliResult
     let env_hint = match preset.env_var {
       Some(v) => {
         let has_key = native_getenv(v) is Some(_)
-        if has_key { " * key detected" } else { "" }
+        if has_key {
+          " * key detected"
+        } else {
+          ""
+        }
       }
       None => " (no key needed)"
     }
@@ -390,8 +393,7 @@ pub fn execute_onboard_impl(
       let env_hint = match preset {
         Some(p) =>
           match p.env_var {
-            Some(var) =>
-              " (or set \{var} environment variable)"
+            Some(var) => " (or set \{var} environment variable)"
             None => ""
           }
         None => ""
@@ -416,17 +418,16 @@ pub fn execute_onboard_impl(
   let config = if reset {
     let default_config = @config.ConfigLoaderImpl::default().default_config()
     @cli.merge_provider_into_config(
-      { ..default_config, providers: [], },
+      { ..default_config, providers: [] },
       new_provider,
     )
   } else {
     match read_existing_config(output_path) {
-      Some(existing) =>
-        @cli.merge_provider_into_config(existing, new_provider)
+      Some(existing) => @cli.merge_provider_into_config(existing, new_provider)
       None => {
         let default_config = @config.ConfigLoaderImpl::default().default_config()
         @cli.merge_provider_into_config(
-          { ..default_config, providers: [], },
+          { ..default_config, providers: [] },
           new_provider,
         )
       }
@@ -440,13 +441,14 @@ pub fn execute_onboard_impl(
   }
   // データディレクトリの作成を保証
   let data_dir = @config.data_dir()
-  ignore(
-    @native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(data_dir), 493),
-  )
+  ignore(@native.c_mkdir_recursive_bytes(@bytes.to_utf8_cstring(data_dir), 493))
   // ガイダンスを表示
   let api_key_set = resolved_api_key is Some(_)
   let guidance = @cli.build_post_onboard_guidance(
-    new_provider.name, model, output_path, api_key_set,
+    new_provider.name,
+    model,
+    output_path,
+    api_key_set,
   )
   // 環境変数検出情報を付加
   let env_info = match (api_key, resolved_api_key) {

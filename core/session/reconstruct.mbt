@@ -191,8 +191,19 @@ pub fn extract_tool_call_payload(payload : Json) -> @llm_types.ToolCallRequest {
         Some(args) => args
         _ => Json::object({})
       }
-      { id: call_id, name: tool_name, arguments, kind: @llm_types.ToolCallKind::Function }
+      {
+        id: call_id,
+        name: tool_name,
+        arguments,
+        kind: @llm_types.ToolCallKind::Function,
+      }
     }
-    _ => { id: "", name: "", arguments: Json::object({}), kind: @llm_types.ToolCallKind::Function }
+    _ =>
+      {
+        id: "",
+        name: "",
+        arguments: Json::object({}),
+        kind: @llm_types.ToolCallKind::Function,
+      }
   }
 }

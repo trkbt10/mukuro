@@ -30,13 +30,11 @@ pub fn McpClient::new(config : McpServerConfig) -> McpClient {
 fn build_initialize_request(request_id : Int) -> @interfaces.JsonRpcRequest {
   @interfaces.JsonRpcRequest::new(
     rpc_method="initialize",
-    params=Some(
-      {
-        "protocolVersion": "2024-11-05",
-        "capabilities": {},
-        "clientInfo": { "name": "mukuro", "version": "0.1.0" },
-      },
-    ),
+    params=Some({
+      "protocolVersion": "2024-11-05",
+      "capabilities": {},
+      "clientInfo": { "name": "mukuro", "version": "0.1.0" },
+    }),
     id=Some(request_id),
   )
 }

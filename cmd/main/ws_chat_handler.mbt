@@ -294,7 +294,7 @@ pub async fn ChatWsHandler::handle_connection(
   ws_send_session(ws, self.chat_id)
 
   // Message loop
-  for {
+  for ;; {
     let msg = ws.recv() catch {
       @async_ws.ConnectionClosed(_, _) => break
       _ => break

@@ -21,32 +21,59 @@ pub fn NativeHttpTransport::new(
 }
 
 ///|
-pub impl @llm_client.HttpTransport for NativeHttpTransport with request(
-  self,
-  req,
-) {
+fn build_transport_headers(
+  req : @llm_client.TransportRequest,
+) -> Map[String, String] {
   let headers : Map[String, String] = {}
   for key, value in req.headers {
     headers[key] = value
   }
-  let body_bytes : Bytes? = match req.body {
-    Some(text) => Some(@utf8.encode(text.view()))
-    None => None
-  }
-  let http_req : @interfaces.HttpRequest = {
-    url: req.url,
-    http_method: @interfaces.HttpMethod::Post,
-    headers,
-    body: body_bytes,
-  }
-  let response = @interfaces.HttpClient::request(self.client, http_req) catch {
-    e =>
-      raise @llm_client.transport_network_error("HTTP request failed: \{e}")
+  headers
+}
+
+///|
+pub impl @llm_client.HttpTransport for NativeHttpTransport with request(
+  self,
+  req,
+) {
+  ignore(self)
+  let headers = build_transport_headers(req)
+  let body_text = req.body.unwrap_or("")
+  let (resp, body_data) = @xhttp.post(req.url, body_text, headers~) catch {
+    e => raise @llm_client.transport_network_error("HTTP request failed: \{e}")
   }
   {
-    status: response.status,
-    body: body_bytes_to_string(response.body),
+    status: resp.code,
+    body: body_bytes_to_string(Bytes::from_iter(body_data.binary().iter())),
   }
+}
+
+///|
+/// Stream reader wrapping mizchi/x/http Stream
+struct NativeStreamReader {
+  stream : @xhttp.Stream
+}
+
+///|
+pub impl @llm_client.StreamReader for NativeStreamReader with read(self) {
+  self.stream.read_some() catch {
+    e => raise @llm_client.transport_network_error("Stream read failed: \{e}")
+  }
+}
+
+///|
+pub impl @llm_client.StreamingHttpTransport for NativeHttpTransport with request_stream(
+  self,
+  req,
+) {
+  ignore(self)
+  let headers = build_transport_headers(req)
+  let body_text = req.body.unwrap_or("")
+  let (resp, stream) = @xhttp.post_stream(req.url, body_text, headers~) catch {
+    e => raise @llm_client.transport_network_error("HTTP request failed: \{e}")
+  }
+  let reader : NativeStreamReader = { stream, }
+  { status: resp.code, reader }
 }
 
 // =============================================================================
@@ -57,11 +84,15 @@ pub impl @llm_client.HttpTransport for NativeHttpTransport with request(
 /// mukuro のプロバイダ名から ModelApi を解決する
 fn resolve_model_api(provider : @types.ProviderConfig) -> @gateway.ModelApi {
   // use_responses_api フラグによる OpenAI Responses API の選択
-  if provider.use_responses_api {
+  // use_harmony_parser=true: プロバイダは Chat Completions のみ対応（Groq, Ollama 等）
+  //   → OpenAICompletions のまま送信し、Harmony パイプラインで Responses API 表現に変換
+  // use_harmony_parser=false: プロバイダが Responses API をネイティブサポート（OpenAI）
+  //   → OpenAIResponses に切り替えて /v1/responses に直接送信
+  if provider.use_responses_api && not(provider.use_harmony_parser) {
     let api = @gateway.ModelApi::from_string(provider.name)
     match api {
-      // Responses API をネイティブサポートするプロバイダのみ OpenAIResponses を使う
-      Some(@gateway.ModelApi::OpenAICompletions) => return @gateway.OpenAIResponses
+      Some(@gateway.ModelApi::OpenAICompletions) =>
+        return @gateway.OpenAIResponses
       _ => ()
     }
   }
@@ -223,20 +254,22 @@ pub fn set_forced_response_for_test(response : String?) -> Unit {
 
 ///|
 /// 単一プロバイダでの LLM 呼び出し（llm_interop 経由）
+/// 全経路 Responses API 中間層 + ストリーミング
 async fn call_provider_via_gateway(
   provider : @types.ProviderConfig,
-  transport : &@llm_client.HttpTransport,
+  transport : NativeHttpTransport,
   messages : Array[@llm_types.ModelMessage],
   options : @types.ModelOptions,
   tools : Array[@llm_types.ToolDefinition],
 ) -> @llm_types.ModelResponse {
   let gw_provider = to_gateway_provider_config(provider)
-  @llm_client.chat_gateway(
+  @llm_client.chat_gateway_responses_stream(
     gw_provider,
     transport,
     messages,
     tools,
     options.model_name,
+    on_event=fn(_event) {  },
     max_tokens=options.max_tokens,
     temperature=options.temperature,
   ) catch {
@@ -392,40 +425,57 @@ pub fn model_response_to_stream_events(
 ) -> Array[(String, Json)] {
   let events : Array[(String, Json)] = []
   // response.created
-  events.push((
-    "response.created",
-    { "type": "response.created", "response": { "id": "resp_generated" } },
-  ))
+  events.push(
+    (
+      "response.created",
+      { "type": "response.created", "response": { "id": "resp_generated" } },
+    ),
+  )
   match response {
-    @llm_types.ModelResponse::Text(content) | @llm_types.ModelResponse::RichText({ content, .. }) => {
+    @llm_types.ModelResponse::Text(content)
+    | @llm_types.ModelResponse::RichText({ content, .. }) => {
       // response.output_text.delta (full content)
-      events.push((
-        "response.output_text.delta",
-        { "type": "response.output_text.delta", "delta": content, "output_index": 0 },
-      ))
+      events.push(
+        (
+          "response.output_text.delta",
+          {
+            "type": "response.output_text.delta",
+            "delta": content,
+            "output_index": 0,
+          },
+        ),
+      )
       // response.output_text.done
-      events.push((
-        "response.output_text.done",
-        { "type": "response.output_text.done", "text": content, "output_index": 0 },
-      ))
+      events.push(
+        (
+          "response.output_text.done",
+          {
+            "type": "response.output_text.done",
+            "text": content,
+            "output_index": 0,
+          },
+        ),
+      )
     }
     @llm_types.ModelResponse::ToolCalls(calls) =>
       for i, call in calls {
         // response.output_item.added
-        events.push((
-          "response.output_item.added",
-          {
-            "type": "response.output_item.added",
-            "output_index": i,
-            "item": {
-              "type": "function_call",
-              "id": call.id.to_json(),
-              "call_id": call.id.to_json(),
-              "name": call.name.to_json(),
-              "arguments": call.arguments.stringify().to_json(),
+        events.push(
+          (
+            "response.output_item.added",
+            {
+              "type": "response.output_item.added",
+              "output_index": i,
+              "item": {
+                "type": "function_call",
+                "id": call.id.to_json(),
+                "call_id": call.id.to_json(),
+                "name": call.name.to_json(),
+                "arguments": call.arguments.stringify().to_json(),
+              },
             },
-          },
-        ))
+          ),
+        )
       }
     _ => ()
   }

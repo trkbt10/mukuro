@@ -69,7 +69,10 @@ pub impl @interfaces.ContextBuilder for DefaultContextBuilder with build(
   }
   // 3. 現在のメッセージを追加
   messages.push(
-    @llm_types.ModelMessage::User(content=input.current_message.content, name=None),
+    @llm_types.ModelMessage::User(
+      content=input.current_message.content,
+      name=None,
+    ),
   )
   messages
 }

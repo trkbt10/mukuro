@@ -5,7 +5,5 @@ import {
 
 options(
   link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
-  targets: {
-    "commands_native.mbt": [ "native" ],
-  },
+  targets: { "commands_native.mbt": [ "native" ] },
 )

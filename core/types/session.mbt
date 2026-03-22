@@ -71,7 +71,10 @@ pub fn Session::new(key : SessionKey, now : Int64) -> Session {
 
 ///|
 /// セッションにメッセージを追加
-pub fn Session::add_message(self : Session, message : @llm_types.ModelMessage) -> Unit {
+pub fn Session::add_message(
+  self : Session,
+  message : @llm_types.ModelMessage,
+) -> Unit {
   self.history.push(message)
 }
 

@@ -270,7 +270,9 @@ test "history_file_path - basic" {
   let path = history_file_path(
     "/test/base", "web_chat", "abc123", 2026, 2, 28, 1709164800L,
   )
-  assert_eq(path, "/test/base/history/2026/02/28/web_chat-abc123-1709164800.jsonl")
+  assert_eq(
+    path, "/test/base/history/2026/02/28/web_chat-abc123-1709164800.jsonl",
+  )
 }
 
 ///|

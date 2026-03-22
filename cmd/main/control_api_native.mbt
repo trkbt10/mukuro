@@ -146,9 +146,10 @@ fn get_api_v1_router() -> @api.ApiRouter {
     ),
     chat_handlers: Some(
       @api_chat.create_chat_handlers(
-        @api_chat.ChatState::new_with_session_manager(get_global_session_manager(), get_timestamp=fn() {
-          @native.c_time() * 1000
-        }),
+        @api_chat.ChatState::new_with_session_manager(
+          get_global_session_manager(),
+          get_timestamp=fn() { @native.c_time() * 1000 },
+        ),
       ),
     ),
     history_handlers: Some(
@@ -595,7 +596,11 @@ fn get_default_provider_base_url(provider_name : String) -> String? {
   match @gateway.ModelApi::from_string(provider_name) {
     Some(api) => {
       let url = api.default_base_url()
-      if url.is_empty() { None } else { Some(url) }
+      if url.is_empty() {
+        None
+      } else {
+        Some(url)
+      }
     }
     None => None
   }

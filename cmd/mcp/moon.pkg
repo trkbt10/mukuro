@@ -7,7 +7,5 @@ import {
 
 options(
   link: { "native": { "stub-cc-link-flags": "-lsqlite3" } },
-  targets: {
-    "mcp_native.mbt": [ "native" ],
-  },
+  targets: { "mcp_native.mbt": [ "native" ] },
 )

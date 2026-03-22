@@ -307,9 +307,7 @@ pub fn validate_workspace_path(
       // 絶対パスの場合、ワークスペース配下かチェック
       if path.length() > 0 && char_at(path, 0) == '/' {
         if not(path.has_prefix(ws)) {
-          return Some(
-            "Path outside workspace: \{path} (workspace: \{ws})",
-          )
+          return Some("Path outside workspace: \{path} (workspace: \{ws})")
         }
       }
       // 相対パスは許可（ワークスペース内とみなす）

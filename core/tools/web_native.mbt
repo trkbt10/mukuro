@@ -243,7 +243,14 @@ fn strip_html_tags(html : String) -> String {
         in_style = false
       } else if tag == "br" || tag == "br/" || tag == "br /" {
         buf.write_char('\n')
-      } else if tag == "/p" || tag == "/div" || tag == "/h1" || tag == "/h2" || tag == "/h3" || tag == "/h4" || tag == "/li" || tag == "/tr" {
+      } else if tag == "/p" ||
+        tag == "/div" ||
+        tag == "/h1" ||
+        tag == "/h2" ||
+        tag == "/h3" ||
+        tag == "/h4" ||
+        tag == "/li" ||
+        tag == "/tr" {
         buf.write_char('\n')
       }
       continue
@@ -284,7 +291,8 @@ fn truncate_string(s : String, max_len : Int) -> String {
 fn web_search(query : String, max_results : Int) -> ToolExecutionResult {
   // DuckDuckGo HTML lite を使用 (APIキー不要)
   let escaped_query = @util.escape_shell_single_quote(query)
-  let url = "https://html.duckduckgo.com/html/?q=" + url_encode_simple(escaped_query)
+  let url = "https://html.duckduckgo.com/html/?q=" +
+    url_encode_simple(escaped_query)
   let fetch_result = web_fetch_raw(url, "GET", None, None)
   if fetch_result.status != ToolResultStatus::Success {
     return fetch_result
@@ -295,15 +303,9 @@ fn web_search(query : String, max_results : Int) -> ToolExecutionResult {
   }
   // DuckDuckGo HTML レスポンスからリンクとスニペットを抽出
   let results = parse_ddg_results(body, max_results)
-  let result_json : Array[Json] = results.map(
-    fn(r) {
-      {
-        "title": r.0,
-        "url": r.1,
-        "snippet": r.2,
-      }
-    },
-  )
+  let result_json : Array[Json] = results.map(fn(r) {
+    { "title": r.0, "url": r.1, "snippet": r.2 }
+  })
   ToolExecutionResult::success({
     "query": query,
     "results": Json::array(result_json),
@@ -376,7 +378,13 @@ fn parse_ddg_results(
     }
     // DuckDuckGo の URL はリダイレクト経由なので、直接 URL を使う
     if url.length() > 0 && title.trim(chars=" \t\r\n").length() > 0 {
-      results.push((title.trim(chars=" \t\r\n").to_string(), url, snippet.trim(chars=" \t\r\n").to_string()))
+      results.push(
+        (
+          title.trim(chars=" \t\r\n").to_string(),
+          url,
+          snippet.trim(chars=" \t\r\n").to_string(),
+        ),
+      )
     }
     pos = if title_end > 0 { title_end } else { idx + marker.length() }
   }
