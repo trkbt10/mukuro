@@ -261,6 +261,7 @@ async fn call_provider_via_gateway(
   messages : Array[@llm_types.ModelMessage],
   options : @types.ModelOptions,
   tools : Array[@llm_types.ToolDefinition],
+  on_stream_event~ : ((String, Json)) -> Unit = fn(_event) {  },
 ) -> @llm_types.ModelResponse {
   let gw_provider = to_gateway_provider_config(provider)
   @llm_client.chat_gateway_responses_stream(
@@ -269,7 +270,7 @@ async fn call_provider_via_gateway(
     messages,
     tools,
     options.model_name,
-    on_event=fn(_event) {  },
+    on_event=on_stream_event,
     max_tokens=options.max_tokens,
     temperature=options.temperature,
   ) catch {
@@ -304,12 +305,15 @@ fn find_provider_by_name(name : String) -> @types.ProviderConfig? {
 }
 
 ///|
-pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
-  self,
-  messages~,
-  tools~,
-  options~,
-) {
+/// call / call_streaming 共通の内部実装
+/// on_stream_event を call_provider_via_gateway に伝搬する
+async fn RuntimeModelOrchestrator::call_impl(
+  self : RuntimeModelOrchestrator,
+  messages : Array[@llm_types.ModelMessage],
+  tools : Array[@llm_types.ToolDefinition],
+  options : @types.ModelOptions,
+  on_stream_event : ((String, Json)) -> Unit,
+) -> @llm_types.ModelResponse {
   match test_toggle.forced_response {
     Some(content) => return @llm_types.ModelResponse::Text(content)
     None => ()
@@ -332,14 +336,14 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
     Some(c) => c.fallback.enabled && c.fallback.providers.length() > 0
     None => false
   }
-  if not(fallback_enabled) {
+  if !fallback_enabled {
     return call_provider_via_gateway(
-      provider, transport, messages, options, tools,
+      provider, transport, messages, options, tools, on_stream_event~,
     )
   }
   // プライマリプロバイダでまず試行
   let primary_result = call_provider_via_gateway(
-    provider, transport, messages, options, tools,
+    provider, transport, messages, options, tools, on_stream_event~,
   )
   match primary_result {
     @llm_types.ModelResponse::ModelError(_)
@@ -367,7 +371,7 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
       options
     }
     let fb_result = call_provider_via_gateway(
-      fb_provider, transport, messages, fb_options, tools,
+      fb_provider, transport, messages, fb_options, tools, on_stream_event~,
     )
     match fb_result {
       @llm_types.ModelResponse::ModelError(_)
@@ -379,6 +383,27 @@ pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
   @llm_types.ModelResponse::ModelError(
     "All providers failed (primary + \{fallback_providers.length()} fallbacks)",
   )
+}
+
+///|
+pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call(
+  self,
+  messages~,
+  tools~,
+  options~,
+) {
+  self.call_impl(messages, tools, options, fn(_event) {  })
+}
+
+///|
+pub impl @interfaces.ModelOrchestrator for RuntimeModelOrchestrator with call_streaming(
+  self,
+  messages~,
+  tools~,
+  options~,
+  on_stream_event~,
+) {
+  self.call_impl(messages, tools, options, on_stream_event)
 }
 
 // =============================================================================

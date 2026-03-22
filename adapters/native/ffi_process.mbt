@@ -50,6 +50,12 @@ pub extern "C" fn c_fwrite_handle(
 /// ファイルをフラッシュ - ハンドル版
 pub extern "C" fn c_fflush_handle(handle : Int64) -> Int = "moonbit_fflush_handle"
 
+///|
+/// stdout にバイト列を同期書き込み（ストリーミング出力用）
+/// 書き込み後に自動で fflush(stdout) を呼ぶ
+#borrow(data)
+pub extern "C" fn c_write_stdout(data : Bytes, len : Int) -> Int = "moonbit_write_stdout"
+
 // ============================================================
 // system コマンド
 // ============================================================

@@ -257,6 +257,7 @@ pub fn create_session_history_recorder() -> &@interfaces.HistoryRecorder {
 pub async fn handle_inbound_with_agent_loop(
   envelope : @types.InboundEnvelope,
   history_recorder : &@interfaces.HistoryRecorder?,
+  on_stream_event~ : (((String, Json)) -> Unit)? = None,
 ) -> @types.OutboundMessage {
   let enriched_envelope = enrich_envelope_with_workspace_context_impl(envelope)
   let options = build_agent_loop_options_from_config()
@@ -270,6 +271,7 @@ pub async fn handle_inbound_with_agent_loop(
     history_recorder,
     clock: Some(global_clock),
     session_manager: Some(get_global_session_manager()),
+    on_stream_event,
   }
   @agent.run_agent_loop(enriched_envelope, options, deps)
 }

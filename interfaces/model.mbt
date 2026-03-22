@@ -9,6 +9,29 @@ pub(open) trait ModelOrchestrator {
     tools~ : Array[@llm_types.ToolDefinition],
     options~ : @types.ModelOptions,
   ) -> @llm_types.ModelResponse
+  /// ストリーミング付きでモデルを呼び出し (async)
+  /// on_stream_event は SSE イベントごとに呼ばれる
+  /// デフォルト実装は on_stream_event を無視して call に委譲
+  async call_streaming(
+    Self,
+    messages~ : Array[@llm_types.ModelMessage],
+    tools~ : Array[@llm_types.ToolDefinition],
+    options~ : @types.ModelOptions,
+    on_stream_event~ : ((String, Json)) -> Unit,
+  ) -> @llm_types.ModelResponse = _
+}
+
+///|
+/// call_streaming のデフォルト実装: on_stream_event を無視して call に委譲
+impl ModelOrchestrator with call_streaming(
+  self,
+  messages~,
+  tools~,
+  options~,
+  on_stream_event~,
+) {
+  ignore(on_stream_event)
+  self.call(messages~, tools~, options~)
 }
 
 ///|

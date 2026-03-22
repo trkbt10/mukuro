@@ -1388,6 +1388,15 @@ int moonbit_fflush_handle(int64_t handle) {
     return fflush(f);
 }
 
+/*
+ * Write raw bytes to stdout (synchronous, for streaming output)
+ */
+int moonbit_write_stdout(const unsigned char* data, int len) {
+    int written = (int)fwrite(data, 1, (size_t)len, stdout);
+    fflush(stdout);
+    return written;
+}
+
 /* ============================================================
  * UTF-8 Bytes versions (Pattern B)
  * These take null-terminated UTF-8 bytes directly from MoonBit

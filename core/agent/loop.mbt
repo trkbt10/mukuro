@@ -160,6 +160,9 @@ pub(all) struct AgentDependencies {
   /// 統合セッションマネージャー（History = Source of Truth）
   /// 指定された場合、session_store + history_recorder を置換する
   session_manager : &@interfaces.SessionManager?
+  /// ストリーミングイベントコールバック（None=ストリーミングなし）
+  /// 設定すると call_streaming が使われ、SSE イベントごとに呼ばれる
+  on_stream_event : (((String, Json)) -> Unit)?
 }
 
 ///|
@@ -369,6 +372,7 @@ pub async fn run_agent_loop(
       options.model_options,
       options.retry_config,
       retry_state,
+      on_stream_event=deps.on_stream_event,
     ) catch {
       AgentLoopError::ModelCallFailed(msg) => {
         record_error(hr, clk, ts, sid, msg)
@@ -546,10 +550,19 @@ async fn call_model_with_retry(
   options : @types.ModelOptions,
   retry_config : RetryConfig,
   retry_state : RetryState,
+  on_stream_event~ : (((String, Json)) -> Unit)? = None,
 ) -> @llm_types.ModelResponse raise AgentLoopError {
   // リトライループ
   while true {
-    let response = orchestrator.call(messages~, tools~, options~) catch {
+    let response = try {
+      match on_stream_event {
+        Some(callback) =>
+          orchestrator.call_streaming(
+            messages~, tools~, options~, on_stream_event=callback,
+          )
+        None => orchestrator.call(messages~, tools~, options~)
+      }
+    } catch {
       e => raise AgentLoopError::ModelCallFailed(e.to_string())
     }
     match response {

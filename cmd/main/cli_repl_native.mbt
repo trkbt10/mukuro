@@ -3,6 +3,23 @@
 /// `mukuro agent` で REPL モード、`mukuro agent -m "query"` で単発実行
 
 ///|
+/// CLI ストリーミングイベントハンドラ
+/// response.output_text.delta イベントのデルタテキストを stdout に即時書き出す
+/// @native.c_write_stdout を使い同期的に書き出す（コールバックは非 async のため）
+fn cli_stream_event_handler(event : (String, Json)) -> Unit {
+  let (event_type, event_data) = event
+  if event_type == "response.output_text.delta" {
+    match event_data {
+      { "delta": String(delta), .. } => {
+        let data = @utf8.encode(delta)
+        @native.c_write_stdout(data, data.length()) |> ignore
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
 /// Agent コマンドを実行
 async fn execute_agent_command(opts : @cli.AgentOptions) -> @cli.CliResult {
   // 設定ファイルを読み込み (gateway start と同じパターンを使用)
@@ -31,7 +48,7 @@ async fn execute_agent_command(opts : @cli.AgentOptions) -> @cli.CliResult {
 }
 
 ///|
-/// 単発実行: メッセージを1回送信してレスポンスを表示
+/// 単発実行: メッセージを1回送信してレスポンスを表示（ストリーミング付き）
 async fn execute_agent_single(message : String) -> @cli.CliResult {
   let envelope : @types.InboundEnvelope = {
     ..@types.InboundEnvelope::default(),
@@ -41,14 +58,20 @@ async fn execute_agent_single(message : String) -> @cli.CliResult {
     sender_name: "user",
     content: message,
   }
-  let result = handle_inbound_with_agent_loop(envelope, None) catch {
+  let _result = handle_inbound_with_agent_loop(
+    envelope,
+    None,
+    on_stream_event=Some(cli_stream_event_handler),
+  ) catch {
     e => return @cli.CliResult::Error("Agent error: \{e}")
   }
-  @cli.CliResult::Ok(result.content)
+  // ストリーミングで既に表示済みなので末尾の改行だけ追加
+  @stdio.stdout.write("\n")
+  @cli.CliResult::Ok("")
 }
 
 ///|
-/// REPL モード: stdin から入力を読み取り、エージェントに送信
+/// REPL モード: stdin から入力を読み取り、エージェントに送信（ストリーミング付き）
 async fn execute_agent_repl() -> @cli.CliResult {
   @stdio.stdout.write(
     "mukuro agent v\{@cli.version} - Type your message (Ctrl+D to exit)\n",
@@ -74,14 +97,17 @@ async fn execute_agent_repl() -> @cli.CliResult {
           sender_name: "user",
           content: trimmed,
         }
-        let result = handle_inbound_with_agent_loop(envelope, None) catch {
+        let _result = handle_inbound_with_agent_loop(
+          envelope,
+          None,
+          on_stream_event=Some(cli_stream_event_handler),
+        ) catch {
           e => {
             @stdio.stdout.write("Error: \{e}\n")
             continue
           }
         }
-        @stdio.stdout.write("\n")
-        @stdio.stdout.write(result.content)
+        // ストリーミングで既に表示済みなので末尾の改行だけ追加
         @stdio.stdout.write("\n")
       }
     }

@@ -304,6 +304,7 @@ async fn main {
     history_recorder: None,
     clock: None,
     session_manager: None,
+    on_stream_event: None,
   }
   let options = @agent.AgentLoopOptions::default()
 
